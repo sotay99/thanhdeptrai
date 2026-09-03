@@ -57,7 +57,7 @@
     const kh = state.khachHang;
     const ref = rtdb.ref('donhang').push();
     return ref.set({
-      sanPham: sanPhamDaChon().map(function(sp){ return sp.ten + ' — ' + dinhDangTien(sp.gia); }),
+      sanPham: sanPhamDaChon().map(function(sp){ return sp.ten + ' — ' + dinhDangTien(sp.giaChot); }),
       tongTien: t.tongTien,
       phanTramGiam: t.phanTramGiam,
       thanhTien: t.thanhTien,

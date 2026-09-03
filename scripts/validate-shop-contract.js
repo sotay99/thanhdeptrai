@@ -39,24 +39,27 @@ const cssBase = doc("src/css/base.css");
 // 1) Đủ 7 sản phẩm, đúng tên và đúng giá.
 // ---------------------------------------------------------------------------
 const SAN_PHAM_CHOT = [
-  ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000],
-  ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000],
-  ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000],
-  ["Bộ Khóa học dành cho Lightroom điện thoại", 199000],
-  ["Bộ Khóa học dành cho Lightroom máy tính", 199000],
-  ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000],
-  ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000],
+  ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000, 99000],
+  ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000, 79000],
+  ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000, 179000],
+  ["Bộ Khóa học dành cho Lightroom điện thoại", 199000, 0],
+  ["Bộ Khóa học dành cho Lightroom máy tính", 199000, 0],
+  ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
+  ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
 ];
 
-SAN_PHAM_CHOT.forEach(([ten, gia], i) => {
+SAN_PHAM_CHOT.forEach(([ten, giaGoc, giaChot], i) => {
   if (!banNoi.includes(ten)) {
-    fail(`Thiếu (hoặc sai chữ) tên sản phẩm ${i + 1}: “${ten}”`);
+    fail(`Thiếu (hoặc sai chữ) tên sản phẩm ${i + 1}: \u201c${ten}\u201d`);
     return;
   }
   const viTri = banNoi.indexOf(ten);
-  const doanSau = banNoi.slice(viTri, viTri + ten.length + 60);
-  if (!new RegExp(`gia:\\s*${gia}\\b`).test(doanSau)) {
-    fail(`Sản phẩm ${i + 1} (“${ten}”) không còn khai giá ${gia}`);
+  const doanSau = banNoi.slice(viTri, viTri + ten.length + 80);
+  if (!new RegExp(`giaGoc:\\s*${giaGoc}\\b`).test(doanSau)) {
+    fail(`Sản phẩm ${i + 1} không còn khai giá gốc ${giaGoc}`);
+  }
+  if (!new RegExp(`giaChot:\\s*${giaChot}\\b`).test(doanSau)) {
+    fail(`Sản phẩm ${i + 1} không còn khai giá chốt ${giaChot}`);
   }
 });
 
@@ -66,13 +69,26 @@ if (soSanPham !== 7) {
 }
 
 // ---------------------------------------------------------------------------
-// 2) Mức giảm giá mặc định 50%, khai đúng một chỗ.
+// 2) Giảm giá lần hai: mỗi sản phẩm thêm 10%, trừ hai Bộ Khoá học miễn phí.
+//    Số tiền cuối cùng làm tròn XUỐNG hàng nghìn, và phải > 0 mới cho chốt đơn.
 // ---------------------------------------------------------------------------
-const khaiGiam = banNoi.match(/const\s+PHAN_TRAM_GIAM\s*=\s*(\d+)\s*;/g) || [];
+const khaiGiam = banNoi.match(/const\s+GIAM_MOI_SAN_PHAM\s*=\s*(\d+)\s*;/g) || [];
 if (khaiGiam.length !== 1) {
-  fail(`PHAN_TRAM_GIAM phải được khai đúng 1 lần, đang thấy ${khaiGiam.length} lần`);
-} else if (!/=\s*50\s*;/.test(khaiGiam[0])) {
-  fail(`Mức giảm giá mặc định phải là 50%, đang thấy: ${khaiGiam[0]}`);
+  fail(`GIAM_MOI_SAN_PHAM phải được khai đúng 1 lần, đang thấy ${khaiGiam.length} lần`);
+} else if (!/=\s*10\s*;/.test(khaiGiam[0])) {
+  fail(`Mỗi sản phẩm phải được giảm thêm 10%, đang thấy: ${khaiGiam[0]}`);
+}
+if (!/const\s+KHONG_TINH_GIAM_LAN_HAI\s*=\s*\['sp4',\s*'sp5'\]/.test(banNoi)) {
+  fail("Hai Bộ Khoá học (sp4, sp5) phải nằm ngoài mức giảm giá lần hai");
+}
+if (!/Math\.floor\(\(tongTien - tienGiam\) \/ 1000\) \* 1000/.test(banNoi)) {
+  fail("Số tiền cuối cùng phải được làm tròn xuống hàng nghìn");
+}
+if (!/t\.soLuong > 0 && t\.thanhTien > 0/.test(banNoi)) {
+  fail("Chỉ được bấm Mua hàng khi số tiền cuối cùng lớn hơn 0");
+}
+if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
+  fail("Phần trăm giảm của từng sản phẩm phải tính ra từ giá gốc và giá chốt");
 }
 
 // ---------------------------------------------------------------------------
@@ -179,4 +195,4 @@ if (failures.length) {
   failures.forEach((m) => console.error(`- ${m}`));
   process.exit(1);
 }
-console.log("Hợp đồng phần bán hàng ĐẠT: 7 sản phẩm đúng giá, giảm 50%, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");
+console.log("Hợp đồng phần bán hàng ĐẠT: 7 sản phẩm đúng giá gốc và giá chốt, giảm lần hai 10%/sản phẩm, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");

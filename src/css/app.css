@@ -260,7 +260,12 @@
   display: flex;
   flex-direction: column;
   padding: 14px 16px 15px;
-  background: var(--the);
+  /* Nền thẻ: xanh đậm đặc ở sát đáy, nhạt dần lên và TẮT HẲN đúng mép trên của
+     nút "Chọn sản phẩm này". 55px = 15px chừa đáy + 40px chiều cao nút, nên
+     đổi padding đáy hay chiều cao nút thì phải sửa lại con số này. */
+  background:
+    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 22px, rgba(20, 115, 230, 0) 55px),
+    var(--the);
   border: 1px solid var(--vien);
   border-radius: var(--bo-the);
   box-shadow: var(--bong);
@@ -306,9 +311,37 @@
 }
 
 .the-sanpham .nut-chi-tiet { margin-bottom: 10px; }
-.the-sanpham .hang-gia { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
-.the-sanpham .gia { font-size: 17px; font-weight: 800; color: var(--cam); }
-.the-sanpham .gia-goc { font-size: 12px; color: var(--chu-mo); text-decoration: line-through; }
+
+/* Dòng giá: giá gốc → phần trăm giảm → "chỉ còn" → giá chốt, tất cả trên MỘT
+   hàng, xuống dòng mềm khi thẻ hẹp. */
+.the-sanpham .hang-gia {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  margin-bottom: 12px;
+}
+
+/* Giá gốc: màu cam, hơi mờ, nhỏ hơn giá chốt, KHÔNG gạch ngang */
+.the-sanpham .gia-goc { font-size: 12.5px; font-weight: 600; color: var(--cam); opacity: .62; }
+.the-sanpham .phan-tram { font-size: 12.5px; font-weight: 700; color: var(--la-dam-net); }
+.the-sanpham .chi-con { font-size: 12.5px; color: var(--chu-diu); }
+.the-sanpham .gia-chot { font-size: 19px; font-weight: 800; color: var(--xanh); }
+
+/* Nút "Chọn sản phẩm này" lúc chưa chọn — cố ý để nền TRONG SUỐT cho mảng
+   gradient xanh của thẻ hiện xuyên qua, chữ dùng đúng màu xanh của web. */
+.nut-chua-chon {
+  background: rgba(0, 0, 0, .18);
+  border-color: rgba(255, 255, 255, .3);
+  color: var(--xanh);
+  backdrop-filter: blur(2px);
+}
+
+.nut-chua-chon:hover:not(:disabled) {
+  background: rgba(0, 0, 0, .32);
+  border-color: #fff;
+  color: #fff;
+}
 
 /* -------------------------------------------------- THANH BÁO GIÁ NEO ĐÁY */
 
@@ -345,9 +378,9 @@
 .thanh-bao-gia .o-so-lieu { display: flex; flex-direction: column; min-width: 0; }
 .thanh-bao-gia .nhan { font-size: 10.5px; color: var(--chu-mo); white-space: nowrap; }
 .thanh-bao-gia .tri { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
-.thanh-bao-gia .tri.gach { text-decoration: line-through; color: var(--chu-diu); font-weight: 500; }
+.thanh-bao-gia .tri.tong { color: var(--xanh); font-weight: 700; }
 .thanh-bao-gia .tri.giam { color: var(--la); }
-.thanh-bao-gia .tri.chot { font-size: 18px; font-weight: 800; color: var(--cam); }
+.thanh-bao-gia .tri.chot { font-size: 19px; font-weight: 800; color: var(--do); }
 
 .nut-mua-hang { flex: 0 0 auto; min-height: 42px; padding: 0 22px; font-size: 14px; font-weight: 700; }
 

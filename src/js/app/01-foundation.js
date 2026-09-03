@@ -11,20 +11,28 @@
 
   // --------------------------------------------------------------- HẰNG SỐ
 
-  // Phần trăm giảm giá — khai đúng MỘT chỗ duy nhất trong toàn bộ mã nguồn.
-  // Muốn đổi mức khuyến mãi thì sửa con số này, mọi nơi khác tự tính theo.
-  const PHAN_TRAM_GIAM = 50;
+  // GIẢM GIÁ LẦN HAI — cứ chọn thêm một sản phẩm là được giảm thêm 10% trên
+  // tổng tiền. Hai Bộ Khoá học (sp4, sp5) đang tặng miễn phí nên KHÔNG tính
+  // vào mức giảm này; chọn chúng thì phần trăm giảm đứng yên.
+  const GIAM_MOI_SAN_PHAM = 10;
+  const KHONG_TINH_GIAM_LAN_HAI = ['sp4', 'sp5'];
 
   // Bảy sản phẩm của Gói hàng VIP Lightroom. Tên giữ nguyên văn theo yêu cầu
-  // của chủ shop — sửa chữ ở đây sẽ làm scripts/validate-shop-contract.js đỏ.
+  // của chủ shop — sửa chữ hoặc sửa giá sẽ làm
+  // scripts/validate-shop-contract.js đỏ.
+  //
+  //   giaGoc  — giá niêm yết, hiện mờ ở đầu dòng giá
+  //   giaChot — số tiền khách thật sự trả cho sản phẩm đó
+  // Phần trăm giảm KHÔNG khai ở đây mà tính ra từ hai con số trên, nên không
+  // bao giờ có chuyện phần trăm nói một đằng giá tính một nẻo.
   const SAN_PHAM = [
-    { ma: 'sp1', ten: 'App Lightroom cho điện thoại Android - đã có bản quyền trọn đời', gia: 299000 },
-    { ma: 'sp2', ten: 'Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại', gia: 99000 },
-    { ma: 'sp3', ten: 'Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính', gia: 359000 },
-    { ma: 'sp4', ten: 'Bộ Khóa học dành cho Lightroom điện thoại', gia: 199000 },
-    { ma: 'sp5', ten: 'Bộ Khóa học dành cho Lightroom máy tính', gia: 199000 },
-    { ma: 'sp6', ten: 'Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời', gia: 599000 },
-    { ma: 'sp7', ten: 'Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời', gia: 599000 }
+    { ma: 'sp1', ten: 'App Lightroom cho điện thoại Android - đã có bản quyền trọn đời', giaGoc: 299000, giaChot: 99000 },
+    { ma: 'sp2', ten: 'Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại', giaGoc: 99000, giaChot: 79000 },
+    { ma: 'sp3', ten: 'Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính', giaGoc: 359000, giaChot: 179000 },
+    { ma: 'sp4', ten: 'Bộ Khóa học dành cho Lightroom điện thoại', giaGoc: 199000, giaChot: 0 },
+    { ma: 'sp5', ten: 'Bộ Khóa học dành cho Lightroom máy tính', giaGoc: 199000, giaChot: 0 },
+    { ma: 'sp6', ten: 'Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
+    { ma: 'sp7', ten: 'Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 }
   ];
 
   // Danh sách module trong menu bên trái.
@@ -94,18 +102,33 @@
     return state.daChon.map(timSanPham).filter(Boolean);
   }
 
+  // Phần trăm giảm của RIÊNG một sản phẩm, tính ra từ giá gốc và giá chốt.
+  function phanTramGiamSanPham(sp){
+    if (!sp || !sp.giaGoc) return 0;
+    return Math.round((sp.giaGoc - sp.giaChot) / sp.giaGoc * 100);
+  }
+
   // Tính tiền một chỗ duy nhất — thanh neo đáy, modal đơn hàng và modal thanh
   // toán đều gọi hàm này nên ba nơi không bao giờ lệch số.
+  //
+  //   tongTien   = cộng GIÁ CHỐT của các sản phẩm đã chọn
+  //   phanTramGiam = 10% cho mỗi sản phẩm đã chọn, KHÔNG kể sp4 và sp5
+  //   thanhTien  = tongTien trừ đi phần giảm ấy, rồi làm tròn XUỐNG hàng nghìn
+  //                cho số tiền đẹp (làm tròn xuống chứ không lên — chênh lệch
+  //                luôn nghiêng về phía có lợi cho khách).
   function tinhTien(){
     const chon = sanPhamDaChon();
-    const tongTien = chon.reduce(function(tong, sp){ return tong + sp.gia; }, 0);
-    const tienGiam = Math.round(tongTien * PHAN_TRAM_GIAM / 100);
+    const tongTien = chon.reduce(function(tong, sp){ return tong + sp.giaChot; }, 0);
+    const soTinhGiam = chon.filter(function(sp){ return KHONG_TINH_GIAM_LAN_HAI.indexOf(sp.ma) === -1; }).length;
+    const phanTramGiam = soTinhGiam * GIAM_MOI_SAN_PHAM;
+    const tienGiam = Math.round(tongTien * phanTramGiam / 100);
+    const thanhTien = Math.floor((tongTien - tienGiam) / 1000) * 1000;
     return {
       soLuong: chon.length,
       tongTien: tongTien,
-      phanTramGiam: PHAN_TRAM_GIAM,
+      phanTramGiam: phanTramGiam,
       tienGiam: tienGiam,
-      thanhTien: tongTien - tienGiam
+      thanhTien: thanhTien
     };
   }
 

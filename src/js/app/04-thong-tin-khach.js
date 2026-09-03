@@ -109,14 +109,14 @@
     const t = tinhTien();
     const dong = sanPhamDaChon().map(function(sp){
       return '<div class="dong-sp"><span class="ten">' + escapeHtml(sp.ten) + '</span>' +
-        '<span class="gia">' + dinhDangTien(sp.gia) + '</span></div>';
+        '<span class="gia">' + dinhDangTien(sp.giaChot) + '</span></div>';
     }).join('');
     return '' +
       '<div class="tom-tat-don">' +
         dong +
         '<div class="dong-tong"><span class="nhan">Tổng trị giá ' + t.soLuong + ' sản phẩm</span>' +
           '<span class="tri">' + dinhDangTien(t.tongTien) + '</span></div>' +
-        '<div class="dong-tong"><span class="nhan">Giảm giá ' + t.phanTramGiam + '%</span>' +
+        '<div class="dong-tong"><span class="nhan">Giảm giá lần hai ' + t.phanTramGiam + '%</span>' +
           '<span class="tri" style="color:var(--la)">− ' + dinhDangTien(t.tienGiam) + '</span></div>' +
         '<div class="dong-tong chot"><span class="nhan">Số tiền cuối cùng</span>' +
           '<span class="tri">' + dinhDangTien(t.thanhTien) + '</span></div>' +

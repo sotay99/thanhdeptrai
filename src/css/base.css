@@ -39,6 +39,7 @@
   /* Màu chức năng */
   --la: #2d9d5f;
   --la-dam: #22834e;
+  --la-dam-net: #3fc47c;   /* xanh lá đậm cho phần trăm giảm trên nền tối */
   --cam: #ffa72e;        /* giá tiền */
   --do: #e5534b;
 
@@ -112,6 +113,11 @@ input { font: inherit; color: inherit; }
 
 .nut-la { background: var(--la); color: #fff; border-color: var(--la); }
 .nut-la:hover:not(:disabled) { background: var(--la-dam); }
+
+/* Nút chốt đơn — nền đỏ để nổi bật hẳn khỏi mọi nút khác trên màn hình */
+.nut-do { background: var(--do); color: #fff; border-color: var(--do); }
+.nut-do:hover:not(:disabled) { background: #cf3f37; }
+.nut-do:disabled { background: var(--the-3); border-color: var(--vien); color: var(--chu-mo); }
 
 .nut-nho { min-height: 32px; padding: 6px 10px; font-size: 12px; border-radius: 6px; }
 .nut-rong { width: 100%; }

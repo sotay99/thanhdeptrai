@@ -41,7 +41,7 @@
           '<span class="ten">Shop Thànhđẹptrai<span class="cham-xanh">.vn</span></span>' +
         '</div>' +
         '<div class="danh-sach">' + muc + '</div>' +
-        '<div class="menu-day">Bấm ra ngoài hoặc bấm lại nút nổi để ẩn menu.</div>' +
+        '<div class="menu-day">Chọn module xong menu vẫn mở. Bấm nút ✕ hoặc bấm ra ngoài khung để ẩn menu.</div>' +
       '</nav>';
   }
 
@@ -73,10 +73,12 @@
 
   // ------------------------------------------------------ CHUYỂN ĐỔI MODULE
 
+  // Chọn module KHÔNG đóng khung menu — khách chuyển qua lại nhiều module liên
+  // tiếp mà không phải mở menu lại từ đầu. Menu chỉ đóng bằng nút X hoặc bấm ra
+  // ngoài khung.
   function moModule(ma){
     const m = timModule(ma);
     if (!m) return;
-    dongMenu();
     if (m.kieu === 'modal') {
       moModalVanBan(m);
       return;
@@ -305,9 +307,12 @@
       than: '' +
         '<div class="noi-dung-van-ban">' +
           '<h3 style="margin:0 0 4px">' + escapeHtml(sp.ten) + '</h3>' +
-          '<p class="chu-tien" style="font-size:17px">' + dinhDangTien(sp.gia - Math.round(sp.gia * PHAN_TRAM_GIAM / 100)) +
-            ' <span style="font-size:12px;color:var(--chu-mo);text-decoration:line-through;font-weight:500">' +
-            dinhDangTien(sp.gia) + '</span></p>' +
+          '<p class="hang-gia" style="margin-bottom:0">' +
+            '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span> ' +
+            '<span class="phan-tram">giảm giá ' + phanTramGiamSanPham(sp) + '%</span> ' +
+            '<span class="chi-con">chỉ còn</span> ' +
+            '<span class="gia-chot">' + dinhDangTien(sp.giaChot) + '</span>' +
+          '</p>' +
           '<div style="text-align:center;padding:18px 0 4px">' +
             '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">🛠️</p>' +
             '<p><strong>Phần mô tả chi tiết đang được nâng cấp.</strong></p>' +
