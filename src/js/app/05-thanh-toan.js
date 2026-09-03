@@ -214,14 +214,55 @@
 
   // Yêu cầu: bấm "Tải mã QR" thì chụp ẢNH TOÀN BỘ MODAL này về máy, chứ không
   // riêng ô mã QR — để khách có luôn cả số tài khoản, số tiền và nội dung.
+  // Dựng một tấm phiếu RIÊNG để chụp, thay vì chụp thẳng bảng đang hiện.
+  // Cách này lấy theo đúng lối làm ở biên lai Sổ tay Hội Nông dân, và hơn hẳn
+  // việc chụp nguyên bảng: nền trắng nên in ra hoặc gửi Zalo đều rõ, không dính
+  // các nút bấm vô nghĩa trong ảnh, và bề ngang cố định nên ảnh trên điện thoại
+  // với trên máy tính giống hệt nhau.
+  function dungPhieuDeChup(){
+    const t = tinhTien();
+    const tt = state.thongTinCK;
+    const noiDung = taoNoiDungCK();
+    const anhQR = document.querySelector('[data-o-qr] img');
+
+    const dong = function(nhan, giaTri, dam){
+      return '<tr>' +
+        '<td style="padding:7px 0;color:#666;font-size:13px;white-space:nowrap;vertical-align:top">' + escapeHtml(nhan) + '</td>' +
+        '<td style="padding:7px 0 7px 14px;color:#111;font-size:13px;font-weight:' + (dam ? '800' : '600') +
+          ';text-align:right;word-break:break-word' + (dam ? ';color:#b35c00' : '') + '">' + escapeHtml(giaTri) + '</td>' +
+        '</tr>';
+    };
+
+    const phieu = document.createElement('div');
+    phieu.style.cssText = 'position:fixed; left:-9999px; top:0; width:440px; padding:22px 24px; ' +
+      'background:#fff; color:#111; font-family:inherit;';
+    phieu.innerHTML =
+      '<div style="font-size:17px;font-weight:800;color:#111">Shop Thànhđẹptrai.vn</div>' +
+      '<div style="height:2px;width:44px;background:#1473e6;border-radius:1px;margin:7px 0 14px"></div>' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:12px">Thông tin thanh toán đơn hàng</div>' +
+      (anhQR ? '<img src="' + anhQR.getAttribute('src') + '" alt="" style="width:200px;height:200px;display:block;margin:0 auto 14px">' : '') +
+      '<table style="width:100%;border-collapse:collapse;border-top:1px solid #e3e6ea">' +
+        dong('Ngân hàng', tt.nganHang || '—') +
+        dong('Số tài khoản', tt.soTaiKhoan || '—') +
+        dong('Tên chủ tài khoản', tt.tenChuTaiKhoan || '—') +
+        dong('Số tiền', dinhDangTien(t.thanhTien), true) +
+        dong('Nội dung', noiDung) +
+      '</table>' +
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #e3e6ea;font-size:11.5px;color:#666;line-height:1.5">' +
+        'Giữ nguyên phần Nội dung khi chuyển khoản để shop đối chiếu và giao hàng nhanh nhất.' +
+      '</div>';
+    return phieu;
+  }
+
   function taiAnhModalThanhToan(nut){
-    const khung = document.querySelector('[data-ma-modal="thanh-toan"] .modal');
-    if (!khung) return;
     const chuGoc = nut.textContent;
     nut.textContent = 'Đang tạo ảnh…';
     nut.disabled = true;
+    let phieu = null;
     napHtml2Canvas().then(function(html2canvas){
-      return html2canvas(khung, { backgroundColor: '#252525', scale: 2, useCORS: true, logging: false });
+      phieu = dungPhieuDeChup();
+      document.body.appendChild(phieu);
+      return html2canvas(phieu, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
     }).then(function(canvas){
       const lien = document.createElement('a');
       lien.href = canvas.toDataURL('image/png');
@@ -229,10 +270,12 @@
       document.body.appendChild(lien);
       lien.click();
       document.body.removeChild(lien);
+      if (phieu) phieu.remove();
       nut.textContent = chuGoc;
       nut.disabled = false;
     }).catch(function(e){
       console.error('Không tạo được ảnh:', e);
+      if (phieu) phieu.remove();
       nut.textContent = chuGoc;
       nut.disabled = false;
       hienCanhBaoQR('Không tạo được ảnh trên thiết bị này — bạn vui lòng chụp màn hình giúp shop.');
@@ -250,7 +293,7 @@
           '<span class="tri' + (lopThem ? ' ' + lopThem : '') + '">' + escapeHtml(giaTri) + '</span>' +
         '</div>' +
         (coChuoi
-          ? '<button type="button" class="nut-sao-chep" data-hanh-dong="sao-chep" data-chuoi="' + escapeHtml(chuoiChep) + '">Sao chép</button>'
+          ? '<button type="button" class="nut nut-nho nut-vien nut-sao-chep" data-hanh-dong="sao-chep" data-chuoi="' + escapeHtml(chuoiChep) + '">Sao chép</button>'
           : '') +
       '</div>';
   }
@@ -263,7 +306,7 @@
       '<div class="khung-qr trong" data-o-qr>' +
         '<div class="dang-tai">Đang tạo mã QR…</div>' +
       '</div>' +
-      '<button type="button" class="nut-tai-qr" data-hanh-dong="tai-anh-qr">⬇ Tải mã QR về máy</button>' +
+      '<button type="button" class="nut nut-vien nut-tai-qr" data-hanh-dong="tai-anh-qr">⬇ Tải ảnh QR về máy</button>' +
       '<div class="bang-ck">' +
         veDongCK('Ngân hàng', tt.nganHang || 'Chưa lấy được', tt.nganHang, '') +
         veDongCK('Số tài khoản', tt.soTaiKhoan || 'Chưa lấy được', tt.soTaiKhoan, '') +
@@ -287,8 +330,8 @@
       tieuDe: 'Thanh toán đơn hàng',
       than: veThanThanhToan(),
       day: '' +
-        '<button type="button" class="nut-day" data-hanh-dong="dong-modal">Quay lại bước trước</button>' +
-        '<button type="button" class="nut-day la" data-hanh-dong="xac-nhan-thanh-toan">Xác nhận đã thanh toán thành công</button>',
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Quay lại bước trước</button>' +
+        '<button type="button" class="nut nut-la" data-hanh-dong="xac-nhan-thanh-toan">Xác nhận đã thanh toán thành công</button>',
       khiVe: function(){ napAnhQR(); }
     });
   }
@@ -360,6 +403,7 @@
   function boot(){
     state.module = docHash();
     ganSuKien();
+    theoDoiNutCuonModal();   // mọi bảng phụ, kể cả bảng viết sau này, tự có 2 nút cuộn
     render();
     // Nạp trước thông tin chuyển khoản để lúc khách mở modal thanh toán là có
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.

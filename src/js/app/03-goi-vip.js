@@ -15,7 +15,8 @@
           '<span class="gia">' + dinhDangTien(giaSauGiam) + '</span>' +
           '<span class="gia-goc">' + dinhDangTien(sp.gia) + '</span>' +
         '</div>' +
-        '<button type="button" class="nut-chon" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '"' +
+        '<button type="button" class="nut nut-rong ' + (daChon ? 'nut-chinh' : 'nut-vien') +
+          '" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '"' +
           ' aria-pressed="' + (daChon ? 'true' : 'false') + '">' +
           (daChon ? '✓ Đã chọn — bấm để bỏ' : 'Chọn sản phẩm này') +
         '</button>' +
@@ -62,7 +63,7 @@
             '<span class="tri chot">' + dinhDangTien(t.thanhTien) + '</span>' +
           '</div>' +
         '</div>' +
-        '<button type="button" class="nut-mua-hang" data-hanh-dong="mua-hang"' + (coHang ? '' : ' disabled') + '>' +
+        '<button type="button" class="nut nut-chinh nut-mua-hang" data-hanh-dong="mua-hang"' + (coHang ? '' : ' disabled') + '>' +
           (coHang ? 'Mua hàng' : 'Hãy chọn sản phẩm') +
         '</button>' +
       '</div>';

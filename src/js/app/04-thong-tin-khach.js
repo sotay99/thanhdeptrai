@@ -125,7 +125,7 @@
 
   function veOTruong(ten, nhan, giaTri, goiY, kieu){
     return '' +
-      '<div class="nhom-truong">' +
+      '<div class="truong">' +
         '<label for="o-' + ten + '">' + escapeHtml(nhan) + '</label>' +
         '<input id="o-' + ten + '" type="' + kieu + '" data-truong="' + ten + '" value="' + escapeHtml(giaTri) +
           '" autocomplete="off" inputmode="' + (kieu === 'email' ? 'email' : 'tel') + '">' +
@@ -142,14 +142,14 @@
       tieuDe: 'Xác nhận đơn hàng',
       than: '' +
         veTomTatDon() +
-        '<div class="ghi-chu-bat-buoc">Vui lòng nhập <strong>ít nhất một</strong> trong ba trường dưới đây để shop liên hệ giao sản phẩm.</div>' +
+        '<div class="ghi-chu">Vui lòng nhập <strong>ít nhất một</strong> trong ba trường dưới đây để shop liên hệ giao sản phẩm.</div>' +
         veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm.', 'email') +
         veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
         '<p class="loi" data-loi="chung"></p>',
       day: '' +
-        '<button type="button" class="nut-day" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        '<button type="button" class="nut-day chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
+        '<button type="button" class="nut nut-chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',
       khiVe: function(){ capNhatFormKhachHang(); }
     });
   }

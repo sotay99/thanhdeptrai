@@ -33,6 +33,7 @@ const banNoi = manifest
   .map((ten) => (fs.existsSync(path.join(appRoot, ten)) ? fs.readFileSync(path.join(appRoot, ten), "utf8") : ""))
   .join("");
 const cssApp = doc("src/css/app.css");
+const cssBase = doc("src/css/base.css");
 
 // ---------------------------------------------------------------------------
 // 1) Đủ 7 sản phẩm, đúng tên và đúng giá.
@@ -111,12 +112,19 @@ if (!khoiThanhDay) {
 // ---------------------------------------------------------------------------
 // 6) Mọi modal đều có nút X ở góc trên bên phải và nút ở đáy bảng.
 // ---------------------------------------------------------------------------
-if (!/class="nut-x"\s+data-hanh-dong="dong-modal"/.test(banNoi)) {
+if (!/class="modal-x"\s+data-hanh-dong="dong-modal"/.test(banNoi)) {
   fail("Khung modal chung phải có nút X đóng bảng ở góc trên bên phải");
 }
 if (!/<div class="modal-day">/.test(banNoi)) {
   fail("Khung modal chung phải có phần đáy chứa nút đóng / quay lại");
 }
+if (!/function ganNutCuonModal\(/.test(banNoi) || !/function theoDoiNutCuonModal\(/.test(banNoi)) {
+  fail("Thiếu cơ chế tự chèn 2 nút cuộn lên đầu / xuống cuối cho mọi bảng phụ");
+}
+if (!/nut-cuon-modal/.test(cssBase)) {
+  fail("Thiếu khối CSS .nut-cuon-modal cho 2 nút cuộn của bảng phụ");
+}
+
 ["Quay lại bước trước", "Xác nhận đã thanh toán thành công", "Tiến hành thanh toán", "Đóng bảng"].forEach((chu) => {
   if (!banNoi.includes(chu)) fail(`Thiếu nút mang đúng tên tiếng Việt: “${chu}”`);
 });
