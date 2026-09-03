@@ -8,18 +8,26 @@
 
   // ------------------------------------------------------- CHUẨN HOÁ & KIỂM
 
+  // QUY TẮC CHUNG CHO CẢ BA TRƯỜNG: tuyệt đối KHÔNG có dấu cách bên trong ô
+  // nhập — kể cả dấu cách ở giữa, ở đầu, ở cuối, hay dán từ nơi khác vào. Khách
+  // hay dán số điện thoại kiểu "090 123 4567" hoặc email lẫn dấu cách thừa; gọt
+  // ngay lúc gõ thì nội dung chuyển khoản và đơn hàng không bao giờ dính lỗi đó.
+  function boDauCach(chuoi){
+    return String(chuoi == null ? '' : chuoi).replace(/\s+/g, '');
+  }
+
   // Số Zalo / số điện thoại: chỉ chữ số; nếu có dấu "+" thì đúng một dấu và
   // luôn đứng đầu; không quá 12 chữ số. Hàm này gọt thẳng chuỗi khách gõ nên
-  // ký tự sai không bao giờ vào được ô nhập.
+  // ký tự sai (dấu cách, chữ cái, ký hiệu) không bao giờ vào được ô nhập.
   function chuanHoaSo(chuoi){
-    const raw = String(chuoi == null ? '' : chuoi);
-    const coCong = raw.trim().charAt(0) === '+';
+    const raw = boDauCach(chuoi);
+    const coCong = raw.charAt(0) === '+';
     const so = raw.replace(/\D/g, '').slice(0, GIOI_HAN_SO);
     return (coCong ? '+' : '') + so;
   }
 
   function chuanHoaEmail(chuoi){
-    return String(chuoi == null ? '' : chuoi).replace(/\s/g, '').slice(0, GIOI_HAN_EMAIL);
+    return boDauCach(chuoi).slice(0, GIOI_HAN_EMAIL);
   }
 
   // Email hợp lệ: không quá 35 ký tự, có ít nhất một "@" và ít nhất một "."
@@ -143,8 +151,8 @@
       than: '' +
         veTomTatDon() +
         '<div class="ghi-chu">Vui lòng nhập <strong>ít nhất một</strong> trong ba trường dưới đây để shop liên hệ giao sản phẩm.</div>' +
-        veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm.', 'email') +
-        veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
+        veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm, không có dấu cách.', 'email') +
+        veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, không dấu cách, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
         '<p class="loi" data-loi="chung"></p>',
       day: '' +

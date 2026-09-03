@@ -271,6 +271,9 @@
   box-shadow: var(--bong);
   transition: border-color .18s, transform .18s, box-shadow .18s;
   overflow: hidden;
+  /* Bấm vào bất kỳ khoảng trống nào trong khung cũng là chọn/bỏ chọn sản phẩm */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* HIỆU ỨNG VÀO MODULE — mỗi thẻ trôi lên từ đúng mép dưới của chính nó

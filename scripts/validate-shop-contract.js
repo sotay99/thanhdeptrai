@@ -46,6 +46,8 @@ const SAN_PHAM_CHOT = [
   ["Bộ Khóa học dành cho Lightroom máy tính", 199000, 0],
   ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
   ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
+  ["Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)", 159000, 39000],
+  ["1000+ font chữ Việt Hoá cao cấp cho máy tính", 159000, 39000],
 ];
 
 SAN_PHAM_CHOT.forEach(([ten, giaGoc, giaChot], i) => {
@@ -64,8 +66,8 @@ SAN_PHAM_CHOT.forEach(([ten, giaGoc, giaChot], i) => {
 });
 
 const soSanPham = (banNoi.match(/\{\s*ma:\s*'sp\d+'/g) || []).length;
-if (soSanPham !== 7) {
-  fail(`Danh sách phải có đúng 7 sản phẩm, đang thấy ${soSanPham}`);
+if (soSanPham !== 9) {
+  fail(`Danh sách phải có đúng 9 sản phẩm, đang thấy ${soSanPham}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -78,8 +80,8 @@ if (khaiGiam.length !== 1) {
 } else if (!/=\s*10\s*;/.test(khaiGiam[0])) {
   fail(`Mỗi sản phẩm phải được giảm thêm 10%, đang thấy: ${khaiGiam[0]}`);
 }
-if (!/const\s+KHONG_TINH_GIAM_LAN_HAI\s*=\s*\['sp4',\s*'sp5'\]/.test(banNoi)) {
-  fail("Hai Bộ Khoá học (sp4, sp5) phải nằm ngoài mức giảm giá lần hai");
+if (!/const\s+KHONG_TINH_GIAM_LAN_HAI\s*=\s*\['sp4',\s*'sp5',\s*'sp8',\s*'sp9'\]/.test(banNoi)) {
+  fail("Bốn mã sp4, sp5, sp8, sp9 phải nằm ngoài mức giảm giá lần hai");
 }
 if (!/Math\.floor\(\(tongTien - tienGiam\) \/ 1000\) \* 1000/.test(banNoi)) {
   fail("Số tiền cuối cùng phải được làm tròn xuống hàng nghìn");
@@ -112,6 +114,14 @@ if (!/const\s+GIOI_HAN_EMAIL\s*=\s*35\s*;/.test(banNoi)) fail("Email phải gi�
 if (!/const\s+GIOI_HAN_SO\s*=\s*12\s*;/.test(banNoi)) fail("Số zalo / số điện thoại phải giới hạn 12 số");
 if (!/coItNhatMot\s*&&\s*khongLoi/.test(banNoi)) {
   fail("Phải bắt buộc nhập ít nhất một trong ba trường trước khi cho thanh toán");
+}
+// Cả ba trường đều phải gọt sạch dấu cách ngay lúc gõ / lúc dán vào.
+if (!/function boDauCach\(/.test(banNoi) || !/replace\(\/\\s\+\/g, ''\)/.test(banNoi)) {
+  fail("Email, số zalo và số điện thoại đều phải loại bỏ mọi dấu cách");
+}
+// Bấm vào khoảng trống của khung sản phẩm cũng là chọn / bỏ chọn.
+if (!/<article class="the-sanpham[\s\S]{0,220}data-hanh-dong="chon-san-pham"/.test(banNoi)) {
+  fail("Cả khung sản phẩm phải bấm được để chọn / bỏ chọn");
 }
 
 // ---------------------------------------------------------------------------
@@ -195,4 +205,4 @@ if (failures.length) {
   failures.forEach((m) => console.error(`- ${m}`));
   process.exit(1);
 }
-console.log("Hợp đồng phần bán hàng ĐẠT: 7 sản phẩm đúng giá gốc và giá chốt, giảm lần hai 10%/sản phẩm, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");
+console.log("Hợp đồng phần bán hàng ĐẠT: 9 sản phẩm đúng giá gốc và giá chốt, giảm lần hai 10%/sản phẩm, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");

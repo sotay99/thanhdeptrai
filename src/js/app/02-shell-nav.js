@@ -285,15 +285,18 @@
   // Modal văn bản dùng cho "Điều khoản sử dụng và điều kiện" và
   // "Bảo mật và quyền riêng tư" — hai mục này chưa có nội dung thật.
   function moModalVanBan(m){
+    // "Yêu cầu hoàn tiền" là chức năng sắp làm, còn hai mục kia là văn bản sắp
+    // viết — nói đúng việc đang diễn ra thay vì dùng chung một câu cho cả ba.
+    const dangThietKe = m.ma === 'hoan-tien';
     moModal({
       ma: 'van-ban-' + m.ma,
       tieuDe: m.ten,
       than: '' +
         '<div class="noi-dung-van-ban" style="text-align:center">' +
           '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">🛠️</p>' +
-          '<p><strong>Nội dung đang được nâng cấp.</strong></p>' +
+          '<p><strong>' + (dangThietKe ? 'Tính năng đang được thiết kế.' : 'Nội dung đang được nâng cấp.') + '</strong></p>' +
           '<p style="color:var(--chu-diu);margin-bottom:0">Phần “' + escapeHtml(m.ten) +
-          '” sẽ sớm có đầy đủ nội dung. Trong lúc chờ, mọi thắc mắc xin liên hệ trực tiếp với shop.</p>' +
+          '” sẽ sớm sẵn sàng. Trong lúc chờ, mọi thắc mắc xin liên hệ trực tiếp với shop.</p>' +
         '</div>',
       day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
     });

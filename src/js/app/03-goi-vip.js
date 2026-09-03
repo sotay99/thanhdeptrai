@@ -8,8 +8,14 @@
     const daChon = dangChon(sp.ma);
     const phanTram = phanTramGiamSanPham(sp);
     const choTroi = state.hieuUngVaoModule ? ' cho-troi-len' : '';
+    // Cả khung sản phẩm cũng là một vùng bấm chọn. Không cần xử lý gì thêm để
+    // tránh bấm hai lần: bộ phân phối sự kiện tìm phần tử [data-hanh-dong] GẦN
+    // NHẤT tính từ chỗ bấm, nên bấm trúng nút bên trong (Xem chi tiết / Chọn
+    // sản phẩm này) thì nút đó nhận, chỉ khi bấm vào khoảng trống của khung
+    // mới tới lượt chính khung.
     return '' +
-      '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + choTroi + '">' +
+      '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + choTroi +
+        '" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '">' +
         '<div class="so-thu-tu">SẢN PHẨM ' + (chiSo + 1) + '</div>' +
         '<h3 class="ten-sanpham">' + escapeHtml(sp.ten) + '</h3>' +
         '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +
@@ -36,7 +42,8 @@
         '<h2>Gói hàng VIP Lightroom</h2>' +
         '<p>Chọn những sản phẩm bạn cần, giá đã chốt hiện ngay ở thanh dưới đáy màn hình.</p>' +
         '<div class="bang-uu-dai"><span aria-hidden="true">🔥</span> Chọn càng nhiều càng rẻ: mỗi sản phẩm được giảm thêm ' +
-          GIAM_MOI_SAN_PHAM + '% ở bước chốt đơn — riêng hai Bộ Khoá học đang tặng miễn phí nên không tính vào mức giảm này</div>' +
+          GIAM_MOI_SAN_PHAM + '% ở bước chốt đơn — riêng hai Bộ Khoá học (đang tặng miễn phí), ' +
+          'Kho tài nguyên thiết kế và Bộ font chữ Việt Hoá thì không cộng vào mức giảm này</div>' +
       '</section>' +
       '<div class="luoi-sanpham">' +
         SAN_PHAM.map(veTheSanPham).join('') +

@@ -12,10 +12,11 @@
   // --------------------------------------------------------------- HẰNG SỐ
 
   // GIẢM GIÁ LẦN HAI — cứ chọn thêm một sản phẩm là được giảm thêm 10% trên
-  // tổng tiền. Hai Bộ Khoá học (sp4, sp5) đang tặng miễn phí nên KHÔNG tính
-  // vào mức giảm này; chọn chúng thì phần trăm giảm đứng yên.
+  // tổng tiền. Bốn sản phẩm KHÔNG tính vào mức giảm này (chọn chúng thì phần
+  // trăm giảm đứng yên): hai Bộ Khoá học đang tặng miễn phí (sp4, sp5) và hai
+  // gói tài nguyên đã bán dưới giá vốn (sp8, sp9).
   const GIAM_MOI_SAN_PHAM = 10;
-  const KHONG_TINH_GIAM_LAN_HAI = ['sp4', 'sp5'];
+  const KHONG_TINH_GIAM_LAN_HAI = ['sp4', 'sp5', 'sp8', 'sp9'];
 
   // Bảy sản phẩm của Gói hàng VIP Lightroom. Tên giữ nguyên văn theo yêu cầu
   // của chủ shop — sửa chữ hoặc sửa giá sẽ làm
@@ -32,7 +33,9 @@
     { ma: 'sp4', ten: 'Bộ Khóa học dành cho Lightroom điện thoại', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp5', ten: 'Bộ Khóa học dành cho Lightroom máy tính', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp6', ten: 'Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
-    { ma: 'sp7', ten: 'Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 }
+    { ma: 'sp7', ten: 'Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
+    { ma: 'sp8', ten: 'Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)', giaGoc: 159000, giaChot: 39000 },
+    { ma: 'sp9', ten: '1000+ font chữ Việt Hoá cao cấp cho máy tính', giaGoc: 159000, giaChot: 39000 }
   ];
 
   // Danh sách module trong menu bên trái.
@@ -41,8 +44,10 @@
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: false },
     { ma: 'goi-vip',          ten: 'Gói hàng VIP Lightroom',           bieuTuong: '★', kieu: 'trang', sanSang: true  },
+    { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học lightroom mobile',        bieuTuong: '▤', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khóa học lightroom máy tính',      bieuTuong: '▣', kieu: 'trang', sanSang: false },
+    { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
     { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
     { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false }
   ];
