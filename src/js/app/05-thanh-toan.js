@@ -390,6 +390,7 @@
       const ma = docHash();
       if (ma === state.module) return;
       state.module = ma;
+      state.hieuUngVaoModule = true;   // quay lại bằng nút Back cũng trôi lại
       render();
     });
   }
@@ -398,6 +399,7 @@
 
   function boot(){
     state.module = docHash();
+    state.hieuUngVaoModule = true;   // lần mở trang đầu tiên cũng có hiệu ứng trôi
     ganSuKien();
     theoDoiNutCuonModal();   // mọi bảng phụ, kể cả bảng viết sau này, tự có 2 nút cuộn
     render();

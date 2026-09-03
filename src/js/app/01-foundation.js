@@ -72,6 +72,10 @@
     thongTinCK: Object.assign({}, THONG_TIN_CK_DU_PHONG),
     daTaiThongTinCK: false,
     maDonHienTai: null,
+    // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
+    // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
+    // không làm cả lưới nhấp nháy trôi lại từ đầu.
+    hieuUngVaoModule: false,
     modal: []                    // chồng modal đang mở, phần tử cuối là modal trên cùng
   };
 

@@ -7,8 +7,9 @@
   function veTheSanPham(sp, chiSo){
     const daChon = dangChon(sp.ma);
     const phanTram = phanTramGiamSanPham(sp);
+    const choTroi = state.hieuUngVaoModule ? ' cho-troi-len' : '';
     return '' +
-      '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + '">' +
+      '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + choTroi + '">' +
         '<div class="so-thu-tu">SẢN PHẨM ' + (chiSo + 1) + '</div>' +
         '<h3 class="ten-sanpham">' + escapeHtml(sp.ten) + '</h3>' +
         '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +
@@ -76,6 +77,39 @@
           (t.soLuong === 0 ? 'Hãy chọn sản phẩm' : (chotDuoc ? 'Mua hàng' : 'Chưa có gì để thanh toán')) +
         '</button>' +
       '</div>';
+  }
+
+  // ------------------------------------------- HIỆU ỨNG TRÔI LÊN CỦA CÁC THẺ
+  //
+  // Mỗi thẻ nằm sẵn ở dưới đúng một chiều cao của chính nó, chờ lọt vào tầm
+  // nhìn mới trôi lên. Nhờ vậy màn hình lướt tới đâu sản phẩm hiện ra tới đó,
+  // thay vì cả 7 thẻ cùng chạy một lượt rồi thẻ dưới trôi xong lúc nào không ai
+  // thấy. Dùng IntersectionObserver nên không phải nghe sự kiện cuộn liên tục.
+
+  function ganHieuUngTroiLen(){
+    const the = document.querySelectorAll('.the-sanpham.cho-troi-len');
+    if (!the.length) return;
+
+    // Trình duyệt quá cũ không có IntersectionObserver: hiện thẳng, không hiệu ứng.
+    if (typeof IntersectionObserver !== 'function') {
+      the.forEach(function(el){ el.classList.remove('cho-troi-len'); });
+      state.hieuUngVaoModule = false;
+      return;
+    }
+
+    if (window.__theoDoiTroiLen) window.__theoDoiTroiLen.disconnect();
+    window.__theoDoiTroiLen = new IntersectionObserver(function(muc, boTheoDoi){
+      muc.forEach(function(m){
+        if (!m.isIntersecting) return;
+        m.target.classList.add('dang-troi-len');
+        boTheoDoi.unobserve(m.target);   // trôi xong là thôi, không lặp lại
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+
+    the.forEach(function(el){ window.__theoDoiTroiLen.observe(el); });
+
+    // Cờ đã dùng xong: những lần vẽ lại sau (bấm chọn sản phẩm) không trôi nữa.
+    state.hieuUngVaoModule = false;
   }
 
   // Chọn / bỏ chọn một sản phẩm rồi vẽ lại — thanh báo giá tự cập nhật theo.

@@ -84,6 +84,7 @@
       return;
     }
     state.module = m.ma;
+    state.hieuUngVaoModule = true;   // vào lại module bao nhiêu lần cũng trôi lại
     datHash(m.ma);
     render();
     if (window.scrollTo) window.scrollTo(0, 0);
@@ -361,4 +362,7 @@
         veNoiDungModule() +
       '</main>' +
       (coThanhDay ? veThanhBaoGia() : '');
+
+    // Gắn hiệu ứng NGAY SAU khi HTML mới đã nằm trong trang.
+    ganHieuUngTroiLen();
   }
