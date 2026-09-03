@@ -8,18 +8,26 @@
 
   // ------------------------------------------------------- CHUẨN HOÁ & KIỂM
 
+  // QUY TẮC CHUNG CHO CẢ BA TRƯỜNG: tuyệt đối KHÔNG có dấu cách bên trong ô
+  // nhập — kể cả dấu cách ở giữa, ở đầu, ở cuối, hay dán từ nơi khác vào. Khách
+  // hay dán số điện thoại kiểu "090 123 4567" hoặc email lẫn dấu cách thừa; gọt
+  // ngay lúc gõ thì nội dung chuyển khoản và đơn hàng không bao giờ dính lỗi đó.
+  function boDauCach(chuoi){
+    return String(chuoi == null ? '' : chuoi).replace(/\s+/g, '');
+  }
+
   // Số Zalo / số điện thoại: chỉ chữ số; nếu có dấu "+" thì đúng một dấu và
   // luôn đứng đầu; không quá 12 chữ số. Hàm này gọt thẳng chuỗi khách gõ nên
-  // ký tự sai không bao giờ vào được ô nhập.
+  // ký tự sai (dấu cách, chữ cái, ký hiệu) không bao giờ vào được ô nhập.
   function chuanHoaSo(chuoi){
-    const raw = String(chuoi == null ? '' : chuoi);
-    const coCong = raw.trim().charAt(0) === '+';
+    const raw = boDauCach(chuoi);
+    const coCong = raw.charAt(0) === '+';
     const so = raw.replace(/\D/g, '').slice(0, GIOI_HAN_SO);
     return (coCong ? '+' : '') + so;
   }
 
   function chuanHoaEmail(chuoi){
-    return String(chuoi == null ? '' : chuoi).replace(/\s/g, '').slice(0, GIOI_HAN_EMAIL);
+    return boDauCach(chuoi).slice(0, GIOI_HAN_EMAIL);
   }
 
   // Email hợp lệ: không quá 35 ký tự, có ít nhất một "@" và ít nhất một "."
@@ -109,14 +117,14 @@
     const t = tinhTien();
     const dong = sanPhamDaChon().map(function(sp){
       return '<div class="dong-sp"><span class="ten">' + escapeHtml(sp.ten) + '</span>' +
-        '<span class="gia">' + dinhDangTien(sp.gia) + '</span></div>';
+        '<span class="gia">' + dinhDangTien(sp.giaChot) + '</span></div>';
     }).join('');
     return '' +
       '<div class="tom-tat-don">' +
         dong +
         '<div class="dong-tong"><span class="nhan">Tổng trị giá ' + t.soLuong + ' sản phẩm</span>' +
           '<span class="tri">' + dinhDangTien(t.tongTien) + '</span></div>' +
-        '<div class="dong-tong"><span class="nhan">Giảm giá ' + t.phanTramGiam + '%</span>' +
+        '<div class="dong-tong"><span class="nhan">Giảm giá lần hai ' + t.phanTramGiam + '%</span>' +
           '<span class="tri" style="color:var(--la)">− ' + dinhDangTien(t.tienGiam) + '</span></div>' +
         '<div class="dong-tong chot"><span class="nhan">Số tiền cuối cùng</span>' +
           '<span class="tri">' + dinhDangTien(t.thanhTien) + '</span></div>' +
@@ -125,7 +133,7 @@
 
   function veOTruong(ten, nhan, giaTri, goiY, kieu){
     return '' +
-      '<div class="nhom-truong">' +
+      '<div class="truong">' +
         '<label for="o-' + ten + '">' + escapeHtml(nhan) + '</label>' +
         '<input id="o-' + ten + '" type="' + kieu + '" data-truong="' + ten + '" value="' + escapeHtml(giaTri) +
           '" autocomplete="off" inputmode="' + (kieu === 'email' ? 'email' : 'tel') + '">' +
@@ -142,14 +150,14 @@
       tieuDe: 'Xác nhận đơn hàng',
       than: '' +
         veTomTatDon() +
-        '<div class="ghi-chu-bat-buoc">Vui lòng nhập <strong>ít nhất một</strong> trong ba trường dưới đây để shop liên hệ giao sản phẩm.</div>' +
-        veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm.', 'email') +
-        veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
+        '<div class="ghi-chu">Vui lòng nhập <strong>ít nhất một</strong> trong ba trường dưới đây để shop liên hệ giao sản phẩm.</div>' +
+        veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm, không có dấu cách.', 'email') +
+        veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, không dấu cách, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
         '<p class="loi" data-loi="chung"></p>',
       day: '' +
-        '<button type="button" class="nut-day" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        '<button type="button" class="nut-day chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
+        '<button type="button" class="nut nut-chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',
       khiVe: function(){ capNhatFormKhachHang(); }
     });
   }

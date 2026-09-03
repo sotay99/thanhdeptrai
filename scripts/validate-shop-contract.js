@@ -33,45 +33,64 @@ const banNoi = manifest
   .map((ten) => (fs.existsSync(path.join(appRoot, ten)) ? fs.readFileSync(path.join(appRoot, ten), "utf8") : ""))
   .join("");
 const cssApp = doc("src/css/app.css");
+const cssBase = doc("src/css/base.css");
 
 // ---------------------------------------------------------------------------
 // 1) Đủ 7 sản phẩm, đúng tên và đúng giá.
 // ---------------------------------------------------------------------------
 const SAN_PHAM_CHOT = [
-  ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000],
-  ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000],
-  ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000],
-  ["Bộ Khóa học dành cho Lightroom điện thoại", 199000],
-  ["Bộ Khóa học dành cho Lightroom máy tính", 199000],
-  ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000],
-  ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000],
+  ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000, 99000],
+  ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000, 79000],
+  ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000, 179000],
+  ["Bộ Khóa học dành cho Lightroom điện thoại", 199000, 0],
+  ["Bộ Khóa học dành cho Lightroom máy tính", 199000, 0],
+  ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
+  ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
+  ["Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)", 159000, 39000],
+  ["1000+ font chữ Việt Hoá cao cấp cho máy tính", 159000, 39000],
 ];
 
-SAN_PHAM_CHOT.forEach(([ten, gia], i) => {
+SAN_PHAM_CHOT.forEach(([ten, giaGoc, giaChot], i) => {
   if (!banNoi.includes(ten)) {
-    fail(`Thiếu (hoặc sai chữ) tên sản phẩm ${i + 1}: “${ten}”`);
+    fail(`Thiếu (hoặc sai chữ) tên sản phẩm ${i + 1}: \u201c${ten}\u201d`);
     return;
   }
   const viTri = banNoi.indexOf(ten);
-  const doanSau = banNoi.slice(viTri, viTri + ten.length + 60);
-  if (!new RegExp(`gia:\\s*${gia}\\b`).test(doanSau)) {
-    fail(`Sản phẩm ${i + 1} (“${ten}”) không còn khai giá ${gia}`);
+  const doanSau = banNoi.slice(viTri, viTri + ten.length + 80);
+  if (!new RegExp(`giaGoc:\\s*${giaGoc}\\b`).test(doanSau)) {
+    fail(`Sản phẩm ${i + 1} không còn khai giá gốc ${giaGoc}`);
+  }
+  if (!new RegExp(`giaChot:\\s*${giaChot}\\b`).test(doanSau)) {
+    fail(`Sản phẩm ${i + 1} không còn khai giá chốt ${giaChot}`);
   }
 });
 
 const soSanPham = (banNoi.match(/\{\s*ma:\s*'sp\d+'/g) || []).length;
-if (soSanPham !== 7) {
-  fail(`Danh sách phải có đúng 7 sản phẩm, đang thấy ${soSanPham}`);
+if (soSanPham !== 9) {
+  fail(`Danh sách phải có đúng 9 sản phẩm, đang thấy ${soSanPham}`);
 }
 
 // ---------------------------------------------------------------------------
-// 2) Mức giảm giá mặc định 50%, khai đúng một chỗ.
+// 2) Giảm giá lần hai: mỗi sản phẩm thêm 10%, trừ hai Bộ Khoá học miễn phí.
+//    Số tiền cuối cùng làm tròn XUỐNG hàng nghìn, và phải > 0 mới cho chốt đơn.
 // ---------------------------------------------------------------------------
-const khaiGiam = banNoi.match(/const\s+PHAN_TRAM_GIAM\s*=\s*(\d+)\s*;/g) || [];
+const khaiGiam = banNoi.match(/const\s+GIAM_MOI_SAN_PHAM\s*=\s*(\d+)\s*;/g) || [];
 if (khaiGiam.length !== 1) {
-  fail(`PHAN_TRAM_GIAM phải được khai đúng 1 lần, đang thấy ${khaiGiam.length} lần`);
-} else if (!/=\s*50\s*;/.test(khaiGiam[0])) {
-  fail(`Mức giảm giá mặc định phải là 50%, đang thấy: ${khaiGiam[0]}`);
+  fail(`GIAM_MOI_SAN_PHAM phải được khai đúng 1 lần, đang thấy ${khaiGiam.length} lần`);
+} else if (!/=\s*10\s*;/.test(khaiGiam[0])) {
+  fail(`Mỗi sản phẩm phải được giảm thêm 10%, đang thấy: ${khaiGiam[0]}`);
+}
+if (!/const\s+KHONG_TINH_GIAM_LAN_HAI\s*=\s*\['sp4',\s*'sp5',\s*'sp8',\s*'sp9'\]/.test(banNoi)) {
+  fail("Bốn mã sp4, sp5, sp8, sp9 phải nằm ngoài mức giảm giá lần hai");
+}
+if (!/Math\.floor\(\(tongTien - tienGiam\) \/ 1000\) \* 1000/.test(banNoi)) {
+  fail("Số tiền cuối cùng phải được làm tròn xuống hàng nghìn");
+}
+if (!/t\.soLuong > 0 && t\.thanhTien > 0/.test(banNoi)) {
+  fail("Chỉ được bấm Mua hàng khi số tiền cuối cùng lớn hơn 0");
+}
+if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
+  fail("Phần trăm giảm của từng sản phẩm phải tính ra từ giá gốc và giá chốt");
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +115,14 @@ if (!/const\s+GIOI_HAN_SO\s*=\s*12\s*;/.test(banNoi)) fail("Số zalo / số đi
 if (!/coItNhatMot\s*&&\s*khongLoi/.test(banNoi)) {
   fail("Phải bắt buộc nhập ít nhất một trong ba trường trước khi cho thanh toán");
 }
+// Cả ba trường đều phải gọt sạch dấu cách ngay lúc gõ / lúc dán vào.
+if (!/function boDauCach\(/.test(banNoi) || !/replace\(\/\\s\+\/g, ''\)/.test(banNoi)) {
+  fail("Email, số zalo và số điện thoại đều phải loại bỏ mọi dấu cách");
+}
+// Bấm vào khoảng trống của khung sản phẩm cũng là chọn / bỏ chọn.
+if (!/<article class="the-sanpham[\s\S]{0,220}data-hanh-dong="chon-san-pham"/.test(banNoi)) {
+  fail("Cả khung sản phẩm phải bấm được để chọn / bỏ chọn");
+}
 
 // ---------------------------------------------------------------------------
 // 5) Thanh báo giá phải NEO ở đáy màn hình.
@@ -111,13 +138,29 @@ if (!khoiThanhDay) {
 // ---------------------------------------------------------------------------
 // 6) Mọi modal đều có nút X ở góc trên bên phải và nút ở đáy bảng.
 // ---------------------------------------------------------------------------
-if (!/class="nut-x"\s+data-hanh-dong="dong-modal"/.test(banNoi)) {
+if (!/class="modal-x"\s+data-hanh-dong="dong-modal"/.test(banNoi)) {
   fail("Khung modal chung phải có nút X đóng bảng ở góc trên bên phải");
 }
 if (!/<div class="modal-day">/.test(banNoi)) {
   fail("Khung modal chung phải có phần đáy chứa nút đóng / quay lại");
 }
-["Quay lại bước trước", "Xác nhận đã thanh toán thành công", "Tiến hành thanh toán", "Đóng bảng"].forEach((chu) => {
+if (!/function ganNutCuonModal\(/.test(banNoi) || !/function theoDoiNutCuonModal\(/.test(banNoi)) {
+  fail("Thiếu cơ chế tự chèn 2 nút cuộn lên đầu / xuống cuối cho mọi bảng phụ");
+}
+if (!/nut-cuon-modal/.test(cssBase)) {
+  fail("Thiếu khối CSS .nut-cuon-modal cho 2 nút cuộn của bảng phụ");
+}
+
+// Bảng phụ KHÔNG được tự đóng khi bấm ra vùng tối bên ngoài — khách đang nhập
+// dở đơn hàng mà lỡ tay bấm trượt là mất sạch.
+if (/dong-modal-neu-ngoai/.test(banNoi)) {
+  fail("Bảng phụ không được tự đóng khi bấm ra ngoài — chỉ nút X hoặc nút ở đáy mới đóng được");
+}
+if (!/data-hanh-dong="xem-chi-tiet"/.test(banNoi) || !/function moModalChiTietSanPham\(/.test(banNoi)) {
+  fail("Mỗi sản phẩm phải có nút “Xem chi tiết sản phẩm” mở ra bảng chi tiết riêng");
+}
+
+["Quay lại bước trước", "Xác nhận đã thanh toán thành công", "Tiến hành thanh toán", "Đóng bảng", "Xem chi tiết sản phẩm"].forEach((chu) => {
   if (!banNoi.includes(chu)) fail(`Thiếu nút mang đúng tên tiếng Việt: “${chu}”`);
 });
 
@@ -162,4 +205,4 @@ if (failures.length) {
   failures.forEach((m) => console.error(`- ${m}`));
   process.exit(1);
 }
-console.log("Hợp đồng phần bán hàng ĐẠT: 7 sản phẩm đúng giá, giảm 50%, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");
+console.log("Hợp đồng phần bán hàng ĐẠT: 9 sản phẩm đúng giá gốc và giá chốt, giảm lần hai 10%/sản phẩm, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");
