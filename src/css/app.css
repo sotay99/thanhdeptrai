@@ -70,10 +70,22 @@
   background: var(--the-2);
   border: 1px solid rgba(49, 168, 255, .45);
   box-shadow: var(--bong-noi);
-  transition: background .18s, border-color .18s;
+  /* Cùng nhịp .3s với chuyển động trượt của khung menu, để nút và mép khung
+     đi tới đích cùng lúc thay vì nút chạy trước một nhịp. */
+  transition: background .18s, border-color .18s, left .3s ease;
 }
 
 .nut-noi:hover { background: var(--the-3); border-color: var(--xanh); }
+
+/* Menu đang mở: nút hoá thành dấu X đóng khung, đồng thời trượt sang nằm SÁT
+   MÉP PHẢI bên trong khung menu — vẫn nguyên độ cao cũ. Con số 264px và 80vw
+   phải khớp với chiều rộng .menu-trai bên dưới. */
+.nut-noi.menu-dang-mo {
+  left: calc(min(80vw, 264px) - 52px);
+  border-color: var(--vien-sang);
+}
+
+.nut-noi.menu-dang-mo:hover { border-color: var(--do); }
 
 .nut-noi .vach {
   width: 17px;
@@ -293,6 +305,7 @@
   flex: 1;
 }
 
+.the-sanpham .nut-chi-tiet { margin-bottom: 10px; }
 .the-sanpham .hang-gia { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
 .the-sanpham .gia { font-size: 17px; font-weight: 800; color: var(--cam); }
 .the-sanpham .gia-goc { font-size: 12px; color: var(--chu-mo); text-decoration: line-through; }

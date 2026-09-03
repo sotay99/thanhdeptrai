@@ -229,6 +229,10 @@
   // Quy ước bắt buộc cho MỌI bảng phụ của web này: có nút X ở góc trên bên
   // phải, ở đáy luôn có nút đóng bảng hoặc nút quay lại bước trước, và 2 nút
   // cuộn ở mép phải màn hình (tự chèn, không phải khai báo).
+  //
+  // CỐ Ý KHÔNG đóng bảng khi bấm ra vùng tối bên ngoài: khách đang nhập dở
+  // thông tin đơn hàng mà lỡ tay bấm trượt là mất sạch. Chỉ nút X hoặc nút ở
+  // đáy bảng mới đóng được.
 
   function veChongModal(){
     const el = lopModal();
@@ -239,7 +243,7 @@
     }
     el.innerHTML = state.modal.map(function(m){
       return '' +
-        '<div class="modal-lop" data-ma-modal="' + escapeHtml(m.ma) + '" data-hanh-dong="dong-modal-neu-ngoai" role="dialog" aria-modal="true" aria-label="' + escapeHtml(m.tieuDe) + '">' +
+        '<div class="modal-lop" data-ma-modal="' + escapeHtml(m.ma) + '" role="dialog" aria-modal="true" aria-label="' + escapeHtml(m.tieuDe) + '">' +
           '<div class="modal">' +
             '<button type="button" class="modal-x" data-hanh-dong="dong-modal" aria-label="Đóng bảng">✕</button>' +
             '<div class="modal-dau"><h2>' + escapeHtml(m.tieuDe) + '</h2></div>' +
@@ -292,6 +296,28 @@
     });
   }
 
+  function moModalChiTietSanPham(ma){
+    const sp = timSanPham(ma);
+    if (!sp) return;
+    moModal({
+      ma: 'chi-tiet-' + sp.ma,
+      tieuDe: 'Chi tiết sản phẩm',
+      than: '' +
+        '<div class="noi-dung-van-ban">' +
+          '<h3 style="margin:0 0 4px">' + escapeHtml(sp.ten) + '</h3>' +
+          '<p class="chu-tien" style="font-size:17px">' + dinhDangTien(sp.gia - Math.round(sp.gia * PHAN_TRAM_GIAM / 100)) +
+            ' <span style="font-size:12px;color:var(--chu-mo);text-decoration:line-through;font-weight:500">' +
+            dinhDangTien(sp.gia) + '</span></p>' +
+          '<div style="text-align:center;padding:18px 0 4px">' +
+            '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">🛠️</p>' +
+            '<p><strong>Phần mô tả chi tiết đang được nâng cấp.</strong></p>' +
+            '<p style="color:var(--chu-diu);margin-bottom:0">Nội dung riêng của từng sản phẩm sẽ sớm được bổ sung đầy đủ tại đây.</p>' +
+          '</div>' +
+        '</div>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
+    });
+  }
+
   // ---------------------------------------------------- VẼ TOÀN BỘ GIAO DIỆN
 
   function veNoiDungModule(){
@@ -317,8 +343,9 @@
     const coThanhDay = !!(m && m.ma === 'goi-vip');
 
     el.innerHTML = '' +
-      '<button type="button" class="nut-noi" data-hanh-dong="doi-menu" aria-label="Chuyển module" aria-expanded="' +
-        (state.menuMo ? 'true' : 'false') + '">' +
+      '<button type="button" class="nut-noi' + (state.menuMo ? ' menu-dang-mo' : '') +
+        '" data-hanh-dong="doi-menu" aria-label="' + (state.menuMo ? 'Đóng menu' : 'Chuyển module') +
+        '" aria-expanded="' + (state.menuMo ? 'true' : 'false') + '">' +
         '<span class="vach"></span><span class="vach"></span><span class="vach"></span>' +
       '</button>' +
       veMenuTrai() +

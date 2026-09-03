@@ -11,6 +11,8 @@
       '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + '">' +
         '<div class="so-thu-tu">SẢN PHẨM ' + (chiSo + 1) + '</div>' +
         '<h3 class="ten-sanpham">' + escapeHtml(sp.ten) + '</h3>' +
+        '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +
+          escapeHtml(sp.ma) + '">Xem chi tiết sản phẩm</button>' +
         '<div class="hang-gia">' +
           '<span class="gia">' + dinhDangTien(giaSauGiam) + '</span>' +
           '<span class="gia-goc">' + dinhDangTien(sp.gia) + '</span>' +

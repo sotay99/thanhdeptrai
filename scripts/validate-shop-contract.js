@@ -125,7 +125,16 @@ if (!/nut-cuon-modal/.test(cssBase)) {
   fail("Thiếu khối CSS .nut-cuon-modal cho 2 nút cuộn của bảng phụ");
 }
 
-["Quay lại bước trước", "Xác nhận đã thanh toán thành công", "Tiến hành thanh toán", "Đóng bảng"].forEach((chu) => {
+// Bảng phụ KHÔNG được tự đóng khi bấm ra vùng tối bên ngoài — khách đang nhập
+// dở đơn hàng mà lỡ tay bấm trượt là mất sạch.
+if (/dong-modal-neu-ngoai/.test(banNoi)) {
+  fail("Bảng phụ không được tự đóng khi bấm ra ngoài — chỉ nút X hoặc nút ở đáy mới đóng được");
+}
+if (!/data-hanh-dong="xem-chi-tiet"/.test(banNoi) || !/function moModalChiTietSanPham\(/.test(banNoi)) {
+  fail("Mỗi sản phẩm phải có nút “Xem chi tiết sản phẩm” mở ra bảng chi tiết riêng");
+}
+
+["Quay lại bước trước", "Xác nhận đã thanh toán thành công", "Tiến hành thanh toán", "Đóng bảng", "Xem chi tiết sản phẩm"].forEach((chu) => {
   if (!banNoi.includes(chu)) fail(`Thiếu nút mang đúng tên tiếng Việt: “${chu}”`);
 });
 

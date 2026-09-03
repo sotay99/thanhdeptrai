@@ -353,17 +353,13 @@
     if (!nutHanhDong) return;
     const hanhDong = nutHanhDong.getAttribute('data-hanh-dong');
 
-    // Bấm vào NỀN TỐI quanh modal thì đóng modal; bấm vào trong modal thì không.
-    if (hanhDong === 'dong-modal-neu-ngoai') {
-      if (dich === nutHanhDong) dongModal();
-      return;
-    }
     // Lớp phủ của menu: bấm ra ngoài menu thì menu tự ẩn.
     if (hanhDong === 'dong-menu') { dongMenu(); return; }
 
     if (hanhDong === 'doi-menu') { doiMenu(); return; }
     if (hanhDong === 'mo-module') { moModule(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'chon-san-pham') { chonSanPham(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'xem-chi-tiet') { moModalChiTietSanPham(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'mua-hang') { moModalDonHang(); return; }
     if (hanhDong === 'dong-modal') { dongModal(); return; }
     if (hanhDong === 'tien-hanh-thanh-toan') { moModalThanhToan(); return; }
