@@ -1,0 +1,126 @@
+/* =============================================================================
+   NỀN TẢNG GIAO DIỆN — bảng màu, chữ, reset.
+   Tone màu lấy theo Adobe Lightroom: nền xám than nhiều tầng, chữ sáng,
+   điểm nhấn xanh Adobe. Mọi màu dùng trong app.css đều gọi qua biến ở đây,
+   đổi tone chỉ cần sửa một chỗ.
+   ========================================================================== */
+
+:root {
+  /* Nền: bốn tầng từ sâu nhất tới nổi nhất */
+  --nen-sau: #141414;
+  --nen: #1e1e1e;
+  --nen-noi: #252525;
+  --the: #2b2b2b;
+  --the-nhat: #333333;
+
+  /* Viền */
+  --vien: #3d3d3d;
+  --vien-sang: #4d4d4d;
+
+  /* Chữ */
+  --chu: #ebebeb;
+  --chu-diu: #a8a8a8;
+  --chu-mo: #7a7a7a;
+
+  /* Điểm nhấn */
+  --xanh: #31a8ff;          /* xanh Adobe — viền chọn, liên kết, tiêu điểm */
+  --xanh-dam: #1473e6;      /* nút hành động chính */
+  --xanh-dam-hover: #0d66d0;
+  --la: #2d9d5f;            /* xác nhận, "đã sao chép" */
+  --la-dam: #22834e;
+  --cam: #ffa72e;           /* giá tiền, nhấn mạnh khuyến mãi */
+  --do: #ec5b56;            /* báo lỗi nhập liệu */
+
+  /* Bóng đổ */
+  --bong-the: 0 1px 3px rgba(0, 0, 0, .45);
+  --bong-noi: 0 8px 28px rgba(0, 0, 0, .55);
+  --bong-modal: 0 24px 64px rgba(0, 0, 0, .7);
+
+  /* Bo góc */
+  --bo: 10px;
+  --bo-lon: 16px;
+
+  /* Chiều cao thanh báo giá neo đáy — app.css chừa đúng khoảng này ở cuối trang */
+  --cao-thanh-day: 132px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--nen);
+  color: var(--chu);
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Cỡ chữ gốc: to rõ trên điện thoại, vừa mắt trên máy tính (xem @media dưới) */
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 720px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+/* Khoá cuộn nền khi menu hoặc modal đang mở */
+body.khoa-cuon {
+  overflow: hidden;
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 .5em;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: var(--xanh);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* Vành tiêu điểm dùng chung cho bàn phím — không bao giờ tắt outline */
+:focus-visible {
+  outline: 2px solid var(--xanh);
+  outline-offset: 2px;
+}
+
+/* Tôn trọng người dùng đã tắt hiệu ứng chuyển động trong hệ điều hành */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}

@@ -1,0 +1,93 @@
+name: Deploy preview channel
+
+# Tạo BẢN XEM TRƯỚC cho một nhánh: một địa chỉ web thật, chạy trên chính hạ tầng
+# Firebase Hosting, nhưng nằm ở "channel" riêng — KHÔNG đụng gì tới trang thật
+# (thanhdeptrai.vn) và tự hết hạn sau 7 ngày.
+#
+# Địa chỉ sinh ra từ TÊN NHÁNH nên giữ nguyên qua mọi lần đẩy của cùng nhánh đó;
+# mỗi lần đẩy làm mới nội dung và gia hạn thêm 7 ngày.
+
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Đặt tên channel theo tên nhánh
+        id: channel
+        shell: bash
+        run: |
+          # Tên channel chỉ được chứa chữ thường, số và dấu gạch ngang; tối đa 63 ký tự.
+          raw="${GITHUB_REF_NAME}"
+          name="$(tr '[:upper:]' '[:lower:]' <<< "$raw" | sed 's/[^a-z0-9-]/-/g; s/-\+/-/g; s/^-//; s/-$//')"
+          name="${name:0:50}"
+          [[ -z "$name" ]] && name="preview"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "Channel: $name  (từ nhánh $raw)"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Write service account key to file
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/firebase-key.json
+
+      # Hook predeploy trong firebase.json tự chạy build + cả 3 script kiểm tra,
+      # nên bản xem trước chịu đúng bộ kiểm tra như trang thật.
+      - name: Deploy bản xem trước
+        id: deploy
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json
+        shell: bash
+        run: |
+          set -o pipefail
+          # KHÔNG dùng --json: cờ đó nuốt sạch mọi thông báo, kể cả thông báo lỗi,
+          # khiến lần chạy hỏng mà không để lại dấu vết nào để lần ra nguyên nhân.
+          set +e
+          firebase hosting:channel:deploy "${{ steps.channel.outputs.name }}" \
+            --project default \
+            --expires 7d 2>&1 | tee /tmp/channel.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          echo "───── firebase thoát với mã: $status ─────"
+          if [[ $status -ne 0 ]]; then
+            echo "::error::firebase hosting:channel:deploy thất bại (mã $status). Xem log phía trên."
+            exit $status
+          fi
+
+          # Bóc ĐÚNG dòng "Channel URL". Firebase còn in một dòng "Hosting URL:" trỏ tới
+          # địa chỉ TRANG THẬT — bắt nhầm dòng đó sẽ đưa người xem tới trang thật.
+          url="$(grep 'Channel URL' /tmp/channel.log | grep -oE 'https://[A-Za-z0-9._-]+\.web\.app' | head -1)"
+          if [[ -z "$url" ]]; then
+            echo "::error::firebase báo thành công nhưng không tìm thấy dòng 'Channel URL' trong đầu ra."
+            exit 1
+          fi
+          # Chốt chặn: địa chỉ channel LUÔN có '--' ngăn giữa tên site và tên channel.
+          if [[ "$url" != *"--"* ]]; then
+            echo "::error::Địa chỉ bóc được ($url) không phải địa chỉ channel — thiếu dấu '--'."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: In địa chỉ xem trước
+        run: |
+          echo "### Bản xem trước" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Bản xem trước: ${{ steps.deploy.outputs.url }}"
