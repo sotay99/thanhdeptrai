@@ -1,0 +1,45 @@
+name: Deploy to Firebase Hosting
+
+# Đẩy lên main là DEPLOY THẲNG RA TRANG THẬT cho khách hàng.
+# Chỉ có hosting — website này không dùng Cloud Function.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "src/**"
+      - "scripts/**"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/deploy.yml"
+
+concurrency:
+  group: firebase-production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Write service account key to file
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/firebase-key.json
+
+      # Hook predeploy trong firebase.json tự chạy build + cả 3 script kiểm tra.
+      - name: Deploy to Firebase
+        run: firebase deploy --only hosting --project default
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json

@@ -1,0 +1,34 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "thongtinthanhtoan": {
+      "//": "Thông tin chuyển khoản: cả web đọc công khai (khách không đăng nhập), nhưng KHÔNG ai ghi được từ trình duyệt. Sửa số tài khoản thì sửa thẳng trong Firebase Console.",
+      ".read": true,
+      ".write": false
+    },
+
+    "donhang": {
+      "//": "Đơn hàng: cho TẠO MỚI và cho cập nhật cờ xác nhận, nhưng KHÔNG cho đọc — khách này không xem được đơn của khách khác. Chủ shop xem trong Firebase Console.",
+      ".read": false,
+      "$madon": {
+        ".read": false,
+        ".write": true,
+        ".validate": "newData.hasChildren(['sanPham', 'thanhTien', 'taoLuc'])",
+        "sanPham": { ".validate": "newData.hasChildren()" },
+        "tongTien": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "phanTramGiam": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+        "thanhTien": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "email": { ".validate": "newData.isString() && newData.val().length <= 35" },
+        "zalo": { ".validate": "newData.isString() && newData.val().length <= 13" },
+        "dienThoai": { ".validate": "newData.isString() && newData.val().length <= 13" },
+        "noiDungCK": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "taoLuc": { ".validate": "newData.isNumber()" },
+        "daXacNhan": { ".validate": "newData.isBoolean()" },
+        "xacNhanLuc": { ".validate": "newData.isNumber()" },
+        "$khac": { ".validate": false }
+      }
+    }
+  }
+}
