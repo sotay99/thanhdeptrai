@@ -1,6 +1,6 @@
   /* =====================================================================
      CẤU HÌNH FIREBASE — THAY CÁC GIÁ TRỊ BÊN DƯỚI BẰNG THÔNG SỐ DỰ ÁN
-     FIREBASE THẬT CỦA SHOP (Firebase Console > Project settings > General >
+     FIREBASE CỦA SHOP (Firebase Console > Project settings > General >
      Your apps > SDK setup and configuration > Config).
 
      Website này KHÔNG có đăng nhập. Firebase ở đây chỉ dùng hai việc:
@@ -18,13 +18,13 @@
      hoá — đừng đặt bí mật thật sự (khoá API riêng tư, mật khẩu) vào đây.
   ===================================================================== */
   const firebaseConfig = {
-    apiKey: "",
-    authDomain: "",
-    databaseURL: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyBv5d3iGzJncZZ-xTEsUzLblBSm1NkYnX4",
+    authDomain: "thanhdeptraishop.firebaseapp.com",
+    databaseURL: "https://thanhdeptraishop-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "thanhdeptraishop",
+    storageBucket: "thanhdeptraishop.firebasestorage.app",
+    messagingSenderId: "588471551838",
+    appId: "1:588471551838:web:f87770ce5ed4ce94b231cf"
   };
 
   // Khi cấu hình còn trống (chưa dán config vào), KHÔNG khởi tạo Firebase —
