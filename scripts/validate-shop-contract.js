@@ -198,7 +198,40 @@ SAN_PHAM_CHOT.forEach((_, i) => {
 });
 
 // ---------------------------------------------------------------------------
-// 8) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 8) NÚT TRONG BẢNG CHI TIẾT VÀ KHU QUÀ TẶNG CUỐI MODULE
+// ---------------------------------------------------------------------------
+[
+  [/data-hanh-dong="chon-tu-chi-tiet"/, 'nút "Chọn sản phẩm này" trong bảng chi tiết'],
+  [/function\s+chonTuBangChiTiet\s*\(/, "hàm chọn sản phẩm từ bảng chi tiết"],
+  [/data-hanh-dong="vao-hoc-ngay"/, 'nút "Vào học ngay" của hai bộ khoá học'],
+  [/sp4:\s*'khoa-hoc-mobile'/, "sp4 dẫn sang module Khoá học Lightroom điện thoại"],
+  [/sp5:\s*'khoa-hoc-may-tinh'/, "sp5 dẫn sang module Khoá học Lightroom máy tính"],
+  [/data-chu-cuoi/, "chữ kết thúc của số tiền nhảy trong bảng chi tiết"],
+  [/khiVe:\s*function\(\)\{[\s\S]{0,220}?chayNhaySo\(/, "giá chốt nhảy số lại mỗi lần mở bảng chi tiết"],
+  [/Xem và nhận quà tặng của shop mà không cần mua hàng gì cả:/, "dòng mời quà cuối module"],
+  [/Nhận quà tặng của Shop mà không cần mua hàng/, "nút mời quà ngay dưới dòng ưu đãi"],
+  [/data-hanh-dong="xuong-qua-tang"/, "hành động cuộn xuống khu quà tặng"],
+  [/data-hanh-dong="cuon-len-dau"/, "nút cuộn lên đầu trang"],
+  [/const\s+QUA_TANG\s*=\s*\[/, "danh sách ba nút quà tặng"],
+  [/module:\s*'qua-tang-android'/, "nút quà dẫn sang module Quà tặng cho người dùng điện thoại android"],
+  [/module:\s*'khoa-hoc-mobile'/, "nút quà dẫn sang module Khoá học Lightroom điện thoại"],
+  [/module:\s*'khoa-hoc-may-tinh'/, "nút quà dẫn sang module Khoá học Lightroom máy tính"],
+  [/classList\.add\('nhay-qua-tang'\)/, "bật hiệu ứng nhảy múa của dòng mời quà"],
+  [/function\s+doChoThanhDay\s*\(/, "đo chiều cao thật của thanh neo đáy để chừa chỗ cuối trang"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+[
+  [/@keyframes\s+nhay-dong-qua-tang\s*\{[\s\S]*?scale\(1\.7\)/, "nhịp phóng to 1,7 lần của dòng mời quà"],
+  [/\.dong-qua-tang\.nhay-qua-tang\s*\{[^}]*animation:[^;]*\s5\s/, "dòng mời quà nhảy đúng 5 lần rồi đứng im"],
+  [/\.nut-len-dau\s*\{/, "kiểu riêng cho nút cuộn lên đầu trang"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 9) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

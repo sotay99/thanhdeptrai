@@ -322,14 +322,33 @@
     });
   }
 
+  // Hai bộ khoá học không bán rời mà là quà tặng, nên bảng chi tiết của chúng
+  // KHÔNG có nút chọn hàng — thay bằng nút dẫn thẳng sang module khoá học.
+  const MODULE_KHOA_HOC = {
+    sp4: 'khoa-hoc-mobile',
+    sp5: 'khoa-hoc-may-tinh'
+  };
+
   // Bảng phụ "Chi tiết sản phẩm": đầu bảng là tên và giá, thân bảng là các khối
   // mô tả lấy từ PHẦN 01B. Các khối tự trôi từ phải qua trái, lần lượt từ trên
   // xuống — hiệu ứng nằm hết trong CSS, chạy ngay khi bảng mở, khách KHÔNG cần
   // cuộn màn hình mới thấy khối bên dưới xuất hiện.
+  //
+  // Giá chốt bắt đầu hiện ĐÚNG BẰNG giá gốc rồi mới đếm dần về giá thật, giống
+  // hệt lúc thẻ sản phẩm trôi lên ngoài lưới. Việc đếm nằm trong khiVe nên mở
+  // bảng bao nhiêu lần cũng chạy lại bấy nhiêu lần.
   function moModalChiTietSanPham(ma){
     const sp = timSanPham(ma);
     if (!sp) return;
     const mienPhi = !sp.giaChot;
+    const chuGiaCuoi = mienPhi ? 'MIỄN PHÍ' : dinhDangTien(sp.giaChot);
+    const maKhoaHoc = MODULE_KHOA_HOC[sp.ma];
+    const nutPhai = maKhoaHoc
+      ? '<button type="button" class="nut nut-la" data-hanh-dong="vao-hoc-ngay" data-module="' +
+          escapeHtml(maKhoaHoc) + '">Vào học ngay</button>'
+      : '<button type="button" class="nut nut-chinh" data-hanh-dong="chon-tu-chi-tiet" data-ma="' +
+          escapeHtml(sp.ma) + '">Chọn sản phẩm này</button>';
+
     moModal({
       ma: 'chi-tiet-' + sp.ma,
       tieuDe: 'Chi tiết sản phẩm',
@@ -341,12 +360,19 @@
               '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span> ' +
               '<span class="phan-tram">Giảm ' + phanTramGiamSanPham(sp) + '%</span> ' +
               '<span class="chi-con">chỉ còn</span> ' +
-              '<span class="gia-chot">' + (mienPhi ? 'MIỄN PHÍ' : dinhDangTien(sp.giaChot)) + '</span>' +
+              '<span class="gia-chot" data-gia-goc="' + sp.giaGoc + '" data-gia-chot="' + sp.giaChot +
+                '" data-chu-cuoi="' + escapeHtml(chuGiaCuoi) + '">' + dinhDangTien(sp.giaGoc) + '</span>' +
             '</p>' +
           '</div>' +
           veMoTaSanPham(sp) +
         '</div>',
-      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
+      day: '' +
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
+        nutPhai,
+      khiVe: function(){
+        const gia = document.querySelector('.modal-lop[data-ma-modal="chi-tiet-' + sp.ma + '"] .gia-chot');
+        chayNhaySo(gia);
+      }
     });
   }
 
@@ -391,4 +417,5 @@
 
     // Gắn hiệu ứng NGAY SAU khi HTML mới đã nằm trong trang.
     ganHieuUngTroiLen();
+    doChoThanhDay();   // chừa đúng chiều cao thật của thanh neo đáy
   }

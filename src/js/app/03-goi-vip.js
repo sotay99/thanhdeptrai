@@ -50,6 +50,32 @@
       '</article>';
   }
 
+  // Ba món quà tặng nằm ở cuối module — đều là module có sẵn trong MODULE, chỉ
+  // dẫn sang chứ không mở bảng phụ nào.
+  const QUA_TANG = [
+    { module: 'qua-tang-android',  ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁' },
+    { module: 'khoa-hoc-mobile',   ten: 'Khoá học Lightroom điện thoại',              bieuTuong: '📱' },
+    { module: 'khoa-hoc-may-tinh', ten: 'Khoá học Lightroom máy tính',                bieuTuong: '💻' }
+  ];
+
+  function veKhuQuaTang(){
+    const nut = QUA_TANG.map(function(q){
+      return '<button type="button" class="nut nut-vien nut-rong nut-qua" data-hanh-dong="mo-module" data-module="' +
+        escapeHtml(q.module) + '">' +
+        '<span class="bieu-tuong" aria-hidden="true">' + q.bieuTuong + '</span>' +
+        '<span class="chu">' + escapeHtml(q.ten) + '</span>' +
+        '</button>';
+    }).join('');
+
+    return '' +
+      '<section class="khu-qua-tang">' +
+        '<p class="dong-qua-tang" id="dong-qua-tang">Xem và nhận quà tặng của shop mà không cần mua hàng gì cả:</p>' +
+        '<div class="hang-nut-qua">' + nut + '</div>' +
+        '<button type="button" class="nut nut-rong nut-len-dau" data-hanh-dong="cuon-len-dau">' +
+          '<span aria-hidden="true">↑</span> Cuộn lên đầu trang</button>' +
+      '</section>';
+  }
+
   function veModuleGoiVip(){
     return '' +
       '<section class="gioi-thieu">' +
@@ -57,10 +83,38 @@
         '<p>Chọn những sản phẩm bạn cần, giá đã chốt hiện ngay ở thanh dưới đáy màn hình.</p>' +
         '<div class="bang-uu-dai"><span aria-hidden="true">🔥</span> Chọn càng nhiều càng rẻ: mỗi sản phẩm được giảm thêm ' +
           GIAM_MOI_SAN_PHAM + '% ở bước chốt đơn — chỉ áp dụng với sản phẩm giá trị trên 40K</div>' +
+        '<button type="button" class="nut nut-rong nut-toi-qua-tang" data-hanh-dong="xuong-qua-tang">' +
+          '<span aria-hidden="true">🎁</span> Nhận quà tặng của Shop mà không cần mua hàng</button>' +
       '</section>' +
       '<div class="luoi-sanpham">' +
         SAN_PHAM.map(veTheSanPham).join('') +
-      '</div>';
+      '</div>' +
+      veKhuQuaTang();
+  }
+
+  // --------------------------------------------- CUỘN VÀ HIỆU ỨNG KHU QUÀ TẶNG
+
+  const SO_LAN_NHAY_QUA_TANG = 5;   // nhảy đúng 5 lần rồi đứng im hẳn
+
+  function cuonLenDauTrang(){
+    if (window.scrollTo) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Bấm nút mời quà ở đầu module: cuộn thẳng xuống cuối, đồng thời cho dòng
+  // chữ mời quà nhảy múa. Hiệu ứng chạy ngay chứ không đợi cuộn xong — nó kéo
+  // dài hơn quãng cuộn nên khi mắt tới nơi thì dòng chữ vẫn đang nhảy.
+  function xuongKhuQuaTang(){
+    if (window.scrollTo) {
+      const day = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      window.scrollTo({ top: day, behavior: 'smooth' });
+    }
+    const dong = document.getElementById('dong-qua-tang');
+    if (!dong) return;
+    // Gỡ rồi gắn lại lớp để hiệu ứng chạy LẠI TỪ ĐẦU ở những lần bấm sau —
+    // gắn thêm một lớp đã có sẵn thì trình duyệt coi như không đổi gì.
+    dong.classList.remove('nhay-qua-tang');
+    void dong.offsetWidth;   // buộc trình duyệt tính lại, nếu không lớp mới bị gộp
+    dong.classList.add('nhay-qua-tang');
   }
 
   // ------------------------------------------------- THANH BÁO GIÁ NEO ĐÁY
@@ -133,7 +187,9 @@
       const troi = Math.min(1, (Date.now() - batDau) / THOI_LUONG_NHAY_SO);
       const nhip = 1 - Math.pow(1 - troi, 3);   // nhanh lúc đầu, chậm dần về cuối
       if (troi >= 1) {
-        el.textContent = dinhDangTien(denSo);
+        // Sản phẩm giá 0 dừng ở chữ "MIỄN PHÍ" thay vì "0 ₫" — chữ cuối do nơi
+        // gọi đặt sẵn trong data-chu-cuoi.
+        el.textContent = el.getAttribute('data-chu-cuoi') || dinhDangTien(denSo);
         delete el.dataset.dangNhay;
         return;
       }
@@ -266,6 +322,18 @@
     const tam = document.createElement('div');
     tam.innerHTML = veThanhBaoGia();
     cu.replaceWith(tam.firstChild);
+    doChoThanhDay();
+  }
+
+  // Thanh báo giá neo đáy che mất phần cuối trang nếu khoảng chừa nhỏ hơn chính
+  // nó. Chiều cao thanh KHÔNG cố định — trên điện thoại nút Mua hàng xuống hẳn
+  // một dòng riêng, cỡ chữ hệ thống to nhỏ cũng làm nó đổi — nên đo thật rồi
+  // ghi vào biến --cao-thanh-day thay vì đoán một con số.
+  function doChoThanhDay(){
+    const thanh = document.querySelector('.thanh-bao-gia');
+    if (!thanh || !document.documentElement) return;
+    const cao = Math.ceil(thanh.getBoundingClientRect().height);
+    if (cao > 0) document.documentElement.style.setProperty('--cao-thanh-day', cao + 'px');
   }
 
   function chonSanPham(ma){
@@ -274,6 +342,25 @@
     capNhatTheSanPham(ma);
     capNhatThanhBaoGia();
     hienThongBaoGiam();
+  }
+
+  // Bấm "Chọn sản phẩm này" trong bảng chi tiết: đóng bảng, sản phẩm được CHỌN
+  // (không phải đảo trạng thái — bấm nút mang chữ "chọn" mà lại bị bỏ chọn thì
+  // vô lý), rồi hiện thông báo mức giảm y như khi bấm ngoài lưới.
+  function chonTuBangChiTiet(ma){
+    dongModal();
+    if (!timSanPham(ma)) return;
+    if (!dangChon(ma)) doiChon(ma);
+    capNhatTheSanPham(ma);
+    capNhatThanhBaoGia();
+    hienThongBaoGiam();
+  }
+
+  // Bấm "Vào học ngay" trong bảng chi tiết hai bộ khoá học: đóng hết bảng phụ
+  // rồi chuyển thẳng sang module khoá học tương ứng.
+  function vaoHocNgay(maModule){
+    dongHetModal();
+    moModule(maModule);
   }
 
   // Bấm "Chọn tất cả": đang sáng thì bỏ chọn sạch, chưa sáng thì chọn hết.

@@ -360,7 +360,11 @@
     if (hanhDong === 'mo-module') { moModule(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'chon-san-pham') { chonSanPham(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'xem-chi-tiet') { moModalChiTietSanPham(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'chon-tu-chi-tiet') { chonTuBangChiTiet(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'vao-hoc-ngay') { vaoHocNgay(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'chon-tat-ca') { chonTatCa(); return; }
+    if (hanhDong === 'xuong-qua-tang') { xuongKhuQuaTang(); return; }
+    if (hanhDong === 'cuon-len-dau') { cuonLenDauTrang(); return; }
     if (hanhDong === 'mua-hang') { moModalDonHang(); return; }
     if (hanhDong === 'dong-modal') { dongModal(); return; }
     if (hanhDong === 'tien-hanh-thanh-toan') { moModalThanhToan(); return; }
@@ -387,6 +391,9 @@
     document.addEventListener('click', xuLyBamChuot);
     document.addEventListener('input', xuLyGoPhim);
     document.addEventListener('keydown', xuLyPhimEsc);
+    // Xoay ngang máy hay đổi cỡ cửa sổ làm thanh neo đáy cao thấp khác đi —
+    // đo lại để phần cuối trang không bị thanh che.
+    window.addEventListener('resize', doChoThanhDay);
     window.addEventListener('hashchange', function(){
       const ma = docHash();
       if (ma === state.module) return;
@@ -404,6 +411,7 @@
     ganSuKien();
     theoDoiNutCuonModal();   // mọi bảng phụ, kể cả bảng viết sau này, tự có 2 nút cuộn
     render();
+    doChoThanhDay();
     // Nạp trước thông tin chuyển khoản để lúc khách mở modal thanh toán là có
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
     taiThongTinCK();

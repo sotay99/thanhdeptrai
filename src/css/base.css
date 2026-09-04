@@ -251,6 +251,14 @@ input { font: inherit; color: inherit; }
 
 .modal-day .nut { flex: 1 1 150px; }
 
+/* Trên điện thoại, hai nút ở đáy bảng phải NGANG HÀNG nhau chứ không xuống
+   dòng: chiều rộng cơ sở 150px làm cặp nút vượt bề ngang khung và bị bẻ dòng,
+   nên thu lại còn 108px và cho chữ nhỏ đi một nấc. */
+@media (max-width: 560px) {
+  .modal-day { gap: 8px; padding-left: 14px; padding-right: 14px; }
+  .modal-day .nut { flex: 1 1 108px; min-width: 0; padding-left: 8px; padding-right: 8px; font-size: 12.5px; }
+}
+
 /* ------------------------------------- 2 NÚT CUỘN LÊN ĐẦU / XUỐNG CUỐI MODAL
    Tự động chèn cho MỌI bảng phụ trong toàn web (kể cả bảng viết sau này) —
    xem hàm ganNutCuonModal ở phần 02. Luôn thẳng hàng dọc, sát mép phải màn
