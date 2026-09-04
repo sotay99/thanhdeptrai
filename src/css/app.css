@@ -986,3 +986,55 @@
 @media (prefers-reduced-motion: reduce) {
   .khung-cam-ket-giao { animation: none; }
 }
+
+/* ==========================================================================
+   ẢNH SẢN PHẨM TRONG BẢNG MÔ TẢ
+
+   Ngay dưới dòng giá: màn hình rộng thì ảnh vuông bên trái, khối chữ đầu tiên
+   bên phải, hai bên ngang hàng nhau. Màn hình hẹp thì xuống dòng — ảnh nằm
+   trên, chữ nằm dưới. Dùng flex-wrap chứ không dùng media query để tự co theo
+   bề ngang thật của bảng, vì bảng phụ hẹp hơn màn hình.
+   ========================================================================== */
+
+.hang-anh-chu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 13px;
+  margin-bottom: 13px;
+}
+
+.anh-san-pham {
+  flex: 1 1 190px;
+  max-width: 260px;
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--bo-the);
+  overflow: hidden;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  box-shadow: var(--bong);
+}
+
+.anh-san-pham img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Khối chữ đứng cạnh ảnh: chiếm phần còn lại, và chỉ chịu xuống dòng khi bề
+   ngang còn dưới 210px — dưới mức đó thì chữ vỡ vụn, thà cho nó nằm dưới ảnh. */
+.hang-anh-chu > .khoi-mo-ta {
+  flex: 1 1 210px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Màn hình hẹp: ảnh chiếm trọn bề ngang và không bị kéo dài quá cao */
+@media (max-width: 560px) {
+  .hang-anh-chu { gap: 11px; }
+  .anh-san-pham { flex: 1 1 100%; max-width: 100%; }
+}

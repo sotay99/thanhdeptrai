@@ -18,6 +18,21 @@
      =========================================================================== */
 
   // Cam kết dán ở CUỐI mô tả của MỌI sản phẩm, không trừ sản phẩm nào.
+  // Ảnh minh hoạ vuông 1:1 của từng sản phẩm. Đường dẫn viết TRẦN ở đây; lúc
+  // build, scripts/build-static.js thay bằng tên có vân tay rồi mới băm bản
+  // nối, nên đổi ảnh là trình duyệt nhận bản mới ngay mà vẫn cache vĩnh viễn.
+  const ANH_SAN_PHAM = {
+    sp1: '/assets/anh/sp1.jpg',
+    sp2: '/assets/anh/sp2.jpg',
+    sp3: '/assets/anh/sp3.jpg',
+    sp4: '/assets/anh/sp4.jpg',
+    sp5: '/assets/anh/sp5.jpg',
+    sp6: '/assets/anh/sp6.jpg',
+    sp7: '/assets/anh/sp7.jpg',
+    sp8: '/assets/anh/sp8.jpg',
+    sp9: '/assets/anh/sp9.jpg'
+  };
+
   const CAM_KET_CHUNG = [
     '⚡ <strong>Giao hàng tức thì, không có thời gian chờ:</strong> ngay khi shop nhận được tiền thanh toán, hệ thống tự động gửi hàng tới bạn qua <strong>email</strong> — hoặc qua <strong>Zalo</strong>, hoặc <strong>tin nhắn SMS</strong>, tuỳ cách bạn để lại liên hệ. Không hẹn ngày, không xếp hàng chờ, không phải nhắc.',
     '📘 <strong>Hướng dẫn tận tay:</strong> ngay sau khi mua, bạn nhận bộ hướng dẫn cụ thể — chi tiết từng bước, có hình ảnh và video minh hoạ, làm theo là chạy, không cần biết kỹ thuật.',
@@ -266,7 +281,9 @@
   ];
 
   function veNoiDungDacQuyen(){
-    return NOI_DUNG_DAC_QUYEN.map(veKhoiMoTa).join('');
+    // Gọi qua hàm bọc chứ KHÔNG truyền thẳng veKhoiMoTa vào map: map đưa cả
+    // mảng vào tham số thứ ba, rơi đúng chỗ cờ trongHang và tắt mất hiệu ứng.
+    return NOI_DUNG_DAC_QUYEN.map(function(k, i){ return veKhoiMoTa(k, i); }).join('');
   }
 
   /* --------------------------------------------------------------- DỰNG HTML
@@ -284,9 +301,11 @@
   // có chỗ đứng riêng. Đổi đúng một hằng số này là mọi bảng mô tả giãn theo.
   const TRE_MOI_KHOI_MO_TA = 0.33;
 
-  function veKhoiMoTa(khoi, thuTu){
-    const tre = ' style="animation-delay:' + (thuTu * TRE_MOI_KHOI_MO_TA).toFixed(2) + 's"';
-    const dau = '<section class="khoi-mo-ta khoi-' + khoi.kieu + ' troi-ngang"' + tre + '>';
+  // trongHang: khối đang nằm trong hàng ngang cùng ảnh, nên KHÔNG tự chạy hiệu
+  // ứng nữa — cả hàng trôi vào như một, ảnh và chữ không tách nhau ra.
+  function veKhoiMoTa(khoi, thuTu, trongHang){
+    const tre = trongHang ? '' : ' style="animation-delay:' + (thuTu * TRE_MOI_KHOI_MO_TA).toFixed(2) + 's"';
+    const dau = '<section class="khoi-mo-ta khoi-' + khoi.kieu + (trongHang ? '' : ' troi-ngang') + '"' + tre + '>';
     let than = '';
     if (khoi.tieuDe) than += '<h4>' + khoi.tieuDe + '</h4>';
     if (khoi.chu) than += '<p>' + khoi.chu + '</p>';
@@ -297,11 +316,31 @@
   }
 
   // Trả về toàn bộ phần mô tả của một sản phẩm, LUÔN kết thúc bằng khối cam kết.
+  //
+  // Khối ĐẦU TIÊN được ghép NGANG HÀNG với ảnh sản phẩm: ảnh bên trái, khối chữ
+  // bên phải. Trên màn hình hẹp thì CSS cho chúng xuống dòng, ảnh nằm trên.
+  // Cả cặp dùng chung một số thứ tự nên trôi vào cùng lúc, không lệch nhịp.
   function veMoTaSanPham(sp){
     const mt = MO_TA_SAN_PHAM[sp.ma];
     const danhSach = [];
     if (mt && mt.khauHieu) danhSach.push({ kieu: 'khau-hieu', chu: mt.khauHieu });
     if (mt && mt.khoi) mt.khoi.forEach(function(k){ danhSach.push(k); });
     danhSach.push({ kieu: 'cam-ket', tieuDe: '🤝 Cam kết của shop dành cho bạn', y: CAM_KET_CHUNG });
-    return danhSach.map(veKhoiMoTa).join('');
+
+    const anh = ANH_SAN_PHAM[sp.ma];
+    if (!anh || !danhSach.length) return danhSach.map(function(k, i){ return veKhoiMoTa(k, i); }).join('');
+
+    // width/height khai đúng 1:1 để trình duyệt chừa sẵn chỗ, trang không bị
+    // giật khi ảnh tải xong. loading="lazy" cho ảnh chỉ tải khi bảng mở ra.
+    const oAnh = '' +
+      '<figure class="anh-san-pham">' +
+        '<img src="' + anh + '" width="640" height="640" loading="lazy" decoding="async"' +
+          ' alt="Ảnh minh hoạ: ' + escapeHtml(sp.ten) + '">' +
+      '</figure>';
+
+    return '' +
+      '<div class="hang-anh-chu troi-ngang" style="animation-delay:0s">' +
+        oAnh + veKhoiMoTa(danhSach[0], 0, true) +
+      '</div>' +
+      danhSach.slice(1).map(function(k, i){ return veKhoiMoTa(k, i + 1); }).join('');
   }

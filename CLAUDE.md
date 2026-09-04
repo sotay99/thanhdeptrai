@@ -11,6 +11,11 @@ xuống cuối phần đó. Bỏ qua bước này thì phần mới không truy 
 
 Thư mục `public/` do build sinh ra, không được theo dõi trong git.
 
+Ảnh sản phẩm nằm ở `src/anh/<mã sản phẩm>.jpg`. Mã JS gọi chúng bằng đường dẫn
+TRẦN `/assets/anh/sp1.jpg`; `build-static.js` thay bằng tên có vân tay TRƯỚC khi
+băm bản nối, nên đổi ảnh là vân tay của `app.js` cũng đổi theo. Gọi một ảnh
+không có trong `src/anh/` sẽ làm build đỏ ngay, không để lọt ra trang thật.
+
 ## Giữ index.html mỏng
 
 Mỗi lần thêm/sửa/xoá tính năng, hạn chế tối đa việc làm `index.html` phình ra.

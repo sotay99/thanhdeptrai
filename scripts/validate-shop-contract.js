@@ -335,7 +335,45 @@ if (/class="ghi-chu">Vui lòng nhập/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 12) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 12) ẢNH SẢN PHẨM TRONG BẢNG MÔ TẢ
+// ---------------------------------------------------------------------------
+SAN_PHAM_CHOT.forEach((_, i) => {
+  const ma = `sp${i + 1}`;
+  if (!new RegExp(`${ma}:\\s*'/assets/anh/${ma}\\.jpg'`).test(banNoi)) {
+    fail(`Sản phẩm ${ma} chưa được khai ảnh trong ANH_SAN_PHAM.`);
+  }
+  if (!fs.existsSync(path.join(root, `src/anh/${ma}.jpg`))) {
+    fail(`Thiếu tệp ảnh src/anh/${ma}.jpg.`);
+  }
+});
+
+[
+  [/const\s+ANH_SAN_PHAM\s*=\s*\{/, "bảng ảnh sản phẩm"],
+  [/class="anh-san-pham"/, "khung ảnh trong bảng mô tả"],
+  [/loading="lazy"/, "ảnh chỉ tải khi cần (loading=lazy)"],
+  [/width="640" height="640"/, "khai sẵn kích thước ảnh để trang không giật khi ảnh tải xong"],
+  [/class="hang-anh-chu troi-ngang"/, "hàng ghép ảnh với khối chữ đầu tiên"],
+  [/veKhoiMoTa\(danhSach\[0\], 0, true\)/, "khối chữ đầu tiên nằm chung hàng với ảnh"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// map() truyền cả mảng vào tham số thứ ba của veKhoiMoTa — rơi trúng cờ
+// trongHang và tắt mất hiệu ứng trôi. Lỗi này đã xảy ra một lần, chặn lại.
+if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
+  fail("Không được truyền thẳng veKhoiMoTa vào .map() — hãy bọc qua function(k, i).");
+}
+
+[
+  [/\.hang-anh-chu\s*\{[\s\S]*?flex-wrap:\s*wrap/, "hàng ảnh + chữ tự xuống dòng trên màn hình hẹp"],
+  [/\.anh-san-pham\s*\{[\s\S]*?aspect-ratio:\s*1\s*\/\s*1/, "ảnh giữ khung vuông 1:1"],
+  [/\.anh-san-pham img\s*\{[\s\S]*?object-fit:\s*cover/, "ảnh phủ kín khung mà không méo"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 13) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
