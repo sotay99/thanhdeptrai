@@ -51,6 +51,7 @@
     { ma: 'khoa-hoc-may-tinh',ten: 'Khóa học lightroom máy tính',      bieuTuong: '▣', kieu: 'trang', sanSang: false },
     { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
     { ma: 'lien-he',          ten: 'Liên hệ shop',                     bieuTuong: '☎', kieu: 'modal', sanSang: false },
+    { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: false },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
     { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
     { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false }

@@ -571,15 +571,13 @@
   will-change: transform;
 }
 
-/* Nhịp: nảy hai cái liền nhau thật nhanh (kèm nghiêng nhẹ và quầng đỏ loang ra
-   cho mắt bắt được ngay cả khi nút chiếm trọn bề ngang màn hình điện thoại),
-   rồi đứng im hơn một giây, rồi lặp lại mãi. */
+/* Nhịp: nảy ĐÚNG MỘT CÁI (kèm nghiêng nhẹ và quầng đỏ loang ra cho mắt bắt được
+   ngay cả khi nút chiếm trọn bề ngang màn hình điện thoại), rồi đứng im hơn một
+   giây, rồi lặp lại mãi. Trước đây nảy hai cái liền nhau — nhìn lâu mỏi mắt. */
 @keyframes nhun-nhay-mua-hang {
   0%   { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 0 rgba(229, 83, 75, .55); }
-  6%   { transform: scale(1.16) rotate(-1.6deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .28); }
-  12%  { transform: scale(.98) rotate(1.2deg);    box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
-  18%  { transform: scale(1.12) rotate(-1deg);    box-shadow: 0 0 0 5px rgba(229, 83, 75, .22); }
-  25%  { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 9px rgba(229, 83, 75, 0); }
+  7%   { transform: scale(1.16) rotate(-1.6deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .28); }
+  15%  { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
   100% { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
 }
 
@@ -1019,15 +1017,13 @@
 .khung-cam-ket-giao p { margin: 0; }
 .khung-cam-ket-giao p + p { margin-top: 8px; }
 
-/* Cùng biên độ và cùng tốc độ nảy với nút Mua hàng (khoảng nửa giây cho trọn
-   hai cú nảy), chỉ khác là quãng nghỉ kéo dài ba giây thay vì hơn một giây. */
+/* Cùng biên độ và cùng tốc độ nảy với nút Mua hàng — cũng ĐÚNG MỘT CÁI nảy —
+   chỉ khác là quãng nghỉ kéo dài quanh ba giây thay vì hơn một giây. */
 @keyframes nhun-nhay-cam-ket {
-  0%    { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, .5); }
-  3.3%  { transform: scale(1.06) rotate(-.5deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .24); }
-  6.5%  { transform: scale(.99) rotate(.4deg);    box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
-  9.8%  { transform: scale(1.045) rotate(-.35deg);box-shadow: 0 0 0 5px rgba(229, 83, 75, .2); }
-  13.6% { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 9px rgba(229, 83, 75, 0); }
-  100%  { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
+  0%   { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, .5); }
+  3.8% { transform: scale(1.06) rotate(-.5deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .24); }
+  8.2% { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
+  100% { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1163,4 +1159,21 @@
   font-weight: 700;
   min-height: 44px;
   cursor: default;
+}
+
+/* Câu mời thêm cạnh tên trường nhập liệu — nổi bật hẳn nhưng vẫn dưới cỡ chữ
+   của chính tên trường, để mắt đọc tên trường trước rồi mới tới lời mời. */
+.truong label .nhan-phu {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--la-dam-net);
+}
+
+@media (min-width: 560px) {
+  /* Màn đủ rộng thì nằm ngay CẠNH tên trường thay vì xuống dòng. */
+  .truong label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 7px; }
+  .truong label .nhan-phu { display: inline; margin-top: 0; }
 }

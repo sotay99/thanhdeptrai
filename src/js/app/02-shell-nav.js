@@ -326,7 +326,7 @@
     // "Yêu cầu hoàn tiền" và "Liên hệ shop" là chức năng sắp làm, còn hai mục
     // kia là văn bản sắp viết — nói đúng việc đang diễn ra thay vì dùng chung
     // một câu cho tất cả.
-    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'lien-he';
+    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'lien-he' || m.ma === 'cong-nhan';
     moModal({
       ma: 'van-ban-' + m.ma,
       tieuDe: m.ten,

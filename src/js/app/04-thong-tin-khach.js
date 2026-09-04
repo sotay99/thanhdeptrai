@@ -131,10 +131,15 @@
       '</div>';
   }
 
-  function veOTruong(ten, nhan, giaTri, goiY, kieu){
+  // nhanPhu: câu mời thêm, hiện NGAY CẠNH tên trường và nổi bật hẳn lên. Dùng
+  // cho ô Email — email là đường giao hàng tự động duy nhất, khách để lại email
+  // là nhận hàng trong một phút, nên phải nói thẳng điều đó ngay chỗ khách gõ.
+  function veOTruong(ten, nhan, giaTri, goiY, kieu, nhanPhu){
     return '' +
       '<div class="truong">' +
-        '<label for="o-' + ten + '">' + escapeHtml(nhan) + '</label>' +
+        '<label for="o-' + ten + '">' + escapeHtml(nhan) +
+          (nhanPhu ? '<span class="nhan-phu">' + escapeHtml(nhanPhu) + '</span>' : '') +
+        '</label>' +
         '<input id="o-' + ten + '" type="' + kieu + '" data-truong="' + ten + '" value="' + escapeHtml(giaTri) +
           '" autocomplete="off" inputmode="' + (kieu === 'email' ? 'email' : 'tel') + '">' +
         '<p class="goi-y">' + escapeHtml(goiY) + '</p>' +
@@ -156,7 +161,9 @@
           '<p>Vui lòng nhập <strong>ít nhất 1 trong 3 trường</strong> (khung nhập liệu) dưới đây để shop liên hệ giao sản phẩm.</p>' +
           '<p>Shop <strong>cam kết giao sản phẩm ngay lập tức</strong> khi vừa nhận được tiền thanh toán của bạn: ưu tiên giao qua <strong>email</strong> (thông qua hệ thống tự động), hoặc giao qua <strong>tin nhắn Zalo</strong> (nếu bạn chưa nhập email), hoặc <strong>tin nhắn SMS</strong> (nếu không thể liên hệ qua Zalo).</p>' +
         '</div>' +
-        veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm, không có dấu cách.', 'email') +
+        veOTruong('email', 'Email', kh.email,
+          'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm, không có dấu cách.', 'email',
+          '- khuyến khích nhập Email để nhận sản phẩm Nhanh chỉ trong 1 phút, bỏ qua nếu chưa có email') +
         veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, không dấu cách, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
         '<p class="loi" data-loi="chung"></p>',

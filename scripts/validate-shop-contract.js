@@ -331,8 +331,8 @@ if (/class="ghi-chu">Vui lòng nhập/.test(banNoi)) {
     "mảng xanh của thẻ chưa chọn thấp đi một nửa, còn 28px"],
   [/\.khung-cam-ket-giao\s*\{[\s\S]*?animation:\s*nhun-nhay-cam-ket\s+3\.5s[^;]*infinite/,
     "khung cam kết nhún nhảy tuần hoàn, mỗi vòng 3,5 giây"],
-  [/@keyframes\s+nhun-nhay-cam-ket\s*\{[\s\S]*?13\.6%[\s\S]*?100%/,
-    "nhịp nhún nhảy của khung cam kết: nảy xong thì nghỉ ba giây"],
+  [/@keyframes\s+nhun-nhay-cam-ket\s*\{[\s\S]*?8\.2%[^}]*scale\(1\)[\s\S]*?100%/,
+    "nhịp nhún nhảy của khung cam kết: nảy xong thì nghỉ khoảng ba giây"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
 });
@@ -506,7 +506,48 @@ if (!fs.existsSync(path.join(root, "src/anh/dac-quyen.jpg"))) {
 });
 
 // ---------------------------------------------------------------------------
-// 17) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 17) MỖI ĐỢT NHÚN NHẢY CHỈ MỘT LẦN NẢY, CÂU MỜI Ở Ô EMAIL, MỤC MENU MỚI
+// ---------------------------------------------------------------------------
+// Nhún nhảy hai lần liên tiếp nhìn lâu mỏi mắt, nên mỗi đợt chỉ được có ĐÚNG
+// MỘT mốc phóng to. Đếm số mốc scale lớn hơn 1 trong mỗi khối keyframes.
+[
+  ["nhun-nhay-mua-hang", 1],
+  ["nhun-nhay-cam-ket", 1],
+].forEach(([ten, soLanToiDa]) => {
+  const khoi = cssApp.match(new RegExp(`@keyframes\\s+${ten}\\s*\\{[^@]*?\\n\\}`));
+  if (!khoi) {
+    fail(`Không thấy khối @keyframes ${ten} trong src/css/app.css.`);
+    return;
+  }
+  const soLanPhongTo = (khoi[0].match(/scale\((?:1\.\d+|[2-9])/g) || []).length;
+  if (soLanPhongTo !== soLanToiDa) {
+    fail(`@keyframes ${ten} phải có đúng ${soLanToiDa} lần phóng to mỗi đợt, đang thấy ${soLanPhongTo}.`);
+  }
+});
+
+[
+  [/khuyến khích nhập Email để nhận sản phẩm Nhanh chỉ trong 1 phút/, "câu mời nhập email ở ô Email"],
+  [/bỏ qua nếu chưa có email/, "câu mời nói rõ có thể bỏ qua"],
+  [/class="nhan-phu"/, "chỗ hiện câu mời cạnh tên trường"],
+  [/function\s+veOTruong\(ten, nhan, giaTri, goiY, kieu, nhanPhu\)/, "tham số nhãn phụ của ô nhập liệu"],
+  [/ma:\s*'cong-nhan'[\s\S]{0,90}?kieu:\s*'modal'/, "mục Sự công nhận của khách hàng trong menu"],
+  [/Sự công nhận của khách hàng/, "tên mục menu mới"],
+  [/m\.ma === 'cong-nhan'/, "bảng Sự công nhận báo đang được thiết kế"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Mục mới phải đứng ngay dưới "Liên hệ shop".
+if (banNoi.indexOf("ma: 'cong-nhan'") < banNoi.indexOf("ma: 'lien-he'")) {
+  fail('Mục "Sự công nhận của khách hàng" phải nằm DƯỚI mục "Liên hệ shop".');
+}
+
+if (!/\.truong label \.nhan-phu\s*\{/.test(cssApp)) {
+  fail("Thiếu kiểu riêng cho câu mời cạnh tên trường trong src/css/app.css.");
+}
+
+// ---------------------------------------------------------------------------
+// 18) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
