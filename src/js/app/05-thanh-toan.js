@@ -360,6 +360,7 @@
     if (hanhDong === 'mo-module') { moModule(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'chon-san-pham') { chonSanPham(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'xem-chi-tiet') { moModalChiTietSanPham(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'chon-tat-ca') { chonTatCa(); return; }
     if (hanhDong === 'mua-hang') { moModalDonHang(); return; }
     if (hanhDong === 'dong-modal') { dongModal(); return; }
     if (hanhDong === 'tien-hanh-thanh-toan') { moModalThanhToan(); return; }

@@ -45,17 +45,37 @@
       '</nav>';
   }
 
+  // Mở / đóng menu chỉ đổi đúng ba phần tử liên quan, KHÔNG vẽ lại cả trang.
+  // Vẽ lại sẽ xoá sạch hiệu ứng xuất hiện đang chạy dở của lưới sản phẩm —
+  // lỗi thật đã xảy ra: vào module qua menu rồi bấm đóng menu là bảy tám thẻ
+  // đang trôi bụp hiện hết cùng lúc.
+  function capNhatKhungMenu(){
+    const nut = document.querySelector('.nut-noi');
+    const khung = document.querySelector('.menu-trai');
+    const phu = document.querySelector('.lop-phu');
+    if (nut) {
+      nut.classList.toggle('menu-dang-mo', state.menuMo);
+      nut.setAttribute('aria-expanded', state.menuMo ? 'true' : 'false');
+      nut.setAttribute('aria-label', state.menuMo ? 'Đóng menu' : 'Chuyển module');
+    }
+    if (khung) {
+      khung.classList.toggle('mo', state.menuMo);
+      if (state.menuMo) khung.removeAttribute('aria-hidden');
+      else khung.setAttribute('aria-hidden', 'true');
+    }
+    if (phu) phu.classList.toggle('mo', state.menuMo);
+    capNhatKhoaCuon();
+  }
+
   function moMenu(){
     state.menuMo = true;
-    render();
-    capNhatKhoaCuon();
+    capNhatKhungMenu();
   }
 
   function dongMenu(){
     if (!state.menuMo) return;
     state.menuMo = false;
-    render();
-    capNhatKhoaCuon();
+    capNhatKhungMenu();
   }
 
   function doiMenu(){
@@ -86,7 +106,7 @@
     state.module = m.ma;
     state.hieuUngVaoModule = true;   // vào lại module bao nhiêu lần cũng trôi lại
     datHash(m.ma);
-    render();
+    render();   // vẽ lại cả trang, menu giữ nguyên trạng thái đang mở/đóng
     if (window.scrollTo) window.scrollTo(0, 0);
   }
 

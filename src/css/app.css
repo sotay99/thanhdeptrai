@@ -260,12 +260,15 @@
   display: flex;
   flex-direction: column;
   padding: 14px 16px 15px;
-  /* Nền thẻ: xanh đậm đặc ở sát đáy, nhạt dần lên và TẮT HẲN đúng mép trên của
-     nút "Chọn sản phẩm này". 55px = 15px chừa đáy + 40px chiều cao nút, nên
-     đổi padding đáy hay chiều cao nút thì phải sửa lại con số này. */
+  /* Nền thẻ: xanh đậm ở sát đáy, nhạt dần lên và TẮT HẲN đúng mép trên của nút
+     "Chọn sản phẩm này". 55px = 15px chừa đáy + 40px chiều cao nút, nên đổi
+     padding đáy hay chiều cao nút thì phải sửa lại con số này.
+     Sản phẩm CHƯA chọn dùng bản nhạt (65% độ đậm), sản phẩm ĐÃ chọn mới hiện
+     đủ độ — nhìn lướt qua là biết ngay mình đã lấy những món nào. */
   background:
-    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 22px, rgba(20, 115, 230, 0) 55px),
+    linear-gradient(to top, rgba(20, 115, 230, .62) 0, rgba(20, 115, 230, .36) 22px, rgba(20, 115, 230, 0) 55px),
     var(--the);
+  transition: border-color .18s, transform .18s, box-shadow .18s, background .25s;
   border: 1px solid var(--vien);
   border-radius: var(--bo-the);
   box-shadow: var(--bong);
@@ -313,7 +316,12 @@
 .the-sanpham:hover { transform: translateY(-1px); box-shadow: var(--bong-noi); }
 .the-sanpham:hover::before { opacity: .6; }
 
-.the-sanpham.da-chon { border-color: var(--xanh); }
+.the-sanpham.da-chon {
+  border-color: var(--xanh);
+  background:
+    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 22px, rgba(20, 115, 230, 0) 55px),
+    var(--the);
+}
 .the-sanpham.da-chon::before { opacity: 1; }
 
 .the-sanpham .so-thu-tu {
@@ -364,6 +372,92 @@
 .nut-chua-chon:hover:not(:disabled) {
   background: var(--the-3);
   border-color: var(--xanh);
+}
+
+/* Nút "Chọn tất cả" — khung riêng ở sát mép trái thanh báo giá, có ô tích.
+   Sáng lên (viền và chữ xanh, ô tích xanh đặc) khi đang chọn đủ mọi sản phẩm. */
+.nut-chon-tat-ca {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 13px;
+  border-radius: var(--bo);
+  border: 1px solid var(--vien-sang);
+  background: var(--the-2);
+  color: var(--chu-diu);
+  font-size: 13px;
+  font-weight: 600;
+  transition: .16s;
+}
+
+.nut-chon-tat-ca .o-tich {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--vien-sang);
+  background: var(--nen-sau);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+}
+
+.nut-chon-tat-ca:hover { border-color: var(--xanh); color: var(--chu); }
+
+.nut-chon-tat-ca.sang {
+  border-color: var(--xanh);
+  background: var(--xanh-nen);
+  color: var(--xanh);
+  box-shadow: 0 0 0 1px var(--xanh), 0 0 14px rgba(49, 168, 255, .28);
+}
+
+.nut-chon-tat-ca.sang .o-tich {
+  background: var(--xanh);
+  border-color: var(--xanh);
+  color: #fff;
+}
+
+/* -------------------------------- THÔNG BÁO MỨC GIẢM GIÁ (giữa màn hình) */
+
+.thong-bao-giam {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 480;
+  padding: 16px 30px;
+  border-radius: 999px;
+  background: var(--la);
+  color: #fff;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  box-shadow: 0 10px 34px rgba(45, 157, 95, .5);
+  pointer-events: none;
+  /* Nhảy bung ra → đứng im 1 giây → trôi xuống đáy rồi tan */
+  animation: thong-bao-giam 2.55s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+@keyframes thong-bao-giam {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+  10%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  16%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 46vh) scale(.9); }
+}
+
+@media (max-width: 560px) {
+  .thong-bao-giam { font-size: 18px; padding: 13px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thong-bao-giam { animation-duration: 2.55s; }
 }
 
 /* -------------------------------------------------- THANH BÁO GIÁ NEO ĐÁY */
@@ -419,7 +513,8 @@
 
 @media (max-width: 560px) {
   .thanh-bao-gia { gap: 9px; }
-  .thanh-bao-gia .so-lieu { flex: 1 1 100%; gap: 2px 14px; justify-content: flex-end; }
+  .thanh-bao-gia .so-lieu { flex: 1 1 auto; gap: 2px 14px; justify-content: flex-end; }
+  .nut-chon-tat-ca { min-height: 36px; padding: 7px 11px; font-size: 12.5px; }
   .nut-mua-hang { flex: 1 1 100%; }
 }
 
