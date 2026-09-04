@@ -440,13 +440,15 @@
   white-space: nowrap;
   box-shadow: 0 10px 34px rgba(45, 157, 95, .5);
   pointer-events: none;
-  /* Nhảy bung ra → đứng im 1 giây → trôi xuống đáy rồi tan */
+  /* Nhảy xổ ra TO GẤP 1,6 LẦN → thu về cỡ thật thật nhanh → đứng im khoảng một
+     giây → trôi xuống đáy rồi tan. Cú bung đầu tiên phải lớn thì mắt mới bắt
+     được ngay giữa lúc đang nhìn chỗ khác trong trang. */
   animation: thong-bao-giam 2.55s cubic-bezier(.22, 1, .36, 1) forwards;
 }
 
 @keyframes thong-bao-giam {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
-  10%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  8%   { opacity: 1; transform: translate(-50%, -50%) scale(1.6); }
   16%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   55%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, 46vh) scale(.9); }
@@ -897,3 +899,26 @@
 @media (max-width: 560px) {
   .dong-qua-tang { font-size: 13.5px; }
 }
+
+/* Khối "Lưu ý trước khi mua" — tông cam cảnh báo, tách hẳn khỏi lời quảng bá
+   để khách không lướt qua mất điều kiện dùng được sản phẩm. */
+.khoi-luu-y {
+  border-color: rgba(255, 167, 46, .42);
+  border-left: 3px solid var(--cam);
+  background: linear-gradient(180deg, rgba(255, 167, 46, .13), rgba(255, 167, 46, .05));
+}
+.khoi-luu-y h4 { color: var(--cam); }
+.khoi-luu-y li { border-top-color: rgba(255, 167, 46, .2); }
+
+/* Nút "Liên hệ Zalo" ở đáy bảng Đặc quyền — là thẻ <a> mở sang Zalo nên phải
+   tự dựng lại dáng nút cho khớp với các nút <button> đứng cạnh. */
+.nut-zalo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  background: #0068ff;          /* xanh Zalo */
+  border-color: #0068ff;
+  color: #fff;
+}
+.nut-zalo:hover { background: #0055d4; border-color: #0055d4; }

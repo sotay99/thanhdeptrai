@@ -304,10 +304,27 @@
 
   // Modal văn bản dùng cho "Điều khoản sử dụng và điều kiện" và
   // "Bảo mật và quyền riêng tư" — hai mục này chưa có nội dung thật.
+  // Bảng "Đặc quyền dành cho khách hàng đã từng mua hàng của shop". Dựng đúng
+  // bằng bộ khối và hiệu ứng của bảng mô tả sản phẩm — khác mỗi tiêu đề, nội
+  // dung, và nút ở đáy là "Liên hệ Zalo" thay cho "Chọn sản phẩm này".
+  function moModalDacQuyen(m){
+    moModal({
+      ma: 'dac-quyen',
+      tieuDe: m.ten,
+      than: '<div class="mo-ta-sp">' + veNoiDungDacQuyen() + '</div>',
+      day: '' +
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
+        '<a class="nut nut-zalo" href="https://zalo.me/' + escapeHtml(ZALO_SHOP) + '"' +
+          ' target="_blank" rel="noopener noreferrer">Liên hệ Zalo</a>'
+    });
+  }
+
   function moModalVanBan(m){
-    // "Yêu cầu hoàn tiền" là chức năng sắp làm, còn hai mục kia là văn bản sắp
-    // viết — nói đúng việc đang diễn ra thay vì dùng chung một câu cho cả ba.
-    const dangThietKe = m.ma === 'hoan-tien';
+    if (m.ma === 'dac-quyen') { moModalDacQuyen(m); return; }
+    // "Yêu cầu hoàn tiền" và "Liên hệ shop" là chức năng sắp làm, còn hai mục
+    // kia là văn bản sắp viết — nói đúng việc đang diễn ra thay vì dùng chung
+    // một câu cho tất cả.
+    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'lien-he';
     moModal({
       ma: 'van-ban-' + m.ma,
       tieuDe: m.ten,

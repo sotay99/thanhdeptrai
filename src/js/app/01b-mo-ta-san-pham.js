@@ -32,6 +32,11 @@
     sp1: {
       khauHieu: 'Mở toàn bộ kho vũ khí của Lightroom ngay trên chiếc điện thoại bạn đang cầm trong tay — một lần duy nhất, dùng mãi mãi. 📱✨',
       khoi: [
+        { kieu: 'luu-y', tieuDe: '⚠️ Lưu ý trước khi mua', y: [
+          '🤖 App <strong>chỉ dành cho điện thoại chạy hệ điều hành Android</strong> — <strong>không dành cho iPhone</strong>. Vui lòng kiểm tra máy của bạn trước khi đặt hàng.',
+          '🔑 Chỉ có thể <strong>đăng nhập bằng tài khoản Adobe</strong>. Nếu bạn chưa có, tạo được ngay trong app chỉ trong một phút — shop hướng dẫn từng bước.',
+          '🚫 <strong>Không đăng nhập được bằng Google</strong>, kể cả khi app hiện sẵn nút đó.'
+        ] },
         { kieu: 'doan', chu: 'Bạn đã bao giờ mở Lightroom, chạm vào một công cụ hay ho rồi thấy hiện lên chữ <em>Premium</em> chưa? Cảm giác hụt hẫng đó dừng lại ở đây. Gói này cấp cho bạn quyền truy cập <strong>toàn bộ tính năng nâng cao</strong> của Lightroom trên điện thoại — thứ mà đại đa số người dùng phải trả tiền hằng tháng mới có.' },
         { kieu: 'noi-bat', chu: '🎁 Suất ưu đãi có giới hạn — kèm hướng dẫn đăng nhập và kích hoạt Premium từ A đến Z, shop cầm tay chỉ việc.' },
         { kieu: 'muc', tieuDe: '🔓 Những tính năng cao cấp được mở khoá', y: [
@@ -224,6 +229,45 @@
     }
   };
 
+  /* ------------------------------------------- ĐẶC QUYỀN CỦA KHÁCH ĐÃ MUA HÀNG
+
+     Dùng CHUNG bộ khối và chung hiệu ứng với mô tả sản phẩm, chỉ khác tiêu đề,
+     nội dung và nút ở đáy bảng.                                              */
+
+  // Số Zalo của shop. Để một chỗ duy nhất: cả nút bấm lẫn dòng chữ đều lấy từ
+  // đây nên không bao giờ có chuyện hai nơi ghi hai số khác nhau.
+  const ZALO_SHOP = '091714941';
+
+  const NOI_DUNG_DAC_QUYEN = [
+    { kieu: 'khau-hieu', chu: 'Đã từng mua hàng của Shop? Vậy thì bạn còn một món nữa chưa nhận: học thêm khoá thiết kế bạn thích, hoàn toàn miễn phí. 👑' },
+    { kieu: 'muc', tieuDe: '🎁 Yêu cầu học thêm các khoá học về thiết kế một cách miễn phí', y: [
+      '🛒 <strong>Điều kiện duy nhất:</strong> bạn đã từng mua <strong>bất kỳ sản phẩm nào</strong> của Shop — dù là gói lớn nhất hay món nhỏ nhất, đều được tính.',
+      '💬 <strong>Cách nhận:</strong> nhắn tin riêng cho shop qua Zalo và nói tên khoá học bạn muốn. Chỉ vậy thôi.',
+      '💸 <strong>Chi phí:</strong> không thêm một đồng nào. Đây là lời cảm ơn của shop dành cho khách đã tin tưởng.',
+      '☝️ <strong>Xin lưu ý:</strong> mỗi khách được yêu cầu <strong>không quá 2 khoá học</strong>. Nhớ nhé — <strong>không quá 2 khoá học</strong>, để shop còn phục vụ được tất cả mọi người.'
+    ] },
+    { kieu: 'muc', tieuDe: '📚 Kho khoá học bạn được chọn', y: [
+      '🎨 <strong>Chỉnh ảnh và màu sắc:</strong> Lightroom, Photoshop, Nhiếp ảnh.',
+      '🖌️ <strong>Thiết kế đồ hoạ:</strong> Adobe Illustrator, CorelDRAW, InDesign, Thiết kế banner, Tư duy thiết kế.',
+      '🎬 <strong>Dựng phim và chuyển động:</strong> After Effects, Premiere Pro, Quay dựng phim.',
+      '🏛️ <strong>Không gian ba chiều:</strong> 3DS MAX.',
+      '📱 <strong>Thiết kế giao diện:</strong> UX / UI.',
+      '🤖 <strong>Công nghệ mới:</strong> cách tạo video hàng loạt bằng AI.',
+      '➕ Và nhiều khoá khác nữa — cứ hỏi, có là shop gửi.'
+    ] },
+    { kieu: 'noi-bat', chu: '⏳ Đặc quyền này không có hạn dùng, nhưng kho khoá học thì đổi mới liên tục. Nhắn cho shop sớm để chọn được đúng khoá bạn đang cần nhất.' },
+    { kieu: 'cam-ket', tieuDe: '🤝 Shop cam kết', y: [
+      '⚡ <strong>Phản hồi nhanh:</strong> shop trả lời tin nhắn Zalo trong thời gian sớm nhất có thể.',
+      '📦 <strong>Gửi trọn bộ:</strong> khoá học giao đầy đủ, không cắt xén, không khoá phần nào.',
+      '🛟 <strong>Hỗ trợ trong lúc học:</strong> vướng ở đâu cứ nhắn, shop chỉ tiếp.',
+      '🔒 <strong>Riêng tư:</strong> shop không chia sẻ thông tin liên hệ của bạn cho bất kỳ ai.'
+    ] }
+  ];
+
+  function veNoiDungDacQuyen(){
+    return NOI_DUNG_DAC_QUYEN.map(veKhoiMoTa).join('');
+  }
+
   /* --------------------------------------------------------------- DỰNG HTML
 
      Lời văn ở trên CỐ Ý chứa vài thẻ <strong>/<em> nên KHÔNG chạy qua
@@ -234,7 +278,10 @@
      trước, khối dưới trôi từ phải qua sau đó — cả trang tự chạy hết, khách
      không phải cuộn xuống mới thấy.                                        */
 
-  const TRE_MOI_KHOI_MO_TA = 0.11;   // giây, khoảng cách giữa hai khối liền nhau
+  // Giây, khoảng cách giữa hai khối liền nhau. Nhịp cũ 0,11 giây khiến cả bảng
+  // chạy vụt qua trước khi mắt kịp bám vào khối nào; giãn gấp ba cho từng khối
+  // có chỗ đứng riêng. Đổi đúng một hằng số này là mọi bảng mô tả giãn theo.
+  const TRE_MOI_KHOI_MO_TA = 0.33;
 
   function veKhoiMoTa(khoi, thuTu){
     const tre = ' style="animation-delay:' + (thuTu * TRE_MOI_KHOI_MO_TA).toFixed(2) + 's"';

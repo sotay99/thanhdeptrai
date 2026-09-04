@@ -29,7 +29,7 @@
   const SAN_PHAM = [
     { ma: 'sp1', ten: 'App Lightroom cho điện thoại Android - đã có bản quyền trọn đời', giaGoc: 299000, giaChot: 99000 },
     { ma: 'sp2', ten: 'Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại', giaGoc: 99000, giaChot: 79000 },
-    { ma: 'sp3', ten: 'Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính', giaGoc: 359000, giaChot: 179000 },
+    { ma: 'sp3', ten: 'Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính', giaGoc: 359000, giaChot: 125000 },
     { ma: 'sp4', ten: 'Bộ Khóa học dành cho Lightroom điện thoại', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp5', ten: 'Bộ Khóa học dành cho Lightroom máy tính', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp6', ten: 'Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
@@ -47,6 +47,8 @@
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học lightroom mobile',        bieuTuong: '▤', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khóa học lightroom máy tính',      bieuTuong: '▣', kieu: 'trang', sanSang: false },
+    { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
+    { ma: 'lien-he',          ten: 'Liên hệ shop',                     bieuTuong: '☎', kieu: 'modal', sanSang: false },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
     { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
     { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false }

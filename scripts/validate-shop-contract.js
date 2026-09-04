@@ -41,7 +41,7 @@ const cssBase = doc("src/css/base.css");
 const SAN_PHAM_CHOT = [
   ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000, 99000],
   ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000, 79000],
-  ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000, 179000],
+  ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000, 125000],
   ["Bộ Khóa học dành cho Lightroom điện thoại", 199000, 0],
   ["Bộ Khóa học dành cho Lightroom máy tính", 199000, 0],
   ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
@@ -231,7 +231,42 @@ SAN_PHAM_CHOT.forEach((_, i) => {
 });
 
 // ---------------------------------------------------------------------------
-// 9) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 9) LƯU Ý CỦA SẢN PHẨM 1, BẢNG ĐẶC QUYỀN, MỤC LIÊN HỆ SHOP
+// ---------------------------------------------------------------------------
+[
+  [/kieu:\s*'luu-y'/, "khối Lưu ý của sản phẩm 1"],
+  [/chỉ dành cho điện thoại chạy hệ điều hành Android/, "lưu ý chỉ dành cho Android"],
+  [/không dành cho iPhone/, "lưu ý không dành cho iPhone"],
+  [/đăng nhập bằng tài khoản Adobe/, "lưu ý chỉ đăng nhập bằng tài khoản Adobe"],
+  [/Không đăng nhập được bằng Google/, "lưu ý không đăng nhập bằng Google"],
+  [/const\s+TRE_MOI_KHOI_MO_TA\s*=\s*0\.33\s*;/, "nhịp trễ 0,33 giây giữa hai khối mô tả"],
+  [/const\s+ZALO_SHOP\s*=\s*'091714941'/, "số Zalo của shop"],
+  [/const\s+NOI_DUNG_DAC_QUYEN\s*=\s*\[/, "nội dung bảng Đặc quyền"],
+  [/không quá 2 khoá học/, "giới hạn không quá 2 khoá học"],
+  [/function\s+veNoiDungDacQuyen\s*\(/, "hàm dựng nội dung bảng Đặc quyền"],
+  [/function\s+moModalDacQuyen\s*\(/, "hàm mở bảng Đặc quyền"],
+  [/https:\/\/zalo\.me\/'\s*\+\s*escapeHtml\(ZALO_SHOP\)/, "nút Liên hệ Zalo trỏ sang Zalo của shop"],
+  [/ma:\s*'dac-quyen'[\s\S]{0,140}?kieu:\s*'modal'/, "mục Đặc quyền trong menu bên trái"],
+  [/ma:\s*'lien-he'[\s\S]{0,80}?kieu:\s*'modal'/, "mục Liên hệ shop trong menu bên trái"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Mục "Đặc quyền" PHẢI đứng trên "Yêu cầu hoàn tiền" trong danh sách MODULE.
+if (banNoi.indexOf("ma: 'dac-quyen'") > banNoi.indexOf("ma: 'hoan-tien'")) {
+  fail('Mục "Đặc quyền" phải nằm TRÊN mục "Yêu cầu hoàn tiền" trong menu bên trái.');
+}
+
+[
+  [/@keyframes\s+thong-bao-giam\s*\{[\s\S]*?scale\(1\.6\)/, "cú bung to gấp 1,6 lần của thông báo mức giảm"],
+  [/\.khoi-luu-y\s*\{/, "kiểu riêng cho khối Lưu ý"],
+  [/\.nut-zalo\s*\{/, "kiểu riêng cho nút Liên hệ Zalo"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 10) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
