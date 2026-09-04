@@ -77,6 +77,34 @@
 
 .nut-noi:hover { background: var(--the-3); border-color: var(--xanh); }
 
+/* Bồng bềnh như phao nổi trên mặt nước gợn sóng: nhấp nhô 3 giây (khoảng hai
+   nhịp sóng, lên xuống kèm lắc rất nhẹ và bóng đổ co giãn theo độ cao), rồi
+   đứng im 2 giây, rồi lặp lại mãi. Một vòng 5 giây, 3 giây đầu = 60%.
+   Hiệu ứng đặt ở lớp bọc riêng chứ KHÔNG dùng transform trực tiếp trên .nut-noi
+   để không đụng vào transition left khi nút trượt vào khung menu. */
+.nut-noi { animation: bong-benh 5s ease-in-out infinite; }
+
+/* Menu đang mở thì nút thành dấu X — lúc đó nó là nút đóng, đứng yên cho chắc
+   tay bấm, không bồng bềnh nữa. */
+.nut-noi.menu-dang-mo { animation: none; }
+
+@keyframes bong-benh {
+  0%   { transform: translateY(0)      rotate(0deg);    box-shadow: var(--bong-noi); }
+  7.5% { transform: translateY(-5px)   rotate(-2.2deg); box-shadow: 0 14px 30px rgba(0, 0, 0, .58); }
+  15%  { transform: translateY(-6.5px) rotate(-1deg);   box-shadow: 0 16px 34px rgba(0, 0, 0, .6); }
+  22.5%{ transform: translateY(-2px)   rotate(1.6deg);  box-shadow: 0 10px 24px rgba(0, 0, 0, .52); }
+  30%  { transform: translateY(2.5px)  rotate(2.2deg);  box-shadow: 0 5px 16px rgba(0, 0, 0, .46); }
+  37.5%{ transform: translateY(1px)    rotate(1deg);    box-shadow: 0 7px 19px rgba(0, 0, 0, .48); }
+  45%  { transform: translateY(-4px)   rotate(-1.6deg); box-shadow: 0 13px 28px rgba(0, 0, 0, .56); }
+  52.5%{ transform: translateY(-2px)   rotate(-.6deg);  box-shadow: 0 10px 24px rgba(0, 0, 0, .52); }
+  60%  { transform: translateY(0)      rotate(0deg);    box-shadow: var(--bong-noi); }
+  100% { transform: translateY(0)      rotate(0deg);    box-shadow: var(--bong-noi); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nut-noi { animation: none; }
+}
+
 /* Menu đang mở: nút hoá thành dấu X đóng khung, đồng thời trượt sang nằm SÁT
    MÉP PHẢI bên trong khung menu — vẫn nguyên độ cao cũ. Con số 264px và 80vw
    phải khớp với chiều rộng .menu-trai bên dưới. */
@@ -1085,3 +1113,12 @@
   min-height: 44px;
 }
 .nut-hoan-tien:hover { border-color: var(--do); background: rgba(229, 83, 75, .24); }
+
+/* MÀN HÌNH HẸP — giá chốt LUÔN đứng riêng một dòng, dưới dòng "giá gốc · Giảm
+   N% · chỉ còn". Bề ngang hẹp thì ba thành phần kia đã chiếm gần hết chỗ; ép
+   giá chốt xuống dòng riêng để con số quan trọng nhất không bao giờ bị dồn sát
+   mép hay vỡ đôi. flex-basis 100% là đủ, không cần đụng vào HTML. */
+@media (max-width: 560px) {
+  .the-sanpham .hang-gia { row-gap: 2px; }
+  .the-sanpham .gia-chot { flex: 0 0 100%; }
+}

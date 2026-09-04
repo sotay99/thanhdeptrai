@@ -416,7 +416,23 @@ if (/<a[^>]*zalo\.me/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 14) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 14) BỐ CỤC MÀN HÌNH HẸP VÀ NÚT NỔI BỒNG BỀNH
+// ---------------------------------------------------------------------------
+[
+  [/@media \(max-width: 560px\)\s*\{[^@]*?\.thanh-bao-gia \.so-lieu\s*\{[^}]*order:\s*-1/,
+    "màn hẹp: khối số liệu lên tầng trên, hai nút xuống tầng dưới"],
+  [/@media \(max-width: 560px\)\s*\{[^@]*?\.the-sanpham \.gia-chot\s*\{[^}]*flex:\s*0 0 100%/,
+    "màn hẹp: giá chốt luôn đứng riêng một dòng"],
+  [/\.nut-noi\s*\{\s*animation:\s*bong-benh\s+5s[^;]*infinite/, "nút nổi bồng bềnh, mỗi vòng 5 giây"],
+  [/\.nut-noi\.menu-dang-mo\s*\{\s*animation:\s*none/, "nút đứng yên khi menu đang mở"],
+  [/@keyframes\s+bong-benh\s*\{[\s\S]*?60%[^}]*translateY\(0\)[\s\S]*?100%[^}]*translateY\(0\)/,
+    "nhịp bồng bềnh: 3 giây nhấp nhô (tới mốc 60%) rồi 2 giây đứng im"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 15) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
