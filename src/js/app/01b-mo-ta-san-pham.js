@@ -19,6 +19,7 @@
 
   // Cam kết dán ở CUỐI mô tả của MỌI sản phẩm, không trừ sản phẩm nào.
   const CAM_KET_CHUNG = [
+    '⚡ <strong>Giao hàng tức thì, không có thời gian chờ:</strong> ngay khi shop nhận được tiền thanh toán, hệ thống tự động gửi hàng tới bạn qua <strong>email</strong> — hoặc qua <strong>Zalo</strong>, hoặc <strong>tin nhắn SMS</strong>, tuỳ cách bạn để lại liên hệ. Không hẹn ngày, không xếp hàng chờ, không phải nhắc.',
     '📘 <strong>Hướng dẫn tận tay:</strong> ngay sau khi mua, bạn nhận bộ hướng dẫn cụ thể — chi tiết từng bước, có hình ảnh và video minh hoạ, làm theo là chạy, không cần biết kỹ thuật.',
     '💯 <strong>Hoàn tiền 100% nếu không hài lòng</strong> trong vòng <strong>15 ngày đầu sử dụng</strong>. Không hỏi lý do dài dòng — bạn chỉ cần bấm mục <strong>“Yêu cầu hoàn tiền”</strong> ở thanh menu bên trái.',
     '🛟 <strong>Hỗ trợ trực tiếp từ shop</strong> qua Zalo trong suốt quá trình cài đặt và sử dụng, kể cả khi bạn đổi máy hay cài lại.',

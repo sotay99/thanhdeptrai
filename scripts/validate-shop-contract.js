@@ -300,7 +300,42 @@ if (banNoi.indexOf('nut-dac-quyen') > banNoi.indexOf('veKhuQuaTang();')) {
 });
 
 // ---------------------------------------------------------------------------
-// 11) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 11) CAM KẾT GIAO HÀNG NHANH VÀ KHUNG CAM KẾT TRONG BẢNG XÁC NHẬN ĐƠN HÀNG
+// ---------------------------------------------------------------------------
+[
+  [/const\s+CAM_KET_CHUNG\s*=\s*\[\s*\n\s*'⚡ <strong>Giao hàng tức thì, không có thời gian chờ:/,
+    "cam kết giao hàng nhanh, xếp ĐẦU tiên trong khối cam kết"],
+  [/ngay khi shop nhận được tiền thanh toán/, "mốc giao hàng: ngay khi nhận được tiền thanh toán"],
+  [/hệ thống tự động gửi hàng[\s\S]{0,200}?<strong>email<\/strong>[\s\S]{0,120}?<strong>Zalo<\/strong>[\s\S]{0,80}?SMS/,
+    "ba đường giao hàng: email tự động, Zalo, SMS"],
+  [/class="khung-cam-ket-giao"/, "khung cam kết trong bảng xác nhận đơn hàng"],
+  [/ít nhất 1 trong 3 trường<\/strong> \(khung nhập liệu\)/, 'câu mời nhập "ít nhất 1 trong 3 trường (khung nhập liệu)"'],
+  [/cam kết giao sản phẩm ngay lập tức/, "lời cam kết giao ngay khi nhận được tiền"],
+  [/ưu tiên giao qua <strong>email<\/strong> \(thông qua hệ thống tự động\)/, "ưu tiên giao qua email tự động"],
+  [/nếu bạn chưa nhập email/, "giao qua Zalo khi khách chưa nhập email"],
+  [/nếu không thể liên hệ qua Zalo/, "giao qua SMS khi không liên hệ được Zalo"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Dòng ghi chú cũ phải được thay hẳn, không để hai chỗ nói cùng một việc.
+if (/class="ghi-chu">Vui lòng nhập/.test(banNoi)) {
+  fail('Dòng ghi chú cũ trong bảng xác nhận đơn hàng phải được thay bằng khung cam kết.');
+}
+
+[
+  [/\.the-sanpham\s*\{[\s\S]*?rgba\(20, 115, 230, \.25\) 11px, rgba\(20, 115, 230, 0\) 28px/,
+    "mảng xanh của thẻ chưa chọn thấp đi một nửa, còn 28px"],
+  [/\.khung-cam-ket-giao\s*\{[\s\S]*?animation:\s*nhun-nhay-cam-ket\s+3\.5s[^;]*infinite/,
+    "khung cam kết nhún nhảy tuần hoàn, mỗi vòng 3,5 giây"],
+  [/@keyframes\s+nhun-nhay-cam-ket\s*\{[\s\S]*?13\.6%[\s\S]*?100%/,
+    "nhịp nhún nhảy của khung cam kết: nảy xong thì nghỉ ba giây"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 12) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

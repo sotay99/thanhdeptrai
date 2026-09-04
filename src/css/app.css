@@ -260,13 +260,13 @@
   display: flex;
   flex-direction: column;
   padding: 14px 16px 15px;
-  /* Nền thẻ: xanh đậm ở sát đáy, nhạt dần lên và TẮT HẲN đúng mép trên của nút
-     "Chọn sản phẩm này". 55px = 15px chừa đáy + 40px chiều cao nút, nên đổi
-     padding đáy hay chiều cao nút thì phải sửa lại con số này.
-     Sản phẩm CHƯA chọn dùng bản nhạt (khoảng một nửa độ đậm), sản phẩm ĐÃ chọn
-     mới hiện đủ độ — nhìn lướt qua là biết ngay mình đã lấy những món nào. */
+  /* Nền thẻ: xanh đậm ở sát đáy rồi nhạt dần lên. Sản phẩm CHƯA chọn vừa nhạt
+     hơn vừa THẤP hơn — mảng xanh chỉ cao 28px, đúng một nửa mức cũ, nên nó
+     dừng lại quãng giữa nút "Chọn sản phẩm này". Sản phẩm ĐÃ chọn mới hiện đủ
+     độ đậm và dâng lên tới 64px; nhìn lướt qua là biết ngay mình đã lấy những
+     món nào. */
   background:
-    linear-gradient(to top, rgba(20, 115, 230, .43) 0, rgba(20, 115, 230, .25) 22px, rgba(20, 115, 230, 0) 55px),
+    linear-gradient(to top, rgba(20, 115, 230, .43) 0, rgba(20, 115, 230, .25) 11px, rgba(20, 115, 230, 0) 28px),
     var(--the);
   transition: border-color .18s, transform .18s, box-shadow .18s, background .25s;
   border: 1px solid var(--vien);
@@ -951,3 +951,38 @@
 
 /* Khung quà tặng đứng ngay dưới nút Đặc quyền nên không cần chừa thêm ở trên */
 .nut-dac-quyen + .khu-qua-tang { margin-top: 10px; }
+
+/* Khung cam kết giao hàng trong bảng "Xác nhận đơn hàng" — nền đỏ nhạt để bật
+   hẳn khỏi phần còn lại của bảng, và nhún nhảy theo đúng kiểu nút Mua hàng
+   nhưng thưa hơn: mỗi đợt nảy xong thì đứng im khoảng ba giây. */
+.khung-cam-ket-giao {
+  margin: 14px 0 16px;
+  padding: 13px 15px;
+  border: 1px solid rgba(229, 83, 75, .5);
+  border-radius: var(--bo-the);
+  background: linear-gradient(180deg, rgba(229, 83, 75, .2), rgba(229, 83, 75, .08));
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--chu);
+  transform-origin: center;
+  will-change: transform;
+  animation: nhun-nhay-cam-ket 3.5s ease-in-out infinite;
+}
+.khung-cam-ket-giao strong { color: #ff8a82; font-weight: 700; }
+.khung-cam-ket-giao p { margin: 0; }
+.khung-cam-ket-giao p + p { margin-top: 8px; }
+
+/* Cùng biên độ và cùng tốc độ nảy với nút Mua hàng (khoảng nửa giây cho trọn
+   hai cú nảy), chỉ khác là quãng nghỉ kéo dài ba giây thay vì hơn một giây. */
+@keyframes nhun-nhay-cam-ket {
+  0%    { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, .5); }
+  3.3%  { transform: scale(1.06) rotate(-.5deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .24); }
+  6.5%  { transform: scale(.99) rotate(.4deg);    box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
+  9.8%  { transform: scale(1.045) rotate(-.35deg);box-shadow: 0 0 0 5px rgba(229, 83, 75, .2); }
+  13.6% { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 9px rgba(229, 83, 75, 0); }
+  100%  { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .khung-cam-ket-giao { animation: none; }
+}
