@@ -33,6 +33,9 @@
     sp9: '/assets/anh/sp9.jpg'
   };
 
+  // Ảnh minh hoạ kho khoá học, dùng cho bảng "Đặc quyền".
+  const ANH_DAC_QUYEN = '/assets/anh/dac-quyen.jpg';
+
   const CAM_KET_CHUNG = [
     '⚡ <strong>Giao hàng tức thì, không có thời gian chờ:</strong> ngay khi shop nhận được tiền thanh toán, hệ thống tự động gửi hàng tới bạn qua <strong>email</strong> — hoặc qua <strong>Zalo</strong>, hoặc <strong>tin nhắn SMS</strong>, tuỳ cách bạn để lại liên hệ. Không hẹn ngày, không xếp hàng chờ, không phải nhắc.',
     '📘 <strong>Hướng dẫn tận tay:</strong> ngay sau khi mua, bạn nhận bộ hướng dẫn cụ thể — chi tiết từng bước, có hình ảnh và video minh hoạ, làm theo là chạy, không cần biết kỹ thuật.',
@@ -251,12 +254,9 @@
      Dùng CHUNG bộ khối và chung hiệu ứng với mô tả sản phẩm, chỉ khác tiêu đề,
      nội dung và nút ở đáy bảng.                                              */
 
-  // Số Zalo của shop. Để một chỗ duy nhất: cả nút bấm lẫn dòng chữ đều lấy từ
-  // đây nên không bao giờ có chuyện hai nơi ghi hai số khác nhau.
-  const ZALO_SHOP = '091714941';
-
   const NOI_DUNG_DAC_QUYEN = [
-    { kieu: 'khau-hieu', chu: 'Đã từng mua hàng của Shop? Vậy thì bạn còn một món nữa chưa nhận: học thêm khoá thiết kế bạn thích, hoàn toàn miễn phí. 👑' },
+    { kieu: 'khau-hieu', chu: 'Đã từng mua hàng của Shop? Vậy thì bạn còn một món nữa chưa nhận:' +
+      '<span class="chu-nhan-xanh">học thêm khoá thiết kế bạn thích, hoàn toàn miễn phí. 👑</span>' },
     { kieu: 'muc', tieuDe: '🎁 Yêu cầu học thêm các khoá học về thiết kế một cách miễn phí', y: [
       '🛒 <strong>Điều kiện duy nhất:</strong> bạn đã từng mua <strong>bất kỳ sản phẩm nào</strong> của Shop — dù là gói lớn nhất hay món nhỏ nhất, đều được tính.',
       '💬 <strong>Cách nhận:</strong> nhắn tin riêng cho shop qua Zalo và nói tên khoá học bạn muốn. Chỉ vậy thôi.',
@@ -281,10 +281,28 @@
     ] }
   ];
 
+  // Dựng ô ảnh vuông dùng chung cho bảng mô tả sản phẩm lẫn bảng Đặc quyền.
+  // width/height khai đúng 1:1 để trình duyệt chừa sẵn chỗ, trang không giật
+  // khi ảnh tải xong; loading="lazy" nên ảnh chỉ tải lúc bảng mở ra.
+  function veOAnh(duongDan, moTa){
+    return '' +
+      '<figure class="anh-san-pham">' +
+        '<img src="' + duongDan + '" width="640" height="640" loading="lazy" decoding="async"' +
+          ' alt="' + escapeHtml(moTa) + '">' +
+      '</figure>';
+  }
+
   function veNoiDungDacQuyen(){
     // Gọi qua hàm bọc chứ KHÔNG truyền thẳng veKhoiMoTa vào map: map đưa cả
     // mảng vào tham số thứ ba, rơi đúng chỗ cờ trongHang và tắt mất hiệu ứng.
-    return NOI_DUNG_DAC_QUYEN.map(function(k, i){ return veKhoiMoTa(k, i); }).join('');
+    // Khối đầu tiên ghép ngang hàng với ảnh kho khoá học, y như bảng mô tả
+    // sản phẩm — kể cả nhịp trượt chậm gấp năm của khung ảnh.
+    return '' +
+      '<div class="hang-anh-chu troi-ngang" style="animation-delay:0s">' +
+        veOAnh(ANH_DAC_QUYEN, 'Ảnh minh hoạ: kho khoá học thiết kế của shop') +
+        veKhoiMoTa(NOI_DUNG_DAC_QUYEN[0], 0, true) +
+      '</div>' +
+      NOI_DUNG_DAC_QUYEN.slice(1).map(function(k, i){ return veKhoiMoTa(k, i + 1); }).join('');
   }
 
   /* --------------------------------------------------------------- DỰNG HTML
@@ -331,17 +349,9 @@
     const anh = ANH_SAN_PHAM[sp.ma];
     if (!anh || !danhSach.length) return danhSach.map(function(k, i){ return veKhoiMoTa(k, i); }).join('');
 
-    // width/height khai đúng 1:1 để trình duyệt chừa sẵn chỗ, trang không bị
-    // giật khi ảnh tải xong. loading="lazy" cho ảnh chỉ tải khi bảng mở ra.
-    const oAnh = '' +
-      '<figure class="anh-san-pham">' +
-        '<img src="' + anh + '" width="640" height="640" loading="lazy" decoding="async"' +
-          ' alt="Ảnh minh hoạ: ' + escapeHtml(sp.ten) + '">' +
-      '</figure>';
-
     return '' +
       '<div class="hang-anh-chu troi-ngang" style="animation-delay:0s">' +
-        oAnh + veKhoiMoTa(danhSach[0], 0, true) +
+        veOAnh(anh, 'Ảnh minh hoạ: ' + sp.ten) + veKhoiMoTa(danhSach[0], 0, true) +
       '</div>' +
       danhSach.slice(1).map(function(k, i){ return veKhoiMoTa(k, i + 1); }).join('');
   }

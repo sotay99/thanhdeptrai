@@ -77,6 +77,34 @@
 
 .nut-noi:hover { background: var(--the-3); border-color: var(--xanh); }
 
+/* Bồng bềnh như phao nổi trên mặt nước gợn sóng: nhấp nhô 3 giây (khoảng hai
+   nhịp sóng, lên xuống kèm lắc rất nhẹ và bóng đổ co giãn theo độ cao), rồi
+   đứng im 2 giây, rồi lặp lại mãi. Một vòng 5 giây, 3 giây đầu = 60%.
+   Hiệu ứng đặt ở lớp bọc riêng chứ KHÔNG dùng transform trực tiếp trên .nut-noi
+   để không đụng vào transition left khi nút trượt vào khung menu. */
+.nut-noi { animation: bong-benh 5s ease-in-out infinite; }
+
+/* Menu đang mở thì nút thành dấu X — lúc đó nó là nút đóng, đứng yên cho chắc
+   tay bấm, không bồng bềnh nữa. */
+.nut-noi.menu-dang-mo { animation: none; }
+
+@keyframes bong-benh {
+  0%   { transform: translateY(0)      rotate(0deg);    box-shadow: var(--bong-noi); }
+  7.5% { transform: translateY(-5px)   rotate(-2.2deg); box-shadow: 0 14px 30px rgba(0, 0, 0, .58); }
+  15%  { transform: translateY(-6.5px) rotate(-1deg);   box-shadow: 0 16px 34px rgba(0, 0, 0, .6); }
+  22.5%{ transform: translateY(-2px)   rotate(1.6deg);  box-shadow: 0 10px 24px rgba(0, 0, 0, .52); }
+  30%  { transform: translateY(2.5px)  rotate(2.2deg);  box-shadow: 0 5px 16px rgba(0, 0, 0, .46); }
+  37.5%{ transform: translateY(1px)    rotate(1deg);    box-shadow: 0 7px 19px rgba(0, 0, 0, .48); }
+  45%  { transform: translateY(-4px)   rotate(-1.6deg); box-shadow: 0 13px 28px rgba(0, 0, 0, .56); }
+  52.5%{ transform: translateY(-2px)   rotate(-.6deg);  box-shadow: 0 10px 24px rgba(0, 0, 0, .52); }
+  60%  { transform: translateY(0)      rotate(0deg);    box-shadow: var(--bong-noi); }
+  100% { transform: translateY(0)      rotate(0deg);    box-shadow: var(--bong-noi); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nut-noi { animation: none; }
+}
+
 /* Menu đang mở: nút hoá thành dấu X đóng khung, đồng thời trượt sang nằm SÁT
    MÉP PHẢI bên trong khung menu — vẫn nguyên độ cao cũ. Con số 264px và 80vw
    phải khớp với chiều rộng .menu-trai bên dưới. */
@@ -555,11 +583,30 @@
   100% { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
 }
 
+/* MÀN HÌNH HẸP — xếp lại thành hai tầng thay vì chen nhau trên một dòng:
+     tầng trên  : khối số liệu, trải hết bề ngang, căn phải
+     tầng dưới  : [ Chọn tất cả ] [ Mua hàng ] — luôn NGANG HÀNG nhau
+   Khối số liệu được kéo lên đầu bằng order:-1 (trong HTML nó đứng sau nút Chọn
+   tất cả), nên hai nút giữ đúng thứ tự trái–phải mà không phải đổi HTML. */
 @media (max-width: 560px) {
-  .thanh-bao-gia { gap: 9px; }
-  .thanh-bao-gia .so-lieu { flex: 1 1 auto; gap: 2px 14px; justify-content: flex-end; }
-  .nut-chon-tat-ca { min-height: 36px; padding: 7px 11px; font-size: 12.5px; }
-  .nut-mua-hang { flex: 1 1 100%; }
+  .thanh-bao-gia { gap: 8px 9px; }
+  .thanh-bao-gia .so-lieu {
+    order: -1;
+    flex: 1 1 100%;
+    gap: 2px 14px;
+    justify-content: flex-end;
+  }
+  .nut-chon-tat-ca {
+    flex: 0 1 auto;
+    min-height: 42px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+  }
+  .nut-mua-hang {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 12px;
+  }
 }
 
 /* ------------------------------------------- BẢNG TỔNG KẾT ĐƠN TRONG MODAL */
@@ -829,7 +876,7 @@
 }
 
 /* ==========================================================================
-   KHU QUÀ TẶNG — cuối module "Gói hàng VIP Lightroom"
+   KHU QUÀ TẶNG — cuối module "Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế"
    ========================================================================== */
 
 /* Nút mời xuống quà, đặt ngay dưới dòng "Chọn càng nhiều càng rẻ…" */
@@ -1066,3 +1113,54 @@
   min-height: 44px;
 }
 .nut-hoan-tien:hover { border-color: var(--do); background: rgba(229, 83, 75, .24); }
+
+/* MÀN HÌNH HẸP — giá chốt LUÔN đứng riêng một dòng, dưới dòng "giá gốc · Giảm
+   N% · chỉ còn". Bề ngang hẹp thì ba thành phần kia đã chiếm gần hết chỗ; ép
+   giá chốt xuống dòng riêng để con số quan trọng nhất không bao giờ bị dồn sát
+   mép hay vỡ đôi. flex-basis 100% là đủ, không cần đụng vào HTML. */
+@media (max-width: 560px) {
+  .the-sanpham .hang-gia { row-gap: 2px; }
+  .the-sanpham .gia-chot { flex: 0 0 100%; }
+}
+
+/* Nửa sau của khẩu hiệu bảng Đặc quyền: xuống hàng và tô màu xanh đặc trưng —
+   đây là câu chốt, phải bật hẳn khỏi vế đặt vấn đề ở trên. */
+.khoi-khau-hieu .chu-nhan-xanh {
+  display: block;
+  margin-top: 5px;
+  color: var(--xanh);
+  font-weight: 800;
+}
+
+/* Thông báo mức giảm bật ra NGAY TẠI THẺ vừa bấm: rộng bằng thẻ, mép trên trùng
+   mép trên thẻ (toạ độ do JS đo và gắn vào style). Bung ra từ chính mép trên
+   nên transform-origin đặt ở top, rồi vẫn đứng im và trôi xuống như bản giữa
+   màn hình. */
+.thong-bao-giam.tai-the {
+  left: 0;
+  top: 0;
+  transform-origin: center top;
+  text-align: center;
+  animation: thong-bao-giam-tai-the 2.55s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+@keyframes thong-bao-giam-tai-the {
+  0%   { opacity: 0; transform: translateY(0) scale(.5); }
+  8%   { opacity: 1; transform: translateY(0) scale(1.6); }
+  16%  { opacity: 1; transform: translateY(0) scale(1); }
+  55%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(46vh) scale(.9); }
+}
+
+/* Nút "Tôi cần được Tư vấn thêm" — chưa nối việc gì nhưng KHÔNG để nó xám như
+   nút hỏng: giữ nguyên sắc độ của một nút dùng được, tông tím tách khỏi nút
+   vàng và nút đỏ ở trên. */
+.nut-tu-van {
+  margin-top: 9px;
+  border-color: rgba(150, 120, 240, .5);
+  background: linear-gradient(180deg, rgba(150, 120, 240, .17), rgba(150, 120, 240, .06));
+  color: #b8a4ff;
+  font-weight: 700;
+  min-height: 44px;
+  cursor: default;
+}

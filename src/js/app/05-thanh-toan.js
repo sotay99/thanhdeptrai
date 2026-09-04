@@ -49,6 +49,39 @@
     });
   }
 
+  // Số Zalo của shop nằm ở nhánh /thongtinlienhe trong Realtime Database, KHÔNG
+  // nằm trong mã nguồn — hệt cách giấu số tài khoản. Người tải mã nguồn về máy
+  // sẽ chỉ thấy tên nhánh, không thấy con số.
+  function taiThongTinLienHe(){
+    if (!firebaseSanSang || !rtdb) return Promise.resolve(false);
+    return rtdb.ref('thongtinlienhe').once('value').then(function(anh){
+      const du = anh && anh.val();
+      if (!du) return false;
+      state.zaloShop = String(du.zalo || '').replace(/\D/g, '');
+      return !!state.zaloShop;
+    }).catch(function(e){
+      console.error('Không đọc được thông tin liên hệ từ Firebase:', e);
+      return false;
+    });
+  }
+
+  // Bấm "Liên hệ Zalo": dựng địa chỉ NGAY LÚC BẤM từ con số vừa đọc được, rồi
+  // mở tab mới. Không dựng sẵn thẻ <a href> vì làm vậy là in thẳng số Zalo vào
+  // HTML của trang.
+  function moZaloShop(){
+    const so = String(state.zaloShop || '').replace(/\D/g, '');
+    if (!so) {
+      // Chưa đọc được (mất mạng, hoặc chưa dán dữ liệu vào Firebase): thử lại
+      // một lần rồi mới báo, thay vì im lặng không làm gì.
+      taiThongTinLienHe().then(function(duoc){
+        if (duoc) moZaloShop();
+        else alert('Chưa lấy được thông tin liên hệ. Vui lòng kiểm tra kết nối mạng rồi thử lại.');
+      });
+      return;
+    }
+    window.open('https://zalo.me/' + so, '_blank', 'noopener,noreferrer');
+  }
+
   // ------------------------------------------------------------ LƯU ĐƠN HÀNG
 
   function luuDonHang(){
@@ -58,6 +91,17 @@
     const ref = rtdb.ref('donhang').push();
     return ref.set({
       sanPham: sanPhamDaChon().map(function(sp){ return sp.ten + ' — ' + dinhDangTien(sp.giaChot); }),
+      // Mã sản phẩm để máy đọc. Chuỗi 'sanPham' ở trên là để NGƯỜI đọc; khâu
+      // gửi hàng tự động cần đúng mã mới tra ra được đường tải của từng món.
+      maSanPham: sanPhamDaChon().map(function(sp){ return sp.ma; }),
+      // Trạng thái là thứ khâu gửi hàng tự động lọc theo, nên chỉ có một giá trị
+      // tại một thời điểm:
+      //   'moi'        — khách vừa bấm Tiến hành thanh toán, chưa xác nhận
+      //   'daXacNhan'  — khách bấm "Đã thanh toán", chờ gửi hàng
+      //   'daGui'      — đã gửi hàng cho khách
+      //   'canXemTay'  — không gửi tự động được, chủ shop phải xử lý
+      // Nhờ vậy hàng chờ gửi luôn là một danh sách NGẮN, không phải quét cả kho.
+      trangThai: 'moi',
       tongTien: t.tongTien,
       phanTramGiam: t.phanTramGiam,
       thanhTien: t.thanhTien,
@@ -79,7 +123,7 @@
   function danhDauDaThanhToan(){
     if (!firebaseSanSang || !rtdb || !state.maDonHienTai) return Promise.resolve();
     return rtdb.ref('donhang/' + state.maDonHienTai)
-      .update({ daXacNhan: true, xacNhanLuc: Date.now() })
+      .update({ daXacNhan: true, trangThai: 'daXacNhan', xacNhanLuc: Date.now() })
       .catch(function(e){ console.error('Không cập nhật được trạng thái đơn hàng:', e); });
   }
 
@@ -362,6 +406,7 @@
     if (hanhDong === 'xem-chi-tiet') { moModalChiTietSanPham(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'chon-tu-chi-tiet') { chonTuBangChiTiet(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'vao-hoc-ngay') { vaoHocNgay(nutHanhDong.getAttribute('data-module')); return; }
+    if (hanhDong === 'lien-he-zalo') { moZaloShop(); return; }
     if (hanhDong === 'chon-tat-ca') { chonTatCa(); return; }
     if (hanhDong === 'xuong-qua-tang') { xuongKhuQuaTang(); return; }
     if (hanhDong === 'cuon-len-dau') { cuonLenDauTrang(); return; }
@@ -415,6 +460,7 @@
     // Nạp trước thông tin chuyển khoản để lúc khách mở modal thanh toán là có
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
     taiThongTinCK();
+    taiThongTinLienHe();
   }
 
   boot();

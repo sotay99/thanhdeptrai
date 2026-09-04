@@ -18,7 +18,9 @@
   const GIAM_MOI_SAN_PHAM = 10;
   const KHONG_TINH_GIAM_LAN_HAI = ['sp4', 'sp5', 'sp8', 'sp9'];
 
-  // Bảy sản phẩm của Gói hàng VIP Lightroom. Tên giữ nguyên văn theo yêu cầu
+  // Chín sản phẩm của module "Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế". Mã module
+  // vẫn là 'goi-vip' — ĐỪNG đổi, đó là địa chỉ #hash mà khách đã lưu và đã chia
+  // sẻ. Tên giữ nguyên văn theo yêu cầu
   // của chủ shop — sửa chữ hoặc sửa giá sẽ làm
   // scripts/validate-shop-contract.js đỏ.
   //
@@ -43,7 +45,7 @@
   //   kieu 'modal'  — không đổi trang, chỉ bật một bảng phụ lên
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: false },
-    { ma: 'goi-vip',          ten: 'Gói hàng VIP Lightroom',           bieuTuong: '★', kieu: 'trang', sanSang: true  },
+    { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học lightroom mobile',        bieuTuong: '▤', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khóa học lightroom máy tính',      bieuTuong: '▣', kieu: 'trang', sanSang: false },
@@ -78,6 +80,9 @@
     tuDongDien: { zalo: false, dienThoai: false },
     thongTinCK: Object.assign({}, THONG_TIN_CK_DU_PHONG),
     daTaiThongTinCK: false,
+    // Số Zalo của shop — GIỐNG HỆT số tài khoản, nó KHÔNG nằm trong mã nguồn
+    // mà đọc từ Realtime Database lúc chạy. Xem chú thích ở nút "Liên hệ Zalo".
+    zaloShop: '',
     maDonHienTai: null,
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)

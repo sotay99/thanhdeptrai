@@ -80,7 +80,7 @@
   function veModuleGoiVip(){
     return '' +
       '<section class="gioi-thieu">' +
-        '<h2>Gói hàng VIP Lightroom</h2>' +
+        '<h2>Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế</h2>' +
         '<p>Chọn những sản phẩm bạn cần, giá đã chốt hiện ngay ở thanh dưới đáy màn hình.</p>' +
         '<div class="bang-uu-dai"><span aria-hidden="true">🔥</span> Chọn càng nhiều càng rẻ: mỗi sản phẩm được giảm thêm ' +
           GIAM_MOI_SAN_PHAM + '% ở bước chốt đơn — chỉ áp dụng với sản phẩm giá trị trên 40K</div>' +
@@ -98,6 +98,11 @@
       // luôn mở ra y hệt một bảng.
       '<button type="button" class="nut nut-rong nut-hoan-tien" data-hanh-dong="mo-module" data-module="hoan-tien">' +
         '<span aria-hidden="true">↩</span> Yêu cầu hoàn tiền 100% với sản phẩm đã mua</button>' +
+      // CỐ Ý chưa có data-hanh-dong: nút đã dựng sẵn chỗ nhưng chưa nối việc gì.
+      // Cũng cố ý KHÔNG dùng thuộc tính disabled — disabled làm nút xám đi và
+      // báo với khách rằng nó hỏng; ở đây nó chỉ là dòng chữ chờ ngày nối việc.
+      '<button type="button" class="nut nut-rong nut-tu-van">' +
+        '<span aria-hidden="true">💬</span> Tôi cần được Tư vấn thêm</button>' +
       veKhuQuaTang();
   }
 
@@ -300,7 +305,15 @@
   // sản phẩm không được cộng giảm — để con số trên thông báo và trên thanh báo
   // giá không bao giờ nói hai điều khác nhau.
 
-  function hienThongBaoGiam(){
+  // maSanPham: bấm chọn/bỏ chọn MỘT sản phẩm thì thông báo bật ra ngay tại thẻ
+  // đó — rộng bằng thẻ, mép trên trùng mép trên thẻ — để mắt khỏi phải chạy đi
+  // đâu tìm. Bỏ trống (bấm "Chọn tất cả") thì vẫn hiện giữa màn hình như cũ,
+  // vì lúc đó thông báo nói về cả lưới chứ không riêng thẻ nào.
+  //
+  // Dùng position:fixed rồi đặt toạ độ theo thẻ, KHÔNG đặt thông báo vào bên
+  // trong thẻ: thẻ có overflow:hidden nên đặt vào trong sẽ bị cắt ngang thân
+  // lúc trôi xuống.
+  function hienThongBaoGiam(maSanPham){
     const cu = document.getElementById('thong-bao-giam');
     if (cu) cu.remove();
     const el = document.createElement('div');
@@ -308,6 +321,18 @@
     el.className = 'thong-bao-giam';
     el.setAttribute('role', 'status');
     el.textContent = 'Giảm thêm ' + tinhTien().phanTramGiam + '%';
+
+    const the = maSanPham
+      ? document.querySelector('.the-sanpham[data-ma="' + maSanPham + '"]')
+      : null;
+    if (the) {
+      const o = the.getBoundingClientRect();
+      el.classList.add('tai-the');
+      el.style.left = o.left + 'px';
+      el.style.top = o.top + 'px';
+      el.style.width = o.width + 'px';
+    }
+
     document.body.appendChild(el);
     el.addEventListener('animationend', function(){ el.remove(); });
   }
@@ -354,7 +379,7 @@
     doiChon(ma);
     capNhatTheSanPham(ma);
     capNhatThanhBaoGia();
-    hienThongBaoGiam();
+    hienThongBaoGiam(ma);
   }
 
   // Bấm "Chọn sản phẩm này" trong bảng chi tiết: đóng bảng, sản phẩm được CHỌN
@@ -366,7 +391,7 @@
     if (!dangChon(ma)) doiChon(ma);
     capNhatTheSanPham(ma);
     capNhatThanhBaoGia();
-    hienThongBaoGiam();
+    hienThongBaoGiam(ma);
   }
 
   // Bấm "Vào học ngay" trong bảng chi tiết hai bộ khoá học: đóng hết bảng phụ

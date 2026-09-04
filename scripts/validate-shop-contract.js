@@ -240,12 +240,15 @@ SAN_PHAM_CHOT.forEach((_, i) => {
   [/đăng nhập bằng tài khoản Adobe/, "lưu ý chỉ đăng nhập bằng tài khoản Adobe"],
   [/Không đăng nhập được bằng Google/, "lưu ý không đăng nhập bằng Google"],
   [/const\s+TRE_MOI_KHOI_MO_TA\s*=\s*0\.33\s*;/, "nhịp trễ 0,33 giây giữa hai khối mô tả"],
-  [/const\s+ZALO_SHOP\s*=\s*'091714941'/, "số Zalo của shop"],
   [/const\s+NOI_DUNG_DAC_QUYEN\s*=\s*\[/, "nội dung bảng Đặc quyền"],
   [/không quá 2 khoá học/, "giới hạn không quá 2 khoá học"],
   [/function\s+veNoiDungDacQuyen\s*\(/, "hàm dựng nội dung bảng Đặc quyền"],
   [/function\s+moModalDacQuyen\s*\(/, "hàm mở bảng Đặc quyền"],
-  [/https:\/\/zalo\.me\/'\s*\+\s*escapeHtml\(ZALO_SHOP\)/, "nút Liên hệ Zalo trỏ sang Zalo của shop"],
+  [/data-hanh-dong="lien-he-zalo"/, "nút Liên hệ Zalo"],
+  [/function\s+taiThongTinLienHe\s*\(/, "hàm đọc số Zalo của shop từ Realtime Database"],
+  [/rtdb\.ref\('thongtinlienhe'\)/, "nhánh /thongtinlienhe trong Realtime Database"],
+  [/function\s+moZaloShop\s*\(/, "hàm mở Zalo của shop"],
+  [/window\.open\('https:\/\/zalo\.me\/'\s*\+\s*so/, "địa chỉ Zalo dựng lúc bấm, không in sẵn vào HTML"],
   [/ma:\s*'dac-quyen'[\s\S]{0,140}?kieu:\s*'modal'/, "mục Đặc quyền trong menu bên trái"],
   [/ma:\s*'lien-he'[\s\S]{0,80}?kieu:\s*'modal'/, "mục Liên hệ shop trong menu bên trái"],
 ].forEach(([mau, ten]) => {
@@ -387,6 +390,11 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
 
+// Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
+if (/<a[^>]*zalo\.me/.test(banNoi)) {
+  fail('Không được dựng sẵn thẻ <a href> tới zalo.me — số Zalo phải đọc từ Realtime Database lúc chạy.');
+}
+
 // Nút hoàn tiền phải đứng SAU nút Đặc quyền và TRƯỚC khung quà tặng.
 {
   const iDacQuyen = banNoi.indexOf("nut-dac-quyen");
@@ -408,11 +416,103 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 14) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 14) BỐ CỤC MÀN HÌNH HẸP VÀ NÚT NỔI BỒNG BỀNH
+// ---------------------------------------------------------------------------
+[
+  [/@media \(max-width: 560px\)\s*\{[^@]*?\.thanh-bao-gia \.so-lieu\s*\{[^}]*order:\s*-1/,
+    "màn hẹp: khối số liệu lên tầng trên, hai nút xuống tầng dưới"],
+  [/@media \(max-width: 560px\)\s*\{[^@]*?\.the-sanpham \.gia-chot\s*\{[^}]*flex:\s*0 0 100%/,
+    "màn hẹp: giá chốt luôn đứng riêng một dòng"],
+  [/\.nut-noi\s*\{\s*animation:\s*bong-benh\s+5s[^;]*infinite/, "nút nổi bồng bềnh, mỗi vòng 5 giây"],
+  [/\.nut-noi\.menu-dang-mo\s*\{\s*animation:\s*none/, "nút đứng yên khi menu đang mở"],
+  [/@keyframes\s+bong-benh\s*\{[\s\S]*?60%[^}]*translateY\(0\)[\s\S]*?100%[^}]*translateY\(0\)/,
+    "nhịp bồng bềnh: 3 giây nhấp nhô (tới mốc 60%) rồi 2 giây đứng im"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 15) TÊN MODULE BÁN HÀNG PHẢI THỐNG NHẤT TRONG TOÀN APP
+// ---------------------------------------------------------------------------
+{
+  const TEN_MODULE = "Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế";
+  const html = doc("index.html");
+
+  if (!new RegExp(`ma: 'goi-vip',\\s*ten: '${TEN_MODULE}'`).test(banNoi)) {
+    fail(`Mục menu của module bán hàng phải mang tên "${TEN_MODULE}".`);
+  }
+  if (!banNoi.includes(`<h2>${TEN_MODULE}</h2>`)) {
+    fail(`Tiêu đề trong module bán hàng phải là "${TEN_MODULE}".`);
+  }
+  if (!banNoi.includes(`<strong class="chu-nhan">${TEN_MODULE}</strong>`)) {
+    fail(`Màn "đang nâng cấp" phải mời sang "${TEN_MODULE}".`);
+  }
+  if ((html.match(new RegExp(TEN_MODULE, "g")) || []).length < 6) {
+    fail(`index.html phải dùng "${TEN_MODULE}" ở đủ tiêu đề và các thẻ meta.`);
+  }
+  // Tên cũ không được sót lại ở bất kỳ đâu.
+  [banNoi, html, cssApp, cssBase].forEach((noiDung) => {
+    if (/Gói hàng VIP/.test(noiDung)) {
+      fail('Tên module cũ "Gói hàng VIP Lightroom" vẫn còn sót — phải đổi hết thành tên mới.');
+    }
+  });
+  // Mã module là địa chỉ #hash khách đã lưu, đổi là gãy mọi liên kết cũ.
+  if (!/MODULE_MAC_DINH\s*=\s*'goi-vip'/.test(banNoi)) {
+    fail("Mã module bán hàng phải giữ nguyên là 'goi-vip' — đổi sẽ làm gãy các liên kết #hash cũ.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 16) THÔNG BÁO MỨC GIẢM BẬT RA TẠI THẺ, ẢNH BẢNG ĐẶC QUYỀN, NÚT TƯ VẤN
+// ---------------------------------------------------------------------------
+[
+  [/function\s+hienThongBaoGiam\(maSanPham\)/, "thông báo mức giảm nhận mã sản phẩm vừa bấm"],
+  [/hienThongBaoGiam\(ma\)/, "chọn/bỏ chọn một sản phẩm thì truyền mã vào thông báo"],
+  [/el\.classList\.add\('tai-the'\)/, "thông báo gắn toạ độ theo thẻ vừa bấm"],
+  [/const\s+ANH_DAC_QUYEN\s*=\s*'\/assets\/anh\/dac-quyen\.jpg'/, "ảnh minh hoạ của bảng Đặc quyền"],
+  [/function\s+veOAnh\s*\(/, "hàm dựng ô ảnh dùng chung"],
+  [/veOAnh\(ANH_DAC_QUYEN/, "bảng Đặc quyền dùng ô ảnh đó"],
+  [/<span class="chu-nhan-xanh">học thêm khoá thiết kế bạn thích/, "phần khẩu hiệu được tô nhấn"],
+  [/class="nut nut-rong nut-tu-van"/, 'nút "Tôi cần được Tư vấn thêm"'],
+  [/Tôi cần được Tư vấn thêm/, "tên nút Tư vấn"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Bấm "Chọn tất cả" thì thông báo phải ra giữa màn hình, tức KHÔNG truyền mã.
+if (!/function\s+chonTatCa\(\)\{[\s\S]{0,400}?hienThongBaoGiam\(\);/.test(banNoi)) {
+  fail('Nút "Chọn tất cả" phải gọi hienThongBaoGiam() không tham số để thông báo ra giữa màn hình.');
+}
+
+// Nút Tư vấn cố ý chưa nối việc, nhưng KHÔNG được disabled (disabled làm nút xám).
+if (/class="nut nut-rong nut-tu-van"[^>]*(disabled|data-hanh-dong)/.test(banNoi)) {
+  fail('Nút Tư vấn không được đặt disabled, cũng chưa được gắn data-hanh-dong.');
+}
+
+if (!fs.existsSync(path.join(root, "src/anh/dac-quyen.jpg"))) {
+  fail("Thiếu tệp ảnh src/anh/dac-quyen.jpg.");
+}
+
+[
+  [/\.thong-bao-giam\.tai-the\s*\{[\s\S]*?animation:\s*thong-bao-giam-tai-the/,
+    "nhịp riêng cho thông báo bật ra tại thẻ"],
+  [/@keyframes\s+thong-bao-giam-tai-the\s*\{[\s\S]*?scale\(1\.6\)[\s\S]*?translateY\(46vh\)/,
+    "thông báo tại thẻ vẫn bung 1,6 lần rồi trôi xuống mất hẳn"],
+  [/\.khoi-khau-hieu \.chu-nhan-xanh\s*\{[\s\S]*?display:\s*block[\s\S]*?color:\s*var\(--xanh\)/,
+    "phần tô nhấn xuống hàng riêng và mang màu xanh"],
+  [/\.nut-tu-van\s*\{/, "kiểu riêng cho nút Tư vấn"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 17) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
-const CAM = [/10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i];
+// Số tài khoản, tên chủ tài khoản, tên ngân hàng và SỐ ZALO của shop đều chỉ
+// được nằm trong Realtime Database, tuyệt đối không nằm trong mã nguồn.
+const CAM = [/10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i, /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/];
 const BO_QUA = new Set([".git", "public", "node_modules"]);
 
 function quet(thuMuc) {
