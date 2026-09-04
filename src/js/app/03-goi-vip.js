@@ -37,7 +37,7 @@
         // giảm (xanh lá đậm) → giá chốt (xanh của web, to rõ).
         '<div class="hang-gia">' +
           '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span>' +
-          '<span class="phan-tram">giảm giá ' + phanTram + '%</span>' +
+          '<span class="phan-tram">Giảm ' + phanTram + '%</span>' +
           '<span class="chi-con">chỉ còn</span>' +
           '<span class="gia-chot" data-gia-chot="' + sp.giaChot + '" data-gia-goc="' + sp.giaGoc + '">' +
             dinhDangTien(giaHienBanDau) + '</span>' +

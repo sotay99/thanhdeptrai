@@ -263,10 +263,10 @@
   /* Nền thẻ: xanh đậm ở sát đáy, nhạt dần lên và TẮT HẲN đúng mép trên của nút
      "Chọn sản phẩm này". 55px = 15px chừa đáy + 40px chiều cao nút, nên đổi
      padding đáy hay chiều cao nút thì phải sửa lại con số này.
-     Sản phẩm CHƯA chọn dùng bản nhạt (65% độ đậm), sản phẩm ĐÃ chọn mới hiện
-     đủ độ — nhìn lướt qua là biết ngay mình đã lấy những món nào. */
+     Sản phẩm CHƯA chọn dùng bản nhạt (khoảng một nửa độ đậm), sản phẩm ĐÃ chọn
+     mới hiện đủ độ — nhìn lướt qua là biết ngay mình đã lấy những món nào. */
   background:
-    linear-gradient(to top, rgba(20, 115, 230, .62) 0, rgba(20, 115, 230, .36) 22px, rgba(20, 115, 230, 0) 55px),
+    linear-gradient(to top, rgba(20, 115, 230, .5) 0, rgba(20, 115, 230, .29) 22px, rgba(20, 115, 230, 0) 55px),
     var(--the);
   transition: border-color .18s, transform .18s, box-shadow .18s, background .25s;
   border: 1px solid var(--vien);
@@ -509,7 +509,30 @@
 .thanh-bao-gia .tri.giam { color: var(--la); }
 .thanh-bao-gia .tri.chot { font-size: 19px; font-weight: 800; color: var(--do); }
 
-.nut-mua-hang { flex: 0 0 auto; min-height: 42px; padding: 0 22px; font-size: 14px; font-weight: 700; }
+.nut-mua-hang {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Nút đang bấm được thì nhún nhảy tuần hoàn để kéo mắt về phía chốt đơn:
+   phóng to rồi thu về thật nhanh (khoảng 1/4 giây), đứng im hơn một giây, rồi
+   lặp lại mãi. Nút đang bị khoá thì đứng yên — nhảy múa một nút không bấm được
+   chỉ làm khách bực. */
+.nut-mua-hang:not(:disabled) {
+  animation: nhun-nhay-mua-hang 1.5s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+@keyframes nhun-nhay-mua-hang {
+  0%   { transform: scale(1); }
+  7%   { transform: scale(1.1); }
+  15%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
 
 @media (max-width: 560px) {
   .thanh-bao-gia { gap: 9px; }

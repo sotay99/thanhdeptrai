@@ -333,7 +333,7 @@
           '<h3 style="margin:0 0 4px">' + escapeHtml(sp.ten) + '</h3>' +
           '<p class="hang-gia" style="margin-bottom:0">' +
             '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span> ' +
-            '<span class="phan-tram">giảm giá ' + phanTramGiamSanPham(sp) + '%</span> ' +
+            '<span class="phan-tram">Giảm ' + phanTramGiamSanPham(sp) + '%</span> ' +
             '<span class="chi-con">chỉ còn</span> ' +
             '<span class="gia-chot">' + dinhDangTien(sp.giaChot) + '</span>' +
           '</p>' +
