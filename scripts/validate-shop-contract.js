@@ -266,7 +266,41 @@ if (banNoi.indexOf("ma: 'dac-quyen'") > banNoi.indexOf("ma: 'hoan-tien'")) {
 });
 
 // ---------------------------------------------------------------------------
-// 10) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 10) NÚT CHỌN TẤT CẢ NHÚN NHẢY, MẢNG XANH THẺ ĐÃ CHỌN, NÚT ĐẶC QUYỀN TRONG
+//     MODULE, NHỊP NHẢY SỐ RIÊNG CỦA BẢNG CHI TIẾT
+// ---------------------------------------------------------------------------
+[
+  [/const\s+NHAY_SO_TRONG_BANG\s*=\s*1800\s*;/, "nhịp nhảy số riêng của bảng chi tiết (chậm gấp đôi)"],
+  [/chayNhaySo\(gia,\s*NHAY_SO_TRONG_BANG\)/, "bảng chi tiết dùng nhịp nhảy số chậm gấp đôi"],
+  [/const\s+THOI_LUONG_NHAY_SO\s*=\s*900\s*;/, "nhịp nhảy số mặc định của lưới sản phẩm"],
+  [/class="nut nut-rong nut-dac-quyen"[^']*data-hanh-dong="mo-module" data-module="dac-quyen"/,
+    "nút Đặc quyền trong module, dẫn đúng module dac-quyen"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Câu người dùng yêu cầu bỏ hẳn khỏi bảng Đặc quyền.
+if (/Nhớ nhé/.test(banNoi)) {
+  fail('Câu "Nhớ nhé — không quá 2 khoá học…" đã được yêu cầu xoá khỏi bảng Đặc quyền.');
+}
+
+// Nút Đặc quyền phải đứng TRƯỚC khung quà tặng trong luồng dựng HTML.
+if (banNoi.indexOf('nut-dac-quyen') > banNoi.indexOf('veKhuQuaTang();')) {
+  fail('Nút Đặc quyền phải nằm TRÊN khung quà tặng ở cuối module.');
+}
+
+[
+  [/\.nut-chon-tat-ca:not\(\.sang\)\s+\.chu\s*\{[\s\S]*?animation:\s*nhun-nhay-mua-hang/,
+    'chữ "Chọn tất cả" nhún nhảy cùng nhịp với nút Mua hàng khi chưa tích hết'],
+  [/\.the-sanpham\.da-chon\s*\{[\s\S]*?rgba\(20, 115, 230, \.55\) 26px, rgba\(20, 115, 230, 0\) 64px/,
+    "mảng xanh của thẻ đã chọn dâng cao tới 64px"],
+  [/\.nut-dac-quyen\s*\{/, "kiểu riêng cho nút Đặc quyền trong module"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 11) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

@@ -316,10 +316,14 @@
 .the-sanpham:hover { transform: translateY(-1px); box-shadow: var(--bong-noi); }
 .the-sanpham:hover::before { opacity: .6; }
 
+/* Thẻ ĐÃ CHỌN: mảng xanh dâng cao hơn hẳn thẻ chưa chọn — tắt ở 64px thay vì
+   55px, tức là vừa chớm dưới dòng "Giảm N% chỉ còn" (15px chừa đáy + 40px nút
+   + 12px giãn dưới dòng giá = 67px). Đổi padding đáy, chiều cao nút hay khoảng
+   giãn của dòng giá thì phải tính lại con số này. */
 .the-sanpham.da-chon {
   border-color: var(--xanh);
   background:
-    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 22px, rgba(20, 115, 230, 0) 55px),
+    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 26px, rgba(20, 115, 230, 0) 64px),
     var(--the);
 }
 .the-sanpham.da-chon::before { opacity: 1; }
@@ -409,6 +413,16 @@
 }
 
 .nut-chon-tat-ca:hover { border-color: var(--xanh); color: var(--chu); }
+
+/* Chưa tích hết thì chữ "Chọn tất cả" nhún nhảy đúng nhịp với nút Mua hàng
+   đứng cạnh — hai lời mời ở cùng một thanh thì phải đập cùng một nhịp, lệch
+   nhau sẽ thành rối mắt. Tích hết rồi thì thôi, không mời nữa. */
+.nut-chon-tat-ca:not(.sang) .chu {
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform;
+  animation: nhun-nhay-mua-hang 1.9s ease-in-out infinite;
+}
 
 .nut-chon-tat-ca.sang {
   border-color: var(--xanh);
@@ -922,3 +936,18 @@
   color: #fff;
 }
 .nut-zalo:hover { background: #0055d4; border-color: #0055d4; }
+
+/* Nút mở bảng Đặc quyền, đặt ngay trên khung quà tặng cuối module — tông vàng
+   để tách khỏi cả mảng xanh lá của khu quà lẫn mảng xanh dương của lưới hàng. */
+.nut-dac-quyen {
+  margin-top: 22px;
+  border-color: rgba(255, 167, 46, .5);
+  background: linear-gradient(180deg, rgba(255, 167, 46, .18), rgba(255, 167, 46, .07));
+  color: var(--cam);
+  font-weight: 700;
+  min-height: 44px;
+}
+.nut-dac-quyen:hover { border-color: var(--cam); background: rgba(255, 167, 46, .26); }
+
+/* Khung quà tặng đứng ngay dưới nút Đặc quyền nên không cần chừa thêm ở trên */
+.nut-dac-quyen + .khu-qua-tang { margin-top: 10px; }

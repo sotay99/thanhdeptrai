@@ -244,7 +244,7 @@
       '🛒 <strong>Điều kiện duy nhất:</strong> bạn đã từng mua <strong>bất kỳ sản phẩm nào</strong> của Shop — dù là gói lớn nhất hay món nhỏ nhất, đều được tính.',
       '💬 <strong>Cách nhận:</strong> nhắn tin riêng cho shop qua Zalo và nói tên khoá học bạn muốn. Chỉ vậy thôi.',
       '💸 <strong>Chi phí:</strong> không thêm một đồng nào. Đây là lời cảm ơn của shop dành cho khách đã tin tưởng.',
-      '☝️ <strong>Xin lưu ý:</strong> mỗi khách được yêu cầu <strong>không quá 2 khoá học</strong>. Nhớ nhé — <strong>không quá 2 khoá học</strong>, để shop còn phục vụ được tất cả mọi người.'
+      '☝️ <strong>Xin lưu ý:</strong> mỗi khách được yêu cầu <strong>không quá 2 khoá học</strong>.'
     ] },
     { kieu: 'muc', tieuDe: '📚 Kho khoá học bạn được chọn', y: [
       '🎨 <strong>Chỉnh ảnh và màu sắc:</strong> Lightroom, Photoshop, Nhiếp ảnh.',

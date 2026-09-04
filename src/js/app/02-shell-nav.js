@@ -388,7 +388,7 @@
         nutPhai,
       khiVe: function(){
         const gia = document.querySelector('.modal-lop[data-ma-modal="chi-tiet-' + sp.ma + '"] .gia-chot');
-        chayNhaySo(gia);
+        chayNhaySo(gia, NHAY_SO_TRONG_BANG);
       }
     });
   }

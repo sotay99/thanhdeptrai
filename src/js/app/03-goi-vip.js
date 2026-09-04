@@ -7,6 +7,7 @@
   const THOI_LUONG_TROI = 2000;      // ms — khớp với transition trong app.css
   const TRE_MOI_THE_RONG = 500;      // ms — màn hình rộng: thẻ sau trễ hơn thẻ trước
   const THOI_LUONG_NHAY_SO = 900;    // ms — giá chốt đếm từ giá gốc về giá thật
+  const NHAY_SO_TRONG_BANG = 1800;   // ms — trong bảng chi tiết thì chậm gấp đôi
   const MAN_HINH_RONG = '(min-width: 720px)';
 
   function manHinhRong(){
@@ -89,6 +90,10 @@
       '<div class="luoi-sanpham">' +
         SAN_PHAM.map(veTheSanPham).join('') +
       '</div>' +
+      // Dẫn thẳng tới đúng module 'dac-quyen' trong MODULE, nên nút này và mục
+      // cùng tên ở menu bên trái luôn mở ra y hệt một bảng.
+      '<button type="button" class="nut nut-rong nut-dac-quyen" data-hanh-dong="mo-module" data-module="dac-quyen">' +
+        '<span aria-hidden="true">👑</span> Đặc quyền dành cho khách đã từng mua hàng của shop</button>' +
       veKhuQuaTang();
   }
 
@@ -170,8 +175,12 @@
   // Đếm từ giá gốc xuống giá chốt, nhảy từng nấc chứ không đổi số tức thì.
   // Làm tròn tới hàng nghìn cho số nhảy gọn mắt; nhịp chậm dần về cuối
   // (ease-out) nên mắt kịp đọc con số dừng lại.
-  function chayNhaySo(el){
+  // thoiLuong: bỏ trống thì dùng nhịp mặc định của lưới sản phẩm. Bảng mô tả
+  // chi tiết truyền vào nhịp riêng, chậm gấp đôi — ở đó khách đang đọc chứ
+  // không lướt, con số chạy thong thả mới kịp thấy nó rơi từ đâu xuống đâu.
+  function chayNhaySo(el, thoiLuong){
     if (!el || el.dataset.dangNhay === '1') return;
+    const nhipChay = Number(thoiLuong) > 0 ? Number(thoiLuong) : THOI_LUONG_NHAY_SO;
     const tuSo = Number(el.getAttribute('data-gia-goc')) || 0;
     const denSo = Number(el.getAttribute('data-gia-chot')) || 0;
     if (tuSo === denSo) return;
@@ -184,7 +193,7 @@
     el.dataset.dangNhay = '1';
     const batDau = Date.now();
     const buoc = function(){
-      const troi = Math.min(1, (Date.now() - batDau) / THOI_LUONG_NHAY_SO);
+      const troi = Math.min(1, (Date.now() - batDau) / nhipChay);
       const nhip = 1 - Math.pow(1 - troi, 3);   // nhanh lúc đầu, chậm dần về cuối
       if (troi >= 1) {
         // Sản phẩm giá 0 dừng ở chữ "MIỄN PHÍ" thay vì "0 ₫" — chữ cuối do nơi
