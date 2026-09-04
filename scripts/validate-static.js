@@ -9,6 +9,9 @@
 //   2) Mỗi tệp trong public/ khớp BYTE-BY-BYTE với nguồn trong src/ (không có
 //      bản build cũ sót lại, không ai sửa tay trong public/).
 //   3) public/index.html giống hệt index.html gốc.
+//   4) Mỗi ảnh trong src/anh/ có đúng một bản mang vân tay trong public/, và
+//      bản nối app trong public/ gọi đúng tên có vân tay đó (không còn đường
+//      dẫn trần nào sót lại).
 
 const fs = require("fs");
 const path = require("path");
@@ -37,6 +40,24 @@ if (!fs.existsSync(indexPath)) fail("Thiếu index.html");
 if (!fs.existsSync(hostingRoot)) fail("Thiếu thư mục public/ — chạy node scripts/build-static.js trước");
 
 const html = fs.existsSync(indexPath) ? fs.readFileSync(indexPath, "utf8") : "";
+
+// Bảng "đường dẫn ảnh trần -> đường dẫn có vân tay", dựng lại y hệt cách
+// scripts/build-static.js dựng. Cần trước cả phần so bản nối, vì bản nối trong
+// public/ đã được thay tên ảnh nên không còn khớp byte với src/ nếu so thô.
+const anhSourceRoot = path.join(root, "src/anh");
+const bangAnh = new Map();
+if (fs.existsSync(anhSourceRoot)) {
+  for (const ten of fs.readdirSync(anhSourceRoot).sort()) {
+    if (!/\.(?:jpg|jpeg|png|webp|avif|svg)$/i.test(ten)) continue;
+    const nguon = fs.readFileSync(path.join(anhSourceRoot, ten));
+    const duoi = path.extname(ten);
+    bangAnh.set(`/assets/anh/${ten}`, {
+      url: `/assets/anh/${path.basename(ten, duoi)}.${hash(nguon).slice(0, 12)}${duoi}`,
+      nguon,
+      ten,
+    });
+  }
+}
 
 // --- 1) Tham chiếu trong index.html -----------------------------------------
 const references = Array.from(
@@ -93,7 +114,9 @@ expected.forEach((item, index) => {
       fail(`Manifest khai báo phần không tồn tại: ${missing.join(", ")}`);
       return;
     }
-    source = Buffer.concat(manifest.map((name) => fs.readFileSync(path.join(appSourceRoot, name))));
+    let banNoi = Buffer.concat(manifest.map((name) => fs.readFileSync(path.join(appSourceRoot, name)))).toString("utf8");
+    for (const [tran, anh] of bangAnh) banNoi = banNoi.split(tran).join(anh.url);
+    source = Buffer.from(banNoi);
   }
 
   if (hash(built) !== hash(source)) {
@@ -113,7 +136,35 @@ if (!publicIndex) {
   fail("public/index.html khác index.html gốc — chạy lại node scripts/build-static.js");
 }
 
-// --- 4) Không để tài sản mồ côi trong public/assets --------------------------
+// --- 4) Ảnh sản phẩm ---------------------------------------------------------
+// Mỗi tệp trong src/anh/ phải có đúng một bản mang vân tay trong public/, và
+// bản nối app đã deploy không được còn gọi ảnh bằng đường dẫn trần.
+const publicAnhRoot = path.join(hostingRoot, "assets/anh");
+const anhHopLe = new Set();
+{
+  const banNoiUrl = references.find((url) => /^\/assets\/js\/app\.[a-f0-9]{12}\.js$/.test(url));
+  const banNoi = banNoiUrl ? readIfExists(path.join(hostingRoot, banNoiUrl.replace(/^\//, ""))) : null;
+  const chuBanNoi = banNoi ? banNoi.toString("utf8") : "";
+
+  for (const [tran, anh] of bangAnh) {
+    anhHopLe.add(anh.url);
+    const daBuild = readIfExists(path.join(hostingRoot, anh.url.replace(/^\//, "")));
+    if (!daBuild) {
+      fail(`Thiếu bản có vân tay của ảnh ${anh.ten} trong public/ — chạy lại node scripts/build-static.js`);
+    } else if (hash(daBuild) !== hash(anh.nguon)) {
+      fail(`${anh.url} trong public/ KHÔNG khớp src/anh/${anh.ten}`);
+    }
+    if (chuBanNoi.includes(tran)) {
+      fail(`Bản nối app còn gọi ảnh bằng đường dẫn trần ${tran} — chạy lại node scripts/build-static.js`);
+    }
+  }
+
+  if (!bangAnh.size && fs.existsSync(publicAnhRoot) && fs.readdirSync(publicAnhRoot).length) {
+    fail("public/assets/anh còn ảnh nhưng src/anh/ đã trống");
+  }
+}
+
+// --- 5) Không để tài sản mồ côi trong public/assets --------------------------
 const assetRoot = path.join(hostingRoot, "assets");
 if (fs.existsSync(assetRoot)) {
   const walk = (dir) =>
@@ -123,7 +174,7 @@ if (fs.existsSync(assetRoot)) {
     });
   for (const file of walk(assetRoot)) {
     const url = `/${path.relative(hostingRoot, file).split(path.sep).join("/")}`;
-    if (!references.includes(url)) {
+    if (!references.includes(url) && !anhHopLe.has(url)) {
       fail(`Tài sản mồ côi trong public/ (không tệp nào trỏ tới): ${url}`);
     }
   }
@@ -134,4 +185,8 @@ if (failures.length) {
   failures.forEach((message) => console.error(`- ${message}`));
   process.exit(1);
 }
-console.log("Kiểm tra bản tĩnh ĐẠT: index.html, public/index.html và 4 tài sản có vân tay đều khớp nguồn.");
+console.log(
+  `Kiểm tra bản tĩnh ĐẠT: index.html, public/index.html, 4 tài sản có vân tay` +
+    (anhHopLe.size ? ` và ${anhHopLe.size} ảnh sản phẩm` : "") +
+    " đều khớp nguồn.",
+);

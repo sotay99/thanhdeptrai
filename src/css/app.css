@@ -260,12 +260,15 @@
   display: flex;
   flex-direction: column;
   padding: 14px 16px 15px;
-  /* Nền thẻ: xanh đậm đặc ở sát đáy, nhạt dần lên và TẮT HẲN đúng mép trên của
-     nút "Chọn sản phẩm này". 55px = 15px chừa đáy + 40px chiều cao nút, nên
-     đổi padding đáy hay chiều cao nút thì phải sửa lại con số này. */
+  /* Nền thẻ: xanh đậm ở sát đáy rồi nhạt dần lên. Sản phẩm CHƯA chọn vừa nhạt
+     hơn vừa THẤP hơn — mảng xanh chỉ cao 28px, đúng một nửa mức cũ, nên nó
+     dừng lại quãng giữa nút "Chọn sản phẩm này". Sản phẩm ĐÃ chọn mới hiện đủ
+     độ đậm và dâng lên tới 64px; nhìn lướt qua là biết ngay mình đã lấy những
+     món nào. */
   background:
-    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 22px, rgba(20, 115, 230, 0) 55px),
+    linear-gradient(to top, rgba(20, 115, 230, .43) 0, rgba(20, 115, 230, .25) 11px, rgba(20, 115, 230, 0) 28px),
     var(--the);
+  transition: border-color .18s, transform .18s, box-shadow .18s, background .25s;
   border: 1px solid var(--vien);
   border-radius: var(--bo-the);
   box-shadow: var(--bong);
@@ -313,7 +316,16 @@
 .the-sanpham:hover { transform: translateY(-1px); box-shadow: var(--bong-noi); }
 .the-sanpham:hover::before { opacity: .6; }
 
-.the-sanpham.da-chon { border-color: var(--xanh); }
+/* Thẻ ĐÃ CHỌN: mảng xanh dâng cao hơn hẳn thẻ chưa chọn — tắt ở 64px thay vì
+   55px, tức là vừa chớm dưới dòng "Giảm N% chỉ còn" (15px chừa đáy + 40px nút
+   + 12px giãn dưới dòng giá = 67px). Đổi padding đáy, chiều cao nút hay khoảng
+   giãn của dòng giá thì phải tính lại con số này. */
+.the-sanpham.da-chon {
+  border-color: var(--xanh);
+  background:
+    linear-gradient(to top, rgba(20, 115, 230, .95) 0, rgba(20, 115, 230, .55) 26px, rgba(20, 115, 230, 0) 64px),
+    var(--the);
+}
 .the-sanpham.da-chon::before { opacity: 1; }
 
 .the-sanpham .so-thu-tu {
@@ -366,6 +378,104 @@
   border-color: var(--xanh);
 }
 
+/* Nút "Chọn tất cả" — khung riêng ở sát mép trái thanh báo giá, có ô tích.
+   Sáng lên (viền và chữ xanh, ô tích xanh đặc) khi đang chọn đủ mọi sản phẩm. */
+.nut-chon-tat-ca {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 13px;
+  border-radius: var(--bo);
+  border: 1px solid var(--vien-sang);
+  background: var(--the-2);
+  color: var(--chu-diu);
+  font-size: 13px;
+  font-weight: 600;
+  transition: .16s;
+}
+
+.nut-chon-tat-ca .o-tich {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--vien-sang);
+  background: var(--nen-sau);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+}
+
+.nut-chon-tat-ca:hover { border-color: var(--xanh); color: var(--chu); }
+
+/* Chưa tích hết thì chữ "Chọn tất cả" nhún nhảy đúng nhịp với nút Mua hàng
+   đứng cạnh — hai lời mời ở cùng một thanh thì phải đập cùng một nhịp, lệch
+   nhau sẽ thành rối mắt. Tích hết rồi thì thôi, không mời nữa. */
+.nut-chon-tat-ca:not(.sang) .chu {
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform;
+  animation: nhun-nhay-mua-hang 1.9s ease-in-out infinite;
+}
+
+.nut-chon-tat-ca.sang {
+  border-color: var(--xanh);
+  background: var(--xanh-nen);
+  color: var(--xanh);
+  box-shadow: 0 0 0 1px var(--xanh), 0 0 14px rgba(49, 168, 255, .28);
+}
+
+.nut-chon-tat-ca.sang .o-tich {
+  background: var(--xanh);
+  border-color: var(--xanh);
+  color: #fff;
+}
+
+/* -------------------------------- THÔNG BÁO MỨC GIẢM GIÁ (giữa màn hình) */
+
+.thong-bao-giam {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 480;
+  padding: 16px 30px;
+  border-radius: 999px;
+  background: var(--la);
+  color: #fff;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  box-shadow: 0 10px 34px rgba(45, 157, 95, .5);
+  pointer-events: none;
+  /* Nhảy xổ ra TO GẤP 1,6 LẦN → thu về cỡ thật thật nhanh → đứng im khoảng một
+     giây → trôi xuống đáy rồi tan. Cú bung đầu tiên phải lớn thì mắt mới bắt
+     được ngay giữa lúc đang nhìn chỗ khác trong trang. */
+  animation: thong-bao-giam 2.55s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+@keyframes thong-bao-giam {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+  8%   { opacity: 1; transform: translate(-50%, -50%) scale(1.6); }
+  16%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 46vh) scale(.9); }
+}
+
+@media (max-width: 560px) {
+  .thong-bao-giam { font-size: 18px; padding: 13px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thong-bao-giam { animation-duration: 2.55s; }
+}
+
 /* -------------------------------------------------- THANH BÁO GIÁ NEO ĐÁY */
 
 .thanh-bao-gia {
@@ -415,11 +525,40 @@
 .thanh-bao-gia .tri.giam { color: var(--la); }
 .thanh-bao-gia .tri.chot { font-size: 19px; font-weight: 800; color: var(--do); }
 
-.nut-mua-hang { flex: 0 0 auto; min-height: 42px; padding: 0 22px; font-size: 14px; font-weight: 700; }
+.nut-mua-hang {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Nút đang bấm được thì nhún nhảy tuần hoàn để kéo mắt về phía chốt đơn:
+   phóng to rồi thu về thật nhanh (khoảng 1/4 giây), đứng im hơn một giây, rồi
+   lặp lại mãi. Nút đang bị khoá thì đứng yên — nhảy múa một nút không bấm được
+   chỉ làm khách bực. */
+.nut-mua-hang:not(:disabled) {
+  animation: nhun-nhay-mua-hang 1.9s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Nhịp: nảy hai cái liền nhau thật nhanh (kèm nghiêng nhẹ và quầng đỏ loang ra
+   cho mắt bắt được ngay cả khi nút chiếm trọn bề ngang màn hình điện thoại),
+   rồi đứng im hơn một giây, rồi lặp lại mãi. */
+@keyframes nhun-nhay-mua-hang {
+  0%   { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 0 rgba(229, 83, 75, .55); }
+  6%   { transform: scale(1.16) rotate(-1.6deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .28); }
+  12%  { transform: scale(.98) rotate(1.2deg);    box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
+  18%  { transform: scale(1.12) rotate(-1deg);    box-shadow: 0 0 0 5px rgba(229, 83, 75, .22); }
+  25%  { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 9px rgba(229, 83, 75, 0); }
+  100% { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
+}
 
 @media (max-width: 560px) {
   .thanh-bao-gia { gap: 9px; }
-  .thanh-bao-gia .so-lieu { flex: 1 1 100%; gap: 2px 14px; justify-content: flex-end; }
+  .thanh-bao-gia .so-lieu { flex: 1 1 auto; gap: 2px 14px; justify-content: flex-end; }
+  .nut-chon-tat-ca { min-height: 36px; padding: 7px 11px; font-size: 12.5px; }
   .nut-mua-hang { flex: 1 1 100%; }
 }
 
@@ -547,3 +686,383 @@
 .noi-dung-van-ban { font-size: 13.5px; }
 .noi-dung-van-ban h3 { margin-top: 16px; font-size: 14px; }
 .noi-dung-van-ban p:last-child { margin-bottom: 0; }
+
+/* ==========================================================================
+   MÔ TẢ CHI TIẾT SẢN PHẨM (bảng phụ "Chi tiết sản phẩm")
+
+   Mỗi khối là một thẻ riêng, trôi từ PHẢI qua TRÁI, lần lượt từ trên xuống.
+   Độ trễ do JS gắn thẳng vào style (animation-delay) nên toàn bộ khối tự chạy
+   hết ngay khi bảng mở — khách KHÔNG phải cuộn xuống mới thấy khối bên dưới.
+   Nhịp trôi lấy theo tốc độ chung của web: đường cong cubic-bezier(.16,1,.3,1)
+   giống hiệu ứng thẻ sản phẩm, chỉ ngắn hơn cho hợp không gian một bảng phụ.
+   ========================================================================== */
+
+.mo-ta-sp { font-size: 13.5px; overflow: hidden; }
+
+.troi-ngang {
+  animation: troi-tu-phai .85s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes troi-tu-phai {
+  from { opacity: 0; transform: translateX(46px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Người dùng đã tắt hiệu ứng chuyển động trong hệ điều hành thì hiện thẳng */
+@media (prefers-reduced-motion: reduce) {
+  .troi-ngang { animation: none; opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------- ĐỈNH: TÊN VÀ GIÁ */
+
+.mo-ta-dinh {
+  padding-bottom: 13px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--vien);
+}
+
+.mo-ta-dinh h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--chu);
+}
+
+.mo-ta-dinh .hang-gia {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 0;
+}
+.mo-ta-dinh .gia-goc { font-size: 13px; font-weight: 600; color: var(--cam); }
+.mo-ta-dinh .phan-tram { font-size: 13px; font-weight: 700; color: var(--la-dam-net); }
+.mo-ta-dinh .chi-con { font-size: 12.5px; color: var(--chu-diu); }
+.mo-ta-dinh .gia-chot { font-size: 21px; font-weight: 800; color: var(--xanh); }
+
+/* --------------------------------------------------------- KHỐI NỘI DUNG */
+
+.khoi-mo-ta {
+  margin-bottom: 13px;
+  padding: 13px 15px;
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  background: var(--the-2);
+}
+.khoi-mo-ta:last-child { margin-bottom: 0; }
+
+.khoi-mo-ta h4 {
+  margin: 0 0 9px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  color: var(--xanh);
+}
+
+.khoi-mo-ta p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.72;
+  color: var(--chu-diu);
+}
+.khoi-mo-ta p + ul { margin-top: 9px; }
+.khoi-mo-ta strong { color: var(--chu); font-weight: 700; }
+.khoi-mo-ta em { color: var(--chu); font-style: italic; }
+
+.khoi-mo-ta ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.khoi-mo-ta li {
+  position: relative;
+  padding: 8px 0 8px 2px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--chu-diu);
+  border-top: 1px solid rgba(255, 255, 255, .045);
+}
+.khoi-mo-ta li:first-child { border-top: 0; padding-top: 0; }
+.khoi-mo-ta li:last-child { padding-bottom: 0; }
+
+/* Khẩu hiệu mở đầu — chữ to hơn, viền xanh bên trái, tông sáng nhất khối */
+.khoi-khau-hieu {
+  border-color: var(--xanh-mo);
+  border-left: 3px solid var(--xanh);
+  background: linear-gradient(100deg, var(--xanh-nen), rgba(49, 168, 255, 0) 70%), var(--the-2);
+}
+.khoi-khau-hieu p {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.7;
+  color: var(--chu);
+}
+
+/* Dải nhấn giữa bài — nền xanh nhạt, dùng để chốt một ý bán hàng */
+.khoi-noi-bat {
+  border-color: var(--xanh-mo);
+  background: var(--xanh-nen);
+}
+.khoi-noi-bat p { color: var(--chu); font-weight: 500; }
+
+/* Đoạn văn thường — bỏ khung cho đỡ rối, chỉ chừa khoảng thở */
+.khoi-doan {
+  border: 0;
+  background: transparent;
+  padding: 2px 3px;
+  margin-bottom: 15px;
+}
+
+/* Khối cam kết cuối bài — tông xanh lá, tách hẳn khỏi phần quảng bá phía trên */
+.khoi-cam-ket {
+  border-color: rgba(45, 157, 95, .4);
+  background: linear-gradient(180deg, rgba(45, 157, 95, .13), rgba(45, 157, 95, .05));
+}
+.khoi-cam-ket h4 { color: var(--la-dam-net); }
+.khoi-cam-ket li { border-top-color: rgba(45, 157, 95, .18); }
+
+@media (max-width: 560px) {
+  .khoi-mo-ta { padding: 12px 13px; }
+  .mo-ta-dinh .gia-chot { font-size: 19px; }
+}
+
+/* ==========================================================================
+   KHU QUÀ TẶNG — cuối module "Gói hàng VIP Lightroom"
+   ========================================================================== */
+
+/* Nút mời xuống quà, đặt ngay dưới dòng "Chọn càng nhiều càng rẻ…" */
+.nut-toi-qua-tang {
+  margin-top: 11px;
+  border-color: rgba(45, 157, 95, .55);
+  background: linear-gradient(180deg, rgba(45, 157, 95, .2), rgba(45, 157, 95, .09));
+  color: var(--la-dam-net);
+  font-weight: 700;
+}
+.nut-toi-qua-tang:hover { border-color: var(--la-dam-net); background: rgba(45, 157, 95, .28); }
+
+.khu-qua-tang {
+  margin-top: 22px;
+  padding: 18px 16px 16px;
+  border: 1px solid rgba(45, 157, 95, .34);
+  border-radius: var(--bo-the);
+  background: linear-gradient(180deg, rgba(45, 157, 95, .12), rgba(45, 157, 95, .04));
+  text-align: center;
+  /* Lúc nhảy múa dòng chữ phóng to 1,7 lần; cắt bớt phần tràn ở đây để trang
+     KHÔNG bao giờ sinh thanh cuộn ngang trên điện thoại. */
+  overflow: hidden;
+}
+
+.dong-qua-tang {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 auto 14px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--la-dam-net);
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Nhảy đúng 5 lần rồi đứng im hẳn: phóng to 1,7 lần rồi thu về thật nhanh,
+   nghỉ nửa giây, lặp lại. animation-iteration-count là 5 nên hết lượt là thôi. */
+.dong-qua-tang.nhay-qua-tang {
+  animation: nhay-dong-qua-tang .75s ease-in-out 5 both;
+}
+
+@keyframes nhay-dong-qua-tang {
+  0%   { transform: scale(1); }
+  13%  { transform: scale(1.7); }
+  33%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+.hang-nut-qua {
+  display: grid;
+  gap: 9px;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.nut-qua {
+  justify-content: flex-start;
+  gap: 10px;
+  text-align: left;
+  min-height: 44px;
+}
+.nut-qua .bieu-tuong { font-size: 16px; flex: 0 0 auto; }
+.nut-qua .chu { flex: 1; min-width: 0; }
+
+/* Nút cuộn lên đầu — tông xanh của web, khác hẳn ba nút quà bên trên */
+.nut-len-dau {
+  max-width: 460px;
+  margin: 14px auto 0;
+  border-color: var(--xanh);
+  background: var(--xanh-nen);
+  color: var(--xanh);
+  font-weight: 700;
+}
+.nut-len-dau:hover { background: rgba(49, 168, 255, .2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dong-qua-tang.nhay-qua-tang { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .dong-qua-tang { font-size: 13.5px; }
+}
+
+/* Khối "Lưu ý trước khi mua" — tông cam cảnh báo, tách hẳn khỏi lời quảng bá
+   để khách không lướt qua mất điều kiện dùng được sản phẩm. */
+.khoi-luu-y {
+  border-color: rgba(255, 167, 46, .42);
+  border-left: 3px solid var(--cam);
+  background: linear-gradient(180deg, rgba(255, 167, 46, .13), rgba(255, 167, 46, .05));
+}
+.khoi-luu-y h4 { color: var(--cam); }
+.khoi-luu-y li { border-top-color: rgba(255, 167, 46, .2); }
+
+/* Nút "Liên hệ Zalo" ở đáy bảng Đặc quyền — là thẻ <a> mở sang Zalo nên phải
+   tự dựng lại dáng nút cho khớp với các nút <button> đứng cạnh. */
+.nut-zalo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  background: #0068ff;          /* xanh Zalo */
+  border-color: #0068ff;
+  color: #fff;
+}
+.nut-zalo:hover { background: #0055d4; border-color: #0055d4; }
+
+/* Nút mở bảng Đặc quyền, đặt ngay trên khung quà tặng cuối module — tông vàng
+   để tách khỏi cả mảng xanh lá của khu quà lẫn mảng xanh dương của lưới hàng. */
+.nut-dac-quyen {
+  margin-top: 22px;
+  border-color: rgba(255, 167, 46, .5);
+  background: linear-gradient(180deg, rgba(255, 167, 46, .18), rgba(255, 167, 46, .07));
+  color: var(--cam);
+  font-weight: 700;
+  min-height: 44px;
+}
+.nut-dac-quyen:hover { border-color: var(--cam); background: rgba(255, 167, 46, .26); }
+
+/* Khung quà tặng đứng ngay dưới nút Đặc quyền nên không cần chừa thêm ở trên */
+.nut-dac-quyen + .khu-qua-tang { margin-top: 10px; }
+
+/* Khung cam kết giao hàng trong bảng "Xác nhận đơn hàng" — nền đỏ nhạt để bật
+   hẳn khỏi phần còn lại của bảng, và nhún nhảy theo đúng kiểu nút Mua hàng
+   nhưng thưa hơn: mỗi đợt nảy xong thì đứng im khoảng ba giây. */
+.khung-cam-ket-giao {
+  margin: 14px 0 16px;
+  padding: 13px 15px;
+  border: 1px solid rgba(229, 83, 75, .5);
+  border-radius: var(--bo-the);
+  background: linear-gradient(180deg, rgba(229, 83, 75, .2), rgba(229, 83, 75, .08));
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--chu);
+  transform-origin: center;
+  will-change: transform;
+  animation: nhun-nhay-cam-ket 3.5s ease-in-out infinite;
+}
+.khung-cam-ket-giao strong { color: #ff8a82; font-weight: 700; }
+.khung-cam-ket-giao p { margin: 0; }
+.khung-cam-ket-giao p + p { margin-top: 8px; }
+
+/* Cùng biên độ và cùng tốc độ nảy với nút Mua hàng (khoảng nửa giây cho trọn
+   hai cú nảy), chỉ khác là quãng nghỉ kéo dài ba giây thay vì hơn một giây. */
+@keyframes nhun-nhay-cam-ket {
+  0%    { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, .5); }
+  3.3%  { transform: scale(1.06) rotate(-.5deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .24); }
+  6.5%  { transform: scale(.99) rotate(.4deg);    box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
+  9.8%  { transform: scale(1.045) rotate(-.35deg);box-shadow: 0 0 0 5px rgba(229, 83, 75, .2); }
+  13.6% { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 9px rgba(229, 83, 75, 0); }
+  100%  { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .khung-cam-ket-giao { animation: none; }
+}
+
+/* ==========================================================================
+   ẢNH SẢN PHẨM TRONG BẢNG MÔ TẢ
+
+   Ngay dưới dòng giá: màn hình rộng thì ảnh vuông bên trái, khối chữ đầu tiên
+   bên phải, hai bên ngang hàng nhau. Màn hình hẹp thì xuống dòng — ảnh nằm
+   trên, chữ nằm dưới. Dùng flex-wrap chứ không dùng media query để tự co theo
+   bề ngang thật của bảng, vì bảng phụ hẹp hơn màn hình.
+   ========================================================================== */
+
+.hang-anh-chu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 13px;
+  margin-bottom: 13px;
+}
+
+.anh-san-pham {
+  flex: 1 1 190px;
+  max-width: 260px;
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--bo-the);
+  overflow: hidden;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  box-shadow: var(--bong);
+}
+
+.anh-san-pham img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Khối chữ đứng cạnh ảnh: chiếm phần còn lại, và chỉ chịu xuống dòng khi bề
+   ngang còn dưới 210px — dưới mức đó thì chữ vỡ vụn, thà cho nó nằm dưới ảnh. */
+.hang-anh-chu > .khoi-mo-ta {
+  flex: 1 1 210px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Màn hình hẹp: ảnh chiếm trọn bề ngang và không bị kéo dài quá cao */
+@media (max-width: 560px) {
+  .hang-anh-chu { gap: 11px; }
+  .anh-san-pham { flex: 1 1 100%; max-width: 100%; }
+}
+
+/* Dòng mở đầu của khẩu hiệu — một câu định danh ngắn, đứng riêng một dòng trên
+   phần văn xuôi bên dưới, tông xanh của web cho tách bạch. */
+.khoi-khau-hieu .dong-dau {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15.5px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--xanh);
+}
+
+/* Khung chứa ảnh trượt vào CHẬM GẤP NĂM các khối chữ: ảnh là thứ mắt dừng lại
+   lâu nhất, cho nó thời gian đi hết quãng đường thì cảm giác mượt hẳn.
+   0,85 giây × 5 = 4,25 giây. Độ trễ vẫn là 0 nên nó khởi hành sớm nhất. */
+.hang-anh-chu.troi-ngang { animation-duration: 4.25s; }
+
+/* Nút "Yêu cầu hoàn tiền" trong module — tông đỏ dịu, đặt ngay dưới nút Đặc
+   quyền tông vàng, tách bạch với cả hai mảng màu quanh nó. */
+.nut-hoan-tien {
+  margin-top: 9px;
+  border-color: rgba(229, 83, 75, .5);
+  background: linear-gradient(180deg, rgba(229, 83, 75, .16), rgba(229, 83, 75, .06));
+  color: #ff8a82;
+  font-weight: 700;
+  min-height: 44px;
+}
+.nut-hoan-tien:hover { border-color: var(--do); background: rgba(229, 83, 75, .24); }

@@ -11,6 +11,11 @@
 //   src/css/app.css         -> public/assets/css/app.<vân tay>.css
 //   src/js/firebase-init.js -> public/assets/js/firebase-init.<vân tay>.js
 //   src/js/app/*.js (nối)   -> public/assets/js/app.<vân tay>.js
+//   src/anh/*.jpg           -> public/assets/anh/<tên>.<vân tay>.jpg
+//
+// Ảnh sản phẩm được mã JS gọi bằng đường dẫn TRẦN "/assets/anh/sp1.jpg"; build
+// thay nó bằng tên có vân tay NGAY TRƯỚC khi băm bản nối, nên vân tay của
+// app.js cũng đổi theo mỗi lần đổi ảnh.
 //
 // Vân tay đổi theo nội dung nên trình duyệt không bao giờ phục vụ bản cũ khi
 // đã deploy bản mới, mà vẫn cache vĩnh viễn được (xem header trong firebase.json).
@@ -26,6 +31,8 @@ const manifestPath = path.join(root, "src/js/app/manifest.json");
 const appSourceRoot = path.dirname(manifestPath);
 const publicCssRoot = path.join(root, "public/assets/css");
 const publicJsRoot = path.join(root, "public/assets/js");
+const anhSourceRoot = path.join(root, "src/anh");
+const publicAnhRoot = path.join(root, "public/assets/anh");
 const indexPath = path.join(root, "index.html");
 
 function die(message) {
@@ -79,8 +86,39 @@ function replaceExactlyOnce(html, pattern, replacement, label) {
   return html.replace(pattern, replacement);
 }
 
+// --- ẢNH SẢN PHẨM -----------------------------------------------------------
+// Chép từng ảnh sang public/ kèm vân tay, và ghi lại bảng "tên trần -> tên có
+// vân tay" để lát nữa thay vào bản nối JS.
+function dungAnh() {
+  const bang = new Map();
+  cleanGenerated(publicAnhRoot, /^.+\.[a-f0-9]{12}\.(?:jpg|jpeg|png|webp|avif|svg)$/i);
+  if (!fs.existsSync(anhSourceRoot)) return bang;
+  for (const ten of fs.readdirSync(anhSourceRoot).sort()) {
+    if (!/\.(?:jpg|jpeg|png|webp|avif|svg)$/i.test(ten)) continue;
+    const noiDung = readFile(path.join(anhSourceRoot, ten), `Ảnh ${ten}`);
+    const duoi = path.extname(ten);
+    const tenMoi = `${path.basename(ten, duoi)}.${fingerprint(noiDung)}${duoi}`;
+    fs.writeFileSync(path.join(publicAnhRoot, tenMoi), noiDung);
+    bang.set(`/assets/anh/${ten}`, `/assets/anh/${tenMoi}`);
+  }
+  return bang;
+}
+
 const manifest = loadManifest();
-const app = Buffer.concat(manifest.map((name) => readFile(path.join(appSourceRoot, name), `Phần ${name}`)));
+const bangAnh = dungAnh();
+let banNoi = Buffer.concat(manifest.map((name) => readFile(path.join(appSourceRoot, name), `Phần ${name}`))).toString("utf8");
+for (const [tran, coVanTay] of bangAnh) {
+  banNoi = banNoi.split(tran).join(coVanTay);
+}
+// Đường dẫn ảnh trần nào còn sót lại nghĩa là JS gọi một ảnh KHÔNG có trong
+// src/anh/ — để lọt thì trang thật hiện ô ảnh vỡ, nên chặn ngay tại đây.
+const conSot = Array.from(new Set(banNoi.match(/\/assets\/anh\/[^"']+/g) || [])).filter(
+  (url) => !/\.[a-f0-9]{12}\.[a-z0-9]+$/i.test(url),
+);
+if (conSot.length) {
+  die(`Mã gọi ảnh không có trong src/anh/: ${conSot.join(", ")}`);
+}
+const app = Buffer.from(banNoi);
 const firebase = readFile(path.join(root, "src/js/firebase-init.js"), "Nguồn Firebase");
 const baseCss = readFile(path.join(root, "src/css/base.css"), "Base CSS");
 const appCss = readFile(path.join(root, "src/css/app.css"), "App CSS");
@@ -133,4 +171,7 @@ const htmlBuffer = Buffer.from(html);
 fs.writeFileSync(indexPath, htmlBuffer);
 fs.writeFileSync(path.join(root, "public/index.html"), htmlBuffer);
 
-console.log(`Build tĩnh XONG: ${outputs.baseCss}, ${outputs.appCss}, ${outputs.firebase}, ${outputs.app}`);
+console.log(
+  `Build tĩnh XONG: ${outputs.baseCss}, ${outputs.appCss}, ${outputs.firebase}, ${outputs.app}` +
+    (bangAnh.size ? `, và ${bangAnh.size} ảnh sản phẩm` : ""),
+);

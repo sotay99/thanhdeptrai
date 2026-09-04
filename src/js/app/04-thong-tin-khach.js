@@ -150,7 +150,12 @@
       tieuDe: 'Xác nhận đơn hàng',
       than: '' +
         veTomTatDon() +
-        '<div class="ghi-chu">Vui lòng nhập <strong>ít nhất một</strong> trong ba trường dưới đây để shop liên hệ giao sản phẩm.</div>' +
+        // Lời mời nhập liệu và lời cam kết giao hàng gộp vào MỘT khung đỏ nhạt
+        // nổi bật, nhún nhảy để khách chắc chắn đọc trước khi gõ.
+        '<div class="khung-cam-ket-giao">' +
+          '<p>Vui lòng nhập <strong>ít nhất 1 trong 3 trường</strong> (khung nhập liệu) dưới đây để shop liên hệ giao sản phẩm.</p>' +
+          '<p>Shop <strong>cam kết giao sản phẩm ngay lập tức</strong> khi vừa nhận được tiền thanh toán của bạn: ưu tiên giao qua <strong>email</strong> (thông qua hệ thống tự động), hoặc giao qua <strong>tin nhắn Zalo</strong> (nếu bạn chưa nhập email), hoặc <strong>tin nhắn SMS</strong> (nếu không thể liên hệ qua Zalo).</p>' +
+        '</div>' +
         veOTruong('email', 'Email', kh.email, 'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm, không có dấu cách.', 'email') +
         veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, không dấu cách, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
