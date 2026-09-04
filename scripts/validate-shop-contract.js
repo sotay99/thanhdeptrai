@@ -432,7 +432,38 @@ if (/<a[^>]*zalo\.me/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 15) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 15) TÊN MODULE BÁN HÀNG PHẢI THỐNG NHẤT TRONG TOÀN APP
+// ---------------------------------------------------------------------------
+{
+  const TEN_MODULE = "Trọn Bộ sản phẩm Cao cấp cho Lightroom";
+  const html = doc("index.html");
+
+  if (!new RegExp(`ma: 'goi-vip',\\s*ten: '${TEN_MODULE}'`).test(banNoi)) {
+    fail(`Mục menu của module bán hàng phải mang tên "${TEN_MODULE}".`);
+  }
+  if (!banNoi.includes(`<h2>${TEN_MODULE}</h2>`)) {
+    fail(`Tiêu đề trong module bán hàng phải là "${TEN_MODULE}".`);
+  }
+  if (!banNoi.includes(`<strong class="chu-nhan">${TEN_MODULE}</strong>`)) {
+    fail(`Màn "đang nâng cấp" phải mời sang "${TEN_MODULE}".`);
+  }
+  if ((html.match(new RegExp(TEN_MODULE, "g")) || []).length < 6) {
+    fail(`index.html phải dùng "${TEN_MODULE}" ở đủ tiêu đề và các thẻ meta.`);
+  }
+  // Tên cũ không được sót lại ở bất kỳ đâu.
+  [banNoi, html, cssApp, cssBase].forEach((noiDung) => {
+    if (/Gói hàng VIP/.test(noiDung)) {
+      fail('Tên module cũ "Gói hàng VIP Lightroom" vẫn còn sót — phải đổi hết thành tên mới.');
+    }
+  });
+  // Mã module là địa chỉ #hash khách đã lưu, đổi là gãy mọi liên kết cũ.
+  if (!/MODULE_MAC_DINH\s*=\s*'goi-vip'/.test(banNoi)) {
+    fail("Mã module bán hàng phải giữ nguyên là 'goi-vip' — đổi sẽ làm gãy các liên kết #hash cũ.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 16) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

@@ -80,7 +80,7 @@
   function veModuleGoiVip(){
     return '' +
       '<section class="gioi-thieu">' +
-        '<h2>Gói hàng VIP Lightroom</h2>' +
+        '<h2>Trọn Bộ sản phẩm Cao cấp cho Lightroom</h2>' +
         '<p>Chọn những sản phẩm bạn cần, giá đã chốt hiện ngay ở thanh dưới đáy màn hình.</p>' +
         '<div class="bang-uu-dai"><span aria-hidden="true">🔥</span> Chọn càng nhiều càng rẻ: mỗi sản phẩm được giảm thêm ' +
           GIAM_MOI_SAN_PHAM + '% ở bước chốt đơn — chỉ áp dụng với sản phẩm giá trị trên 40K</div>' +
