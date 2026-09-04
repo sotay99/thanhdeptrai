@@ -46,7 +46,8 @@
 
     /* ------------------------------------------------------------------ SP1 */
     sp1: {
-      khauHieu: 'Mở toàn bộ kho vũ khí của Lightroom ngay trên chiếc điện thoại bạn đang cầm trong tay — một lần duy nhất, dùng mãi mãi. 📱✨',
+      khauHieu: '<span class="dong-dau">Lightroom Tiếng Việt dễ sử dụng - Premium</span>' +
+        'Mở toàn bộ kho vũ khí của Lightroom ngay trên chiếc điện thoại bạn đang cầm trong tay — một lần duy nhất, dùng mãi mãi. 📱✨',
       khoi: [
         { kieu: 'luu-y', tieuDe: '⚠️ Lưu ý trước khi mua', y: [
           '🤖 App <strong>chỉ dành cho điện thoại chạy hệ điều hành Android</strong> — <strong>không dành cho iPhone</strong>. Vui lòng kiểm tra máy của bạn trước khi đặt hàng.',

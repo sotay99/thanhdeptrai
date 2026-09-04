@@ -94,6 +94,10 @@
       // cùng tên ở menu bên trái luôn mở ra y hệt một bảng.
       '<button type="button" class="nut nut-rong nut-dac-quyen" data-hanh-dong="mo-module" data-module="dac-quyen">' +
         '<span aria-hidden="true">👑</span> Đặc quyền dành cho khách đã từng mua hàng của shop</button>' +
+      // Cùng dẫn tới module 'hoan-tien' như mục ở menu bên trái, nên hai nơi
+      // luôn mở ra y hệt một bảng.
+      '<button type="button" class="nut nut-rong nut-hoan-tien" data-hanh-dong="mo-module" data-module="hoan-tien">' +
+        '<span aria-hidden="true">↩</span> Yêu cầu hoàn tiền 100% với sản phẩm đã mua</button>' +
       veKhuQuaTang();
   }
 

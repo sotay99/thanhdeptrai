@@ -1038,3 +1038,31 @@
   .hang-anh-chu { gap: 11px; }
   .anh-san-pham { flex: 1 1 100%; max-width: 100%; }
 }
+
+/* Dòng mở đầu của khẩu hiệu — một câu định danh ngắn, đứng riêng một dòng trên
+   phần văn xuôi bên dưới, tông xanh của web cho tách bạch. */
+.khoi-khau-hieu .dong-dau {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15.5px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--xanh);
+}
+
+/* Khung chứa ảnh trượt vào CHẬM GẤP NĂM các khối chữ: ảnh là thứ mắt dừng lại
+   lâu nhất, cho nó thời gian đi hết quãng đường thì cảm giác mượt hẳn.
+   0,85 giây × 5 = 4,25 giây. Độ trễ vẫn là 0 nên nó khởi hành sớm nhất. */
+.hang-anh-chu.troi-ngang { animation-duration: 4.25s; }
+
+/* Nút "Yêu cầu hoàn tiền" trong module — tông đỏ dịu, đặt ngay dưới nút Đặc
+   quyền tông vàng, tách bạch với cả hai mảng màu quanh nó. */
+.nut-hoan-tien {
+  margin-top: 9px;
+  border-color: rgba(229, 83, 75, .5);
+  background: linear-gradient(180deg, rgba(229, 83, 75, .16), rgba(229, 83, 75, .06));
+  color: #ff8a82;
+  font-weight: 700;
+  min-height: 44px;
+}
+.nut-hoan-tien:hover { border-color: var(--do); background: rgba(229, 83, 75, .24); }

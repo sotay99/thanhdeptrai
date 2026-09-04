@@ -373,7 +373,42 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 13) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 13) KHẨU HIỆU SẢN PHẨM 1, NHỊP TRƯỢT KHUNG ẢNH, NÚT YÊU CẦU HOÀN TIỀN
+// ---------------------------------------------------------------------------
+[
+  [/<span class="dong-dau">Lightroom Tiếng Việt dễ sử dụng - Premium<\/span>/,
+    "dòng mở đầu của khẩu hiệu sản phẩm 1"],
+  [/Mở toàn bộ kho vũ khí của Lightroom ngay trên chiếc điện thoại/,
+    "câu khẩu hiệu cũ của sản phẩm 1 vẫn giữ"],
+  [/class="nut nut-rong nut-hoan-tien"[^']*data-hanh-dong="mo-module" data-module="hoan-tien"/,
+    "nút Yêu cầu hoàn tiền trong module, dẫn đúng module hoan-tien"],
+  [/Yêu cầu hoàn tiền 100% với sản phẩm đã mua/, "tên nút Yêu cầu hoàn tiền trong module"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Nút hoàn tiền phải đứng SAU nút Đặc quyền và TRƯỚC khung quà tặng.
+{
+  const iDacQuyen = banNoi.indexOf("nut-dac-quyen");
+  const iHoanTien = banNoi.indexOf("nut-hoan-tien");
+  const iKhuQua = banNoi.indexOf("veKhuQuaTang();");
+  if (!(iDacQuyen < iHoanTien && iHoanTien < iKhuQua)) {
+    fail('Nút "Yêu cầu hoàn tiền" phải nằm dưới nút Đặc quyền và trên khung quà tặng.');
+  }
+}
+
+[
+  [/\.khoi-khau-hieu \.dong-dau\s*\{[\s\S]*?display:\s*block/, "dòng mở đầu khẩu hiệu đứng riêng một dòng"],
+  [/\.hang-anh-chu\.troi-ngang\s*\{[^}]*animation-duration:\s*4\.25s/,
+    "khung chứa ảnh trượt trong 4,25 giây (chậm gấp 5 lần khối chữ)"],
+  [/\.troi-ngang\s*\{[\s\S]*?troi-tu-phai\s+\.85s/, "nhịp trượt gốc 0,85 giây của các khối chữ"],
+  [/\.nut-hoan-tien\s*\{/, "kiểu riêng cho nút Yêu cầu hoàn tiền trong module"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 14) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
