@@ -119,6 +119,16 @@ Vòng đời một đơn: `moi` → `daXacNhan` → `daGui` | `canXemTay`. Trư�
 nên hàng chờ gửi luôn ngắn. Đổi tên các giá trị này thì phải đổi ở CẢ HAI nơi:
 `05-thanh-toan.js` và `gui-hang.gs`.
 
+Có HAI tệp: `gui-hang.gs` là bản người viết (tiếng Việt đọc thoải mái), còn
+`gui-hang.ascii.gs` do `scripts/build-apps-script.js` sinh ra — mọi chuỗi hiển
+thị viết bằng dãy `\uXXXX` nên tệp là ASCII thuần. **Luôn dán bản `.ascii.gs`
+vào Google Apps Script**: chép mã qua trình duyệt hay trình soạn thảo có lúc
+làm hỏng ký tự có dấu, và lỗi chỉ lộ ra khi khách nhận email đầy chữ
+"Ä Ă£ gá»­i". Sửa nội dung thì sửa bản gốc rồi chạy lại script sinh.
+
+Thư gửi đi luôn đi qua `guiThu()` — nó bọc thân thư trong tài liệu HTML có
+`<meta charset="utf-8">` và dùng `GmailApp` (khai bảng mã cho cả tiêu đề).
+
 Tệp `.gs` KHÔNG chứa bí mật: khoá cơ sở dữ liệu và các đường tải sản phẩm nằm
 trong Script Properties của dự án Apps Script.
 
