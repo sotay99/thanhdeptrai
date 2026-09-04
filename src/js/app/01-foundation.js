@@ -18,7 +18,7 @@
   const GIAM_MOI_SAN_PHAM = 10;
   const KHONG_TINH_GIAM_LAN_HAI = ['sp4', 'sp5', 'sp8', 'sp9'];
 
-  // Chín sản phẩm của module "Trọn Bộ sản phẩm Cao cấp cho Lightroom". Mã module
+  // Chín sản phẩm của module "Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế". Mã module
   // vẫn là 'goi-vip' — ĐỪNG đổi, đó là địa chỉ #hash mà khách đã lưu và đã chia
   // sẻ. Tên giữ nguyên văn theo yêu cầu
   // của chủ shop — sửa chữ hoặc sửa giá sẽ làm
@@ -45,7 +45,7 @@
   //   kieu 'modal'  — không đổi trang, chỉ bật một bảng phụ lên
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: false },
-    { ma: 'goi-vip',          ten: 'Trọn Bộ sản phẩm Cao cấp cho Lightroom', bieuTuong: '★', kieu: 'trang', sanSang: true  },
+    { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học lightroom mobile',        bieuTuong: '▤', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khóa học lightroom máy tính',      bieuTuong: '▣', kieu: 'trang', sanSang: false },

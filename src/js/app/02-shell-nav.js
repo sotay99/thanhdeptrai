@@ -409,7 +409,7 @@
         '<div class="hinh" aria-hidden="true">🛠️</div>' +
         '<h2>Tính năng đang nâng cấp</h2>' +
         '<p>Module “' + escapeHtml(ten) + '” đang được xây dựng và sẽ mở trong thời gian tới.</p>' +
-        '<p style="margin-top:10px;margin-bottom:0">Mời bạn xem <strong class="chu-nhan">Trọn Bộ sản phẩm Cao cấp cho Lightroom</strong> — phần đã sẵn sàng phục vụ.</p>' +
+        '<p style="margin-top:10px;margin-bottom:0">Mời bạn xem <strong class="chu-nhan">Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế</strong> — phần đã sẵn sàng phục vụ.</p>' +
       '</div>';
   }
 

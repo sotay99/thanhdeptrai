@@ -876,7 +876,7 @@
 }
 
 /* ==========================================================================
-   KHU QUÀ TẶNG — cuối module "Trọn Bộ sản phẩm Cao cấp cho Lightroom"
+   KHU QUÀ TẶNG — cuối module "Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế"
    ========================================================================== */
 
 /* Nút mời xuống quà, đặt ngay dưới dòng "Chọn càng nhiều càng rẻ…" */
@@ -1121,4 +1121,46 @@
 @media (max-width: 560px) {
   .the-sanpham .hang-gia { row-gap: 2px; }
   .the-sanpham .gia-chot { flex: 0 0 100%; }
+}
+
+/* Nửa sau của khẩu hiệu bảng Đặc quyền: xuống hàng và tô màu xanh đặc trưng —
+   đây là câu chốt, phải bật hẳn khỏi vế đặt vấn đề ở trên. */
+.khoi-khau-hieu .chu-nhan-xanh {
+  display: block;
+  margin-top: 5px;
+  color: var(--xanh);
+  font-weight: 800;
+}
+
+/* Thông báo mức giảm bật ra NGAY TẠI THẺ vừa bấm: rộng bằng thẻ, mép trên trùng
+   mép trên thẻ (toạ độ do JS đo và gắn vào style). Bung ra từ chính mép trên
+   nên transform-origin đặt ở top, rồi vẫn đứng im và trôi xuống như bản giữa
+   màn hình. */
+.thong-bao-giam.tai-the {
+  left: 0;
+  top: 0;
+  transform-origin: center top;
+  text-align: center;
+  animation: thong-bao-giam-tai-the 2.55s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+@keyframes thong-bao-giam-tai-the {
+  0%   { opacity: 0; transform: translateY(0) scale(.5); }
+  8%   { opacity: 1; transform: translateY(0) scale(1.6); }
+  16%  { opacity: 1; transform: translateY(0) scale(1); }
+  55%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(46vh) scale(.9); }
+}
+
+/* Nút "Tôi cần được Tư vấn thêm" — chưa nối việc gì nhưng KHÔNG để nó xám như
+   nút hỏng: giữ nguyên sắc độ của một nút dùng được, tông tím tách khỏi nút
+   vàng và nút đỏ ở trên. */
+.nut-tu-van {
+  margin-top: 9px;
+  border-color: rgba(150, 120, 240, .5);
+  background: linear-gradient(180deg, rgba(150, 120, 240, .17), rgba(150, 120, 240, .06));
+  color: #b8a4ff;
+  font-weight: 700;
+  min-height: 44px;
+  cursor: default;
 }

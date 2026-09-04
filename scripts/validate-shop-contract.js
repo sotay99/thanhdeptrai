@@ -435,7 +435,7 @@ if (/<a[^>]*zalo\.me/.test(banNoi)) {
 // 15) TÊN MODULE BÁN HÀNG PHẢI THỐNG NHẤT TRONG TOÀN APP
 // ---------------------------------------------------------------------------
 {
-  const TEN_MODULE = "Trọn Bộ sản phẩm Cao cấp cho Lightroom";
+  const TEN_MODULE = "Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế";
   const html = doc("index.html");
 
   if (!new RegExp(`ma: 'goi-vip',\\s*ten: '${TEN_MODULE}'`).test(banNoi)) {
@@ -463,7 +463,50 @@ if (/<a[^>]*zalo\.me/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
-// 16) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 16) THÔNG BÁO MỨC GIẢM BẬT RA TẠI THẺ, ẢNH BẢNG ĐẶC QUYỀN, NÚT TƯ VẤN
+// ---------------------------------------------------------------------------
+[
+  [/function\s+hienThongBaoGiam\(maSanPham\)/, "thông báo mức giảm nhận mã sản phẩm vừa bấm"],
+  [/hienThongBaoGiam\(ma\)/, "chọn/bỏ chọn một sản phẩm thì truyền mã vào thông báo"],
+  [/el\.classList\.add\('tai-the'\)/, "thông báo gắn toạ độ theo thẻ vừa bấm"],
+  [/const\s+ANH_DAC_QUYEN\s*=\s*'\/assets\/anh\/dac-quyen\.jpg'/, "ảnh minh hoạ của bảng Đặc quyền"],
+  [/function\s+veOAnh\s*\(/, "hàm dựng ô ảnh dùng chung"],
+  [/veOAnh\(ANH_DAC_QUYEN/, "bảng Đặc quyền dùng ô ảnh đó"],
+  [/<span class="chu-nhan-xanh">học thêm khoá thiết kế bạn thích/, "phần khẩu hiệu được tô nhấn"],
+  [/class="nut nut-rong nut-tu-van"/, 'nút "Tôi cần được Tư vấn thêm"'],
+  [/Tôi cần được Tư vấn thêm/, "tên nút Tư vấn"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Bấm "Chọn tất cả" thì thông báo phải ra giữa màn hình, tức KHÔNG truyền mã.
+if (!/function\s+chonTatCa\(\)\{[\s\S]{0,400}?hienThongBaoGiam\(\);/.test(banNoi)) {
+  fail('Nút "Chọn tất cả" phải gọi hienThongBaoGiam() không tham số để thông báo ra giữa màn hình.');
+}
+
+// Nút Tư vấn cố ý chưa nối việc, nhưng KHÔNG được disabled (disabled làm nút xám).
+if (/class="nut nut-rong nut-tu-van"[^>]*(disabled|data-hanh-dong)/.test(banNoi)) {
+  fail('Nút Tư vấn không được đặt disabled, cũng chưa được gắn data-hanh-dong.');
+}
+
+if (!fs.existsSync(path.join(root, "src/anh/dac-quyen.jpg"))) {
+  fail("Thiếu tệp ảnh src/anh/dac-quyen.jpg.");
+}
+
+[
+  [/\.thong-bao-giam\.tai-the\s*\{[\s\S]*?animation:\s*thong-bao-giam-tai-the/,
+    "nhịp riêng cho thông báo bật ra tại thẻ"],
+  [/@keyframes\s+thong-bao-giam-tai-the\s*\{[\s\S]*?scale\(1\.6\)[\s\S]*?translateY\(46vh\)/,
+    "thông báo tại thẻ vẫn bung 1,6 lần rồi trôi xuống mất hẳn"],
+  [/\.khoi-khau-hieu \.chu-nhan-xanh\s*\{[\s\S]*?display:\s*block[\s\S]*?color:\s*var\(--xanh\)/,
+    "phần tô nhấn xuống hàng riêng và mang màu xanh"],
+  [/\.nut-tu-van\s*\{/, "kiểu riêng cho nút Tư vấn"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 17) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
