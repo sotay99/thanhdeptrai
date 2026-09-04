@@ -17,7 +17,9 @@
 
     "donhang": {
       "//": "Đơn hàng: cho TẠO MỚI và cho cập nhật cờ xác nhận, nhưng KHÔNG cho đọc — khách này không xem được đơn của khách khác. Chủ shop xem trong Firebase Console.",
+      "//2": "indexOn trangThai để khâu gửi hàng tự động lọc nhanh những đơn đang chờ gửi, thay vì tải cả kho đơn về.",
       ".read": false,
+      ".indexOn": ["trangThai"],
       "$madon": {
         ".read": false,
         ".write": true,
@@ -26,6 +28,10 @@
         "tongTien": { ".validate": "newData.isNumber() && newData.val() >= 0" },
         "phanTramGiam": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
         "thanhTien": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "maSanPham": { ".validate": "newData.hasChildren()" },
+        "trangThai": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "guiLuc": { ".validate": "newData.isNumber()" },
+        "ghiChuGui": { ".validate": "newData.isString() && newData.val().length <= 300" },
         "email": { ".validate": "newData.isString() && newData.val().length <= 35" },
         "zalo": { ".validate": "newData.isString() && newData.val().length <= 13" },
         "dienThoai": { ".validate": "newData.isString() && newData.val().length <= 13" },

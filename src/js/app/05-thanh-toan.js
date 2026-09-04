@@ -91,6 +91,17 @@
     const ref = rtdb.ref('donhang').push();
     return ref.set({
       sanPham: sanPhamDaChon().map(function(sp){ return sp.ten + ' — ' + dinhDangTien(sp.giaChot); }),
+      // Mã sản phẩm để máy đọc. Chuỗi 'sanPham' ở trên là để NGƯỜI đọc; khâu
+      // gửi hàng tự động cần đúng mã mới tra ra được đường tải của từng món.
+      maSanPham: sanPhamDaChon().map(function(sp){ return sp.ma; }),
+      // Trạng thái là thứ khâu gửi hàng tự động lọc theo, nên chỉ có một giá trị
+      // tại một thời điểm:
+      //   'moi'        — khách vừa bấm Tiến hành thanh toán, chưa xác nhận
+      //   'daXacNhan'  — khách bấm "Đã thanh toán", chờ gửi hàng
+      //   'daGui'      — đã gửi hàng cho khách
+      //   'canXemTay'  — không gửi tự động được, chủ shop phải xử lý
+      // Nhờ vậy hàng chờ gửi luôn là một danh sách NGẮN, không phải quét cả kho.
+      trangThai: 'moi',
       tongTien: t.tongTien,
       phanTramGiam: t.phanTramGiam,
       thanhTien: t.thanhTien,
@@ -112,7 +123,7 @@
   function danhDauDaThanhToan(){
     if (!firebaseSanSang || !rtdb || !state.maDonHienTai) return Promise.resolve();
     return rtdb.ref('donhang/' + state.maDonHienTai)
-      .update({ daXacNhan: true, xacNhanLuc: Date.now() })
+      .update({ daXacNhan: true, trangThai: 'daXacNhan', xacNhanLuc: Date.now() })
       .catch(function(e){ console.error('Không cập nhật được trạng thái đơn hàng:', e); });
   }
 

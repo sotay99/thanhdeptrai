@@ -106,3 +106,21 @@ không được nằm trong mã nguồn. Chúng ở trong Realtime Database
 `validate-shop-contract.js` quét cả kho để chặn. Nút "Liên hệ Zalo" vì thế là
 `<button>` chứ không phải `<a href>` — địa chỉ dựng lúc bấm.
 
+
+## Gửi hàng tự động — apps-script/
+
+`apps-script/gui-hang.gs` chạy trên Google Apps Script (miễn phí, không cần
+Blaze). Mỗi phút nó lọc đơn `trangThai = 'daXacNhan'` trong Realtime Database,
+gửi email kèm đường tải rồi đổi sang `'daGui'`, hoặc `'canXemTay'` khi khách
+không để lại email.
+
+Vòng đời một đơn: `moi` → `daXacNhan` → `daGui` | `canXemTay`. Trường
+`trangThai` là thứ Apps Script lọc theo (`.indexOn` trong `database.rules.json`),
+nên hàng chờ gửi luôn ngắn. Đổi tên các giá trị này thì phải đổi ở CẢ HAI nơi:
+`05-thanh-toan.js` và `gui-hang.gs`.
+
+Tệp `.gs` KHÔNG chứa bí mật: khoá cơ sở dữ liệu và các đường tải sản phẩm nằm
+trong Script Properties của dự án Apps Script.
+
+Script chỉ biết khách đã bấm nút xác nhận, KHÔNG biết tiền đã về hay chưa —
+khâu đối soát vẫn thủ công cho tới khi nối cổng thanh toán vào `doPost()`.
