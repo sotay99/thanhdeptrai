@@ -9,6 +9,12 @@
       ".write": false
     },
 
+    "thongtinlienhe": {
+      "//": "Số Zalo của shop: web đọc công khai để dựng nút Liên hệ Zalo, KHÔNG ai ghi được từ trình duyệt. Giữ ở đây thay vì trong mã nguồn để số không lộ ra trên GitHub.",
+      ".read": true,
+      ".write": false
+    },
+
     "donhang": {
       "//": "Đơn hàng: cho TẠO MỚI và cho cập nhật cờ xác nhận, nhưng KHÔNG cho đọc — khách này không xem được đơn của khách khác. Chủ shop xem trong Firebase Console.",
       ".read": false,

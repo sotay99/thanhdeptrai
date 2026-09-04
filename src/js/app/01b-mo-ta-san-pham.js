@@ -251,10 +251,6 @@
      Dùng CHUNG bộ khối và chung hiệu ứng với mô tả sản phẩm, chỉ khác tiêu đề,
      nội dung và nút ở đáy bảng.                                              */
 
-  // Số Zalo của shop. Để một chỗ duy nhất: cả nút bấm lẫn dòng chữ đều lấy từ
-  // đây nên không bao giờ có chuyện hai nơi ghi hai số khác nhau.
-  const ZALO_SHOP = '091714941';
-
   const NOI_DUNG_DAC_QUYEN = [
     { kieu: 'khau-hieu', chu: 'Đã từng mua hàng của Shop? Vậy thì bạn còn một món nữa chưa nhận: học thêm khoá thiết kế bạn thích, hoàn toàn miễn phí. 👑' },
     { kieu: 'muc', tieuDe: '🎁 Yêu cầu học thêm các khoá học về thiết kế một cách miễn phí', y: [

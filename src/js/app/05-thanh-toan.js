@@ -49,6 +49,39 @@
     });
   }
 
+  // Số Zalo của shop nằm ở nhánh /thongtinlienhe trong Realtime Database, KHÔNG
+  // nằm trong mã nguồn — hệt cách giấu số tài khoản. Người tải mã nguồn về máy
+  // sẽ chỉ thấy tên nhánh, không thấy con số.
+  function taiThongTinLienHe(){
+    if (!firebaseSanSang || !rtdb) return Promise.resolve(false);
+    return rtdb.ref('thongtinlienhe').once('value').then(function(anh){
+      const du = anh && anh.val();
+      if (!du) return false;
+      state.zaloShop = String(du.zalo || '').replace(/\D/g, '');
+      return !!state.zaloShop;
+    }).catch(function(e){
+      console.error('Không đọc được thông tin liên hệ từ Firebase:', e);
+      return false;
+    });
+  }
+
+  // Bấm "Liên hệ Zalo": dựng địa chỉ NGAY LÚC BẤM từ con số vừa đọc được, rồi
+  // mở tab mới. Không dựng sẵn thẻ <a href> vì làm vậy là in thẳng số Zalo vào
+  // HTML của trang.
+  function moZaloShop(){
+    const so = String(state.zaloShop || '').replace(/\D/g, '');
+    if (!so) {
+      // Chưa đọc được (mất mạng, hoặc chưa dán dữ liệu vào Firebase): thử lại
+      // một lần rồi mới báo, thay vì im lặng không làm gì.
+      taiThongTinLienHe().then(function(duoc){
+        if (duoc) moZaloShop();
+        else alert('Chưa lấy được thông tin liên hệ. Vui lòng kiểm tra kết nối mạng rồi thử lại.');
+      });
+      return;
+    }
+    window.open('https://zalo.me/' + so, '_blank', 'noopener,noreferrer');
+  }
+
   // ------------------------------------------------------------ LƯU ĐƠN HÀNG
 
   function luuDonHang(){
@@ -362,6 +395,7 @@
     if (hanhDong === 'xem-chi-tiet') { moModalChiTietSanPham(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'chon-tu-chi-tiet') { chonTuBangChiTiet(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'vao-hoc-ngay') { vaoHocNgay(nutHanhDong.getAttribute('data-module')); return; }
+    if (hanhDong === 'lien-he-zalo') { moZaloShop(); return; }
     if (hanhDong === 'chon-tat-ca') { chonTatCa(); return; }
     if (hanhDong === 'xuong-qua-tang') { xuongKhuQuaTang(); return; }
     if (hanhDong === 'cuon-len-dau') { cuonLenDauTrang(); return; }
@@ -415,6 +449,7 @@
     // Nạp trước thông tin chuyển khoản để lúc khách mở modal thanh toán là có
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
     taiThongTinCK();
+    taiThongTinLienHe();
   }
 
   boot();

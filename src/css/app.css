@@ -555,11 +555,30 @@
   100% { transform: scale(1) rotate(0deg);        box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
 }
 
+/* MÀN HÌNH HẸP — xếp lại thành hai tầng thay vì chen nhau trên một dòng:
+     tầng trên  : khối số liệu, trải hết bề ngang, căn phải
+     tầng dưới  : [ Chọn tất cả ] [ Mua hàng ] — luôn NGANG HÀNG nhau
+   Khối số liệu được kéo lên đầu bằng order:-1 (trong HTML nó đứng sau nút Chọn
+   tất cả), nên hai nút giữ đúng thứ tự trái–phải mà không phải đổi HTML. */
 @media (max-width: 560px) {
-  .thanh-bao-gia { gap: 9px; }
-  .thanh-bao-gia .so-lieu { flex: 1 1 auto; gap: 2px 14px; justify-content: flex-end; }
-  .nut-chon-tat-ca { min-height: 36px; padding: 7px 11px; font-size: 12.5px; }
-  .nut-mua-hang { flex: 1 1 100%; }
+  .thanh-bao-gia { gap: 8px 9px; }
+  .thanh-bao-gia .so-lieu {
+    order: -1;
+    flex: 1 1 100%;
+    gap: 2px 14px;
+    justify-content: flex-end;
+  }
+  .nut-chon-tat-ca {
+    flex: 0 1 auto;
+    min-height: 42px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+  }
+  .nut-mua-hang {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 12px;
+  }
 }
 
 /* ------------------------------------------- BẢNG TỔNG KẾT ĐƠN TRONG MODAL */

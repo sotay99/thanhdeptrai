@@ -99,3 +99,10 @@ Actions sẽ tự deploy lại bản cũ. Không dùng nút rollback trong Fireb
 
 Người dùng trao đổi bằng tiếng Việt; trả lời bằng tiếng Việt. Chú thích mã
 nguồn và thông báo giao diện đều bằng tiếng Việt — giữ nguyên quy ước đó.
+
+Số tài khoản, tên chủ tài khoản, tên ngân hàng và SỐ ZALO của shop tuyệt đối
+không được nằm trong mã nguồn. Chúng ở trong Realtime Database
+(`/thongtinthanhtoan` và `/thongtinlienhe`), đọc lúc chạy.
+`validate-shop-contract.js` quét cả kho để chặn. Nút "Liên hệ Zalo" vì thế là
+`<button>` chứ không phải `<a href>` — địa chỉ dựng lúc bấm.
+

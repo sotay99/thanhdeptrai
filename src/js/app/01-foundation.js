@@ -78,6 +78,9 @@
     tuDongDien: { zalo: false, dienThoai: false },
     thongTinCK: Object.assign({}, THONG_TIN_CK_DU_PHONG),
     daTaiThongTinCK: false,
+    // Số Zalo của shop — GIỐNG HỆT số tài khoản, nó KHÔNG nằm trong mã nguồn
+    // mà đọc từ Realtime Database lúc chạy. Xem chú thích ở nút "Liên hệ Zalo".
+    zaloShop: '',
     maDonHienTai: null,
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)

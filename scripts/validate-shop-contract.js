@@ -240,12 +240,15 @@ SAN_PHAM_CHOT.forEach((_, i) => {
   [/đăng nhập bằng tài khoản Adobe/, "lưu ý chỉ đăng nhập bằng tài khoản Adobe"],
   [/Không đăng nhập được bằng Google/, "lưu ý không đăng nhập bằng Google"],
   [/const\s+TRE_MOI_KHOI_MO_TA\s*=\s*0\.33\s*;/, "nhịp trễ 0,33 giây giữa hai khối mô tả"],
-  [/const\s+ZALO_SHOP\s*=\s*'091714941'/, "số Zalo của shop"],
   [/const\s+NOI_DUNG_DAC_QUYEN\s*=\s*\[/, "nội dung bảng Đặc quyền"],
   [/không quá 2 khoá học/, "giới hạn không quá 2 khoá học"],
   [/function\s+veNoiDungDacQuyen\s*\(/, "hàm dựng nội dung bảng Đặc quyền"],
   [/function\s+moModalDacQuyen\s*\(/, "hàm mở bảng Đặc quyền"],
-  [/https:\/\/zalo\.me\/'\s*\+\s*escapeHtml\(ZALO_SHOP\)/, "nút Liên hệ Zalo trỏ sang Zalo của shop"],
+  [/data-hanh-dong="lien-he-zalo"/, "nút Liên hệ Zalo"],
+  [/function\s+taiThongTinLienHe\s*\(/, "hàm đọc số Zalo của shop từ Realtime Database"],
+  [/rtdb\.ref\('thongtinlienhe'\)/, "nhánh /thongtinlienhe trong Realtime Database"],
+  [/function\s+moZaloShop\s*\(/, "hàm mở Zalo của shop"],
+  [/window\.open\('https:\/\/zalo\.me\/'\s*\+\s*so/, "địa chỉ Zalo dựng lúc bấm, không in sẵn vào HTML"],
   [/ma:\s*'dac-quyen'[\s\S]{0,140}?kieu:\s*'modal'/, "mục Đặc quyền trong menu bên trái"],
   [/ma:\s*'lien-he'[\s\S]{0,80}?kieu:\s*'modal'/, "mục Liên hệ shop trong menu bên trái"],
 ].forEach(([mau, ten]) => {
@@ -387,6 +390,11 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
 
+// Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
+if (/<a[^>]*zalo\.me/.test(banNoi)) {
+  fail('Không được dựng sẵn thẻ <a href> tới zalo.me — số Zalo phải đọc từ Realtime Database lúc chạy.');
+}
+
 // Nút hoàn tiền phải đứng SAU nút Đặc quyền và TRƯỚC khung quà tặng.
 {
   const iDacQuyen = banNoi.indexOf("nut-dac-quyen");
@@ -408,11 +416,13 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 14) SỐ TÀI KHOẢN KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 14) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
-const CAM = [/10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i];
+// Số tài khoản, tên chủ tài khoản, tên ngân hàng và SỐ ZALO của shop đều chỉ
+// được nằm trong Realtime Database, tuyệt đối không nằm trong mã nguồn.
+const CAM = [/10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i, /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/];
 const BO_QUA = new Set([".git", "public", "node_modules"]);
 
 function quet(thuMuc) {

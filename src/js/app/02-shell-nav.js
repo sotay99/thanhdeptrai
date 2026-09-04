@@ -314,8 +314,10 @@
       than: '<div class="mo-ta-sp">' + veNoiDungDacQuyen() + '</div>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        '<a class="nut nut-zalo" href="https://zalo.me/' + escapeHtml(ZALO_SHOP) + '"' +
-          ' target="_blank" rel="noopener noreferrer">Liên hệ Zalo</a>'
+        // CỐ Ý KHÔNG dùng thẻ <a href>: làm vậy là in thẳng số Zalo của shop vào
+        // HTML. Nút này chỉ mang một hành động; địa chỉ được dựng lúc bấm từ
+        // con số đọc được ở Realtime Database (xem moZaloShop ở PHẦN 05).
+        '<button type="button" class="nut nut-zalo" data-hanh-dong="lien-he-zalo">Liên hệ Zalo</button>'
     });
   }
 
