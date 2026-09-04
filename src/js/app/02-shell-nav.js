@@ -322,26 +322,29 @@
     });
   }
 
+  // Bảng phụ "Chi tiết sản phẩm": đầu bảng là tên và giá, thân bảng là các khối
+  // mô tả lấy từ PHẦN 01B. Các khối tự trôi từ phải qua trái, lần lượt từ trên
+  // xuống — hiệu ứng nằm hết trong CSS, chạy ngay khi bảng mở, khách KHÔNG cần
+  // cuộn màn hình mới thấy khối bên dưới xuất hiện.
   function moModalChiTietSanPham(ma){
     const sp = timSanPham(ma);
     if (!sp) return;
+    const mienPhi = !sp.giaChot;
     moModal({
       ma: 'chi-tiet-' + sp.ma,
       tieuDe: 'Chi tiết sản phẩm',
       than: '' +
-        '<div class="noi-dung-van-ban">' +
-          '<h3 style="margin:0 0 4px">' + escapeHtml(sp.ten) + '</h3>' +
-          '<p class="hang-gia" style="margin-bottom:0">' +
-            '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span> ' +
-            '<span class="phan-tram">Giảm ' + phanTramGiamSanPham(sp) + '%</span> ' +
-            '<span class="chi-con">chỉ còn</span> ' +
-            '<span class="gia-chot">' + dinhDangTien(sp.giaChot) + '</span>' +
-          '</p>' +
-          '<div style="text-align:center;padding:18px 0 4px">' +
-            '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">🛠️</p>' +
-            '<p><strong>Phần mô tả chi tiết đang được nâng cấp.</strong></p>' +
-            '<p style="color:var(--chu-diu);margin-bottom:0">Nội dung riêng của từng sản phẩm sẽ sớm được bổ sung đầy đủ tại đây.</p>' +
+        '<div class="mo-ta-sp">' +
+          '<div class="mo-ta-dinh troi-ngang">' +
+            '<h3>' + escapeHtml(sp.ten) + '</h3>' +
+            '<p class="hang-gia">' +
+              '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span> ' +
+              '<span class="phan-tram">Giảm ' + phanTramGiamSanPham(sp) + '%</span> ' +
+              '<span class="chi-con">chỉ còn</span> ' +
+              '<span class="gia-chot">' + (mienPhi ? 'MIỄN PHÍ' : dinhDangTien(sp.giaChot)) + '</span>' +
+            '</p>' +
           '</div>' +
+          veMoTaSanPham(sp) +
         '</div>',
       day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
     });
