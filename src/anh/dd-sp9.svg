@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="g9" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient></defs>
+<rect width="240" height="240" rx="30" fill="url(#g9)"/>
+<!-- chữ Ă lớn giữa -->
+<rect x="62" y="62" width="116" height="116" rx="22" fill="#1c2026" stroke="#31a8ff" stroke-width="3"/>
+<text x="120" y="152" font-family="Georgia,'Times New Roman',serif" font-size="86" font-weight="bold" fill="#e6eaf0" text-anchor="middle">Ăn</text>
+<!-- các thẻ chữ nhỏ quanh -->
+<g transform="rotate(-14 44 52)"><rect x="18" y="26" width="52" height="52" rx="11" fill="#22272e" stroke="#39414c" stroke-width="2"/>
+ <text x="44" y="64" font-family="Georgia,serif" font-style="italic" font-size="34" fill="#31a8ff" text-anchor="middle">Ư</text></g>
+<g transform="rotate(12 196 52)"><rect x="170" y="26" width="52" height="52" rx="11" fill="#22272e" stroke="#39414c" stroke-width="2"/>
+ <text x="196" y="64" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="bold" fill="#ffa72e" text-anchor="middle">Ệ</text></g>
+<g transform="rotate(-9 44 190)"><rect x="18" y="164" width="52" height="52" rx="11" fill="#22272e" stroke="#39414c" stroke-width="2"/>
+ <text x="44" y="202" font-family="'Courier New',monospace" font-size="32" fill="#3fc47c" text-anchor="middle">Ộ</text></g>
+<g transform="rotate(10 196 190)"><rect x="170" y="164" width="52" height="52" rx="11" fill="#22272e" stroke="#39414c" stroke-width="2"/>
+ <text x="196" y="202" font-family="Georgia,serif" font-size="34" font-weight="bold" fill="#e6eaf0" text-anchor="middle">Đ</text></g>
+</svg>

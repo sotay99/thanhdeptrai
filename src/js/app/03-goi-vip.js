@@ -19,8 +19,12 @@
   function veAnhDaiDien(sp){
     const anh = ANH_DAI_DIEN[sp.ma];
     if (!anh) return '<figure class="anh-dai-dien trong" aria-hidden="true"></figure>';
+    // Độ trễ riêng cho từng ảnh (xem TRE_BONG_BENH ở PHẦN 01B) — gắn vào style
+    // vì mỗi thẻ một con số, không thể viết sẵn trong CSS.
+    const tre = TRE_BONG_BENH[sp.ma];
+    const style = tre ? ' style="animation-delay:' + tre + 's"' : '';
     return '' +
-      '<figure class="anh-dai-dien">' +
+      '<figure class="anh-dai-dien"' + style + '>' +
         '<img src="' + anh + '" width="240" height="240" loading="lazy" decoding="async"' +
           ' alt="Ảnh đại diện: ' + escapeHtml(sp.ten) + '">' +
       '</figure>';

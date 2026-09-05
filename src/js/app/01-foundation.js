@@ -46,10 +46,11 @@
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: false },
     { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
+    { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: false },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: false },
-    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop bằng điện thoại của bạn (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
+    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
     { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
     { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: false },
     { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: false },

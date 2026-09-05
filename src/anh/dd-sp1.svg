@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs>
+ <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient>
+ <linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f8f"/><stop offset=".55" stop-color="#4a86c9"/><stop offset="1" stop-color="#f0a86a"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd479"/><stop offset="1" stop-color="#f0a020"/></linearGradient>
+</defs>
+<rect width="240" height="240" rx="30" fill="url(#g1)"/>
+<!-- điện thoại -->
+<rect x="72" y="34" width="96" height="172" rx="16" fill="#0f1318" stroke="#3d4753" stroke-width="3"/>
+<rect x="80" y="46" width="80" height="76" rx="6" fill="url(#sky1)"/>
+<circle cx="140" cy="66" r="10" fill="#ffd89a"/>
+<path d="M80 106 L100 82 L114 100 L130 74 L146 96 L160 84 L160 122 L80 122 Z" fill="#1b2430"/>
+<!-- thanh trượt -->
+<g stroke="#39414c" stroke-width="4" stroke-linecap="round">
+ <line x1="84" y1="136" x2="156" y2="136"/><line x1="84" y1="152" x2="156" y2="152"/><line x1="84" y1="168" x2="156" y2="168"/>
+</g>
+<g stroke="#31a8ff" stroke-width="4" stroke-linecap="round">
+ <line x1="84" y1="136" x2="130" y2="136"/><line x1="84" y1="152" x2="108" y2="152"/><line x1="84" y1="168" x2="142" y2="168"/>
+</g>
+<g fill="#e6eaf0"><circle cx="130" cy="136" r="6"/><circle cx="108" cy="152" r="6"/><circle cx="142" cy="168" r="6"/></g>
+<rect x="98" y="186" width="44" height="5" rx="2.5" fill="#39414c"/>
+<!-- logo Lr -->
+<rect x="14" y="140" width="62" height="62" rx="14" fill="#001e36" stroke="#31a8ff" stroke-width="2"/>
+<text x="45" y="182" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="bold" fill="#31a8ff" text-anchor="middle">Lr</text>
+<!-- ổ khoá mở -->
+<g transform="translate(168,30)">
+ <rect x="0" y="20" width="44" height="34" rx="8" fill="url(#gold)"/>
+ <path d="M10 20 V13 a12 12 0 0 1 24 0" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/>
+ <circle cx="22" cy="35" r="5" fill="#3a2600"/>
+</g>
+</svg>

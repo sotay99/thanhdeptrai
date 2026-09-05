@@ -396,14 +396,18 @@
 
 /* Số thứ tự đóng khung, đứng ngay trước tên trên CÙNG MỘT DÒNG. Dùng
    inline-flex nên tên dài tự xuống dòng quanh nó như một chữ cái đầu. */
+/* Số thứ tự THẢ NỔI (float) chứ không nằm trong dòng chữ. Để nó trong dòng thì
+   chính nó quyết định chiều cao dòng đầu — dòng đầu bị đẩy cao lên, cách hẳn
+   các dòng xuống hàng bên dưới, nhìn rời rạc. Thả nổi thì mọi dòng giãn đều
+   nhau đúng theo line-height, dù tên sản phẩm xuống bao nhiêu dòng đi nữa. */
 .the-sanpham .so-tt {
-  display: inline-flex;
+  float: left;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
-  margin-right: 7px;
-  vertical-align: -6px;
+  margin: 1px 8px 1px 0;
   border-radius: 8px;
   background: linear-gradient(160deg, var(--xanh-dam), #0d4d9e);
   border: 1px solid rgba(255, 255, 255, .14);
@@ -423,7 +427,10 @@
   .the-sanpham .anh-dai-dien { width: 72px; }
 }
 
+/* overflow:hidden để khối tên BAO TRỌN số đang thả nổi — thiếu nó thì tên chỉ
+   một dòng sẽ thấp hơn số và số tràn xuống dòng giá bên dưới. */
 .the-sanpham .ten-sanpham {
+  overflow: hidden;
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.45;
@@ -1238,4 +1245,29 @@
   /* Màn đủ rộng thì nằm ngay CẠNH tên trường thay vì xuống dòng. */
   .truong label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 7px; }
   .truong label .nhan-phu { display: inline; margin-top: 0; }
+}
+
+/* Ảnh đại diện bồng bềnh như nút nổi, nhưng THƯA HƠN: 3 giây nhấp nhô rồi nghỉ
+   6 giây, tổng một vòng 9 giây (3/9 = 33,3%). Mỗi thẻ có độ trễ riêng gắn ở
+   style nên chín ảnh không bao giờ nhô lên cùng một lúc. */
+.the-sanpham .anh-dai-dien {
+  animation: bong-benh-anh 9s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes bong-benh-anh {
+  0%    { transform: translateY(0)      rotate(0deg); }
+  4.2%  { transform: translateY(-4px)   rotate(-1.8deg); }
+  8.3%  { transform: translateY(-5.5px) rotate(-.8deg); }
+  12.5% { transform: translateY(-1.5px) rotate(1.4deg); }
+  16.7% { transform: translateY(2px)    rotate(1.8deg); }
+  20.8% { transform: translateY(.8px)   rotate(.8deg); }
+  25%   { transform: translateY(-3.4px) rotate(-1.4deg); }
+  29.2% { transform: translateY(-1.6px) rotate(-.5deg); }
+  33.3% { transform: translateY(0)      rotate(0deg); }
+  100%  { transform: translateY(0)      rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .the-sanpham .anh-dai-dien { animation: none; }
 }

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient>
+<linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#123a63"/><stop offset=".5" stop-color="#3f7db5"/><stop offset="1" stop-color="#e8a765"/></linearGradient></defs>
+<rect width="240" height="240" rx="30" fill="url(#g3)"/>
+<!-- màn hình -->
+<rect x="24" y="50" width="192" height="120" rx="12" fill="#0f1318" stroke="#3d4753" stroke-width="4"/>
+<rect x="34" y="60" width="104" height="100" rx="6" fill="url(#sky3)"/>
+<circle cx="112" cy="86" r="11" fill="#ffd89a"/>
+<path d="M34 138 L58 108 L76 130 L96 100 L120 128 L138 116 L138 160 L34 160 Z" fill="#1b2430"/>
+<g>
+ <rect x="146" y="60" width="28" height="22" rx="5" fill="#f7c59f"/><rect x="178" y="60" width="28" height="22" rx="5" fill="#9fd3f7"/>
+ <rect x="146" y="86" width="28" height="22" rx="5" fill="#f2a6c2"/><rect x="178" y="86" width="28" height="22" rx="5" fill="#d9e6a0"/>
+ <rect x="146" y="112" width="28" height="22" rx="5" fill="#c8bde8"/><rect x="178" y="112" width="28" height="22" rx="5" fill="#a8e6d4"/>
+ <rect x="146" y="138" width="28" height="22" rx="5" fill="#ffe0a3"/><rect x="178" y="138" width="28" height="22" rx="5" fill="#a0c8f7"/>
+</g>
+<rect x="102" y="170" width="36" height="12" rx="3" fill="#39414c"/>
+<rect x="76" y="182" width="88" height="9" rx="4.5" fill="#39414c"/>
+<!-- huy hiệu số lượng -->
+<rect x="76" y="14" width="88" height="28" rx="14" fill="#1473e6"/>
+<text x="120" y="34" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="bold" fill="#fff" text-anchor="middle">650</text>
+<!-- Lr + Ps -->
+<rect x="18" y="176" width="50" height="50" rx="12" fill="#001e36" stroke="#31a8ff" stroke-width="2"/>
+<text x="43" y="210" font-family="Arial,Helvetica,sans-serif" font-size="26" font-weight="bold" fill="#31a8ff" text-anchor="middle">Lr</text>
+<rect x="172" y="176" width="50" height="50" rx="12" fill="#00131f" stroke="#31a8ff" stroke-width="2"/>
+<text x="197" y="210" font-family="Arial,Helvetica,sans-serif" font-size="26" font-weight="bold" fill="#31a8ff" text-anchor="middle">Ps</text>
+</svg>

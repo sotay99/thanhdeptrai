@@ -39,7 +39,25 @@
   // Ảnh ĐẠI DIỆN vuông 1:1 hiện ở đầu mỗi thẻ trong lưới sản phẩm — khác với
   // ANH_SAN_PHAM ở trên (ảnh lớn trong bảng mô tả chi tiết). Mã nào chưa khai
   // thì thẻ dựng khung rỗng giữ chỗ, không vỡ bố cục.
-  const ANH_DAI_DIEN = {};
+  const ANH_DAI_DIEN = {
+    sp1: '/assets/anh/dd-sp1.svg',
+    sp2: '/assets/anh/dd-sp2.svg',
+    sp3: '/assets/anh/dd-sp3.svg',
+    sp4: '/assets/anh/dd-sp4.svg',
+    sp5: '/assets/anh/dd-sp5.svg',
+    sp6: '/assets/anh/dd-sp6.svg',
+    sp7: '/assets/anh/dd-sp7.svg',
+    sp8: '/assets/anh/dd-sp8.svg',
+    sp9: '/assets/anh/dd-sp9.svg'
+  };
+
+  // Độ trễ (giây) trước khi ảnh đại diện của từng sản phẩm bắt đầu bồng bềnh.
+  // CỐ Ý lệch nhau và không chia hết cho nhau: chín ảnh nhấp nhô cùng lúc trông
+  // như một trang bị giật, lệch pha thì mặt lưới sống động mà không rối mắt.
+  const TRE_BONG_BENH = {
+    sp1: 1.5, sp2: 2.7, sp3: 0.6, sp4: 4.1, sp5: 3.3,
+    sp6: 5.4, sp7: 1.9, sp8: 6.2, sp9: 3.8
+  };
 
   const CAM_KET_CHUNG = [
     '⚡ <strong>Giao hàng tức thì, không có thời gian chờ:</strong> ngay khi shop nhận được tiền thanh toán, hệ thống tự động gửi hàng tới bạn qua <strong>email</strong> — hoặc qua <strong>Zalo</strong>, hoặc <strong>tin nhắn SMS</strong>, tuỳ cách bạn để lại liên hệ. Không hẹn ngày, không xếp hàng chờ, không phải nhắc.',

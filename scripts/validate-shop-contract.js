@@ -551,7 +551,9 @@ if (!/\.truong label \.nhan-phu\s*\{/.test(cssApp)) {
 // ---------------------------------------------------------------------------
 [
   [/ma:\s*'video-ngan'[\s\S]{0,90}?kieu:\s*'trang'/, "module Xem video ngắn"],
-  [/ma:\s*'khoa-photoshop'[\s\S]{0,110}?kieu:\s*'trang'/, "module Khoá Photoshop bằng điện thoại"],
+  [/ma:\s*'khoa-photoshop'[\s\S]{0,110}?kieu:\s*'trang'/, "module Khoá Photoshop"],
+  [/ten:\s*'Khoá Photoshop - edit ảnh bằng điện thoại \(miễn phí\)'/, "tên mới của module Khoá Photoshop"],
+  [/ma:\s*'app-vip-pro'[\s\S]{0,90}?kieu:\s*'trang'/, "module Mua App VIP pro giá rẻ"],
   [/ten:\s*'Liên hệ và Thông tin về Shop'/, "tên mới của mục Liên hệ"],
   [/ten:\s*'Khoá học chỉnh màu Lightroom điện thoại \(miễn phí\)'/, "tên mới của module khoá học điện thoại"],
   [/ten:\s*'Khoá học Lightroom máy tính PC \(miễn phí\)'/, "tên mới của module khoá học máy tính"],
@@ -589,7 +591,49 @@ if (/class="so-thu-tu">SẢN PHẨM/.test(banNoi)) {
 });
 
 // ---------------------------------------------------------------------------
-// 19) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 19) ẢNH ĐẠI DIỆN CỦA TỪNG SẢN PHẨM
+// ---------------------------------------------------------------------------
+SAN_PHAM_CHOT.forEach((_, i) => {
+  const ma = `sp${i + 1}`;
+  if (!new RegExp(`${ma}:\\s*'/assets/anh/dd-${ma}\\.svg'`).test(banNoi)) {
+    fail(`Sản phẩm ${ma} chưa được khai ảnh đại diện trong ANH_DAI_DIEN.`);
+  }
+  if (!fs.existsSync(path.join(root, `src/anh/dd-${ma}.svg`))) {
+    fail(`Thiếu tệp ảnh đại diện src/anh/dd-${ma}.svg.`);
+  }
+});
+
+// Chín ảnh phải có chín độ trễ KHÁC NHAU — trùng nhau là chúng nhô lên cùng lúc.
+{
+  const khoi = banNoi.match(/const\s+TRE_BONG_BENH\s*=\s*\{([\s\S]*?)\}/);
+  if (!khoi) {
+    fail("Thiếu bảng độ trễ bồng bềnh TRE_BONG_BENH.");
+  } else {
+    const so = (khoi[1].match(/:\s*([\d.]+)/g) || []).map((x) => x.trim());
+    if (so.length !== 9) fail(`TRE_BONG_BENH phải khai đủ 9 sản phẩm, đang thấy ${so.length}.`);
+    if (new Set(so).size !== so.length) fail("Các độ trễ trong TRE_BONG_BENH phải khác nhau hết.");
+  }
+}
+
+if (!/animation-delay:'\s*\+\s*tre\s*\+\s*'s/.test(banNoi)) {
+  fail("Ảnh đại diện chưa được gắn độ trễ riêng vào style.");
+}
+
+[
+  [/\.the-sanpham \.anh-dai-dien\s*\{[\s\S]*?animation:\s*bong-benh-anh\s+9s[^;]*infinite/,
+    "ảnh đại diện bồng bềnh, mỗi vòng 9 giây"],
+  [/@keyframes\s+bong-benh-anh\s*\{[\s\S]*?33\.3%[^}]*translateY\(0\)[\s\S]*?100%[^}]*translateY\(0\)/,
+    "nhịp bồng bềnh của ảnh: 3 giây nhô rồi 6 giây đứng im"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?float:\s*left/,
+    "số thứ tự thả nổi để mọi dòng tên sản phẩm giãn đều nhau"],
+  [/\.the-sanpham \.ten-sanpham\s*\{[\s\S]*?overflow:\s*hidden/,
+    "khối tên bao trọn số đang thả nổi"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 20) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
