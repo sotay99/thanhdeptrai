@@ -42,6 +42,9 @@ var TEN_SAN_PHAM = {
 };
 
 var SO_DON_MOI_LAN = 25;      // xử lý tối đa bấy nhiêu đơn mỗi lượt chạy
+// Đường dẫn khách vào để nhận sản phẩm. Khi trang /sanpham xong và có mã kích
+// hoạt riêng cho từng đơn, chỗ này sẽ thành LINK_NHAN_HANG + '?k=' + mã.
+var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Th\u00e0nh\u0111\u1eb9ptrai.vn';
 
 /** Đọc một thiết lập bắt buộc. Thiếu thì dừng ngay với lời nhắc rõ ràng. */
@@ -173,15 +176,32 @@ function soanThuGiaoHang(don) {
   return { tieuDe: '\u0110\u01a1n h\u00e0ng c\u1ee7a b\u1ea1n t\u1ea1i ' + TEN_SHOP + ' \u0111\u00e3 s\u1eb5n s\u00e0ng', html: html, thieu: thieu };
 }
 
+/**
+ * Mẩu tin nhắn soạn sẵn để chủ shop CHÉP THẲNG rồi dán vào Zalo.
+ * Khách không để lại email thì phải nhắn tay — có sẵn mẩu này thì việc nhắn chỉ
+ * còn là chép và dán, không phải gõ lại từng chữ mỗi đơn.
+ */
+function soanTinZalo(don) {
+  var ten = (don.maSanPham || []).map(function (m) { return '\u00b7 ' + (TEN_SAN_PHAM[m] || m); }).join('\n');
+  return '' +
+    'Ch\u00e0o b\u1ea1n, shop \u0111\u00e3 nh\u1eadn \u0111\u01b0\u1ee3c thanh to\u00e1n \u0111\u01a1n ' + (don.maDon || don.__ma) + '.\n\n' +
+    'S\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua:\n' + ten + '\n\n' +
+    '\u0110\u00e2y l\u00e0 \u0111\u01b0\u1eddng d\u1eabn nh\u1eadn s\u1ea3n ph\u1ea9m c\u1ee7a ri\u00eang b\u1ea1n:\n' +
+    LINK_NHAN_HANG + '\n\n' +
+    'Xin \u0111\u1eebng chia s\u1ebb \u0111\u01b0\u1eddng d\u1eabn n\u00e0y cho ng\u01b0\u1eddi kh\u00e1c \u2014 m\u1ed7i \u0111\u01b0\u1eddng d\u1eabn ch\u1ec9 d\u00f9ng \u0111\u01b0\u1ee3c ' +
+    'tr\u00ean m\u1ed9t thi\u1ebft b\u1ecb.\n\n' +
+    'C\u1ea7n h\u1ed7 tr\u1ee3 c\u00e0i \u0111\u1eb7t c\u1ee9 nh\u1eafn cho shop nh\u00e9. C\u1ea3m \u01a1n b\u1ea1n \u0111\u00e3 tin t\u01b0\u1edfng!';
+}
+
 function soanThuBaoShop(don, ketQua) {
   var ma = (don.maSanPham || []).join(', ');
   var html =
     '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#222">' +
       '<h3 style="margin:0 0 10px">' + thoatHtml(ketQua) + '</h3>' +
       '<table cellpadding="6" style="border-collapse:collapse">' +
+        '<tr><td><b>N\u1ed9i dung CK</b></td><td><b>' + thoatHtml(don.noiDungCK) + '</b></td></tr>' +
         '<tr><td><b>M\u00e3 \u0111\u01a1n</b></td><td>' + thoatHtml(don.__ma) + '</td></tr>' +
         '<tr><td><b>S\u1ed1 ti\u1ec1n</b></td><td>' + dinhDangTien(don.thanhTien) + '</td></tr>' +
-        '<tr><td><b>N\u1ed9i dung CK</b></td><td>' + thoatHtml(don.noiDungCK) + '</td></tr>' +
         '<tr><td><b>Email</b></td><td>' + (thoatHtml(don.email) || '<i>kh\u00f4ng c\u00f3</i>') + '</td></tr>' +
         '<tr><td><b>Zalo</b></td><td>' + (thoatHtml(don.zalo) || '<i>kh\u00f4ng c\u00f3</i>') + '</td></tr>' +
         '<tr><td><b>\u0110i\u1ec7n tho\u1ea1i</b></td><td>' + (thoatHtml(don.dienThoai) || '<i>kh\u00f4ng c\u00f3</i>') + '</td></tr>' +
@@ -189,6 +209,17 @@ function soanThuBaoShop(don, ketQua) {
       '</table>' +
       '<p style="margin:14px 0 0;color:#b45309"><b>Nh\u1edb \u0111\u1ed1i chi\u1ebfu ti\u1ec1n \u0111\u00e3 v\u1ec1 t\u00e0i kho\u1ea3n ch\u01b0a.</b> ' +
         'Script ch\u1ec9 bi\u1ebft kh\u00e1ch \u0111\u00e3 b\u1ea5m n\u00fat x\u00e1c nh\u1eadn, kh\u00f4ng bi\u1ebft ti\u1ec1n \u0111\u00e3 v\u1ec1.</p>' +
+      // Mẩu tin nhắn Zalo LUÔN có mặt, kể cả khi khách đã có email: khách chưa
+      // thấy email, khách hỏi lại, khách muốn được nhắn cho chắc — lúc nào chủ
+      // shop cũng chỉ việc bôi đen rồi chép, không phải ngồi gõ lại.
+      '<p style="margin:16px 0 6px"><b>M\u1ea9u tin nh\u1eafn Zalo \u2014 b\u00f4i \u0111en r\u1ed3i ch\u00e9p:</b>' +
+        (don.zalo || don.dienThoai
+          ? ' <span style="color:#555">(g\u1eedi t\u1edbi ' + thoatHtml(don.zalo || don.dienThoai) + ')</span>'
+          : ' <span style="color:#b45309">(kh\u00e1ch kh\u00f4ng \u0111\u1ec3 l\u1ea1i s\u1ed1 n\u00e0o)</span>') +
+      '</p>' +
+      '<pre style="white-space:pre-wrap;word-break:break-word;padding:12px 14px;background:#f4f7fb;' +
+        'border-left:3px solid #1473e6;border-radius:6px;font-family:Arial,sans-serif;font-size:13px;' +
+        'line-height:1.7;margin:0">' + thoatHtml(soanTinZalo(don)) + '</pre>' +
     '</div>';
   return html;
 }

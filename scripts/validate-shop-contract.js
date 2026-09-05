@@ -94,18 +94,32 @@ if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
-// 3) Nội dung chuyển khoản: tiền tố "lr", đổi "@" thành dấu cách, bỏ trường
-//    trống, và không lặp lại khi số zalo trùng số điện thoại.
+// 3) Nội dung chuyển khoản: "LR" viết hoa + mã đơn 6 ký tự, đúng 8 ký tự.
+//    Ngắn tới mức không ngân hàng nào cắt, và khớp từ khoá "LR" đã đặt trong
+//    app đọc thông báo ngân hàng.
 // ---------------------------------------------------------------------------
-if (!/const\s+phan\s*=\s*\['lr'\]/.test(banNoi)) {
-  fail("Nội dung chuyển khoản phải bắt đầu bằng ký hiệu 'lr'");
-}
-if (!/kh\.email\.replace\(\/@\/g,\s*' '\)/.test(banNoi)) {
-  fail("Email trong nội dung chuyển khoản phải đổi dấu '@' thành dấu cách");
-}
-if (!/kh\.dienThoai\s*&&\s*kh\.dienThoai\s*!==\s*kh\.zalo/.test(banNoi)) {
-  fail("Số điện thoại trùng số zalo thì chỉ được ghi MỘT lần trong nội dung chuyển khoản");
-}
+[
+  [/return\s+'LR'\s*\+\s*\(state\.maDonNgan\s*\|\|\s*''\)/, 'nội dung chuyển khoản là "LR" + mã đơn'],
+  [/const\s+DAI_MA_DON\s*=\s*6\s*;/, "mã đơn dài 6 ký tự"],
+  [/const\s+CHU_MA_DON\s*=\s*'23456789ABCDEFGHJKMNPQRSTUVWXYZ'/,
+    "bảng ký tự sinh mã đơn, đã bỏ 0 O 1 I L cho khỏi đọc nhầm"],
+  [/function\s+sinhMaDon\s*\(/, "hàm sinh mã đơn"],
+  [/state\.maDonNgan\s*=\s*sinhMaDon\(\);/, "sinh mã đơn trước khi dựng bảng thanh toán"],
+  [/maDon:\s*state\.maDonNgan/, "mã đơn được lưu vào đơn hàng"],
+  [/function\s+chuKyDon\s*\(/, "hàm vân tay đơn hàng"],
+  [/if\s*\(!state\.maDonNgan\s*\|\|\s*state\.chuKyDon\s*!==\s*chuKy\)/,
+    "chỉ sinh mã đơn mới khi đơn thật sự đổi — bấm tới bấm lui không đẻ đơn trùng"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Bốn cặp ký tự dễ đọc nhầm trên màn hình ngân hàng: 0/O, 1/I/L.
+["0", "O", "1", "I", "L"].forEach((ky) => {
+  const bang = banNoi.match(/const\s+CHU_MA_DON\s*=\s*'([^']*)'/);
+  if (bang && bang[1].includes(ky)) {
+    fail(`Bảng ký tự sinh mã đơn không được chứa "${ky}" — dễ đọc nhầm khi đối chiếu ngân hàng.`);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // 4) Quy tắc nhập liệu: email tối đa 35 ký tự, số tối đa 12 chữ số.
@@ -390,6 +404,27 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
 
+// ---------------------------------------------------------------------------
+// 14) APPS SCRIPT — email báo shop LUÔN kèm mẩu tin nhắn Zalo
+//     Chủ shop cần chép mẩu tin gửi cho khách, kể cả khi khách đã có email
+//     (khách chưa thấy email, khách hỏi lại, khách muốn được nhắn cho chắc).
+// ---------------------------------------------------------------------------
+{
+  const gs = doc("apps-script/gui-hang.gs");
+  [
+    [/function\s+soanTinZalo\s*\(/, "hàm soạn mẩu tin nhắn Zalo"],
+    [/Mẩu tin nhắn Zalo — bôi đen rồi chép:/, "nhãn mẩu tin nhắn Zalo trong email báo shop"],
+    [/thoatHtml\(soanTinZalo\(don\)\)/, "mẩu tin Zalo được nhúng vào email báo shop"],
+    [/LINK_NHAN_HANG\s*\+\s*'\\n\\n'/, "mẩu tin Zalo có kèm đường dẫn nhận sản phẩm"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(gs)) fail(`Thiếu ${ten} trong apps-script/gui-hang.gs.`);
+  });
+  // Mẩu tin từng chỉ hiện khi khách KHÔNG có email. Nay phải luôn hiện.
+  if (/\(don\.email\s*\?\s*''\s*:[\s\S]{0,120}soanTinZalo/.test(gs)) {
+    fail('Mẩu tin nhắn Zalo không được đặt sau điều kiện "khách không có email" — phải luôn có trong email báo shop.');
+  }
+}
+
 // Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
 if (/<a[^>]*zalo\.me/.test(banNoi)) {
   fail('Không được dựng sẵn thẻ <a href> tới zalo.me — số Zalo phải đọc từ Realtime Database lúc chạy.');
@@ -646,7 +681,44 @@ if (/<h3 class="ten-sanpham">'\s*\+[\s\S]{0,120}?class="so-tt"/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
-// 21) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 21) BẢNG HỎI LẠI TRƯỚC KHI CHỐT ĐƠN
+// ---------------------------------------------------------------------------
+// Cú bấm ở bảng này kích hoạt gửi hàng tự động, nên KHÔNG được chốt đơn thẳng
+// từ bảng mã QR — phải hỏi lại một câu rõ ràng.
+[
+  [/ma:\s*'xac-nhan-lan-hai'/, "bảng hỏi lại trước khi chốt đơn"],
+  [/data-hanh-dong="chot-don"/, "nút chốt đơn ở bảng hỏi lại"],
+  [/function\s+chotDon\s*\(\)\{[\s\S]{0,200}?danhDauDaThanhToan\(\)/,
+    "chỉ bảng hỏi lại mới thật sự chốt đơn"],
+  [/Ngay khi shop nhận được tiền<\/strong>, hệ thống tự động gửi sản phẩm/,
+    "ghi chú: gửi hàng khi shop NHẬN ĐƯỢC TIỀN, không phải khi khách bấm nút"],
+  [/đã nằm trong hệ thống<\/strong> và đang chờ tiền về/,
+    "ghi chú: đơn đã được tạo từ lúc hiện mã QR"],
+  [/chưa để lại email<\/strong>/, "cảnh báo khi khách không để lại email"],
+  [/qua <strong>Zalo<\/strong> hoặc <strong>tin nhắn SMS<\/strong>/,
+    "nói rõ sẽ liên hệ qua Zalo hoặc SMS khi khách không có email"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+
+// Lời văn TUYỆT ĐỐI không được hứa "bấm xong là gửi ngay": thứ kích hoạt gửi
+// hàng là tiền về tài khoản, không phải cú bấm của khách.
+if (/(Ngay sau khi bạn xác nhận|sau khi bạn bấm)[^']{0,60}gửi/.test(banNoi)) {
+  fail('Bảng xác nhận không được hứa gửi hàng ngay sau cú bấm của khách.');
+}
+
+// Bảng mã QR không được gọi thẳng danhDauDaThanhToan.
+if (/function\s+xacNhanThanhToan\s*\(\)\{[\s\S]{0,300}?danhDauDaThanhToan\(\)/.test(banNoi)) {
+  fail("Bảng mã QR phải mở bảng hỏi lại, không được chốt đơn thẳng.");
+}
+
+if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
+  fail("Thiếu kiểu riêng cho bảng hỏi lại trong src/css/app.css.");
+}
+
+// ---------------------------------------------------------------------------
+// 22) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

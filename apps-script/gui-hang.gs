@@ -42,6 +42,9 @@ var TEN_SAN_PHAM = {
 };
 
 var SO_DON_MOI_LAN = 25;      // xử lý tối đa bấy nhiêu đơn mỗi lượt chạy
+// Đường dẫn khách vào để nhận sản phẩm. Khi trang /sanpham xong và có mã kích
+// hoạt riêng cho từng đơn, chỗ này sẽ thành LINK_NHAN_HANG + '?k=' + mã.
+var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Thànhđẹptrai.vn';
 
 /** Đọc một thiết lập bắt buộc. Thiếu thì dừng ngay với lời nhắc rõ ràng. */
@@ -173,15 +176,32 @@ function soanThuGiaoHang(don) {
   return { tieuDe: 'Đơn hàng của bạn tại ' + TEN_SHOP + ' đã sẵn sàng', html: html, thieu: thieu };
 }
 
+/**
+ * Mẩu tin nhắn soạn sẵn để chủ shop CHÉP THẲNG rồi dán vào Zalo.
+ * Khách không để lại email thì phải nhắn tay — có sẵn mẩu này thì việc nhắn chỉ
+ * còn là chép và dán, không phải gõ lại từng chữ mỗi đơn.
+ */
+function soanTinZalo(don) {
+  var ten = (don.maSanPham || []).map(function (m) { return '· ' + (TEN_SAN_PHAM[m] || m); }).join('\n');
+  return '' +
+    'Chào bạn, shop đã nhận được thanh toán đơn ' + (don.maDon || don.__ma) + '.\n\n' +
+    'Sản phẩm bạn đã mua:\n' + ten + '\n\n' +
+    'Đây là đường dẫn nhận sản phẩm của riêng bạn:\n' +
+    LINK_NHAN_HANG + '\n\n' +
+    'Xin đừng chia sẻ đường dẫn này cho người khác — mỗi đường dẫn chỉ dùng được ' +
+    'trên một thiết bị.\n\n' +
+    'Cần hỗ trợ cài đặt cứ nhắn cho shop nhé. Cảm ơn bạn đã tin tưởng!';
+}
+
 function soanThuBaoShop(don, ketQua) {
   var ma = (don.maSanPham || []).join(', ');
   var html =
     '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#222">' +
       '<h3 style="margin:0 0 10px">' + thoatHtml(ketQua) + '</h3>' +
       '<table cellpadding="6" style="border-collapse:collapse">' +
+        '<tr><td><b>Nội dung CK</b></td><td><b>' + thoatHtml(don.noiDungCK) + '</b></td></tr>' +
         '<tr><td><b>Mã đơn</b></td><td>' + thoatHtml(don.__ma) + '</td></tr>' +
         '<tr><td><b>Số tiền</b></td><td>' + dinhDangTien(don.thanhTien) + '</td></tr>' +
-        '<tr><td><b>Nội dung CK</b></td><td>' + thoatHtml(don.noiDungCK) + '</td></tr>' +
         '<tr><td><b>Email</b></td><td>' + (thoatHtml(don.email) || '<i>không có</i>') + '</td></tr>' +
         '<tr><td><b>Zalo</b></td><td>' + (thoatHtml(don.zalo) || '<i>không có</i>') + '</td></tr>' +
         '<tr><td><b>Điện thoại</b></td><td>' + (thoatHtml(don.dienThoai) || '<i>không có</i>') + '</td></tr>' +
@@ -189,6 +209,17 @@ function soanThuBaoShop(don, ketQua) {
       '</table>' +
       '<p style="margin:14px 0 0;color:#b45309"><b>Nhớ đối chiếu tiền đã về tài khoản chưa.</b> ' +
         'Script chỉ biết khách đã bấm nút xác nhận, không biết tiền đã về.</p>' +
+      // Mẩu tin nhắn Zalo LUÔN có mặt, kể cả khi khách đã có email: khách chưa
+      // thấy email, khách hỏi lại, khách muốn được nhắn cho chắc — lúc nào chủ
+      // shop cũng chỉ việc bôi đen rồi chép, không phải ngồi gõ lại.
+      '<p style="margin:16px 0 6px"><b>Mẩu tin nhắn Zalo — bôi đen rồi chép:</b>' +
+        (don.zalo || don.dienThoai
+          ? ' <span style="color:#555">(gửi tới ' + thoatHtml(don.zalo || don.dienThoai) + ')</span>'
+          : ' <span style="color:#b45309">(khách không để lại số nào)</span>') +
+      '</p>' +
+      '<pre style="white-space:pre-wrap;word-break:break-word;padding:12px 14px;background:#f4f7fb;' +
+        'border-left:3px solid #1473e6;border-radius:6px;font-family:Arial,sans-serif;font-size:13px;' +
+        'line-height:1.7;margin:0">' + thoatHtml(soanTinZalo(don)) + '</pre>' +
     '</div>';
   return html;
 }

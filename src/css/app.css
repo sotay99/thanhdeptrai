@@ -1276,3 +1276,64 @@
 @media (prefers-reduced-motion: reduce) {
   .the-sanpham .anh-dai-dien { animation: none; }
 }
+
+/* ==========================================================================
+   BẢNG HỎI LẠI TRƯỚC KHI CHỐT ĐƠN
+   Cú bấm ở bảng này là thứ kích hoạt gửi hàng tự động, nên nó phải đọc như một
+   câu hỏi nghiêm túc chứ không phải một bước bấm cho xong.
+   ========================================================================== */
+
+.khung-xac-nhan { font-size: 13.5px; line-height: 1.7; }
+
+.khung-xac-nhan .cau-hoi {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  color: var(--chu);
+}
+.khung-xac-nhan .cau-hoi strong { color: #ff8a82; }
+
+/* Nội dung chuyển khoản hiện lại một lần nữa, chữ to và giãn — để khách đối
+   chiếu với màn hình ngân hàng trước khi gật đầu. */
+.dong-ma-don {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px;
+  margin: 0 0 14px;
+  border: 1px solid var(--xanh-mo);
+  border-radius: var(--bo-the);
+  background: var(--xanh-nen);
+}
+.dong-ma-don .nhan { font-size: 12px; color: var(--chu-diu); }
+.dong-ma-don .ma {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--xanh);
+}
+
+.khung-xac-nhan .ghi-chu-gui {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--bo-the);
+  border: 1px solid rgba(45, 157, 95, .38);
+  background: rgba(45, 157, 95, .1);
+  color: var(--chu-diu);
+}
+.khung-xac-nhan .ghi-chu-gui strong { color: var(--chu); }
+
+/* Khách chưa để lại email: đổi sang tông cam cảnh báo, vì lúc này việc giao
+   hàng KHÔNG tự động và họ cần biết mình phải chờ. */
+.khung-xac-nhan .ghi-chu-gui.canh-bao {
+  border-color: rgba(255, 167, 46, .42);
+  background: rgba(255, 167, 46, .1);
+}
+.khung-xac-nhan .ghi-chu-gui.canh-bao strong { color: var(--cam); }
+
+.khung-xac-nhan .nhac-nho {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--chu-mo);
+}

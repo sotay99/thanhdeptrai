@@ -88,6 +88,15 @@
     // mà đọc từ Realtime Database lúc chạy. Xem chú thích ở nút "Liên hệ Zalo".
     zaloShop: '',
     maDonHienTai: null,
+    // Mã đơn NGẮN do web tự sinh, dùng làm nội dung chuyển khoản. Khác với
+    // maDonHienTai (khoá dài do Firebase cấp) — cái đó để tra cứu trong Console,
+    // cái này để khách gõ và để máy đọc biến động số dư đối chiếu.
+    maDonNgan: '',
+    // Vân tay của đơn (món đã chọn + thông tin liên hệ). Khách bấm "Quay lại
+    // bước trước" rồi bấm tiếp mà không đổi gì thì đơn vẫn là đơn cũ — giữ
+    // nguyên mã, không đẻ thêm một đơn trùng trong Firebase và không đổi nội
+    // dung chuyển khoản dưới chân người đã kịp quét mã QR.
+    chuKyDon: '',
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
     // không làm cả lưới nhấp nháy trôi lại từ đầu.
@@ -109,6 +118,26 @@
   }
 
   // 299000 -> "299.000 ₫"
+  // Bảng ký tự sinh mã đơn: CỐ Ý bỏ 0, O, 1, I, L — bốn cặp này nhìn trên màn
+  // hình ngân hàng rất dễ đọc nhầm nhau, mà mã đọc nhầm là đơn không khớp được.
+  const CHU_MA_DON = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  const DAI_MA_DON = 6;
+
+  // Mã đơn 6 ký tự từ bảng 30 chữ — bảy trăm triệu tổ hợp, đủ xa để không lo
+  // trùng ở quy mô một cửa hàng. Nội dung chuyển khoản vì thế chỉ còn 8 ký tự
+  // (LR + 6), ngắn tới mức không ngân hàng nào cắt bớt được.
+  function sinhMaDon(){
+    const so = new Uint32Array(DAI_MA_DON);
+    if (window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(so);
+    } else {
+      for (let i = 0; i < DAI_MA_DON; i++) so[i] = Math.floor(Math.random() * 4294967296);
+    }
+    let ma = '';
+    for (let i = 0; i < DAI_MA_DON; i++) ma += CHU_MA_DON.charAt(so[i] % CHU_MA_DON.length);
+    return ma;
+  }
+
   function dinhDangTien(so){
     const n = Number(so) || 0;
     return n.toLocaleString('vi-VN') + ' ₫';
