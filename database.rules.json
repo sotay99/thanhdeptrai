@@ -15,6 +15,12 @@
       ".write": false
     },
 
+    "thongtinkho": {
+      "//": "Địa chỉ máy chủ cấp phát đường dẫn tải sản phẩm. Web đọc công khai để trang /sanpham hỏi được, nhưng KHÔNG ai ghi được từ trình duyệt. Bản thân đường dẫn tới từng file KHÔNG nằm ở đây — chỉ máy chủ cấp phát mới biết, và nó chỉ trả về khi mã kích hoạt đúng.",
+      ".read": true,
+      ".write": false
+    },
+
     "donhang": {
       "//": "Đơn hàng: cho TẠO MỚI và cho cập nhật cờ xác nhận, nhưng KHÔNG cho đọc — khách này không xem được đơn của khách khác. Chủ shop xem trong Firebase Console.",
       "//2": "indexOn trangThai để khâu gửi hàng tự động lọc nhanh những đơn đang chờ gửi, thay vì tải cả kho đơn về.",

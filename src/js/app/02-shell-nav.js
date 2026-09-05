@@ -103,11 +103,26 @@
       moModalVanBan(m);
       return;
     }
+    // Đang ở trang nhận hàng mà chọn một module thì phải rời "/sanpham" về "/"
+    // trước, nếu không địa chỉ trên thanh trình duyệt nói một đằng còn nội dung
+    // hiện một nẻo. Dùng pushState nên không phải tải lại cả trang, và nút Back
+    // của trình duyệt vẫn đưa khách trở lại đúng trang nhận hàng.
+    veTrangChinh();
     state.module = m.ma;
     state.hieuUngVaoModule = true;   // vào lại module bao nhiêu lần cũng trôi lại
     datHash(m.ma);
     render();   // vẽ lại cả trang, menu giữ nguyên trạng thái đang mở/đóng
     if (window.scrollTo) window.scrollTo(0, 0);
+  }
+
+  // Rời trang nhận hàng về trang chính. Không làm gì nếu đã ở trang chính.
+  function veTrangChinh(){
+    if (state.trang === 'chinh') return;
+    state.trang = 'chinh';
+    dongHetModal();
+    if (window.history && window.history.pushState) {
+      window.history.pushState({}, '', '/' + (window.location.hash || ''));
+    }
   }
 
   // ------------------------------------------ KÉO THẢ MỘT NHÓM NÚT NỔI (DỌC)
@@ -398,6 +413,9 @@
   // ---------------------------------------------------- VẼ TOÀN BỘ GIAO DIỆN
 
   function veNoiDungModule(){
+    // Trang nhận hàng ở "/sanpham" đứng ngoài hệ thống module: nó có địa chỉ
+    // riêng vì được gửi cho khách qua email và Zalo.
+    if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
     return veManNangCap(m ? m.ten : '');
@@ -417,7 +435,9 @@
     const el = goc();
     if (!el) return;
     const m = timModule(state.module);
-    const coThanhDay = !!(m && m.ma === 'goi-vip');
+    // Thanh báo giá chỉ có ở module bán hàng. Trang nhận hàng không bán gì nên
+    // không có thanh nào ở đáy.
+    const coThanhDay = state.trang === 'chinh' && !!(m && m.ma === 'goi-vip');
 
     el.innerHTML = '' +
       '<button type="button" class="nut-noi' + (state.menuMo ? ' menu-dang-mo' : '') +

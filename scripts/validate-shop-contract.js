@@ -425,6 +425,46 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 15) TRANG NHẬN HÀNG "/sanpham"
+//     Địa chỉ này nằm trong email và trong tin nhắn Zalo đã gửi cho khách nên
+//     KHÔNG được đổi. Và luật xương sống của trang: nút tải xuống chỉ được dựng
+//     ra SAU KHI máy chủ trả lời mã kích hoạt đúng.
+// ---------------------------------------------------------------------------
+[
+  [/const\s+DUONG_DAN_NHAN_HANG\s*=\s*'\/sanpham'/, 'đường dẫn trang nhận hàng là "/sanpham"'],
+  [/function\s+docDuongDan\s*\(/, "hàm đọc đường dẫn để rẽ nhánh trang"],
+  [/function\s+veTrangNhanHang\s*\(/, "hàm vẽ trang nhận hàng"],
+  [/function\s+veTheNhanHang\s*\(/, "hàm vẽ thẻ sản phẩm ở trang nhận hàng"],
+  [/>Sử dụng sản phẩm này</, 'nút "Sử dụng sản phẩm này" ở cuối thẻ nhận hàng'],
+  [/rtdb\.ref\('thongtinkho'\)/, "địa chỉ máy chủ cấp phát đọc từ Realtime Database"],
+  [/function\s+chuanHoaMaKichHoat\s*\(/, "hàm chuẩn hoá mã kích hoạt"],
+  [/MỘT thiết bị/, "lời cảnh báo mỗi mã chỉ dùng được trên một thiết bị"],
+  [/state\.trang\s*===\s*'sanpham'/, "trang nhận hàng được rẽ nhánh theo state.trang"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Nút tải xuống PHẢI nằm sau nhánh "máy chủ đã cho phép". Dựng sẵn rồi ẩn đi là
+// hỏng cả cơ chế — mở F12 lên là thấy đường dẫn.
+{
+  const than = banNoi.match(/function\s+veKetQuaKichHoat\s*\(\)\s*\{[\s\S]*?\n  \}/);
+  if (!than) {
+    fail("Thiếu hàm veKetQuaKichHoat — nơi duy nhất được dựng nút tải xuống.");
+  } else {
+    const doan = than[0];
+    if (!/if\s*\(!kq\.duoc\)/.test(doan)) {
+      fail("veKetQuaKichHoat phải chặn trước ở nhánh máy chủ TỪ CHỐI rồi mới tới nút tải.");
+    }
+    if (doan.indexOf("nut-tai-ve") < doan.indexOf("if (!kq.duoc)")) {
+      fail("Nút tải xuống bị dựng TRƯỚC khi kiểm tra máy chủ có cho phép hay không.");
+    }
+  }
+  if (/\.nut-tai-ve[^{]*\{[^}]*display:\s*none/.test(cssApp)) {
+    fail("Không được dựng sẵn nút tải rồi ẩn bằng CSS — ẩn bằng CSS thì mở F12 là thấy.");
+  }
+}
+
 // Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
 if (/<a[^>]*zalo\.me/.test(banNoi)) {
   fail('Không được dựng sẵn thẻ <a href> tới zalo.me — số Zalo phải đọc từ Realtime Database lúc chạy.');
@@ -724,7 +764,14 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 // ---------------------------------------------------------------------------
 // Số tài khoản, tên chủ tài khoản, tên ngân hàng và SỐ ZALO của shop đều chỉ
 // được nằm trong Realtime Database, tuyệt đối không nằm trong mã nguồn.
-const CAM = [/10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i, /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/];
+const CAM = [
+  /10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i,
+  /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/,
+  // Kho file sản phẩm: cả đường dẫn tới file lẫn địa chỉ máy chủ cấp phát đều
+  // KHÔNG được nằm trong mã nguồn. Máy chủ đọc từ Realtime Database; đường dẫn
+  // file thì chỉ máy chủ biết, và nó chỉ trả về khi mã kích hoạt đúng.
+  /r2\.cloudflarestorage\.com/i, /[a-z0-9-]+\.r2\.dev/i, /[a-z0-9-]+\.workers\.dev/i,
+];
 const BO_QUA = new Set([".git", "public", "node_modules"]);
 
 function quet(thuMuc) {

@@ -134,3 +134,35 @@ trong Script Properties của dự án Apps Script.
 
 Script chỉ biết khách đã bấm nút xác nhận, KHÔNG biết tiền đã về hay chưa —
 khâu đối soát vẫn thủ công cho tới khi nối cổng thanh toán vào `doPost()`.
+
+## Trang nhận hàng `/sanpham`
+
+Đây là địa chỉ shop gửi cho khách sau khi tiền về — nó nằm trong email tự động
+và trong mẩu tin nhắn Zalo đã gửi đi rồi, nên **KHÔNG được đổi**.
+
+Trang này có đường dẫn thật (không phải `#hash`): `docDuongDan()` trong
+`01-foundation.js` đọc `location.pathname`, `state.trang` giữ kết quả, và
+Firebase Hosting trả `index.html` cho mọi đường dẫn (rewrite `**` trong
+`firebase.json`). `scripts/serve-static.py` bắt chước đúng cách đó khi xem tại
+chỗ.
+
+Luật xương sống, hợp đồng mục 15 canh bằng regex:
+
+- Đường dẫn tới file sản phẩm **không nằm trong mã nguồn**. Máy chủ cấp phát
+  giữ chúng và chỉ trả về khi mã kích hoạt đúng.
+- Ngay cả **địa chỉ máy chủ cấp phát** cũng không nằm trong mã nguồn — nó đọc
+  từ nhánh `/thongtinkho` của Realtime Database lúc chạy, hệt cách giấu số tài
+  khoản và số Zalo.
+- **Nút tải xuống chỉ được dựng SAU KHI máy chủ trả lời mã đúng** (nhánh cuối
+  của `veKetQuaKichHoat()`). Dựng sẵn rồi ẩn bằng CSS là hỏng cả cơ chế — mở
+  F12 lên là thấy.
+
+Mỗi mã chỉ mở khoá được trên MỘT thiết bị. Lời cảnh báo đó xuất hiện hai lần
+(đầu trang và trong bảng nhập mã), cố ý.
+
+## Còn nợ: nối app Checkout
+
+App đọc biến động số dư (Checkout) **chưa được nối**. Khi làm, phải hướng dẫn
+người dùng từng bước một, thật chi tiết. Lưu ý: proxy của môi trường chặn
+`help.checkout.vn`, nên tài liệu chính thức không đọc trực tiếp được — phải dựa
+vào ảnh chụp màn hình người dùng gửi và nói rõ chỗ nào là suy đoán.

@@ -495,11 +495,15 @@
     if (hanhDong === 'tai-anh-qr') { taiAnhModalThanhToan(nutHanhDong); return; }
     if (hanhDong === 'xac-nhan-thanh-toan') { xacNhanThanhToan(); return; }
     if (hanhDong === 'chot-don') { chotDon(); return; }
+    if (hanhDong === 'su-dung-san-pham') { moModalKichHoat(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'mo-khoa-tai') { moKhoaTai(); return; }
+    if (hanhDong === 've-trang-mua-hang') { veTrangChinh(); render(); return; }
   }
 
   function xuLyGoPhim(su){
     const dich = su.target;
     if (!dich || !dich.getAttribute) return;
+    if (dich.getAttribute('data-truong-kich-hoat')) { goMaKichHoat(dich.value); return; }
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);
@@ -519,10 +523,27 @@
     // đo lại để phần cuối trang không bị thanh che.
     window.addEventListener('resize', doChoThanhDay);
     window.addEventListener('hashchange', function(){
+      if (state.trang !== 'chinh') return;
       const ma = docHash();
       if (ma === state.module) return;
       state.module = ma;
       state.hieuUngVaoModule = true;   // quay lại bằng nút Back cũng trôi lại
+      render();
+    });
+    // Nút Back / Forward của trình duyệt: đường dẫn đổi thì trang đổi theo.
+    // Có nút này thì khách từ trang nhận hàng bấm vào một module rồi bấm Back
+    // là quay đúng về "/sanpham", chứ không mắc kẹt ở trang bán hàng.
+    //
+    // CHỈ xử lý khi ĐƯỜNG DẪN thật sự đổi. Chrome bắn popstate cả khi chỉ có
+    // #hash đổi, mà việc đó đã có hashchange lo rồi — vẽ lại lần thứ hai là
+    // xoá sạch hiệu ứng trôi vừa mới gắn xong, cả lưới đứng im.
+    window.addEventListener('popstate', function(){
+      const trang = docDuongDan();
+      if (trang === state.trang) return;
+      state.trang = trang;
+      state.module = docHash();
+      state.hieuUngVaoModule = true;
+      dongHetModal();
       render();
     });
   }
@@ -530,6 +551,8 @@
   // ------------------------------------------------------------- KHỞI ĐỘNG
 
   function boot(){
+    state.trang = docDuongDan();
+    state.nhanHang.maKichHoat = docMaKichHoatTrenDuongDan();
     state.module = docHash();
     state.hieuUngVaoModule = true;   // lần mở trang đầu tiên cũng có hiệu ứng trôi
     ganSuKien();
@@ -540,6 +563,9 @@
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
     taiThongTinCK();
     taiThongTinLienHe();
+    // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
+    // không hỏi tới nên không phải tải.
+    if (state.trang === 'sanpham') taiThongTinKho();
   }
 
   boot();

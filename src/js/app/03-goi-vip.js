@@ -30,7 +30,12 @@
       '</figure>';
   }
 
-  function veTheSanPham(sp, chiSo){
+  // cheDo: bỏ trống là thẻ ở module bán hàng (bấm để CHỌN MUA); 'nhan-hang' là
+  // thẻ ở trang /sanpham (bấm để NHẬN sản phẩm đã mua). Hai chế độ dùng chung
+  // một khuôn thẻ nên lưới ở hai trang giống hệt nhau, chỉ khác nút cuối thẻ và
+  // việc bấm dẫn đi đâu.
+  function veTheSanPham(sp, chiSo, cheDo){
+    if (cheDo === 'nhan-hang') return veTheNhanHang(sp, chiSo);
     const daChon = dangChon(sp.ma);
     const phanTram = phanTramGiamSanPham(sp);
     const choTroi = state.hieuUngVaoModule ? ' cho-troi-len' : '';
@@ -78,6 +83,38 @@
       '</article>';
   }
 
+  // Thẻ ở trang /sanpham. Giữ nguyên đầu thẻ và hàng giá của thẻ bán hàng —
+  // khách nhận ra ngay đúng món mình đã mua — chỉ đổi nút cuối thẻ và bỏ trạng
+  // thái "đã chọn" vì ở đây không có chuyện chọn nhiều món cùng lúc.
+  function veTheNhanHang(sp, chiSo){
+    const choTroi = state.hieuUngVaoModule ? ' cho-troi-len' : '';
+    const giaHienBanDau = state.hieuUngVaoModule ? sp.giaGoc : sp.giaChot;
+    return '' +
+      '<article class="the-sanpham the-nhan-hang' + choTroi +
+        '" data-hanh-dong="su-dung-san-pham" data-ma="' + escapeHtml(sp.ma) + '">' +
+        '<span class="so-tt" aria-hidden="true">' + (chiSo + 1) + '</span>' +
+        '<div class="dau-the">' +
+          veAnhDaiDien(sp) +
+          '<div class="than-dau">' +
+            '<h3 class="ten-sanpham">' +
+              '<span class="chu-ten">' + escapeHtml(sp.ten) + '</span>' +
+            '</h3>' +
+            '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +
+              escapeHtml(sp.ma) + '">Xem chi tiết sản phẩm</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="hang-gia">' +
+          '<span class="gia-goc">' + dinhDangTien(sp.giaGoc) + '</span>' +
+          '<span class="phan-tram">Giảm ' + phanTramGiamSanPham(sp) + '%</span>' +
+          '<span class="chi-con">chỉ còn</span>' +
+          '<span class="gia-chot" data-gia-chot="' + sp.giaChot + '" data-gia-goc="' + sp.giaGoc + '">' +
+            dinhDangTien(giaHienBanDau) + '</span>' +
+        '</div>' +
+        '<button type="button" class="nut nut-rong nut-chinh nut-su-dung" data-hanh-dong="su-dung-san-pham" data-ma="' +
+          escapeHtml(sp.ma) + '">Sử dụng sản phẩm này</button>' +
+      '</article>';
+  }
+
   // Ba món quà tặng nằm ở cuối module — đều là module có sẵn trong MODULE, chỉ
   // dẫn sang chứ không mở bảng phụ nào.
   const QUA_TANG = [
@@ -115,7 +152,9 @@
           '<span aria-hidden="true">🎁</span> Nhận quà tặng của Shop mà không cần mua hàng</button>' +
       '</section>' +
       '<div class="luoi-sanpham">' +
-        SAN_PHAM.map(veTheSanPham).join('') +
+        // Bọc trong hàm chứ KHÔNG truyền thẳng veTheSanPham vào map: map đưa cả
+        // mảng vào tham số thứ ba, mà tham số thứ ba là chế độ vẽ thẻ.
+        SAN_PHAM.map(function(sp, i){ return veTheSanPham(sp, i); }).join('') +
       '</div>' +
       // Dẫn thẳng tới đúng module 'dac-quyen' trong MODULE, nên nút này và mục
       // cùng tên ở menu bên trái luôn mở ra y hệt một bảng.

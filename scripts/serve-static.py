@@ -9,12 +9,19 @@ import re
 
 
 class StaticSpaHandler(SimpleHTTPRequestHandler):
-    spa_route = re.compile(r"^/(?:file|folder)/[^/]+/?$")
+    """Bat chuoc dung rewrite "**" -> "/index.html" cua Firebase Hosting.
+
+    Duong dan nao khong tro toi mot tep co that thi tra ve index.html, tru cac
+    duong dan tai san (/assets/...) - thieu tai san thi phai thay 404 chu khong
+    phai trang HTML, neu khong loi vantay sai se im lang khong ai biet.
+    """
+
+    tai_san = re.compile(r"^/assets/")
 
     def send_head(self):
         path = urlsplit(self.path).path
         candidate = Path(self.translate_path(path))
-        if not candidate.is_file() and self.spa_route.fullmatch(path):
+        if not candidate.is_file() and not self.tai_san.match(path):
             self.path = "/index.html"
         return super().send_head()
 

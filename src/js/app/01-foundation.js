@@ -75,6 +75,13 @@
   // ------------------------------------------------------------ TRẠNG THÁI
 
   const state = {
+    // Trang nào đang mở. Web có HAI trang thật, phân biệt bằng ĐƯỜNG DẪN chứ
+    // không phải #hash:
+    //   'chinh'   — trang bán hàng ở "/", các module chuyển bằng #hash
+    //   'sanpham' — trang nhận hàng ở "/sanpham", nơi khách đã mua nhập mã
+    //               kích hoạt để lấy sản phẩm. Đây là địa chỉ được gửi trong
+    //               email và trong tin nhắn Zalo nên KHÔNG được đổi.
+    trang: 'chinh',
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
     daChon: [],                  // mảng mã sản phẩm khách đã chọn
@@ -97,6 +104,12 @@
     // nguyên mã, không đẻ thêm một đơn trùng trong Firebase và không đổi nội
     // dung chuyển khoản dưới chân người đã kịp quét mã QR.
     chuKyDon: '',
+    // Trang nhận hàng: sản phẩm khách đang xin tải, mã kích hoạt đang gõ, và
+    // kết quả lần hỏi máy chủ gần nhất.
+    nhanHang: { maSanPham: '', maKichHoat: '', dangHoi: false, ketQua: null },
+    // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
+    // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
+    mayChuKho: '',
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
     // không làm cả lưới nhấp nháy trôi lại từ đầu.
@@ -207,4 +220,28 @@
   function datHash(ma){
     if (docHash() === ma) return;
     window.location.hash = '#/' + ma;
+  }
+
+  // ------------------------------------------------- ĐỊNH TUYẾN THEO ĐƯỜNG DẪN
+  //
+  // Firebase Hosting trả index.html cho mọi đường dẫn (xem rewrite trong
+  // firebase.json), nên "/sanpham" vào cùng một ứng dụng rồi mới rẽ nhánh ở đây.
+  // Chấp nhận cả "/sanpham" lẫn "/sanpham/" — khách hay gõ thêm dấu gạch cuối.
+
+  const DUONG_DAN_NHAN_HANG = '/sanpham';
+
+  function docDuongDan(){
+    const p = String(window.location.pathname || '/').replace(/\/+$/, '').toLowerCase();
+    return p === DUONG_DAN_NHAN_HANG ? 'sanpham' : 'chinh';
+  }
+
+  // Mã kích hoạt có thể đi kèm ngay trong đường dẫn ("/sanpham?ma=ABC123") để
+  // khách bấm link trong email là ô nhập đã điền sẵn, khỏi phải gõ lại.
+  function docMaKichHoatTrenDuongDan(){
+    const tim = String(window.location.search || '');
+    const khop = tim.match(/[?&]ma=([^&#]*)/i);
+    if (!khop) return '';
+    let raw = khop[1];
+    try { raw = decodeURIComponent(raw); } catch (e) { /* mã méo thì dùng nguyên */ }
+    return chuanHoaMaKichHoat(raw);
   }
