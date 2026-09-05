@@ -46,17 +46,15 @@
     return '' +
       '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + choTroi +
         '" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '">' +
+        // Số thứ tự dán ở góc trên bên trái CỦA CẢ THẺ, nằm đè lên ảnh đại diện.
+        // Vì thế nó là con trực tiếp của thẻ chứ không nằm trong dòng tên.
+        '<span class="so-tt" aria-hidden="true">' + (chiSo + 1) + '</span>' +
         // Đầu thẻ chia hai: ảnh đại diện vuông bên trái, tên và nút xem chi tiết
-        // bên phải. Số thứ tự nằm ngay trước tên, cùng một dòng, đóng khung cho
-        // nổi bật — tên dài thì tự xuống dòng và thụt vào cho thẳng lề.
-        //
-        // Khung ảnh CỐ Ý để trống lúc này: ảnh đại diện của từng sản phẩm sẽ
-        // thêm vào sau, chỉ cần điền ANH_DAI_DIEN[sp.ma] là chỗ này có ảnh.
+        // bên phải.
         '<div class="dau-the">' +
           veAnhDaiDien(sp) +
           '<div class="than-dau">' +
             '<h3 class="ten-sanpham">' +
-              '<span class="so-tt" aria-hidden="true">' + (chiSo + 1) + '</span>' +
               '<span class="chu-ten">' + escapeHtml(sp.ten) + '</span>' +
             '</h3>' +
             '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +

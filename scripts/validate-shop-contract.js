@@ -560,7 +560,7 @@ if (!/\.truong label \.nhan-phu\s*\{/.test(cssApp)) {
   [/function\s+veAnhDaiDien\s*\(/, "hàm dựng ảnh đại diện của thẻ sản phẩm"],
   [/const\s+ANH_DAI_DIEN\s*=/, "bảng ảnh đại diện"],
   [/class="dau-the"/, "đầu thẻ chia hai phần"],
-  [/class="so-tt" aria-hidden="true"/, "số thứ tự đóng khung, đứng cùng dòng với tên"],
+  [/class="so-tt" aria-hidden="true"/, "số thứ tự đóng khung"],
   [/class="anh-dai-dien trong"/, "khung ảnh rỗng giữ chỗ khi chưa có ảnh"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
@@ -624,16 +624,29 @@ if (!/animation-delay:'\s*\+\s*tre\s*\+\s*'s/.test(banNoi)) {
     "ảnh đại diện bồng bềnh, mỗi vòng 9 giây"],
   [/@keyframes\s+bong-benh-anh\s*\{[\s\S]*?33\.3%[^}]*translateY\(0\)[\s\S]*?100%[^}]*translateY\(0\)/,
     "nhịp bồng bềnh của ảnh: 3 giây nhô rồi 6 giây đứng im"],
-  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?float:\s*left/,
-    "số thứ tự thả nổi để mọi dòng tên sản phẩm giãn đều nhau"],
-  [/\.the-sanpham \.ten-sanpham\s*\{[\s\S]*?overflow:\s*hidden/,
-    "khối tên bao trọn số đang thả nổi"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?position:\s*absolute[\s\S]*?top:\s*0;[\s\S]*?left:\s*0;/,
+    "số thứ tự dán sát góc trên bên trái của thẻ"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?z-index:\s*3/, "số thứ tự nằm trên ảnh đại diện"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?pointer-events:\s*none/,
+    "số thứ tự không chắn cú bấm xuống thẻ"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
 });
 
 // ---------------------------------------------------------------------------
-// 20) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 20) SỐ THỨ TỰ DÁN Ở GÓC THẺ, KHÔNG NẰM TRONG DÒNG TÊN
+// ---------------------------------------------------------------------------
+// Đặt số vào trong <h3> thì chính nó quyết định chiều cao dòng đầu và tên sản
+// phẩm giãn dòng lệch. Nó phải là con TRỰC TIẾP của thẻ, đứng trước .dau-the.
+if (!/class="so-tt" aria-hidden="true">'\s*\+\s*\(chiSo \+ 1\)\s*\+\s*'<\/span>'\s*\+[\s\S]{0,400}?'<div class="dau-the">/.test(banNoi)) {
+  fail("Số thứ tự phải là con trực tiếp của thẻ và đứng ngay trước khối .dau-the.");
+}
+if (/<h3 class="ten-sanpham">'\s*\+[\s\S]{0,120}?class="so-tt"/.test(banNoi)) {
+  fail("Số thứ tự không được nằm trong dòng tên sản phẩm nữa.");
+}
+
+// ---------------------------------------------------------------------------
+// 21) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

@@ -396,22 +396,30 @@
 
 /* Số thứ tự đóng khung, đứng ngay trước tên trên CÙNG MỘT DÒNG. Dùng
    inline-flex nên tên dài tự xuống dòng quanh nó như một chữ cái đầu. */
-/* Số thứ tự THẢ NỔI (float) chứ không nằm trong dòng chữ. Để nó trong dòng thì
-   chính nó quyết định chiều cao dòng đầu — dòng đầu bị đẩy cao lên, cách hẳn
-   các dòng xuống hàng bên dưới, nhìn rời rạc. Thả nổi thì mọi dòng giãn đều
-   nhau đúng theo line-height, dù tên sản phẩm xuống bao nhiêu dòng đi nữa. */
+/* Số thứ tự dán SÁT góc trên bên trái của thẻ, không chừa một li khoảng cách,
+   và nằm ĐÈ LÊN ảnh đại diện. Vì nó ra khỏi luồng văn bản nên tên sản phẩm chỉ
+   còn mỗi chữ, giãn dòng đều tăm tắp dù dài bao nhiêu dòng.
+     · góc trên-trái bo 13px = bán kính thẻ 14px trừ 1px viền, nên nó ôm khít
+       đường cong của thẻ thay vì nhô ra ngoài;
+     · pointer-events:none để cú bấm xuyên qua nó xuống thẻ — bấm vào số vẫn là
+       chọn sản phẩm, y như bấm vào chỗ trống của thẻ;
+     · z-index 3 để nằm trên cả ảnh lẫn vệt xanh mép trên, nhưng KHÔNG cản ảnh
+       bồng bềnh phía dưới. */
 .the-sanpham .so-tt {
-  float: left;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
-  margin: 1px 8px 1px 0;
-  border-radius: 8px;
+  border-radius: 13px 0 10px 0;
   background: linear-gradient(160deg, var(--xanh-dam), #0d4d9e);
-  border: 1px solid rgba(255, 255, 255, .14);
-  box-shadow: 0 3px 9px rgba(0, 0, 0, .4);
+  border: 0;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, .5);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
@@ -427,10 +435,7 @@
   .the-sanpham .anh-dai-dien { width: 72px; }
 }
 
-/* overflow:hidden để khối tên BAO TRỌN số đang thả nổi — thiếu nó thì tên chỉ
-   một dòng sẽ thấp hơn số và số tràn xuống dòng giá bên dưới. */
 .the-sanpham .ten-sanpham {
-  overflow: hidden;
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.45;
