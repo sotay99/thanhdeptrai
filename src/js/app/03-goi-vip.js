@@ -14,6 +14,18 @@
     return typeof window.matchMedia === 'function' && window.matchMedia(MAN_HINH_RONG).matches;
   }
 
+  // Ảnh đại diện vuông 1:1 ở đầu mỗi thẻ. Chưa có ảnh thì vẫn dựng khung rỗng —
+  // giữ chỗ sẵn nên lúc thêm ảnh vào bố cục không xê dịch một li nào.
+  function veAnhDaiDien(sp){
+    const anh = ANH_DAI_DIEN[sp.ma];
+    if (!anh) return '<figure class="anh-dai-dien trong" aria-hidden="true"></figure>';
+    return '' +
+      '<figure class="anh-dai-dien">' +
+        '<img src="' + anh + '" width="240" height="240" loading="lazy" decoding="async"' +
+          ' alt="Ảnh đại diện: ' + escapeHtml(sp.ten) + '">' +
+      '</figure>';
+  }
+
   function veTheSanPham(sp, chiSo){
     const daChon = dangChon(sp.ma);
     const phanTram = phanTramGiamSanPham(sp);
@@ -30,10 +42,23 @@
     return '' +
       '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + choTroi +
         '" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '">' +
-        '<div class="so-thu-tu">SẢN PHẨM ' + (chiSo + 1) + '</div>' +
-        '<h3 class="ten-sanpham">' + escapeHtml(sp.ten) + '</h3>' +
-        '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +
-          escapeHtml(sp.ma) + '">Xem chi tiết sản phẩm</button>' +
+        // Đầu thẻ chia hai: ảnh đại diện vuông bên trái, tên và nút xem chi tiết
+        // bên phải. Số thứ tự nằm ngay trước tên, cùng một dòng, đóng khung cho
+        // nổi bật — tên dài thì tự xuống dòng và thụt vào cho thẳng lề.
+        //
+        // Khung ảnh CỐ Ý để trống lúc này: ảnh đại diện của từng sản phẩm sẽ
+        // thêm vào sau, chỉ cần điền ANH_DAI_DIEN[sp.ma] là chỗ này có ảnh.
+        '<div class="dau-the">' +
+          veAnhDaiDien(sp) +
+          '<div class="than-dau">' +
+            '<h3 class="ten-sanpham">' +
+              '<span class="so-tt" aria-hidden="true">' + (chiSo + 1) + '</span>' +
+              '<span class="chu-ten">' + escapeHtml(sp.ten) + '</span>' +
+            '</h3>' +
+            '<button type="button" class="nut nut-nho nut-vien nut-rong nut-chi-tiet" data-hanh-dong="xem-chi-tiet" data-ma="' +
+              escapeHtml(sp.ma) + '">Xem chi tiết sản phẩm</button>' +
+          '</div>' +
+        '</div>' +
         // Dòng giá gồm ba phần trên cùng một hàng: giá gốc (cam) → phần trăm
         // giảm (xanh lá đậm) → giá chốt (xanh của web, to rõ).
         '<div class="hang-gia">' +
@@ -55,8 +80,8 @@
   // dẫn sang chứ không mở bảng phụ nào.
   const QUA_TANG = [
     { module: 'qua-tang-android',  ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁' },
-    { module: 'khoa-hoc-mobile',   ten: 'Khoá học Lightroom điện thoại',              bieuTuong: '📱' },
-    { module: 'khoa-hoc-may-tinh', ten: 'Khoá học Lightroom máy tính',                bieuTuong: '💻' }
+    { module: 'khoa-hoc-mobile',   ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '📱' },
+    { module: 'khoa-hoc-may-tinh', ten: 'Khoá học Lightroom máy tính PC (miễn phí)',   bieuTuong: '💻' }
   ];
 
   function veKhuQuaTang(){

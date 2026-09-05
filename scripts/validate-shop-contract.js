@@ -42,8 +42,8 @@ const SAN_PHAM_CHOT = [
   ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000, 99000],
   ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000, 79000],
   ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000, 125000],
-  ["Bộ Khóa học dành cho Lightroom điện thoại", 199000, 0],
-  ["Bộ Khóa học dành cho Lightroom máy tính", 199000, 0],
+  ["Khoá học chỉnh màu Lightroom điện thoại", 199000, 0],
+  ["Khoá học Lightroom máy tính PC", 199000, 0],
   ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
   ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
   ["Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)", 159000, 39000],
@@ -547,7 +547,49 @@ if (!/\.truong label \.nhan-phu\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
-// 18) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 18) MODULE MỚI TRONG MENU VÀ BỐ CỤC ĐẦU THẺ SẢN PHẨM
+// ---------------------------------------------------------------------------
+[
+  [/ma:\s*'video-ngan'[\s\S]{0,90}?kieu:\s*'trang'/, "module Xem video ngắn"],
+  [/ma:\s*'khoa-photoshop'[\s\S]{0,110}?kieu:\s*'trang'/, "module Khoá Photoshop bằng điện thoại"],
+  [/ten:\s*'Liên hệ và Thông tin về Shop'/, "tên mới của mục Liên hệ"],
+  [/ten:\s*'Khoá học chỉnh màu Lightroom điện thoại \(miễn phí\)'/, "tên mới của module khoá học điện thoại"],
+  [/ten:\s*'Khoá học Lightroom máy tính PC \(miễn phí\)'/, "tên mới của module khoá học máy tính"],
+  [/function\s+veAnhDaiDien\s*\(/, "hàm dựng ảnh đại diện của thẻ sản phẩm"],
+  [/const\s+ANH_DAI_DIEN\s*=/, "bảng ảnh đại diện"],
+  [/class="dau-the"/, "đầu thẻ chia hai phần"],
+  [/class="so-tt" aria-hidden="true"/, "số thứ tự đóng khung, đứng cùng dòng với tên"],
+  [/class="anh-dai-dien trong"/, "khung ảnh rỗng giữ chỗ khi chưa có ảnh"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Thứ tự các mục trong menu.
+[
+  ["video-ngan", "lien-he", '"Xem video ngắn" phải nằm TRÊN "Liên hệ và Thông tin về Shop"'],
+  ["khoa-hoc-may-tinh", "khoa-photoshop", '"Khoá Photoshop" phải nằm DƯỚI "Khoá học Lightroom máy tính PC"'],
+  ["lien-he", "cong-nhan", '"Sự công nhận" phải nằm DƯỚI "Liên hệ và Thông tin về Shop"'],
+].forEach(([truoc, sau, loi]) => {
+  if (banNoi.indexOf(`ma: '${truoc}'`) > banNoi.indexOf(`ma: '${sau}'`)) fail(loi);
+});
+
+// Ô "SẢN PHẨM N" cũ đã gộp vào dòng tên, không được còn sót.
+if (/class="so-thu-tu">SẢN PHẨM/.test(banNoi)) {
+  fail('Ô "SẢN PHẨM N" cũ phải được gộp vào dòng tên sản phẩm.');
+}
+
+[
+  [/\.the-sanpham \.dau-the\s*\{[\s\S]*?display:\s*flex/, "đầu thẻ xếp ngang: ảnh trái, chữ phải"],
+  [/\.the-sanpham \.anh-dai-dien\s*\{[\s\S]*?aspect-ratio:\s*1\s*\/\s*1/, "ảnh đại diện giữ khung vuông 1:1"],
+  [/\.the-sanpham \.so-tt\s*\{/, "kiểu riêng cho số thứ tự đóng khung"],
+  [/\.the-sanpham \.hang-gia\s*\{[\s\S]*?margin-top:\s*auto/,
+    "cụm giá và nút chọn luôn bám sát đáy thẻ, để mảng xanh khớp với nút"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 19) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------

@@ -356,15 +356,72 @@
 }
 .the-sanpham.da-chon::before { opacity: 1; }
 
-.the-sanpham .so-thu-tu {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  color: var(--chu-mo);
-  margin-bottom: 6px;
+/* ĐẦU THẺ — ảnh đại diện vuông bên trái, tên và nút xem chi tiết bên phải.
+   Ảnh giữ tỉ lệ 1:1 và không co lại dưới 64px, nên dù tên sản phẩm dài mấy thì
+   khung ảnh vẫn vuông vức. */
+.the-sanpham .dau-the {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 4px;
 }
 
-.the-sanpham.da-chon .so-thu-tu { color: var(--xanh); }
+.the-sanpham .than-dau {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.the-sanpham .anh-dai-dien {
+  flex: 0 0 auto;
+  width: 84px;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+}
+.the-sanpham .anh-dai-dien img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* Khung rỗng lúc chưa có ảnh: nhạt hẳn đi để không tranh chỗ với chữ, nhưng
+   vẫn chiếm đúng khoảng trống mà ảnh thật sẽ chiếm. */
+.the-sanpham .anh-dai-dien.trong {
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .022) 0 6px, rgba(255, 255, 255, 0) 6px 12px),
+    var(--the-2);
+  border-style: dashed;
+  border-color: var(--vien-sang);
+  opacity: .5;
+}
+
+/* Số thứ tự đóng khung, đứng ngay trước tên trên CÙNG MỘT DÒNG. Dùng
+   inline-flex nên tên dài tự xuống dòng quanh nó như một chữ cái đầu. */
+.the-sanpham .so-tt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 7px;
+  vertical-align: -6px;
+  border-radius: 8px;
+  background: linear-gradient(160deg, var(--xanh-dam), #0d4d9e);
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, .4);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.the-sanpham.da-chon .so-tt {
+  background: linear-gradient(160deg, #4fb8ff, var(--xanh-dam));
+  border-color: rgba(255, 255, 255, .3);
+}
+
+@media (max-width: 560px) {
+  .the-sanpham .anh-dai-dien { width: 72px; }
+}
 
 .the-sanpham .ten-sanpham {
   font-size: 13.5px;
@@ -378,7 +435,12 @@
 
 /* Dòng giá: giá gốc → phần trăm giảm → "chỉ còn" → giá chốt, tất cả trên MỘT
    hàng, xuống dòng mềm khi thẻ hẹp. */
+/* margin-top:auto đẩy CẢ CỤM giá + nút chọn xuống sát đáy thẻ. Các thẻ trong
+   lưới cao bằng nhau nhưng tên sản phẩm dài ngắn khác nhau; không có dòng này
+   thì khoảng trống thừa dồn xuống dưới nút, nút trôi lên giữa thẻ và mảng xanh
+   (vốn tính từ đáy thẻ) không còn khớp với nó nữa. */
 .the-sanpham .hang-gia {
+  margin-top: auto;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;

@@ -36,6 +36,11 @@
   // Ảnh minh hoạ kho khoá học, dùng cho bảng "Đặc quyền".
   const ANH_DAC_QUYEN = '/assets/anh/dac-quyen.jpg';
 
+  // Ảnh ĐẠI DIỆN vuông 1:1 hiện ở đầu mỗi thẻ trong lưới sản phẩm — khác với
+  // ANH_SAN_PHAM ở trên (ảnh lớn trong bảng mô tả chi tiết). Mã nào chưa khai
+  // thì thẻ dựng khung rỗng giữ chỗ, không vỡ bố cục.
+  const ANH_DAI_DIEN = {};
+
   const CAM_KET_CHUNG = [
     '⚡ <strong>Giao hàng tức thì, không có thời gian chờ:</strong> ngay khi shop nhận được tiền thanh toán, hệ thống tự động gửi hàng tới bạn qua <strong>email</strong> — hoặc qua <strong>Zalo</strong>, hoặc <strong>tin nhắn SMS</strong>, tuỳ cách bạn để lại liên hệ. Không hẹn ngày, không xếp hàng chờ, không phải nhắc.',
     '📘 <strong>Hướng dẫn tận tay:</strong> ngay sau khi mua, bạn nhận bộ hướng dẫn cụ thể — chi tiết từng bước, có hình ảnh và video minh hoạ, làm theo là chạy, không cần biết kỹ thuật.',
