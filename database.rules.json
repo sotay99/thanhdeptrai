@@ -37,6 +37,7 @@
         "maSanPham": { ".validate": "newData.hasChildren()" },
         "trangThai": { ".validate": "newData.isString() && newData.val().length <= 20" },
         "maDon": { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "maNhanHang": { ".validate": "newData.isString() && newData.val().length <= 32" },
         "guiLuc": { ".validate": "newData.isNumber()" },
         "ghiChuGui": { ".validate": "newData.isString() && newData.val().length <= 300" },
         "email": { ".validate": "newData.isString() && newData.val().length <= 35" },

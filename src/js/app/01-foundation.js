@@ -104,9 +104,9 @@
     // nguyên mã, không đẻ thêm một đơn trùng trong Firebase và không đổi nội
     // dung chuyển khoản dưới chân người đã kịp quét mã QR.
     chuKyDon: '',
-    // Trang nhận hàng: sản phẩm khách đang xin tải, mã kích hoạt đang gõ, và
-    // kết quả lần hỏi máy chủ gần nhất.
-    nhanHang: { maSanPham: '', maKichHoat: '', dangHoi: false, ketQua: null },
+    // Trang nhận hàng: sản phẩm khách đang xin tải, mã nhận hàng đọc được từ
+    // đường dẫn, và kết quả lần hỏi máy chủ gần nhất.
+    nhanHang: { maSanPham: '', maNhanHang: '', dangHoi: false, ketQua: null },
     // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
     // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
     mayChuKho: '',
@@ -235,13 +235,14 @@
     return p === DUONG_DAN_NHAN_HANG ? 'sanpham' : 'chinh';
   }
 
-  // Mã kích hoạt có thể đi kèm ngay trong đường dẫn ("/sanpham?ma=ABC123") để
-  // khách bấm link trong email là ô nhập đã điền sẵn, khỏi phải gõ lại.
-  function docMaKichHoatTrenDuongDan(){
+  // Mỗi khách một đường dẫn riêng: mã nhận hàng nằm ngay trong đường dẫn
+  // ("/sanpham?ma=ABC123"). Khách KHÔNG phải gõ mã vào đâu cả — bấm link trong
+  // email hay trong tin nhắn Zalo là xong, đường dẫn tự mang mã theo.
+  function docMaNhanHangTrenDuongDan(){
     const tim = String(window.location.search || '');
     const khop = tim.match(/[?&]ma=([^&#]*)/i);
     if (!khop) return '';
     let raw = khop[1];
     try { raw = decodeURIComponent(raw); } catch (e) { /* mã méo thì dùng nguyên */ }
-    return chuanHoaMaKichHoat(raw);
+    return chuanHoaMaNhanHang(raw);
   }

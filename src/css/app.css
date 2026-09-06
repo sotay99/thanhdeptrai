@@ -1373,23 +1373,22 @@
 }
 .nut-ve-mua-hang:hover { border-color: var(--xanh); color: var(--xanh); }
 
-/* --------------------------------------------- BẢNG NHẬP MÃ KÍCH HOẠT */
+/* ------------------------------------------------- BẢNG NHẬN SẢN PHẨM */
 
-.khung-kich-hoat { font-size: 13.5px; }
+.khung-nhan-hang { font-size: 13.5px; }
 
-.khung-kich-hoat .ten-mon {
+.khung-nhan-hang .ten-mon {
   margin: 0 0 12px;
   font-size: 14px;
   line-height: 1.6;
   color: var(--chu-diu);
 }
-.khung-kich-hoat .ten-mon strong { color: var(--chu); }
+.khung-nhan-hang .ten-mon strong { color: var(--chu); }
 
-.khung-kich-hoat .canh-bao-thiet-bi {
+.khung-nhan-hang .canh-bao-thiet-bi {
   display: flex;
   gap: 9px;
   padding: 12px 14px;
-  margin-bottom: 14px;
   border: 1px solid rgba(229, 83, 75, .45);
   border-radius: 10px;
   background: rgba(229, 83, 75, .1);
@@ -1397,52 +1396,39 @@
   line-height: 1.7;
   color: var(--chu-diu);
 }
-.khung-kich-hoat .canh-bao-thiet-bi strong { color: #ff8a82; font-weight: 700; }
+.khung-nhan-hang .canh-bao-thiet-bi strong { color: #ff8a82; font-weight: 700; }
 
-.o-nhap-kich-hoat { display: block; margin-bottom: 14px; }
-.o-nhap-kich-hoat .nhan {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--chu-mo);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-/* Mã kích hoạt gõ chữ hoa hết, giãn chữ rộng ra cho dễ soát từng ký tự. */
-.o-ma-kich-hoat {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 1px solid var(--vien-sang);
+/* Ghi chú của hai khoá học: tông xanh của web, không phải tông cảnh báo — đây
+   là lời dặn đường chứ không phải điều nguy hiểm. */
+.ghi-chu-chuyen-huong {
+  padding: 13px 15px;
+  border: 1px solid rgba(49, 168, 255, .32);
   border-radius: 10px;
-  background: var(--the-2);
-  color: var(--chu);
-  font-family: inherit;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-.o-ma-kich-hoat::placeholder {
+  background: var(--xanh-nen);
   font-size: 13px;
-  font-weight: 400;
-  letter-spacing: normal;
-  text-transform: none;
+  line-height: 1.75;
+  color: var(--chu-diu);
+}
+.ghi-chu-chuyen-huong p { margin: 0; }
+.ghi-chu-chuyen-huong p + p { margin-top: 9px; }
+.ghi-chu-chuyen-huong strong { color: var(--chu); font-weight: 700; }
+.ghi-chu-chuyen-huong .cach-quay-lai {
+  padding-top: 9px;
+  border-top: 1px solid rgba(49, 168, 255, .22);
   color: var(--chu-mo);
 }
-.o-ma-kich-hoat:focus { outline: none; border-color: var(--xanh); }
+.ghi-chu-chuyen-huong .cach-quay-lai strong { color: var(--xanh); }
 
-.ket-qua-kich-hoat:empty { display: none; }
+.ket-qua-nhan-hang:empty { display: none; }
+.ket-qua-nhan-hang { margin-top: 14px; }
 
-.ket-qua-kich-hoat .dang-hoi {
+.ket-qua-nhan-hang .dang-hoi {
   margin: 0;
   font-size: 13px;
   color: var(--chu-diu);
 }
 
-.ket-qua-kich-hoat .loi-kich-hoat {
+.ket-qua-nhan-hang .loi-nhan-hang {
   margin: 0;
   padding: 12px 14px;
   border: 1px solid rgba(229, 83, 75, .45);
@@ -1453,14 +1439,14 @@
   color: #ff8a82;
 }
 
-.ket-qua-kich-hoat .duoc-kich-hoat {
+.ket-qua-nhan-hang .duoc-nhan-hang {
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 700;
   color: var(--la-dam-net);
 }
 
-.ket-qua-kich-hoat .nut-tai-ve {
+.ket-qua-nhan-hang .nut-tai-ve {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1468,7 +1454,7 @@
   text-decoration: none;
 }
 
-.ket-qua-kich-hoat .nhac-tai {
+.ket-qua-nhan-hang .nhac-tai {
   margin: 10px 0 0;
   font-size: 12.5px;
   line-height: 1.65;

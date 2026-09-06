@@ -415,10 +415,32 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
     [/function\s+soanTinZalo\s*\(/, "hàm soạn mẩu tin nhắn Zalo"],
     [/Mẩu tin nhắn Zalo — bôi đen rồi chép:/, "nhãn mẩu tin nhắn Zalo trong email báo shop"],
     [/thoatHtml\(soanTinZalo\(don\)\)/, "mẩu tin Zalo được nhúng vào email báo shop"],
-    [/LINK_NHAN_HANG\s*\+\s*'\\n\\n'/, "mẩu tin Zalo có kèm đường dẫn nhận sản phẩm"],
+    [/linkNhanHangCuaDon\(don\)\s*\+\s*'\\n\\n'/, "mẩu tin Zalo có kèm đường dẫn nhận sản phẩm RIÊNG của đơn"],
+    [/function\s+sinhMaNhanHang\s*\(/, "hàm sinh mã nhận hàng riêng cho từng đơn"],
+    [/function\s+linkNhanHangCuaDon\s*\(/, "hàm dựng đường dẫn nhận hàng riêng của một đơn"],
+    [/LINK_NHAN_HANG\s*\+\s*'\?ma='/, "đường dẫn riêng mang mã nhận hàng theo dạng ?ma="],
+    [/capNhatDon\(don\.__ma,\s*\{\s*maNhanHang:\s*don\.maNhanHang\s*\}\)/,
+      "mã nhận hàng được lưu lại vào đơn trước khi gửi thư"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(gs)) fail(`Thiếu ${ten} trong apps-script/gui-hang.gs.`);
   });
+
+  // Thư gửi khách KHÔNG được chứa đường tải file. Ai chuyển tiếp lá thư đó đi là
+  // mất hàng, mà shop không cách nào biết. Thư chỉ được mang đường dẫn riêng.
+  {
+    const thu = gs.match(/function\s+soanThuGiaoHang\s*\([\s\S]*?\n\}/);
+    if (!thu) {
+      fail("Thiếu hàm soanThuGiaoHang trong apps-script/gui-hang.gs.");
+    } else {
+      if (/bangDuongTai\(\)/.test(thu[0])) {
+        fail("Thư giao hàng không được lấy bảng đường tải — đường tải chỉ do máy chủ cấp phát giữ.");
+      }
+      if (!/linkNhanHangCuaDon\(don\)/.test(thu[0])) {
+        fail("Thư giao hàng phải mang đường dẫn nhận hàng riêng của đơn.");
+      }
+    }
+  }
+
   // Mẩu tin từng chỉ hiện khi khách KHÔNG có email. Nay phải luôn hiện.
   if (/\(don\.email\s*\?\s*''\s*:[\s\S]{0,120}soanTinZalo/.test(gs)) {
     fail('Mẩu tin nhắn Zalo không được đặt sau điều kiện "khách không có email" — phải luôn có trong email báo shop.');
@@ -428,33 +450,54 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
 // ---------------------------------------------------------------------------
 // 15) TRANG NHẬN HÀNG "/sanpham"
 //     Địa chỉ này nằm trong email và trong tin nhắn Zalo đã gửi cho khách nên
-//     KHÔNG được đổi. Và luật xương sống của trang: nút tải xuống chỉ được dựng
-//     ra SAU KHI máy chủ trả lời mã kích hoạt đúng.
+//     KHÔNG được đổi. Hai luật xương sống:
+//       - Mỗi khách một đường dẫn riêng, KHÔNG bắt khách gõ mã kích hoạt.
+//       - Nút tải xuống chỉ được dựng ra SAU KHI máy chủ trả lời là được phép.
 // ---------------------------------------------------------------------------
 [
   [/const\s+DUONG_DAN_NHAN_HANG\s*=\s*'\/sanpham'/, 'đường dẫn trang nhận hàng là "/sanpham"'],
   [/function\s+docDuongDan\s*\(/, "hàm đọc đường dẫn để rẽ nhánh trang"],
+  [/function\s+docMaNhanHangTrenDuongDan\s*\(/, "hàm đọc mã nhận hàng từ chính đường dẫn"],
   [/function\s+veTrangNhanHang\s*\(/, "hàm vẽ trang nhận hàng"],
   [/function\s+veTheNhanHang\s*\(/, "hàm vẽ thẻ sản phẩm ở trang nhận hàng"],
   [/>Sử dụng sản phẩm này</, 'nút "Sử dụng sản phẩm này" ở cuối thẻ nhận hàng'],
   [/rtdb\.ref\('thongtinkho'\)/, "địa chỉ máy chủ cấp phát đọc từ Realtime Database"],
-  [/function\s+chuanHoaMaKichHoat\s*\(/, "hàm chuẩn hoá mã kích hoạt"],
-  [/MỘT thiết bị/, "lời cảnh báo mỗi mã chỉ dùng được trên một thiết bị"],
+  [/function\s+chuanHoaMaNhanHang\s*\(/, "hàm chuẩn hoá mã nhận hàng"],
+  [/MỘT thiết bị/, "lời cảnh báo mỗi sản phẩm chỉ tải được trên một thiết bị"],
   [/state\.trang\s*===\s*'sanpham'/, "trang nhận hàng được rẽ nhánh theo state.trang"],
+  [/function\s+moModalKhoaHoc\s*\(/, "bảng riêng cho hai khoá học"],
+  [/Vào module /, 'nút "Vào module ..." của hai khoá học'],
+  [/bấm <strong>nút quay lại<\/strong>/, "lời dặn cách quay lại trang nhận hàng"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
 
+// Khách KHÔNG bao giờ phải gõ mã: mỗi người một đường dẫn riêng. Có ô nhập mã
+// nào mọc lại trong trang nhận hàng là sai hẳn thiết kế.
+if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
+  fail("Trang nhận hàng không được bắt khách gõ mã kích hoạt — mỗi khách đã có một đường dẫn riêng.");
+}
+
+// Hai khoá học phải đi nhánh riêng TRƯỚC khi rơi vào luồng tải file.
+{
+  const than = banNoi.match(/function\s+moModalNhanHang\s*\([\s\S]*?\n  \}/);
+  if (!than) {
+    fail("Thiếu hàm moModalNhanHang.");
+  } else if (than[0].indexOf("moModalKhoaHoc") < 0) {
+    fail("moModalNhanHang phải rẽ hai khoá học sang bảng riêng, không cho rơi vào luồng tải file.");
+  }
+}
+
 // Nút tải xuống PHẢI nằm sau nhánh "máy chủ đã cho phép". Dựng sẵn rồi ẩn đi là
 // hỏng cả cơ chế — mở F12 lên là thấy đường dẫn.
 {
-  const than = banNoi.match(/function\s+veKetQuaKichHoat\s*\(\)\s*\{[\s\S]*?\n  \}/);
+  const than = banNoi.match(/function\s+veKetQuaNhanHang\s*\(\)\s*\{[\s\S]*?\n  \}/);
   if (!than) {
-    fail("Thiếu hàm veKetQuaKichHoat — nơi duy nhất được dựng nút tải xuống.");
+    fail("Thiếu hàm veKetQuaNhanHang — nơi duy nhất được dựng nút tải xuống.");
   } else {
     const doan = than[0];
     if (!/if\s*\(!kq\.duoc\)/.test(doan)) {
-      fail("veKetQuaKichHoat phải chặn trước ở nhánh máy chủ TỪ CHỐI rồi mới tới nút tải.");
+      fail("veKetQuaNhanHang phải chặn trước ở nhánh máy chủ TỪ CHỐI rồi mới tới nút tải.");
     }
     if (doan.indexOf("nut-tai-ve") < doan.indexOf("if (!kq.duoc)")) {
       fail("Nút tải xuống bị dựng TRƯỚC khi kiểm tra máy chủ có cho phép hay không.");
@@ -765,7 +808,7 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 // Số tài khoản, tên chủ tài khoản, tên ngân hàng và SỐ ZALO của shop đều chỉ
 // được nằm trong Realtime Database, tuyệt đối không nằm trong mã nguồn.
 const CAM = [
-  /10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i,
+  /1000103484[38]/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i,
   /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/,
   // Kho file sản phẩm: cả đường dẫn tới file lẫn địa chỉ máy chủ cấp phát đều
   // KHÔNG được nằm trong mã nguồn. Máy chủ đọc từ Realtime Database; đường dẫn

@@ -495,15 +495,14 @@
     if (hanhDong === 'tai-anh-qr') { taiAnhModalThanhToan(nutHanhDong); return; }
     if (hanhDong === 'xac-nhan-thanh-toan') { xacNhanThanhToan(); return; }
     if (hanhDong === 'chot-don') { chotDon(); return; }
-    if (hanhDong === 'su-dung-san-pham') { moModalKichHoat(nutHanhDong.getAttribute('data-ma')); return; }
-    if (hanhDong === 'mo-khoa-tai') { moKhoaTai(); return; }
+    if (hanhDong === 'su-dung-san-pham') { moModalNhanHang(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'xac-nhan-tai') { xacNhanTai(); return; }
     if (hanhDong === 've-trang-mua-hang') { veTrangChinh(); render(); return; }
   }
 
   function xuLyGoPhim(su){
     const dich = su.target;
     if (!dich || !dich.getAttribute) return;
-    if (dich.getAttribute('data-truong-kich-hoat')) { goMaKichHoat(dich.value); return; }
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);
@@ -552,7 +551,7 @@
 
   function boot(){
     state.trang = docDuongDan();
-    state.nhanHang.maKichHoat = docMaKichHoatTrenDuongDan();
+    state.nhanHang.maNhanHang = docMaNhanHangTrenDuongDan();
     state.module = docHash();
     state.hieuUngVaoModule = true;   // lần mở trang đầu tiên cũng có hiệu ứng trôi
     ganSuKien();

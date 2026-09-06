@@ -103,14 +103,28 @@
       moModalVanBan(m);
       return;
     }
-    // Đang ở trang nhận hàng mà chọn một module thì phải rời "/sanpham" về "/"
-    // trước, nếu không địa chỉ trên thanh trình duyệt nói một đằng còn nội dung
-    // hiện một nẻo. Dùng pushState nên không phải tải lại cả trang, và nút Back
-    // của trình duyệt vẫn đưa khách trở lại đúng trang nhận hàng.
-    veTrangChinh();
+    // Đang ở trang nhận hàng mà chọn một module thì phải rời "/sanpham" về "/",
+    // nếu không địa chỉ trên thanh trình duyệt nói một đằng còn nội dung hiện
+    // một nẻo.
+    //
+    // Cả quãng đường đó chỉ được ghi MỘT mục lịch sử: đường dẫn và #hash đổi
+    // trong cùng một cú pushState. Làm hai bước (đổi đường dẫn rồi mới đặt hash)
+    // là sinh hai mục, và khách phải bấm nút quay lại HAI lần mới về được trang
+    // nhận sản phẩm — trong khi thư của shop dặn họ bấm quay lại một lần.
+    const roiTrangNhanHang = state.trang === 'sanpham';
     state.module = m.ma;
     state.hieuUngVaoModule = true;   // vào lại module bao nhiêu lần cũng trôi lại
-    datHash(m.ma);
+    if (roiTrangNhanHang) {
+      state.trang = 'chinh';
+      dongHetModal();
+      if (window.history && window.history.pushState) {
+        window.history.pushState({}, '', '/#/' + m.ma);
+      } else {
+        datHash(m.ma);
+      }
+    } else {
+      datHash(m.ma);
+    }
     render();   // vẽ lại cả trang, menu giữ nguyên trạng thái đang mở/đóng
     if (window.scrollTo) window.scrollTo(0, 0);
   }

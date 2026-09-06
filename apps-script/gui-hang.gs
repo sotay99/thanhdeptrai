@@ -42,10 +42,37 @@ var TEN_SAN_PHAM = {
 };
 
 var SO_DON_MOI_LAN = 25;      // xử lý tối đa bấy nhiêu đơn mỗi lượt chạy
-// Đường dẫn khách vào để nhận sản phẩm. Khi trang /sanpham xong và có mã kích
-// hoạt riêng cho từng đơn, chỗ này sẽ thành LINK_NHAN_HANG + '?k=' + mã.
 var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Thànhđẹptrai.vn';
+
+// Bảng ký tự sinh mã nhận hàng — đúng bảng của mã đơn, đã bỏ 0 O 1 I L để khách
+// đọc lại trong email không phân vân số 0 hay chữ O.
+var CHU_MA_NHAN_HANG = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+var DAI_MA_NHAN_HANG = 16;
+
+/**
+ * Mỗi khách MỘT đường dẫn riêng.
+ *
+ * Đây là điểm mấu chốt của cả khâu giao hàng: email KHÔNG còn chứa đường tải
+ * file nữa. Trước đây thư liệt kê thẳng link tải từng món — ai chuyển tiếp lá
+ * thư đó đi là mất hàng, và shop không cách nào biết. Nay thư chỉ chứa một
+ * đường dẫn riêng của khách; máy chủ cấp phát mới là nơi giữ đường tải thật, và
+ * nó ghi nhớ thiết bị đầu tiên bấm tải.
+ *
+ * 16 ký tự trên bảng 30 chữ — đoán mò là chuyện không thể.
+ */
+function sinhMaNhanHang() {
+  var ma = '';
+  for (var i = 0; i < DAI_MA_NHAN_HANG; i++) {
+    ma += CHU_MA_NHAN_HANG.charAt(Math.floor(Math.random() * CHU_MA_NHAN_HANG.length));
+  }
+  return ma;
+}
+
+/** Đường dẫn nhận hàng của riêng một đơn. */
+function linkNhanHangCuaDon(don) {
+  return LINK_NHAN_HANG + '?ma=' + (don.maNhanHang || '');
+}
 
 /** Đọc một thiết lập bắt buộc. Thiếu thì dừng ngay với lời nhắc rõ ràng. */
 function docThietLap(ten) {
@@ -144,27 +171,29 @@ function dinhDangTien(so) {
  * sản phẩm chưa khai đường tải, để còn báo cho chủ shop biết mà bổ sung.
  */
 function soanThuGiaoHang(don) {
-  var duongTai = bangDuongTai();
   var ma = don.maSanPham || [];
-  var thieu = [];
+  var link = linkNhanHangCuaDon(don);
   var dong = ma.map(function (m) {
-    var ten = TEN_SAN_PHAM[m] || m;
-    var link = duongTai[m];
-    if (!link) {
-      thieu.push(m);
-      return '<li style="margin:0 0 10px"><b>' + thoatHtml(ten) + '</b><br>' +
-        '<span style="color:#b45309">Shop sẽ gửi riêng phần này cho bạn trong ít phút.</span></li>';
-    }
-    return '<li style="margin:0 0 10px"><b>' + thoatHtml(ten) + '</b><br>' +
-      '<a href="' + thoatHtml(link) + '" style="color:#1473e6">Bấm vào đây để tải</a></li>';
+    return '<li style="margin:0 0 8px"><b>' + thoatHtml(TEN_SAN_PHAM[m] || m) + '</b></li>';
   }).join('');
 
   var html =
     '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#222;max-width:620px">' +
       '<h2 style="margin:0 0 6px;color:#1473e6">Cảm ơn bạn đã mua hàng!</h2>' +
-      '<p style="margin:0 0 18px;color:#555">Đơn hàng của bạn đã sẵn sàng. Dưới đây là toàn bộ sản phẩm bạn đã chọn.</p>' +
+      '<p style="margin:0 0 18px;color:#555">Đơn hàng của bạn đã sẵn sàng. Đây là những sản phẩm bạn đã chọn:</p>' +
       '<ul style="padding-left:20px;margin:0 0 18px">' + dong + '</ul>' +
-      '<div style="padding:12px 14px;background:#f4f7fb;border-left:3px solid #1473e6;border-radius:6px;margin:0 0 18px">' +
+      '<div style="padding:16px 18px;background:#f4f7fb;border-left:3px solid #1473e6;border-radius:6px;margin:0 0 18px">' +
+        '<div style="margin:0 0 12px"><b>Trang nhận sản phẩm của riêng bạn:</b></div>' +
+        '<div style="margin:0 0 12px"><a href="' + thoatHtml(link) + '" ' +
+          'style="display:inline-block;padding:12px 20px;background:#2d9d5f;color:#fff;' +
+          'border-radius:8px;text-decoration:none;font-weight:bold">Mở trang nhận sản phẩm</a></div>' +
+        '<div style="color:#666;font-size:13px;word-break:break-all">' + thoatHtml(link) + '</div>' +
+      '</div>' +
+      '<p style="margin:0 0 18px;padding:12px 14px;background:#fff6e6;border-left:3px solid #b45309;' +
+        'border-radius:6px;color:#7a4a06">Vào trang đó, bấm đúng sản phẩm bạn đã mua là tải về được ngay, ' +
+        '<b>không phải nhập mã nào cả</b>. Xin đừng chia sẻ đường dẫn này cho người khác — ' +
+        '<b>mỗi sản phẩm chỉ tải được trên MỘT thiết bị</b>, nên hãy mở nó trên đúng chiếc máy bạn sẽ dùng.</p>' +
+      '<div style="padding:12px 14px;background:#f7f7f7;border-radius:6px;margin:0 0 18px">' +
         '<div>Số tiền đã thanh toán: <b>' + dinhDangTien(don.thanhTien) + '</b></div>' +
         '<div style="color:#666;font-size:13px">Mã đơn hàng: ' + thoatHtml(don.__ma) + '</div>' +
       '</div>' +
@@ -173,7 +202,7 @@ function soanThuGiaoHang(don) {
       '<p style="margin:0;color:#888;font-size:13px">' + thoatHtml(TEN_SHOP) + '</p>' +
     '</div>';
 
-  return { tieuDe: 'Đơn hàng của bạn tại ' + TEN_SHOP + ' đã sẵn sàng', html: html, thieu: thieu };
+  return { tieuDe: 'Đơn hàng của bạn tại ' + TEN_SHOP + ' đã sẵn sàng', html: html, thieu: [] };
 }
 
 /**
@@ -187,9 +216,11 @@ function soanTinZalo(don) {
     'Chào bạn, shop đã nhận được thanh toán đơn ' + (don.maDon || don.__ma) + '.\n\n' +
     'Sản phẩm bạn đã mua:\n' + ten + '\n\n' +
     'Đây là đường dẫn nhận sản phẩm của riêng bạn:\n' +
-    LINK_NHAN_HANG + '\n\n' +
-    'Xin đừng chia sẻ đường dẫn này cho người khác — mỗi đường dẫn chỉ dùng được ' +
-    'trên một thiết bị.\n\n' +
+    linkNhanHangCuaDon(don) + '\n\n' +
+    'Bấm vào đó, chọn đúng sản phẩm bạn đã mua là tải về được ngay, không phải ' +
+    'nhập mã nào cả.\n\n' +
+    'Xin đừng chia sẻ đường dẫn này cho người khác — mỗi sản phẩm chỉ tải được ' +
+    'trên MỘT thiết bị, nên hãy mở nó trên đúng chiếc máy bạn sẽ dùng.\n\n' +
     'Cần hỗ trợ cài đặt cứ nhắn cho shop nhé. Cảm ơn bạn đã tin tưởng!';
 }
 
@@ -247,6 +278,15 @@ function guiHangChoDonDaXacNhan() {
 
     danhSach.forEach(function (don) {
       try {
+        // Cấp đường dẫn riêng cho đơn này TRƯỚC khi soạn bất cứ lá thư nào —
+        // cả thư cho khách lẫn mẩu tin Zalo cho chủ shop đều cần nó. Đơn đã có
+        // mã rồi (lượt chạy trước gửi hỏng giữa chừng) thì giữ nguyên mã cũ,
+        // không cấp mã mới: khách có thể đã cầm đường dẫn cũ trong tay.
+        if (!don.maNhanHang) {
+          don.maNhanHang = sinhMaNhanHang();
+          capNhatDon(don.__ma, { maNhanHang: don.maNhanHang });
+        }
+
         // Không có email thì không gửi tự động được — chuyển cho chủ shop.
         if (!don.email) {
           guiThu(emailShop,
@@ -330,7 +370,8 @@ function kiemTraThietLap() {
     email: emailShop,
     zalo: '',
     dienThoai: '',
-    maSanPham: Object.keys(TEN_SAN_PHAM).slice(0, 3)
+    maSanPham: Object.keys(TEN_SAN_PHAM).slice(0, 3),
+    maNhanHang: sinhMaNhanHang()
   };
   var thu = soanThuGiaoHang(don);
 

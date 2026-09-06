@@ -42,10 +42,37 @@ var TEN_SAN_PHAM = {
 };
 
 var SO_DON_MOI_LAN = 25;      // xử lý tối đa bấy nhiêu đơn mỗi lượt chạy
-// Đường dẫn khách vào để nhận sản phẩm. Khi trang /sanpham xong và có mã kích
-// hoạt riêng cho từng đơn, chỗ này sẽ thành LINK_NHAN_HANG + '?k=' + mã.
 var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Th\u00e0nh\u0111\u1eb9ptrai.vn';
+
+// Bảng ký tự sinh mã nhận hàng — đúng bảng của mã đơn, đã bỏ 0 O 1 I L để khách
+// đọc lại trong email không phân vân số 0 hay chữ O.
+var CHU_MA_NHAN_HANG = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+var DAI_MA_NHAN_HANG = 16;
+
+/**
+ * Mỗi khách MỘT đường dẫn riêng.
+ *
+ * Đây là điểm mấu chốt của cả khâu giao hàng: email KHÔNG còn chứa đường tải
+ * file nữa. Trước đây thư liệt kê thẳng link tải từng món — ai chuyển tiếp lá
+ * thư đó đi là mất hàng, và shop không cách nào biết. Nay thư chỉ chứa một
+ * đường dẫn riêng của khách; máy chủ cấp phát mới là nơi giữ đường tải thật, và
+ * nó ghi nhớ thiết bị đầu tiên bấm tải.
+ *
+ * 16 ký tự trên bảng 30 chữ — đoán mò là chuyện không thể.
+ */
+function sinhMaNhanHang() {
+  var ma = '';
+  for (var i = 0; i < DAI_MA_NHAN_HANG; i++) {
+    ma += CHU_MA_NHAN_HANG.charAt(Math.floor(Math.random() * CHU_MA_NHAN_HANG.length));
+  }
+  return ma;
+}
+
+/** Đường dẫn nhận hàng của riêng một đơn. */
+function linkNhanHangCuaDon(don) {
+  return LINK_NHAN_HANG + '?ma=' + (don.maNhanHang || '');
+}
 
 /** Đọc một thiết lập bắt buộc. Thiếu thì dừng ngay với lời nhắc rõ ràng. */
 function docThietLap(ten) {
@@ -144,27 +171,29 @@ function dinhDangTien(so) {
  * sản phẩm chưa khai đường tải, để còn báo cho chủ shop biết mà bổ sung.
  */
 function soanThuGiaoHang(don) {
-  var duongTai = bangDuongTai();
   var ma = don.maSanPham || [];
-  var thieu = [];
+  var link = linkNhanHangCuaDon(don);
   var dong = ma.map(function (m) {
-    var ten = TEN_SAN_PHAM[m] || m;
-    var link = duongTai[m];
-    if (!link) {
-      thieu.push(m);
-      return '<li style="margin:0 0 10px"><b>' + thoatHtml(ten) + '</b><br>' +
-        '<span style="color:#b45309">Shop s\u1ebd g\u1eedi ri\u00eang ph\u1ea7n n\u00e0y cho b\u1ea1n trong \u00edt ph\u00fat.</span></li>';
-    }
-    return '<li style="margin:0 0 10px"><b>' + thoatHtml(ten) + '</b><br>' +
-      '<a href="' + thoatHtml(link) + '" style="color:#1473e6">B\u1ea5m v\u00e0o \u0111\u00e2y \u0111\u1ec3 t\u1ea3i</a></li>';
+    return '<li style="margin:0 0 8px"><b>' + thoatHtml(TEN_SAN_PHAM[m] || m) + '</b></li>';
   }).join('');
 
   var html =
     '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#222;max-width:620px">' +
       '<h2 style="margin:0 0 6px;color:#1473e6">C\u1ea3m \u01a1n b\u1ea1n \u0111\u00e3 mua h\u00e0ng!</h2>' +
-      '<p style="margin:0 0 18px;color:#555">\u0110\u01a1n h\u00e0ng c\u1ee7a b\u1ea1n \u0111\u00e3 s\u1eb5n s\u00e0ng. D\u01b0\u1edbi \u0111\u00e2y l\u00e0 to\u00e0n b\u1ed9 s\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 ch\u1ecdn.</p>' +
+      '<p style="margin:0 0 18px;color:#555">\u0110\u01a1n h\u00e0ng c\u1ee7a b\u1ea1n \u0111\u00e3 s\u1eb5n s\u00e0ng. \u0110\u00e2y l\u00e0 nh\u1eefng s\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 ch\u1ecdn:</p>' +
       '<ul style="padding-left:20px;margin:0 0 18px">' + dong + '</ul>' +
-      '<div style="padding:12px 14px;background:#f4f7fb;border-left:3px solid #1473e6;border-radius:6px;margin:0 0 18px">' +
+      '<div style="padding:16px 18px;background:#f4f7fb;border-left:3px solid #1473e6;border-radius:6px;margin:0 0 18px">' +
+        '<div style="margin:0 0 12px"><b>Trang nh\u1eadn s\u1ea3n ph\u1ea9m c\u1ee7a ri\u00eang b\u1ea1n:</b></div>' +
+        '<div style="margin:0 0 12px"><a href="' + thoatHtml(link) + '" ' +
+          'style="display:inline-block;padding:12px 20px;background:#2d9d5f;color:#fff;' +
+          'border-radius:8px;text-decoration:none;font-weight:bold">M\u1edf trang nh\u1eadn s\u1ea3n ph\u1ea9m</a></div>' +
+        '<div style="color:#666;font-size:13px;word-break:break-all">' + thoatHtml(link) + '</div>' +
+      '</div>' +
+      '<p style="margin:0 0 18px;padding:12px 14px;background:#fff6e6;border-left:3px solid #b45309;' +
+        'border-radius:6px;color:#7a4a06">V\u00e0o trang \u0111\u00f3, b\u1ea5m \u0111\u00fang s\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua l\u00e0 t\u1ea3i v\u1ec1 \u0111\u01b0\u1ee3c ngay, ' +
+        '<b>kh\u00f4ng ph\u1ea3i nh\u1eadp m\u00e3 n\u00e0o c\u1ea3</b>. Xin \u0111\u1eebng chia s\u1ebb \u0111\u01b0\u1eddng d\u1eabn n\u00e0y cho ng\u01b0\u1eddi kh\u00e1c \u2014 ' +
+        '<b>m\u1ed7i s\u1ea3n ph\u1ea9m ch\u1ec9 t\u1ea3i \u0111\u01b0\u1ee3c tr\u00ean M\u1ed8T thi\u1ebft b\u1ecb</b>, n\u00ean h\u00e3y m\u1edf n\u00f3 tr\u00ean \u0111\u00fang chi\u1ebfc m\u00e1y b\u1ea1n s\u1ebd d\u00f9ng.</p>' +
+      '<div style="padding:12px 14px;background:#f7f7f7;border-radius:6px;margin:0 0 18px">' +
         '<div>S\u1ed1 ti\u1ec1n \u0111\u00e3 thanh to\u00e1n: <b>' + dinhDangTien(don.thanhTien) + '</b></div>' +
         '<div style="color:#666;font-size:13px">M\u00e3 \u0111\u01a1n h\u00e0ng: ' + thoatHtml(don.__ma) + '</div>' +
       '</div>' +
@@ -173,7 +202,7 @@ function soanThuGiaoHang(don) {
       '<p style="margin:0;color:#888;font-size:13px">' + thoatHtml(TEN_SHOP) + '</p>' +
     '</div>';
 
-  return { tieuDe: '\u0110\u01a1n h\u00e0ng c\u1ee7a b\u1ea1n t\u1ea1i ' + TEN_SHOP + ' \u0111\u00e3 s\u1eb5n s\u00e0ng', html: html, thieu: thieu };
+  return { tieuDe: '\u0110\u01a1n h\u00e0ng c\u1ee7a b\u1ea1n t\u1ea1i ' + TEN_SHOP + ' \u0111\u00e3 s\u1eb5n s\u00e0ng', html: html, thieu: [] };
 }
 
 /**
@@ -187,9 +216,11 @@ function soanTinZalo(don) {
     'Ch\u00e0o b\u1ea1n, shop \u0111\u00e3 nh\u1eadn \u0111\u01b0\u1ee3c thanh to\u00e1n \u0111\u01a1n ' + (don.maDon || don.__ma) + '.\n\n' +
     'S\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua:\n' + ten + '\n\n' +
     '\u0110\u00e2y l\u00e0 \u0111\u01b0\u1eddng d\u1eabn nh\u1eadn s\u1ea3n ph\u1ea9m c\u1ee7a ri\u00eang b\u1ea1n:\n' +
-    LINK_NHAN_HANG + '\n\n' +
-    'Xin \u0111\u1eebng chia s\u1ebb \u0111\u01b0\u1eddng d\u1eabn n\u00e0y cho ng\u01b0\u1eddi kh\u00e1c \u2014 m\u1ed7i \u0111\u01b0\u1eddng d\u1eabn ch\u1ec9 d\u00f9ng \u0111\u01b0\u1ee3c ' +
-    'tr\u00ean m\u1ed9t thi\u1ebft b\u1ecb.\n\n' +
+    linkNhanHangCuaDon(don) + '\n\n' +
+    'B\u1ea5m v\u00e0o \u0111\u00f3, ch\u1ecdn \u0111\u00fang s\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua l\u00e0 t\u1ea3i v\u1ec1 \u0111\u01b0\u1ee3c ngay, kh\u00f4ng ph\u1ea3i ' +
+    'nh\u1eadp m\u00e3 n\u00e0o c\u1ea3.\n\n' +
+    'Xin \u0111\u1eebng chia s\u1ebb \u0111\u01b0\u1eddng d\u1eabn n\u00e0y cho ng\u01b0\u1eddi kh\u00e1c \u2014 m\u1ed7i s\u1ea3n ph\u1ea9m ch\u1ec9 t\u1ea3i \u0111\u01b0\u1ee3c ' +
+    'tr\u00ean M\u1ed8T thi\u1ebft b\u1ecb, n\u00ean h\u00e3y m\u1edf n\u00f3 tr\u00ean \u0111\u00fang chi\u1ebfc m\u00e1y b\u1ea1n s\u1ebd d\u00f9ng.\n\n' +
     'C\u1ea7n h\u1ed7 tr\u1ee3 c\u00e0i \u0111\u1eb7t c\u1ee9 nh\u1eafn cho shop nh\u00e9. C\u1ea3m \u01a1n b\u1ea1n \u0111\u00e3 tin t\u01b0\u1edfng!';
 }
 
@@ -247,6 +278,15 @@ function guiHangChoDonDaXacNhan() {
 
     danhSach.forEach(function (don) {
       try {
+        // Cấp đường dẫn riêng cho đơn này TRƯỚC khi soạn bất cứ lá thư nào —
+        // cả thư cho khách lẫn mẩu tin Zalo cho chủ shop đều cần nó. Đơn đã có
+        // mã rồi (lượt chạy trước gửi hỏng giữa chừng) thì giữ nguyên mã cũ,
+        // không cấp mã mới: khách có thể đã cầm đường dẫn cũ trong tay.
+        if (!don.maNhanHang) {
+          don.maNhanHang = sinhMaNhanHang();
+          capNhatDon(don.__ma, { maNhanHang: don.maNhanHang });
+        }
+
         // Không có email thì không gửi tự động được — chuyển cho chủ shop.
         if (!don.email) {
           guiThu(emailShop,
@@ -330,7 +370,8 @@ function kiemTraThietLap() {
     email: emailShop,
     zalo: '',
     dienThoai: '',
-    maSanPham: Object.keys(TEN_SAN_PHAM).slice(0, 3)
+    maSanPham: Object.keys(TEN_SAN_PHAM).slice(0, 3),
+    maNhanHang: sinhMaNhanHang()
   };
   var thu = soanThuGiaoHang(don);
 

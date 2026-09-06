@@ -3,31 +3,31 @@
      PHẦN 03B — TRANG NHẬN HÀNG "/sanpham"
 
      Đây là địa chỉ shop gửi cho khách sau khi tiền về (trong email tự động và
-     trong mẩu tin nhắn Zalo). Khách vào đây, chọn đúng món mình đã mua, nhập mã
-     kích hoạt, rồi mới hiện ra nút tải xuống.
+     trong mẩu tin nhắn Zalo). MỖI KHÁCH MỘT ĐƯỜNG DẪN RIÊNG: mã nhận hàng nằm
+     ngay trong đường dẫn, nên khách KHÔNG phải gõ mã kích hoạt vào đâu cả —
+     bấm link, bấm sản phẩm, tải về.
 
      BA ĐIỀU KHÔNG ĐƯỢC PHÁ:
 
      1. Đường dẫn tải sản phẩm TUYỆT ĐỐI không nằm trong mã nguồn. Người tải cả
         kho mã về máy vẫn không đọc ra được file nằm ở đâu. Đường dẫn chỉ do máy
-        chủ cấp phát trả về, và chỉ trả khi mã kích hoạt đúng.
+        chủ cấp phát trả về, và chỉ trả khi mã nhận hàng hợp lệ.
      2. Ngay cả địa chỉ của máy chủ cấp phát cũng không nằm trong mã nguồn — nó
         đọc từ nhánh /thongtinkho của Realtime Database lúc chạy, hệt cách giấu
         số tài khoản và số Zalo.
-     3. Nút tải xuống chỉ được dựng SAU KHI máy chủ trả lời mã đúng. Không dựng
-        sẵn rồi ẩn đi bằng CSS — ẩn bằng CSS thì mở F12 là thấy.
+     3. Nút tải xuống chỉ được dựng SAU KHI máy chủ trả lời là được phép. Không
+        dựng sẵn rồi ẩn đi bằng CSS — ẩn bằng CSS thì mở F12 là thấy.
      =========================================================================== */
 
-  // Mã kích hoạt dùng đúng bảng ký tự của mã đơn (đã bỏ 0 O 1 I L) nên khách
-  // không bao giờ phải phân vân số 0 hay chữ O. Gõ thường cũng được, ở đây tự
-  // viết hoa lên.
-  const DAI_MA_KICH_HOAT_TOI_DA = 24;
+  // Mã nhận hàng dùng đúng bảng ký tự của mã đơn (đã bỏ 0 O 1 I L) nên khách
+  // đọc lại trong email không bao giờ phân vân số 0 hay chữ O.
+  const DAI_MA_NHAN_HANG_TOI_DA = 24;
 
-  function chuanHoaMaKichHoat(chuoi){
+  function chuanHoaMaNhanHang(chuoi){
     return String(chuoi == null ? '' : chuoi)
       .toUpperCase()
       .replace(/[^A-Z0-9-]/g, '')
-      .slice(0, DAI_MA_KICH_HOAT_TOI_DA);
+      .slice(0, DAI_MA_NHAN_HANG_TOI_DA);
   }
 
   // ------------------------------------------------- ĐỊA CHỈ MÁY CHỦ CẤP PHÁT
@@ -49,30 +49,30 @@
     });
   }
 
-  // Hỏi máy chủ cấp phát: mã này có được phép tải món này không?
+  // Hỏi máy chủ cấp phát: đường dẫn này có được phép tải món này không?
   //
-  // Máy chủ trả về { duoc: true, duongDan: '...', hetHan: <mốc thời gian> } khi
-  // hợp lệ, hoặc { duoc: false, lyDo: '...' } khi không. Đường dẫn trả về là
-  // đường dẫn dùng MỘT LẦN, hết hạn sau ít phút — chép ra dán cho người khác
-  // cũng không dùng được.
-  function xinDuongDanTai(maSanPham, maKichHoat){
+  // Máy chủ trả về { duoc: true, duongDan: '...' } khi hợp lệ, hoặc
+  // { duoc: false, lyDo: '...' } khi không. Đường dẫn trả về dùng MỘT LẦN và
+  // hết hạn sau ít phút — chép ra dán cho người khác cũng không dùng được.
+  //
+  // Chính lượt hỏi này là lúc máy chủ GHI NHỚ THIẾT BỊ của khách cho món đó.
+  // Vì thế nó chỉ được gọi sau khi khách đã đọc lời cảnh báo và tự bấm nút xác
+  // nhận, chứ không gọi tự động lúc mở bảng.
+  function xinDuongDanTai(maSanPham, maNhanHang){
     if (!state.mayChuKho) {
       return taiThongTinKho().then(function(duoc){
-        if (!duoc) {
-          return { duoc: false, lyDo: 'chua-san-sang' };
-        }
-        return goiMayChuKho(maSanPham, maKichHoat);
+        if (!duoc) return { duoc: false, lyDo: 'chua-san-sang' };
+        return goiMayChuKho(maSanPham, maNhanHang);
       });
     }
-    return goiMayChuKho(maSanPham, maKichHoat);
+    return goiMayChuKho(maSanPham, maNhanHang);
   }
 
-  function goiMayChuKho(maSanPham, maKichHoat){
-    const dia = state.mayChuKho + '/cap-phat';
-    return fetch(dia, {
+  function goiMayChuKho(maSanPham, maNhanHang){
+    return fetch(state.mayChuKho + '/cap-phat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sanPham: maSanPham, ma: maKichHoat })
+      body: JSON.stringify({ sanPham: maSanPham, ma: maNhanHang })
     }).then(function(tra){
       if (!tra.ok) return { duoc: false, lyDo: 'may-chu-tu-choi' };
       return tra.json();
@@ -84,6 +84,10 @@
 
   // Đổi lý do máy trả về thành câu tiếng Việt cho khách đọc.
   function chuLyDo(lyDo){
+    if (lyDo === 'thieu-ma') {
+      return 'Đường dẫn bạn đang mở thiếu mã nhận hàng. Hãy bấm đúng đường dẫn ' +
+        'shop đã gửi trong email hoặc trong tin nhắn, đừng gõ tay địa chỉ.';
+    }
     if (lyDo === 'chua-san-sang') {
       return 'Hệ thống nhận hàng đang được hoàn thiện. Bạn nhắn cho shop qua Zalo, ' +
         'shop gửi sản phẩm tận tay ngay.';
@@ -92,14 +96,15 @@
       return 'Không kết nối được máy chủ. Bạn kiểm tra lại mạng rồi bấm lại giúp shop.';
     }
     if (lyDo === 'sai-ma') {
-      return 'Mã kích hoạt không đúng cho sản phẩm này. Bạn xem lại mã trong email ' +
-        'hoặc trong tin nhắn shop đã gửi.';
+      return 'Đường dẫn này không dùng được cho sản phẩm bạn vừa chọn. Bạn xem lại ' +
+        'xem mình đã mua món nào, hoặc nhắn cho shop.';
     }
     if (lyDo === 'da-dung-thiet-bi-khac') {
-      return 'Mã này đã được dùng trên một thiết bị khác. Mỗi mã chỉ mở khoá được ' +
-        'trên MỘT thiết bị. Nếu bạn đổi máy, nhắn cho shop để được cấp quyền lại.';
+      return 'Sản phẩm này đã được tải trên một thiết bị khác. Mỗi sản phẩm chỉ mở ' +
+        'khoá được trên MỘT thiết bị. Nếu bạn đổi máy, nhắn cho shop để được cấp ' +
+        'quyền lại.';
     }
-    return 'Chưa mở khoá được. Bạn nhắn cho shop kèm mã kích hoạt, shop xử lý ngay.';
+    return 'Chưa mở khoá được. Bạn nhắn cho shop kèm đường dẫn bạn đang mở, shop xử lý ngay.';
   }
 
   // ------------------------------------------------------- VẼ TRANG NHẬN HÀNG
@@ -108,9 +113,9 @@
     return '' +
       '<section class="gioi-thieu">' +
         '<h2>Nhận sản phẩm bạn đã mua</h2>' +
-        '<p>Bấm đúng sản phẩm bạn đã mua, nhập mã kích hoạt shop gửi cho bạn, rồi tải về.</p>' +
+        '<p>Bấm đúng sản phẩm bạn đã mua là tải về được ngay — không cần nhập mã nào cả.</p>' +
         '<div class="bang-luu-y-thiet-bi">' +
-          '<span aria-hidden="true">⚠️</span> <strong>Mỗi mã chỉ mở khoá được trên MỘT thiết bị.</strong> ' +
+          '<span aria-hidden="true">⚠️</span> <strong>Mỗi sản phẩm chỉ tải được trên MỘT thiết bị.</strong> ' +
           'Hãy chắc chắn bạn đang ở đúng chiếc máy sẽ dùng sản phẩm rồi mới bấm tải. ' +
           'Lỡ mở nhầm máy thì nhắn cho shop, shop cấp quyền lại cho bạn.' +
         '</div>' +
@@ -122,25 +127,29 @@
         '<span aria-hidden="true">🛒</span> Về trang mua hàng của shop</button>';
   }
 
-  // --------------------------------------------------- BẢNG NHẬP MÃ KÍCH HOẠT
+  // ------------------------------------------------------- BẢNG NHẬN SẢN PHẨM
 
-  function moModalKichHoat(maSanPham){
+  function moModalNhanHang(maSanPham){
     const sp = timSanPham(maSanPham);
     if (!sp) return;
+
+    // Hai khoá học không phải file để tải mà là module học ngay trên web, nên
+    // chúng đi một đường riêng hẳn.
+    const maKhoaHoc = MODULE_KHOA_HOC[sp.ma];
+    if (maKhoaHoc) { moModalKhoaHoc(sp, maKhoaHoc); return; }
+
     state.nhanHang.maSanPham = sp.ma;
     state.nhanHang.ketQua = null;
     state.nhanHang.dangHoi = false;
-    // Mã đi kèm trong đường dẫn thì điền sẵn — khách bấm link trong email là
-    // ô nhập đã có mã, chỉ việc bấm nút.
-    if (!state.nhanHang.maKichHoat) state.nhanHang.maKichHoat = docMaKichHoatTrenDuongDan();
 
     moModal({
-      ma: 'kich-hoat',
+      ma: 'nhan-hang',
       tieuDe: 'Nhận sản phẩm',
-      than: veThanKichHoat(sp),
+      than: veThanNhanHang(sp),
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        '<button type="button" class="nut nut-chinh nut-mo-khoa" data-hanh-dong="mo-khoa-tai">Mở khoá tải xuống</button>',
+        '<button type="button" class="nut nut-chinh nut-xac-nhan-tai" data-hanh-dong="xac-nhan-tai">' +
+          'Tôi chắc chắn — tải xuống</button>',
       khiDong: function(){
         state.nhanHang.ketQua = null;
         state.nhanHang.dangHoi = false;
@@ -148,75 +157,100 @@
     });
   }
 
-  function veThanKichHoat(sp){
-    const ma = state.nhanHang.maKichHoat;
+  function veThanNhanHang(sp){
     return '' +
-      '<div class="khung-kich-hoat">' +
+      '<div class="khung-nhan-hang">' +
         '<p class="ten-mon">Bạn đang nhận: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
         '<div class="canh-bao-thiet-bi">' +
           '<span aria-hidden="true">⚠️</span> ' +
-          '<span>Mã này <strong>chỉ dùng được trên MỘT thiết bị</strong>. Bấm mở khoá ở máy nào ' +
-          'là mã gắn với máy đó. Hãy chắc chắn đây là chiếc máy bạn sẽ dùng sản phẩm.</span>' +
+          '<span>Sản phẩm này <strong>chỉ tải được trên MỘT thiết bị</strong>. Bấm tải ở máy nào ' +
+          'là hệ thống ghi nhớ máy đó. Hãy chắc chắn đây là chiếc máy bạn sẽ dùng sản phẩm ' +
+          'rồi mới bấm nút bên dưới.</span>' +
         '</div>' +
-        '<label class="o-nhap-kich-hoat">' +
-          '<span class="nhan">Mã kích hoạt</span>' +
-          '<input type="text" class="o-ma-kich-hoat" data-truong-kich-hoat="ma" ' +
-            'inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" ' +
-            'placeholder="Chép mã trong email hoặc tin nhắn của shop" ' +
-            'value="' + escapeHtml(ma) + '">' +
-        '</label>' +
-        '<div class="ket-qua-kich-hoat" data-vung="ket-qua-kich-hoat">' + veKetQuaKichHoat() + '</div>' +
+        '<div class="ket-qua-nhan-hang" data-vung="ket-qua-nhan-hang">' + veKetQuaNhanHang() + '</div>' +
       '</div>';
   }
 
-  // Vùng kết quả: rỗng khi chưa bấm, "đang hỏi" khi đang chờ máy chủ, câu báo
-  // lỗi khi không được, và CHỈ KHI ĐƯỢC mới dựng ra nút tải xuống.
-  function veKetQuaKichHoat(){
+  // Vùng kết quả: rỗng khi khách chưa bấm xác nhận, "đang hỏi" khi đang chờ máy
+  // chủ, câu báo lý do khi không được, và CHỈ KHI ĐƯỢC mới dựng ra nút tải.
+  function veKetQuaNhanHang(){
     if (state.nhanHang.dangHoi) {
-      return '<p class="dang-hoi">Đang kiểm tra mã…</p>';
+      return '<p class="dang-hoi">Đang chuẩn bị sản phẩm cho bạn…</p>';
     }
     const kq = state.nhanHang.ketQua;
     if (!kq) return '';
     if (!kq.duoc) {
-      return '<p class="loi-kich-hoat">' + escapeHtml(chuLyDo(kq.lyDo)) + '</p>';
+      return '<p class="loi-nhan-hang">' + escapeHtml(chuLyDo(kq.lyDo)) + '</p>';
     }
     // Đường dẫn tải chỉ tồn tại từ giây phút này, trong bộ nhớ của trình duyệt
     // khách. Nó KHÔNG có trong mã nguồn và cũng không được ghi vào bất cứ đâu.
     return '' +
-      '<p class="duoc-kich-hoat">✅ Mã đúng. Sản phẩm đã sẵn sàng cho bạn tải về.</p>' +
+      '<p class="duoc-nhan-hang">✅ Sản phẩm đã sẵn sàng. Bấm nút bên dưới để tải về.</p>' +
       '<a class="nut nut-la nut-tai-ve" href="' + escapeHtml(kq.duongDan) + '" ' +
         'rel="noopener noreferrer" download>⬇ Tải sản phẩm về máy</a>' +
       '<p class="nhac-tai">Đường dẫn này chỉ dùng được trong ít phút và chỉ trên máy này. ' +
         'Tải xong nhớ lưu lại file cho chắc.</p>';
   }
 
-  // Vẽ lại RIÊNG vùng kết quả, không đụng tới ô nhập — vẽ lại cả bảng thì con
-  // trỏ nhập nhảy về đầu và mã khách đang gõ dở bị mất.
-  function capNhatKetQuaKichHoat(){
-    const vung = document.querySelector('[data-vung="ket-qua-kich-hoat"]');
-    if (vung) vung.innerHTML = veKetQuaKichHoat();
-    const nut = document.querySelector('.nut-mo-khoa');
-    if (nut) nut.disabled = state.nhanHang.dangHoi || !state.nhanHang.maKichHoat;
+  // Vẽ lại RIÊNG vùng kết quả, không dựng lại cả bảng.
+  function capNhatKetQuaNhanHang(){
+    const vung = document.querySelector('[data-vung="ket-qua-nhan-hang"]');
+    if (vung) vung.innerHTML = veKetQuaNhanHang();
+    const nut = document.querySelector('.nut-xac-nhan-tai');
+    if (nut) {
+      const xong = !!(state.nhanHang.ketQua && state.nhanHang.ketQua.duoc);
+      nut.disabled = state.nhanHang.dangHoi || xong;
+    }
   }
 
-  function goMaKichHoat(giaTri){
-    state.nhanHang.maKichHoat = chuanHoaMaKichHoat(giaTri);
-    const o = document.querySelector('[data-truong-kich-hoat="ma"]');
-    if (o && o.value !== state.nhanHang.maKichHoat) o.value = state.nhanHang.maKichHoat;
-    // Gõ lại mã thì xoá câu báo lỗi của lần trước đi, khỏi gây hiểu nhầm.
-    if (state.nhanHang.ketQua && !state.nhanHang.ketQua.duoc) state.nhanHang.ketQua = null;
-    capNhatKetQuaKichHoat();
-  }
-
-  function moKhoaTai(){
+  function xacNhanTai(){
     const nh = state.nhanHang;
-    if (nh.dangHoi || !nh.maSanPham || !nh.maKichHoat) return;
+    if (nh.dangHoi || !nh.maSanPham) return;
+    if (nh.ketQua && nh.ketQua.duoc) return;   // đã lấy được rồi thì thôi
+    // Không có mã trong đường dẫn thì khỏi làm phiền máy chủ — báo ngay cho
+    // khách biết họ đang mở một địa chỉ không phải địa chỉ shop gửi riêng.
+    if (!nh.maNhanHang) {
+      nh.ketQua = { duoc: false, lyDo: 'thieu-ma' };
+      capNhatKetQuaNhanHang();
+      return;
+    }
     nh.dangHoi = true;
     nh.ketQua = null;
-    capNhatKetQuaKichHoat();
-    xinDuongDanTai(nh.maSanPham, nh.maKichHoat).then(function(kq){
+    capNhatKetQuaNhanHang();
+    xinDuongDanTai(nh.maSanPham, nh.maNhanHang).then(function(kq){
       nh.dangHoi = false;
       nh.ketQua = kq || { duoc: false, lyDo: '' };
-      capNhatKetQuaKichHoat();
+      capNhatKetQuaNhanHang();
+    });
+  }
+
+  // ------------------------------------------------------ BẢNG HAI KHOÁ HỌC
+  //
+  // Sản phẩm 4 và 5 không có file để tải: chúng là module học ngay trên web.
+  // Bấm nút là RỜI trang nhận hàng, nên phải nói trước cho khách biết chuyện gì
+  // sắp xảy ra và cách quay lại — không thì họ tưởng mất trang.
+
+  function moModalKhoaHoc(sp, maModule){
+    const m = timModule(maModule);
+    const tenKhoa = m ? m.ten : sp.ten;
+    moModal({
+      ma: 'nhan-khoa-hoc',
+      tieuDe: 'Vào học ngay',
+      than: '' +
+        '<div class="khung-nhan-hang">' +
+          '<p class="ten-mon">Bạn đang mở: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
+          '<div class="ghi-chu-chuyen-huong">' +
+            '<p>Đây là khoá học xem ngay trên web, <strong>không có file để tải về</strong>.</p>' +
+            '<p>Nếu bạn bấm nút <strong>“Vào module ' + escapeHtml(tenKhoa) + '”</strong> bên dưới, ' +
+              'bạn sẽ được chuyển tới <strong>thanhdeptrai.vn</strong> và vào thẳng module ' +
+              '<strong>' + escapeHtml(tenKhoa) + '</strong> để học ngay.</p>' +
+            '<p class="cach-quay-lai">Muốn quay lại trang nhận sản phẩm này thì bấm <strong>nút quay lại</strong> ' +
+              'trên thiết bị hoặc trên trình duyệt của bạn.</p>' +
+          '</div>' +
+        '</div>',
+      day: '' +
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
+        '<button type="button" class="nut nut-la nut-vao-khoa-hoc" data-hanh-dong="vao-hoc-ngay" data-module="' +
+          escapeHtml(maModule) + '">Vào module ' + escapeHtml(tenKhoa) + '</button>'
     });
   }

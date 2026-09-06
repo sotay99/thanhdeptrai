@@ -146,19 +146,32 @@ Firebase Hosting trả `index.html` cho mọi đường dẫn (rewrite `**` tron
 `firebase.json`). `scripts/serve-static.py` bắt chước đúng cách đó khi xem tại
 chỗ.
 
+**Khách KHÔNG bao giờ phải gõ mã.** Mỗi khách một đường dẫn riêng:
+`/sanpham?ma=<16 ký tự>`. Apps Script sinh mã đó lúc gửi hàng
+(`sinhMaNhanHang()`), lưu vào đơn ở trường `maNhanHang`, rồi ghép vào cả email
+lẫn mẩu tin Zalo. Đơn đã có mã thì giữ nguyên mã cũ — khách có thể đã cầm đường
+dẫn cũ trong tay.
+
 Luật xương sống, hợp đồng mục 15 canh bằng regex:
 
-- Đường dẫn tới file sản phẩm **không nằm trong mã nguồn**. Máy chủ cấp phát
-  giữ chúng và chỉ trả về khi mã kích hoạt đúng.
+- Đường dẫn tới file sản phẩm **không nằm trong mã nguồn, và cũng không nằm
+  trong email**. Thư gửi khách chỉ mang đường dẫn riêng; máy chủ cấp phát giữ
+  đường tải thật. (Thư từng liệt kê thẳng link tải — ai chuyển tiếp lá thư đó đi
+  là mất hàng mà shop không biết.)
 - Ngay cả **địa chỉ máy chủ cấp phát** cũng không nằm trong mã nguồn — nó đọc
   từ nhánh `/thongtinkho` của Realtime Database lúc chạy, hệt cách giấu số tài
   khoản và số Zalo.
-- **Nút tải xuống chỉ được dựng SAU KHI máy chủ trả lời mã đúng** (nhánh cuối
-  của `veKetQuaKichHoat()`). Dựng sẵn rồi ẩn bằng CSS là hỏng cả cơ chế — mở
-  F12 lên là thấy.
+- **Nút tải xuống chỉ được dựng SAU KHI máy chủ trả lời là được phép** (nhánh
+  cuối của `veKetQuaNhanHang()`). Dựng sẵn rồi ẩn bằng CSS là hỏng cả cơ chế —
+  mở F12 lên là thấy.
 
-Mỗi mã chỉ mở khoá được trên MỘT thiết bị. Lời cảnh báo đó xuất hiện hai lần
-(đầu trang và trong bảng nhập mã), cố ý.
+Mỗi sản phẩm chỉ tải được trên MỘT thiết bị. Lời cảnh báo đó xuất hiện hai lần
+(đầu trang và trong bảng nhận sản phẩm), cố ý — và khách phải tự bấm nút xác
+nhận thì máy chủ mới ghi nhớ thiết bị.
+
+Hai khoá học (sp4, sp5) đi nhánh riêng: chúng không có file để tải mà là module
+học trên web, nên bảng của chúng chỉ dặn đường và cho một nút
+"Vào module ..." (`moModalKhoaHoc()`).
 
 ## Còn nợ: nối app Checkout
 
