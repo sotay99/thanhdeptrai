@@ -195,6 +195,23 @@ lời từ chối cho lịch sự. Hai nơi phải luôn khớp nhau; hợp đ�
 Ô khoá API hiện dạng che khi trang vừa mở, và bấm Lưu lúc còn che thì bị chặn —
 nếu không, một cú bấm nhầm ghi đè khoá thật bằng chuỗi dấu chấm.
 
+### `database.rules.json` KHÔNG được có khoá `"//"`
+
+Firebase hiểu `//` là dấu mở **chú thích**, nên một khoá JSON tên `"//"` làm
+hỏng cả bộ luật — Console từ chối với `Expected '{'`. Lỗi này đã xảy ra thật khi
+dán bộ luật vào Console. Chú thích của từng nhánh để ở đây, đừng để trong tệp:
+
+| Nhánh | Ai đọc | Ai ghi |
+|---|---|---|
+| `thongtinthanhtoan` | công khai (web khách dựng mã QR) | chỉ chủ shop |
+| `thongtinlienhe` | công khai (nút Zalo, link mạng xã hội) | chỉ chủ shop |
+| `thongtinkho` | công khai (trang `/sanpham` hỏi máy chủ cấp phát) | chỉ chủ shop |
+| `danhmuc` | công khai (tên hiển thị của sản phẩm và file) | chỉ chủ shop |
+| `admin` | **CHỈ chủ shop** — khoá API của AI nằm đây | chỉ chủ shop |
+| `donhang` | chỉ chủ shop | ai cũng TẠO được, không ai đọc được đơn người khác |
+
+Hợp đồng mục 16 canh cả sáu dòng này, và chặn hẳn khoá `"//"` mọc lại.
+
 ### CSS và SDK nạp động
 
 `src/css/admin.css` và `firebase-auth-compat.js` chỉ được nạp khi có người mở

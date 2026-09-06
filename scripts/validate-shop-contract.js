@@ -547,9 +547,16 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     fail("database.rules.json phải đòi auth.token.email_verified === true cho quyền ghi của chủ shop.");
   }
 
+  // Firebase hiểu "//" là dấu mở CHÚ THÍCH, nên một khoá JSON tên "//" làm hỏng
+  // cả bộ luật — Console từ chối với "Expected '{'". Lỗi này đã xảy ra thật.
+  // Chú thích của bộ luật để trong CLAUDE.md, không để trong chính tệp.
+  if (/"\/\//.test(rules)) {
+    fail('database.rules.json không được có khoá "//" — Firebase hiểu đó là dấu mở chú thích và từ chối cả bộ luật.');
+  }
+
   // Nhánh giữ khoá AI TUYỆT ĐỐI không được cho đọc công khai.
   {
-    const khoiAdmin = rules.match(/"admin"\s*:\s*\{[\s\S]*?\n    \}/);
+    const khoiAdmin = rules.match(/"admin"\s*:\s*\{[\s\S]*?\n    \},?\n/);
     if (!khoiAdmin) {
       fail('database.rules.json thiếu nhánh "admin" — nơi giữ khoá API của AI.');
     } else if (/"\.read"\s*:\s*true/.test(khoiAdmin[0])) {
@@ -560,7 +567,7 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
   // Ba nhánh web khách cần đọc thì phải còn đọc công khai, nếu không nút Zalo
   // và mã QR ngoài web chết câm.
   ["thongtinthanhtoan", "thongtinlienhe", "thongtinkho"].forEach((nhanh) => {
-    const khoi = rules.match(new RegExp('"' + nhanh + '"\\s*:\\s*\\{[\\s\\S]*?\\n    \\}'));
+    const khoi = rules.match(new RegExp('"' + nhanh + '"\\s*:\\s*\\{[\\s\\S]*?\\n    \\},?\\n'));
     if (!khoi) fail(`database.rules.json thiếu nhánh "${nhanh}".`);
     else if (!/"\.read"\s*:\s*true/.test(khoi[0])) {
       fail(`Nhánh "${nhanh}" phải cho đọc công khai — web của khách đọc nó lúc chạy.`);
