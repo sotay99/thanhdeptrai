@@ -1,0 +1,245 @@
+/* ===========================================================================
+   GIAO DIỆN TRANG QUẢN TRỊ "/admin"
+
+   Tệp này KHÔNG có thẻ <link> trong index.html. Mã JS nạp nó khi có người mở
+   "/admin" (xem napMotLan trong PHẦN 04B), nên khách mua hàng không tải nó.
+   Vì thế mọi kiểu dáng ở đây phải tự đứng được, đừng dựa vào app.css.
+
+   Dùng lại bảng màu trong base.css — quản trị và web khách là một nhà.
+   =========================================================================== */
+
+.admin-trang { max-width: 1040px; }
+
+/* --------------------------------------------- MÀN ĐĂNG NHẬP / TỪ CHỐI */
+
+.admin-giua {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 20px 0;
+}
+
+.admin-the-giua {
+  width: 100%;
+  max-width: 420px;
+  padding: 30px 26px;
+  border: 1px solid var(--vien);
+  border-radius: 16px;
+  background: var(--the);
+  box-shadow: var(--bong);
+  text-align: center;
+}
+
+.admin-the-giua h2 { margin: 0 0 8px; font-size: 19px; }
+.admin-the-giua .admin-khoa { font-size: 34px; line-height: 1; margin-bottom: 14px; }
+.admin-the-giua .admin-phu {
+  margin: 0 0 20px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--chu-diu);
+}
+.admin-the-giua .admin-phu strong { color: var(--chu); word-break: break-all; }
+.admin-the-giua .nut + .nut { margin-top: 10px; }
+.admin-dang-cho { margin: 0; font-size: 14px; color: var(--chu-diu); }
+
+.admin-loi {
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border: 1px solid rgba(229, 83, 75, .45);
+  border-radius: 10px;
+  background: rgba(229, 83, 75, .1);
+  font-size: 13px;
+  line-height: 1.65;
+  color: #ff8a82;
+  text-align: left;
+}
+
+/* ------------------------------------------------------ BỐ CỤC BÊN TRONG */
+
+.admin-khung {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-canh {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border: 1px solid var(--vien);
+  border-radius: 14px;
+  background: var(--the);
+}
+
+.admin-nguoi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.admin-nguoi .nhan {
+  font-size: 10.5px;
+  color: var(--chu-mo);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.admin-nguoi .email {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--xanh);
+  word-break: break-all;
+}
+
+.admin-danh-sach { display: flex; flex-direction: column; gap: 2px; }
+
+.admin-muc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--chu-diu);
+  font-family: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-muc:hover { background: var(--the-2); color: var(--chu); }
+.admin-muc.dang-xem {
+  background: var(--xanh-mo);
+  color: var(--chu);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--xanh);
+}
+.admin-muc .bieu-tuong { flex: 0 0 auto; width: 18px; text-align: center; font-size: 13px; }
+.admin-muc .chu { flex: 1; min-width: 0; }
+
+.admin-canh-day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--vien);
+}
+
+.admin-noi-dung { min-width: 0; }
+
+.admin-dau { margin-bottom: 18px; }
+.admin-dau h2 { margin: 0 0 6px; font-size: 20px; }
+.admin-dau p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--chu-diu); }
+
+.admin-trong {
+  padding: 22px 20px;
+  border: 1px dashed var(--vien-sang);
+  border-radius: 12px;
+  background: var(--the-2);
+}
+.admin-trong p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--chu-diu); }
+
+/* ------------------------------------------------------------ TỔNG QUAN */
+
+.admin-bang-trang-thai {
+  border: 1px solid var(--vien);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-dong-trang-thai {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--the);
+  font-size: 13.5px;
+}
+.admin-dong-trang-thai + .admin-dong-trang-thai { border-top: 1px solid var(--vien); }
+.admin-dong-trang-thai .ten { font-weight: 600; }
+.admin-dong-trang-thai .tri { font-size: 12.5px; color: var(--chu-diu); }
+.admin-dong-trang-thai.xanh .tri { color: var(--la-dam-net); }
+.admin-dong-trang-thai.vang .tri { color: var(--cam); }
+
+/* --------------------------------------------------------- CÁC Ô CÀI ĐẶT */
+
+.admin-nhom-o { display: flex; flex-direction: column; gap: 14px; }
+
+.admin-o {
+  padding: 15px 16px;
+  border: 1px solid var(--vien);
+  border-radius: 12px;
+  background: var(--the);
+}
+
+.admin-nhan {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--chu);
+}
+
+.admin-ghi-chu {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--chu-mo);
+}
+
+.admin-hang-nhap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.admin-nhap {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid var(--vien-sang);
+  border-radius: 9px;
+  background: var(--the-2);
+  color: var(--chu);
+  font-family: inherit;
+  font-size: 14.5px;
+}
+.admin-nhap:focus { outline: none; border-color: var(--xanh); }
+.admin-nhap::placeholder { color: var(--chu-mo); font-size: 13px; }
+
+/* Ô bí mật lúc còn che: chữ thưa ra cho thấy rõ đây là bản che, không phải giá
+   trị thật, và tông chữ mờ đi để không ai tưởng mình đang đọc khoá. */
+.admin-nhap.bi-mat { letter-spacing: .06em; color: var(--chu-diu); }
+.admin-nhap[readonly] { background: var(--nen); cursor: default; }
+
+.admin-bao {
+  display: block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--la-dam-net);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.admin-bao.hien { opacity: 1; }
+
+/* ------------------------------------------------------------ MÀN HẸP */
+
+@media (max-width: 780px) {
+  .admin-khung { grid-template-columns: minmax(0, 1fr); }
+  .admin-canh { position: static; }
+  .admin-danh-sach {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .admin-muc {
+    width: auto;
+    flex: 1 1 150px;
+    box-shadow: none;
+    border: 1px solid var(--vien);
+  }
+  .admin-muc.dang-xem { border-color: var(--xanh); box-shadow: none; }
+  .admin-canh-day { flex-direction: row; }
+  .admin-canh-day .nut { flex: 1 1 0; }
+}

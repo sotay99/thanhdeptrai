@@ -508,6 +508,71 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 16) TRANG QUẢN TRỊ "/admin"
+//     Quyền THẬT nằm ở database.rules.json, không ở giao diện. Và khoá API của
+//     AI không bao giờ được đi qua trình duyệt khách.
+// ---------------------------------------------------------------------------
+{
+  const rules = doc("database.rules.json");
+  const EMAIL_CHU_SHOP = ["lookatmevanthanhpham@gmail.com", "219thanhdeptrai@gmail.com"];
+
+  [
+    [/const\s+DUONG_DAN_ADMIN\s*=\s*'\/admin'/, 'đường dẫn trang quản trị là "/admin"'],
+    [/function\s+veTrangAdmin\s*\(/, "hàm vẽ trang quản trị"],
+    [/function\s+laChuShop\s*\(/, "hàm kiểm email chủ shop"],
+    [/signInWithPopup/, "đăng nhập Google bằng cửa sổ bật lên"],
+    [/firebase-auth-compat\.js/, "SDK đăng nhập"],
+    [/napMotLan\(AUTH_SDK/, "SDK đăng nhập được nạp ĐỘNG, không nằm trong index.html"],
+    [/napMotLan\(CSS_ADMIN/, "CSS quản trị được nạp ĐỘNG"],
+    [/state\.trang\s*===\s*'admin'/, "trang quản trị được rẽ nhánh theo state.trang"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Hai email phải có mặt ở CẢ HAI nơi. Thiếu ở Rules là ai đăng nhập cũng ghi
+  // đè được số tài khoản; thiếu trong mã là chủ shop đăng nhập xong bị từ chối.
+  EMAIL_CHU_SHOP.forEach((email) => {
+    if (!banNoi.includes(email)) {
+      fail(`Email chủ shop ${email} không có trong danh sách EMAIL_CHU_SHOP của mã nguồn.`);
+    }
+    if (!rules.includes(email)) {
+      fail(`Email chủ shop ${email} không có trong database.rules.json — giao diện chặn được, Rules thì không.`);
+    }
+  });
+
+  // Rules phải đòi email ĐÃ XÁC MINH. Thiếu điều kiện này thì một tài khoản
+  // Google tự dựng, khai email trùng nhưng chưa xác minh, vẫn ghi được.
+  if (!/email_verified/.test(rules)) {
+    fail("database.rules.json phải đòi auth.token.email_verified === true cho quyền ghi của chủ shop.");
+  }
+
+  // Nhánh giữ khoá AI TUYỆT ĐỐI không được cho đọc công khai.
+  {
+    const khoiAdmin = rules.match(/"admin"\s*:\s*\{[\s\S]*?\n    \}/);
+    if (!khoiAdmin) {
+      fail('database.rules.json thiếu nhánh "admin" — nơi giữ khoá API của AI.');
+    } else if (/"\.read"\s*:\s*true/.test(khoiAdmin[0])) {
+      fail('Nhánh "admin" đang cho ĐỌC CÔNG KHAI — khoá API của AI sẽ lộ cho bất kỳ ai.');
+    }
+  }
+
+  // Ba nhánh web khách cần đọc thì phải còn đọc công khai, nếu không nút Zalo
+  // và mã QR ngoài web chết câm.
+  ["thongtinthanhtoan", "thongtinlienhe", "thongtinkho"].forEach((nhanh) => {
+    const khoi = rules.match(new RegExp('"' + nhanh + '"\\s*:\\s*\\{[\\s\\S]*?\\n    \\}'));
+    if (!khoi) fail(`database.rules.json thiếu nhánh "${nhanh}".`);
+    else if (!/"\.read"\s*:\s*true/.test(khoi[0])) {
+      fail(`Nhánh "${nhanh}" phải cho đọc công khai — web của khách đọc nó lúc chạy.`);
+    }
+  });
+
+  // Trang quản trị KHÔNG được tự gọi API AI: làm vậy là khoá đi qua trình duyệt.
+  if (/api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com/.test(banNoi)) {
+    fail("Mã web gọi thẳng API AI — khoá sẽ lộ cho bất kỳ ai mở tab Network. Phải gọi qua máy chủ trung gian.");
+  }
+}
+
 // Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
 if (/<a[^>]*zalo\.me/.test(banNoi)) {
   fail('Không được dựng sẵn thẻ <a href> tới zalo.me — số Zalo phải đọc từ Realtime Database lúc chạy.');

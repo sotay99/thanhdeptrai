@@ -498,6 +498,11 @@
     if (hanhDong === 'su-dung-san-pham') { moModalNhanHang(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'xac-nhan-tai') { xacNhanTai(); return; }
     if (hanhDong === 've-trang-mua-hang') { veTrangChinh(); render(); return; }
+    if (hanhDong === 'admin-dang-nhap') { dangNhapGoogle(); return; }
+    if (hanhDong === 'admin-dang-xuat') { dangXuat(); return; }
+    if (hanhDong === 'admin-mo-module') { adminMoModule(nutHanhDong.getAttribute('data-module')); return; }
+    if (hanhDong === 'admin-hien-bi-mat') { adminHienBiMat(nutHanhDong.getAttribute('data-o')); return; }
+    if (hanhDong === 'admin-luu-o') { adminLuuO(nutHanhDong.getAttribute('data-o')); return; }
   }
 
   function xuLyGoPhim(su){
@@ -544,6 +549,8 @@
       state.hieuUngVaoModule = true;
       dongHetModal();
       render();
+      if (trang === 'admin') chuanBiAdmin();
+      if (trang === 'sanpham') taiThongTinKho();
     });
   }
 
@@ -565,6 +572,9 @@
     // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
     // không hỏi tới nên không phải tải.
     if (state.trang === 'sanpham') taiThongTinKho();
+    // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
+    // khách mua hàng không phải tải một byte nào của phần quản trị.
+    if (state.trang === 'admin') chuanBiAdmin();
   }
 
   boot();

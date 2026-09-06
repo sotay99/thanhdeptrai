@@ -179,3 +179,36 @@ App đọc biến động số dư (Checkout) **chưa được nối**. Khi làm
 người dùng từng bước một, thật chi tiết. Lưu ý: proxy của môi trường chặn
 `help.checkout.vn`, nên tài liệu chính thức không đọc trực tiếp được — phải dựa
 vào ảnh chụp màn hình người dùng gửi và nói rõ chỗ nào là suy đoán.
+
+## Trang quản trị `/admin`
+
+Chỉ hai email của chủ shop vào được. **Quyền THẬT nằm ở `database.rules.json`**,
+không ở giao diện — `EMAIL_CHU_SHOP` trong `04b-admin.js` chỉ để ẩn nút và hiện
+lời từ chối cho lịch sự. Hai nơi phải luôn khớp nhau; hợp đồng mục 16 canh việc
+đó, và canh cả `email_verified`.
+
+**Khoá API của AI không bao giờ đi qua trình duyệt khách.** Nhánh `/admin` cấm
+đọc công khai. Chatbot sau này hỏi Worker, Worker mới giữ khoá và gọi AI. Hợp
+đồng chặn mọi lời gọi thẳng tới `api.anthropic.com`, `api.openai.com`,
+`generativelanguage.googleapis.com` trong mã web.
+
+Ô khoá API hiện dạng che khi trang vừa mở, và bấm Lưu lúc còn che thì bị chặn —
+nếu không, một cú bấm nhầm ghi đè khoá thật bằng chuỗi dấu chấm.
+
+### CSS và SDK nạp động
+
+`src/css/admin.css` và `firebase-auth-compat.js` chỉ được nạp khi có người mở
+`/admin`. Khách mua hàng không tải một byte nào của phần quản trị, và
+`index.html` vẫn mỏng.
+
+`admin.css` đi qua cơ chế vân tay hệt như ảnh: mã JS viết đường dẫn trần
+`/assets/css/admin.css`, `build-static.js` thay bằng tên có vân tay trước khi
+băm bản nối. `validate-static.js` kiểm cả ba điều: tệp trong `public/` khớp
+nguồn, bản nối không còn đường dẫn trần, và có mã nào đó thật sự nạp nó.
+
+### Thử trang quản trị tại chỗ
+
+Proxy của môi trường chặn `www.gstatic.com` nên Firebase SDK thật không tải
+được khi chạy thử. Bộ thử dựng một bản Firebase giả bằng `addInitScript` và
+chặn mọi yêu cầu tới gstatic bằng `page.route`, nhờ vậy thử được trọn luồng:
+email lạ bị từ chối, hai email chủ shop vào được, ô cài đặt ghi ra đúng nhánh.

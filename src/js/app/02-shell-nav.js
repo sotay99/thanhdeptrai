@@ -129,7 +129,7 @@
     if (window.scrollTo) window.scrollTo(0, 0);
   }
 
-  // Rời trang nhận hàng về trang chính. Không làm gì nếu đã ở trang chính.
+  // Rời trang có địa chỉ riêng (nhận hàng, quản trị) về trang chính.
   function veTrangChinh(){
     if (state.trang === 'chinh') return;
     state.trang = 'chinh';
@@ -427,8 +427,9 @@
   // ---------------------------------------------------- VẼ TOÀN BỘ GIAO DIỆN
 
   function veNoiDungModule(){
-    // Trang nhận hàng ở "/sanpham" đứng ngoài hệ thống module: nó có địa chỉ
-    // riêng vì được gửi cho khách qua email và Zalo.
+    // Hai trang có địa chỉ riêng, đứng ngoài hệ thống module: trang nhận hàng
+    // (gửi cho khách qua email và Zalo) và trang quản trị của chủ shop.
+    if (state.trang === 'admin') return veTrangAdmin();
     if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
@@ -452,6 +453,14 @@
     // Thanh báo giá chỉ có ở module bán hàng. Trang nhận hàng không bán gì nên
     // không có thanh nào ở đáy.
     const coThanhDay = state.trang === 'chinh' && !!(m && m.ma === 'goi-vip');
+
+    // Trang quản trị có vỏ riêng: không nút nổi, không menu của khách, không
+    // thanh tiêu đề shop. Nó là chỗ làm việc, không phải chỗ mua hàng.
+    if (state.trang === 'admin') {
+      el.innerHTML = '<main class="khung-noi-dung khong-thanh-day admin-trang">' + veNoiDungModule() + '</main>';
+      doChoThanhDay();
+      return;
+    }
 
     el.innerHTML = '' +
       '<button type="button" class="nut-noi' + (state.menuMo ? ' menu-dang-mo' : '') +

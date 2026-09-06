@@ -78,9 +78,12 @@
     // Trang nào đang mở. Web có HAI trang thật, phân biệt bằng ĐƯỜNG DẪN chứ
     // không phải #hash:
     //   'chinh'   — trang bán hàng ở "/", các module chuyển bằng #hash
-    //   'sanpham' — trang nhận hàng ở "/sanpham", nơi khách đã mua nhập mã
-    //               kích hoạt để lấy sản phẩm. Đây là địa chỉ được gửi trong
-    //               email và trong tin nhắn Zalo nên KHÔNG được đổi.
+    //   'sanpham' — trang nhận hàng ở "/sanpham", nơi khách đã mua lấy sản
+    //               phẩm. Đây là địa chỉ được gửi trong email và trong tin
+    //               nhắn Zalo nên KHÔNG được đổi.
+    //   'admin'   — trang quản trị ở "/admin", chỉ hai email của chủ shop mới
+    //               vào được. Quyền thật do database.rules.json giữ, giao diện
+    //               chỉ là lớp lịch sự bên ngoài.
     trang: 'chinh',
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
@@ -110,6 +113,19 @@
     // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
     // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
     mayChuKho: '',
+    // Trang quản trị. nguoiDung là object người đang đăng nhập (null khi chưa),
+    // và cheDo cho biết Firebase Auth đã trả lời hay còn đang hỏi.
+    admin: {
+      sanSang: false,        // SDK đăng nhập đã nạp và đã biết trạng thái chưa
+      nguoiDung: null,       // { email, ten, anh } hoặc null
+      duocPhep: false,       // email có nằm trong danh sách chủ shop không
+      module: 'tong-quan',
+      dangDangNhap: false,
+      loi: '',
+      duLieu: {},            // các nhánh cài đặt đã đọc về
+      dangLuu: '',           // tên ô đang lưu, để nút hiện "Đang lưu…"
+      vuaLuu: ''             // tên ô vừa lưu xong, để hiện "Đã lưu" 3 giây
+    },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
     // không làm cả lưới nhấp nháy trôi lại từ đầu.
@@ -229,10 +245,13 @@
   // Chấp nhận cả "/sanpham" lẫn "/sanpham/" — khách hay gõ thêm dấu gạch cuối.
 
   const DUONG_DAN_NHAN_HANG = '/sanpham';
+  const DUONG_DAN_ADMIN = '/admin';
 
   function docDuongDan(){
     const p = String(window.location.pathname || '/').replace(/\/+$/, '').toLowerCase();
-    return p === DUONG_DAN_NHAN_HANG ? 'sanpham' : 'chinh';
+    if (p === DUONG_DAN_NHAN_HANG) return 'sanpham';
+    if (p === DUONG_DAN_ADMIN) return 'admin';
+    return 'chinh';
   }
 
   // Mỗi khách một đường dẫn riêng: mã nhận hàng nằm ngay trong đường dẫn
