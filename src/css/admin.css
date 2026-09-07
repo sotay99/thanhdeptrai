@@ -243,3 +243,136 @@
   .admin-canh-day { flex-direction: row; }
   .admin-canh-day .nut { flex: 1 1 0; }
 }
+
+/* --------------------------------------------------- DANH MỤC SẢN PHẨM */
+
+.admin-danh-muc { display: flex; flex-direction: column; gap: 16px; }
+
+.admin-the-dm {
+  padding: 16px 17px;
+  border: 1px solid var(--vien);
+  border-radius: 13px;
+  background: var(--the);
+}
+
+.admin-the-dm .dau-dm {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+.admin-the-dm .ma-sp {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--xanh-mo);
+  color: var(--xanh);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.admin-the-dm h3 { margin: 0; font-size: 14.5px; line-height: 1.5; }
+
+/* Hai lựa chọn nguồn hàng nằm cạnh nhau để thấy rõ chúng KHÁC nhau về mức bảo
+   vệ, chứ không phải hai cách làm cùng một việc. */
+.hang-nguon { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
+
+.admin-chon-nguon {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--vien-sang);
+  border-radius: 10px;
+  background: var(--the-2);
+  color: var(--chu-diu);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-chon-nguon:hover { border-color: var(--xanh); }
+.admin-chon-nguon.dang-chon {
+  border-color: var(--xanh);
+  background: var(--xanh-nen);
+  color: var(--chu);
+}
+.admin-chon-nguon .ten { font-size: 13px; font-weight: 600; }
+.admin-chon-nguon .mo { font-size: 11.5px; line-height: 1.55; color: var(--chu-mo); }
+.admin-chon-nguon.dang-chon .mo { color: var(--chu-diu); }
+
+/* Khối Google Drive mang tông cảnh báo — nó thật sự yếu hơn kho riêng. */
+.khoi-drive .canh-bao-drive {
+  margin: 0 0 12px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 167, 46, .42);
+  border-radius: 10px;
+  background: rgba(255, 167, 46, .1);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--chu-diu);
+}
+.khoi-drive .canh-bao-drive strong { color: var(--cam); }
+
+.khoi-tep .dau-bang-tep {
+  display: none;
+  gap: 9px;
+  padding: 0 0 6px;
+  font-size: 11px;
+  color: var(--chu-mo);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.dong-tep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.dong-tep .so-dong {
+  flex: 0 0 auto;
+  width: 22px;
+  font-size: 12px;
+  color: var(--chu-mo);
+  text-align: right;
+}
+.dong-tep .o-tep { flex: 1 1 240px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.dong-tep .o-ten { flex: 1 1 200px; }
+.dong-tep .nut-xoa-dong { flex: 0 0 auto; }
+
+.chua-co-tep {
+  margin: 0 0 10px;
+  padding: 12px 13px;
+  border: 1px dashed var(--vien-sang);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--chu-mo);
+}
+
+.nut-them-tep { margin-top: 2px; }
+
+.goi-y-tep {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--chu-mo);
+}
+.goi-y-tep strong { color: var(--chu-diu); }
+
+.day-dm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--vien);
+}
+.day-dm .admin-bao { margin-top: 0; }
+
+@media (min-width: 900px) {
+  .khoi-tep .dau-bang-tep { display: flex; padding-left: 30px; }
+  .khoi-tep .dau-bang-tep span:first-child { flex: 1 1 240px; }
+  .khoi-tep .dau-bang-tep span:last-child { flex: 1 1 200px; }
+}

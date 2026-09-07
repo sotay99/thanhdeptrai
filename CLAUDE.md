@@ -212,6 +212,39 @@ dán bộ luật vào Console. Chú thích của từng nhánh để ở đây, 
 
 Hợp đồng mục 16 canh cả sáu dòng này, và chặn hẳn khoá `"//"` mọc lại.
 
+### Danh mục sản phẩm — hai nguồn hàng KHÔNG ngang nhau
+
+Module "Danh mục sản phẩm" trong `/admin` cho chủ shop khai mỗi sản phẩm lấy
+hàng từ đâu. Hai nguồn khác hẳn nhau về mức bảo vệ, và giao diện phải nói thẳng
+điều đó ngay tại chỗ chọn:
+
+| Nguồn | Khoá thiết bị | Thu hồi được | Dùng khi |
+|---|---|---|---|
+| `r2` — kho riêng Cloudflare | có | có | mặc định |
+| `drive` — link Google Drive công khai | **không** | **không** | món quá nặng, chấp nhận đánh đổi |
+
+Dữ liệu ở nhánh `/danhmuc`, mỗi sản phẩm một mục:
+
+```
+danhmuc/sp2 = { nguon: 'r2', file: [ { tep: 'sp2/00-tron-bo.zip', ten: 'Trọn bộ preset' }, … ] }
+danhmuc/sp8 = { nguon: 'drive', link: 'https://drive.google.com/…' }
+```
+
+`tep` là tên thật trong kho (máy đọc), `ten` là tên khách nhìn thấy (người đọc).
+Tệp tên bắt đầu bằng `00-` được coi là gói trọn bộ: nó tự lên đầu danh sách và
+mang nhãn riêng. Hai khoá học (sp4, sp5) **không có** trong danh mục —
+`sanPhamCoHang()` loại chúng ra, vì chúng học trên web chứ không có tệp nào.
+
+Ở trang `/sanpham`, mỗi dòng tệp mang **chỉ số**, không mang tên tệp — tên thật
+nằm lại trong bộ nhớ trang, không in ra HTML.
+
+### Apps Script không còn giữ đường tải
+
+Script Property `LINK_TAI` đã bị bỏ. Trước đây nó chứa bảng "mã sản phẩm →
+đường tải" và thư gửi khách in thẳng những đường đó ra: ai chuyển tiếp lá thư đi
+là mất hàng mà shop không biết. Nay script chỉ đọc `/danhmuc` để **kiểm tra**
+xem chủ shop đã khai đủ chưa. Hợp đồng chặn `LINK_TAI` và `bangDuongTai` mọc lại.
+
 ### CSS và SDK nạp động
 
 `src/css/admin.css` và `firebase-auth-compat.js` chỉ được nạp khi có người mở

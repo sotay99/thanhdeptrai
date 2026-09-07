@@ -1460,3 +1460,75 @@
   line-height: 1.65;
   color: var(--chu-mo);
 }
+
+/* Danh sách tệp trong bảng nhận sản phẩm. Mỗi dòng tự lo phần hiển thị và nút
+   của nó, nên bấm tải tệp này không đụng tới tệp kia. */
+.danh-sach-tep { margin-top: 14px; }
+
+.dong-tep-nhan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--vien);
+  border-radius: 10px;
+  background: var(--the-2);
+}
+.dong-tep-nhan + .dong-tep-nhan { margin-top: 9px; }
+
+/* Gói trọn bộ nổi hẳn lên: nó là thứ phần lớn khách muốn bấm. */
+.dong-tep-nhan.tron-bo {
+  border-color: rgba(45, 157, 95, .45);
+  background: rgba(45, 157, 95, .1);
+}
+
+.dong-tep-nhan .ten-tep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.dong-tep-nhan .nhan-tron {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--la);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.dong-tep-nhan .chu { min-width: 0; word-break: break-word; }
+
+.dong-tep-nhan .vung-tep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  flex: 0 0 auto;
+}
+.dong-tep-nhan .dang-hoi { margin: 0; font-size: 12.5px; color: var(--chu-diu); }
+.dong-tep-nhan .nut-tai-ve { text-decoration: none; }
+.dong-tep-nhan .nhac-tai {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--chu-mo);
+}
+.dong-tep-nhan .loi-nhan-hang {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(229, 83, 75, .45);
+  border-radius: 9px;
+  background: rgba(229, 83, 75, .1);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #ff8a82;
+}
+
+.nut-mo-drive { text-decoration: none; }

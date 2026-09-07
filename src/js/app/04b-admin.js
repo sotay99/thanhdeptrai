@@ -169,7 +169,8 @@
     'lien-he':   'thongtinlienhe',
     'nhan-tien': 'thongtinthanhtoan',
     'khoa-ai':   'admin/khoaAI',
-    'kho':       'thongtinkho'
+    'kho':       'thongtinkho',
+    'danh-muc':  'danhmuc'
   };
 
   function taiCaiDatAdmin(){
@@ -293,15 +294,15 @@
       O_LIEN_HE);
     if (ma === 'nhan-tien') return veAdminNhanTien();
     if (ma === 'khoa-ai')   return veAdminKhoaAI();
+    if (ma === 'danh-muc')  return veAdminDanhMuc();
     return veAdminChuaLam(ma);
   }
 
   function veAdminChuaLam(ma){
     const m = MODULE_ADMIN.filter(function(x){ return x.ma === ma; })[0];
     const ten = m ? m.ten : ma;
-    const vi = (ma === 'danh-muc' || ma === 'don-hang')
-      ? 'Phần này cần máy chủ kho (Worker) mới chạy được — nó phải đọc danh sách file thật trong R2. ' +
-        'Dựng xong Worker là mở được ngay.'
+    const vi = (ma === 'don-hang')
+      ? 'Phần này cần máy chủ kho (Worker) mới chạy được. Dựng xong Worker là mở được ngay.'
       : 'Phần này đang được xây dựng.';
     return '<header class="admin-dau"><h2>' + escapeHtml(ten) + '</h2></header>' +
       '<div class="admin-trong"><p>' + escapeHtml(vi) + '</p></div>';
@@ -317,7 +318,17 @@
       ['Số Zalo của shop', !!lienHe.zalo, lienHe.zalo ? 'Đã khai' : 'Chưa khai — nút Liên hệ Zalo ngoài web sẽ báo lỗi'],
       ['Thông tin nhận tiền', !!(tien.soTaiKhoan && tien.maNganHang),
         (tien.soTaiKhoan && tien.maNganHang) ? 'Đã khai' : 'Chưa đủ — mã QR không sinh được'],
-      ['Máy chủ kho (Worker)', !!kho.mayChu, kho.mayChu ? 'Đã khai' : 'Chưa dựng — trang nhận hàng chưa tải được file']
+      ['Máy chủ kho (Worker)', !!kho.mayChu, kho.mayChu ? 'Đã khai' : 'Chưa dựng — trang nhận hàng chưa tải được file'],
+      (function(){
+        const dm = a.duLieu['danh-muc'] || {};
+        const can = sanPhamCoHang().length;
+        const daKhai = sanPhamCoHang().filter(function(sp){
+          const d = dm[sp.ma];
+          return d && (d.nguon === 'drive' ? !!d.link : !!(d.file && d.file.length));
+        }).length;
+        return ['Danh mục sản phẩm', daKhai === can,
+          daKhai === can ? 'Đã khai đủ ' + can + ' sản phẩm' : 'Mới khai ' + daKhai + '/' + can + ' sản phẩm'];
+      })()
     ].map(function(d){
       return '<div class="admin-dong-trang-thai' + (d[1] ? ' xanh' : ' vang') + '">' +
         '<span class="ten">' + escapeHtml(d[0]) + '</span>' +

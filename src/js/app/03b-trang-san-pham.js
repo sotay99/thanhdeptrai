@@ -49,6 +49,30 @@
     });
   }
 
+  // Danh mục do chủ shop khai ở trang /admin: mỗi sản phẩm lấy hàng từ đâu,
+  // gồm những tệp nào, khách nhìn thấy tên gì. Đọc công khai được — nó không
+  // chứa đường tải, chỉ chứa TÊN tệp.
+  function taiDanhMuc(){
+    if (!firebaseSanSang || !rtdb) return Promise.resolve(false);
+    return rtdb.ref('danhmuc').once('value').then(function(anh){
+      state.danhMuc = (anh && anh.val()) || {};
+      return true;
+    }).catch(function(e){
+      console.error('Không đọc được danh mục sản phẩm:', e);
+      return false;
+    });
+  }
+
+  function danhMucCua(maSP){
+    return (state.danhMuc || {})[maSP] || null;
+  }
+
+  // Tệp tên bắt đầu bằng "00-" là gói trọn bộ: nó lên đầu danh sách và mang
+  // kiểu dáng riêng, để khách muốn lấy hết chỉ bấm một nút.
+  function laTronBo(tep){
+    return /(^|\/)00-/.test(String(tep || ''));
+  }
+
   // Hỏi máy chủ cấp phát: đường dẫn này có được phép tải món này không?
   //
   // Máy chủ trả về { duoc: true, duongDan: '...' } khi hợp lệ, hoặc
@@ -58,21 +82,21 @@
   // Chính lượt hỏi này là lúc máy chủ GHI NHỚ THIẾT BỊ của khách cho món đó.
   // Vì thế nó chỉ được gọi sau khi khách đã đọc lời cảnh báo và tự bấm nút xác
   // nhận, chứ không gọi tự động lúc mở bảng.
-  function xinDuongDanTai(maSanPham, maNhanHang){
+  function xinDuongDanTai(maSanPham, maNhanHang, tep){
     if (!state.mayChuKho) {
       return taiThongTinKho().then(function(duoc){
         if (!duoc) return { duoc: false, lyDo: 'chua-san-sang' };
-        return goiMayChuKho(maSanPham, maNhanHang);
+        return goiMayChuKho(maSanPham, maNhanHang, tep);
       });
     }
-    return goiMayChuKho(maSanPham, maNhanHang);
+    return goiMayChuKho(maSanPham, maNhanHang, tep);
   }
 
-  function goiMayChuKho(maSanPham, maNhanHang){
+  function goiMayChuKho(maSanPham, maNhanHang, tep){
     return fetch(state.mayChuKho + '/cap-phat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sanPham: maSanPham, ma: maNhanHang })
+      body: JSON.stringify({ sanPham: maSanPham, ma: maNhanHang, tep: tep })
     }).then(function(tra){
       if (!tra.ok) return { duoc: false, lyDo: 'may-chu-tu-choi' };
       return tra.json();
@@ -87,6 +111,10 @@
     if (lyDo === 'thieu-ma') {
       return 'Đường dẫn bạn đang mở thiếu mã nhận hàng. Hãy bấm đúng đường dẫn ' +
         'shop đã gửi trong email hoặc trong tin nhắn, đừng gõ tay địa chỉ.';
+    }
+    if (lyDo === 'chua-khai') {
+      return 'Sản phẩm này chưa được shop khai vào danh mục. Bạn nhắn cho shop, ' +
+        'shop bổ sung ngay.';
     }
     if (lyDo === 'chua-san-sang') {
       return 'Hệ thống nhận hàng đang được hoàn thiện. Bạn nhắn cho shop qua Zalo, ' +
@@ -138,26 +166,38 @@
     const maKhoaHoc = MODULE_KHOA_HOC[sp.ma];
     if (maKhoaHoc) { moModalKhoaHoc(sp, maKhoaHoc); return; }
 
+    const dm = danhMucCua(sp.ma);
+    if (dm && dm.nguon === 'drive') { moModalDrive(sp, dm); return; }
+
     state.nhanHang.maSanPham = sp.ma;
-    state.nhanHang.ketQua = null;
-    state.nhanHang.dangHoi = false;
+    state.nhanHang.ketQuaTep = {};
+    state.nhanHang.dangHoiTep = '';
+    state.nhanHang.tep = xepTep(dm);
 
     moModal({
       ma: 'nhan-hang',
       tieuDe: 'Nhận sản phẩm',
       than: veThanNhanHang(sp),
-      day: '' +
-        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        '<button type="button" class="nut nut-chinh nut-xac-nhan-tai" data-hanh-dong="xac-nhan-tai">' +
-          'Tôi chắc chắn — tải xuống</button>',
+      day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>',
       khiDong: function(){
-        state.nhanHang.ketQua = null;
-        state.nhanHang.dangHoi = false;
+        state.nhanHang.ketQuaTep = {};
+        state.nhanHang.dangHoiTep = '';
+        state.nhanHang.tep = [];
       }
     });
   }
 
+  // Gói trọn bộ luôn đứng đầu, dù chủ shop khai nó ở dòng nào.
+  function xepTep(dm){
+    const tep = (dm && dm.nguon === 'r2' && dm.file) ? dm.file.slice() : [];
+    tep.sort(function(a, b){
+      return (laTronBo(b.tep) ? 1 : 0) - (laTronBo(a.tep) ? 1 : 0);
+    });
+    return tep;
+  }
+
   function veThanNhanHang(sp){
+    const tep = state.nhanHang.tep || [];
     return '' +
       '<div class="khung-nhan-hang">' +
         '<p class="ten-mon">Bạn đang nhận: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
@@ -167,60 +207,108 @@
           'là hệ thống ghi nhớ máy đó. Hãy chắc chắn đây là chiếc máy bạn sẽ dùng sản phẩm ' +
           'rồi mới bấm nút bên dưới.</span>' +
         '</div>' +
-        '<div class="ket-qua-nhan-hang" data-vung="ket-qua-nhan-hang">' + veKetQuaNhanHang() + '</div>' +
+        (tep.length
+          ? '<div class="danh-sach-tep">' + tep.map(veDongTep).join('') + '</div>'
+          : '<p class="loi-nhan-hang">' + escapeHtml(chuLyDo('chua-khai')) + '</p>') +
       '</div>';
   }
 
-  // Vùng kết quả: rỗng khi khách chưa bấm xác nhận, "đang hỏi" khi đang chờ máy
-  // chủ, câu báo lý do khi không được, và CHỈ KHI ĐƯỢC mới dựng ra nút tải.
-  function veKetQuaNhanHang(){
-    if (state.nhanHang.dangHoi) {
-      return '<p class="dang-hoi">Đang chuẩn bị sản phẩm cho bạn…</p>';
+  // Mỗi dòng mang CHỈ SỐ chứ không mang tên tệp. Tên tệp trong kho nằm lại
+  // trong bộ nhớ của trang, không in ra HTML — biết tên tệp thì cũng không tải
+  // được gì, nhưng không cho không người tò mò một manh mối nào.
+  function veDongTep(f, i){
+    const tron = laTronBo(f.tep);
+    return '' +
+      '<div class="dong-tep-nhan' + (tron ? ' tron-bo' : '') + '" data-dong-tep="' + i + '">' +
+        '<div class="ten-tep">' +
+          (tron ? '<span class="nhan-tron">Trọn bộ</span>' : '') +
+          '<span class="chu">' + escapeHtml(f.ten || 'Tệp ' + (i + 1)) + '</span>' +
+        '</div>' +
+        '<div class="vung-tep" data-vung-tep="' + i + '">' + veKetQuaTep(i) + '</div>' +
+      '</div>';
+  }
+
+  // Một dòng tệp có ba trạng thái: chưa bấm (nút xác nhận), đang hỏi máy chủ,
+  // và đã được phép (nút tải thật).
+  function veKetQuaTep(i){
+    if (state.nhanHang.dangHoiTep === String(i)) {
+      return '<p class="dang-hoi">Đang chuẩn bị…</p>';
     }
-    const kq = state.nhanHang.ketQua;
-    if (!kq) return '';
+    const kq = (state.nhanHang.ketQuaTep || {})[i];
+    if (!kq) {
+      return '<button type="button" class="nut nut-nho nut-chinh nut-xac-nhan-tai" ' +
+        'data-hanh-dong="xac-nhan-tai" data-dong="' + i + '">Tôi chắc chắn — tải xuống</button>';
+    }
+    return veKetQuaNhanHang(kq);
+  }
+
+  // Nơi DUY NHẤT được dựng nút tải xuống. Nhánh từ chối phải chặn TRƯỚC, không
+  // thì đường dẫn tải lọt ra ngoài khi máy chủ chưa cho phép.
+  function veKetQuaNhanHang(kq){
     if (!kq.duoc) {
       return '<p class="loi-nhan-hang">' + escapeHtml(chuLyDo(kq.lyDo)) + '</p>';
     }
     // Đường dẫn tải chỉ tồn tại từ giây phút này, trong bộ nhớ của trình duyệt
     // khách. Nó KHÔNG có trong mã nguồn và cũng không được ghi vào bất cứ đâu.
     return '' +
-      '<p class="duoc-nhan-hang">✅ Sản phẩm đã sẵn sàng. Bấm nút bên dưới để tải về.</p>' +
-      '<a class="nut nut-la nut-tai-ve" href="' + escapeHtml(kq.duongDan) + '" ' +
-        'rel="noopener noreferrer" download>⬇ Tải sản phẩm về máy</a>' +
-      '<p class="nhac-tai">Đường dẫn này chỉ dùng được trong ít phút và chỉ trên máy này. ' +
-        'Tải xong nhớ lưu lại file cho chắc.</p>';
+      '<a class="nut nut-nho nut-la nut-tai-ve" href="' + escapeHtml(kq.duongDan) + '" ' +
+        'rel="noopener noreferrer" download>⬇ Tải xuống</a>' +
+      '<span class="nhac-tai">Chỉ dùng được ít phút, chỉ trên máy này.</span>';
   }
 
-  // Vẽ lại RIÊNG vùng kết quả, không dựng lại cả bảng.
-  function capNhatKetQuaNhanHang(){
-    const vung = document.querySelector('[data-vung="ket-qua-nhan-hang"]');
-    if (vung) vung.innerHTML = veKetQuaNhanHang();
-    const nut = document.querySelector('.nut-xac-nhan-tai');
-    if (nut) {
-      const xong = !!(state.nhanHang.ketQua && state.nhanHang.ketQua.duoc);
-      nut.disabled = state.nhanHang.dangHoi || xong;
-    }
+  // Vẽ lại RIÊNG vùng của một tệp, không dựng lại cả bảng.
+  function capNhatVungTep(i){
+    const vung = document.querySelector('[data-vung-tep="' + i + '"]');
+    if (vung) vung.innerHTML = veKetQuaTep(i);
   }
 
-  function xacNhanTai(){
+  function xacNhanTai(chiSo){
     const nh = state.nhanHang;
-    if (nh.dangHoi || !nh.maSanPham) return;
-    if (nh.ketQua && nh.ketQua.duoc) return;   // đã lấy được rồi thì thôi
+    const i = parseInt(chiSo, 10);
+    if (isNaN(i) || nh.dangHoiTep || !nh.maSanPham) return;
+    const f = (nh.tep || [])[i];
+    if (!f) return;
+    if (nh.ketQuaTep[i] && nh.ketQuaTep[i].duoc) return;   // đã lấy được rồi
     // Không có mã trong đường dẫn thì khỏi làm phiền máy chủ — báo ngay cho
     // khách biết họ đang mở một địa chỉ không phải địa chỉ shop gửi riêng.
     if (!nh.maNhanHang) {
-      nh.ketQua = { duoc: false, lyDo: 'thieu-ma' };
-      capNhatKetQuaNhanHang();
+      nh.ketQuaTep[i] = { duoc: false, lyDo: 'thieu-ma' };
+      capNhatVungTep(i);
       return;
     }
-    nh.dangHoi = true;
-    nh.ketQua = null;
-    capNhatKetQuaNhanHang();
-    xinDuongDanTai(nh.maSanPham, nh.maNhanHang).then(function(kq){
-      nh.dangHoi = false;
-      nh.ketQua = kq || { duoc: false, lyDo: '' };
-      capNhatKetQuaNhanHang();
+    nh.dangHoiTep = String(i);
+    capNhatVungTep(i);
+    xinDuongDanTai(nh.maSanPham, nh.maNhanHang, f.tep).then(function(kq){
+      nh.dangHoiTep = '';
+      nh.ketQuaTep[i] = kq || { duoc: false, lyDo: '' };
+      capNhatVungTep(i);
+    });
+  }
+
+  // ------------------------------------------------------ BẢNG GOOGLE DRIVE
+  //
+  // Vài sản phẩm nặng quá thì chủ shop để trên Google Drive công khai. Nói
+  // thẳng với khách rằng đây là thư mục dùng chung, để họ hiểu vì sao món này
+  // không có bước khoá thiết bị như các món khác.
+
+  function moModalDrive(sp, dm){
+    moModal({
+      ma: 'nhan-drive',
+      tieuDe: 'Nhận sản phẩm',
+      than: '' +
+        '<div class="khung-nhan-hang">' +
+          '<p class="ten-mon">Bạn đang nhận: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
+          '<div class="ghi-chu-chuyen-huong">' +
+            '<p>Sản phẩm này nặng nên shop để trên <strong>Google Drive</strong>. ' +
+              'Bấm nút bên dưới là mở thư mục chứa toàn bộ tệp của sản phẩm.</p>' +
+            '<p class="cach-quay-lai">Trong thư mục đó bạn tải từng tệp mình cần, hoặc tải tất cả một lượt. ' +
+              'Muốn quay lại trang này thì bấm <strong>nút quay lại</strong> trên thiết bị hoặc trình duyệt.</p>' +
+          '</div>' +
+        '</div>',
+      day: '' +
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
+        '<a class="nut nut-la nut-mo-drive" href="' + escapeHtml(dm.link) + '" ' +
+          'target="_blank" rel="noopener noreferrer">Mở thư mục Google Drive</a>'
     });
   }
 

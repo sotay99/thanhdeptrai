@@ -109,7 +109,16 @@
     chuKyDon: '',
     // Trang nhận hàng: sản phẩm khách đang xin tải, mã nhận hàng đọc được từ
     // đường dẫn, và kết quả lần hỏi máy chủ gần nhất.
-    nhanHang: { maSanPham: '', maNhanHang: '', dangHoi: false, ketQua: null },
+    nhanHang: {
+      maSanPham: '',      // sản phẩm khách đang xin
+      maNhanHang: '',     // mã đọc được từ đường dẫn
+      tep: [],            // danh sách tệp của sản phẩm đang mở, đã xếp thứ tự
+      dangHoiTep: '',     // chỉ số dòng đang chờ máy chủ trả lời
+      ketQuaTep: {}       // chỉ số dòng -> kết quả lần hỏi gần nhất
+    },
+    // Danh mục do chủ shop khai ở /admin: sản phẩm nào lấy hàng từ đâu, gồm
+    // tệp nào, khách nhìn thấy tên gì. KHÔNG chứa đường tải.
+    danhMuc: {},
     // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
     // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
     mayChuKho: '',

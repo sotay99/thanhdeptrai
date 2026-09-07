@@ -83,13 +83,35 @@ function docThietLap(ten) {
   return giaTri;
 }
 
-/** Bảng "mã sản phẩm → đường tải", cất trong Script Property LINK_TAI dạng JSON. */
-function bangDuongTai() {
+/**
+ * Danh mục sản phẩm, đọc từ Firebase.
+ *
+ * Script này KHÔNG còn giữ đường tải nào. Trước đây có một Script Property tên
+ * LINK_TAI chứa bảng "mã sản phẩm → đường tải", và thư gửi khách in thẳng những
+ * đường đó ra: ai chuyển tiếp lá thư đi là mất hàng. Nay thư chỉ mang đường dẫn
+ * riêng của khách; đường tải thật do máy chủ cấp phát giữ. Hàm này chỉ dùng để
+ * KIỂM TRA xem chủ shop đã khai đủ danh mục ở trang /admin chưa.
+ */
+function docDanhMuc() {
+  var traLoi = UrlFetchApp.fetch(duongDanDB('danhmuc'), { muteHttpExceptions: true });
+  if (traLoi.getResponseCode() !== 200) return {};
   try {
-    return JSON.parse(docThietLap('LINK_TAI'));
+    return JSON.parse(traLoi.getContentText()) || {};
   } catch (e) {
-    throw new Error('Script Property "LINK_TAI" kh\u00f4ng ph\u1ea3i JSON h\u1ee3p l\u1ec7: ' + e.message);
+    return {};
   }
+}
+
+/** Sản phẩm nào chưa có hàng để giao. Hai khoá học không tính — chúng học trên web. */
+function sanPhamThieuHang() {
+  var dm = docDanhMuc();
+  return Object.keys(TEN_SAN_PHAM).filter(function (m) {
+    if (m === 'sp4' || m === 'sp5') return false;
+    var d = dm[m];
+    if (!d) return true;
+    if (d.nguon === 'drive') return !d.link;
+    return !(d.file && d.file.length);
+  });
 }
 
 /* ------------------------------------------------- NÓI CHUYỆN VỚI FIREBASE */
@@ -347,7 +369,6 @@ function guiHangChoDonDaXacNhan() {
  */
 function kiemTraThietLap() {
   var emailShop = docThietLap('EMAIL_SHOP');
-  var duongTai = bangDuongTai();
 
   // 1) Kết nối được Firebase chưa?
   var traLoi = UrlFetchApp.fetch(duongDanDB('donhang', 'shallow=true&limitToFirst=1&orderBy=%22%24key%22'),
@@ -357,8 +378,8 @@ function kiemTraThietLap() {
     noiDung += ' \u2014 ' + traLoi.getContentText().slice(0, 200);
   }
 
-  // 2) Sản phẩm nào chưa khai đường tải?
-  var thieu = Object.keys(TEN_SAN_PHAM).filter(function (m) { return !duongTai[m]; });
+  // 2) Sản phẩm nào chưa có hàng để giao?
+  var thieu = sanPhamThieuHang();
 
   // 3) Còn gửi được bao nhiêu email hôm nay?
   var conLai = MailApp.getRemainingDailyQuota();
@@ -382,13 +403,13 @@ function kiemTraThietLap() {
           '<li>' + thoatHtml(noiDung) + '</li>' +
           '<li>S\u1ed1 email c\u00f2n g\u1eedi \u0111\u01b0\u1ee3c h\u00f4m nay: <b>' + conLai + '</b></li>' +
           '<li>' + (thieu.length
-            ? 'CH\u01afA khai \u0111\u01b0\u1eddng t\u1ea3i cho: <b>' + thoatHtml(thieu.join(', ')) + '</b>'
-            : '\u0110\u00e3 khai \u0111\u1ee7 \u0111\u01b0\u1eddng t\u1ea3i cho c\u1ea3 ' + Object.keys(TEN_SAN_PHAM).length + ' s\u1ea3n ph\u1ea9m.') + '</li>' +
+            ? 'CH\u01afA khai danh m\u1ee5c \u1edf trang /admin cho: <b>' + thoatHtml(thieu.join(', ')) + '</b>'
+            : '\u0110\u00e3 khai \u0111\u1ee7 danh m\u1ee5c cho m\u1ecdi s\u1ea3n ph\u1ea9m c\u00f3 h\u00e0ng.') + '</li>' +
         '</ul>' +
         '<hr><h3>Th\u01b0 m\u1eabu m\u00e0 kh\u00e1ch s\u1ebd nh\u1eadn</h3>' + thu.html +
       '</div>');
 
-  Logger.log(noiDung + ' | c\u00f2n ' + conLai + ' email | thi\u1ebfu link: ' + (thieu.join(', ') || 'kh\u00f4ng'));
+  Logger.log(noiDung + ' | c\u00f2n ' + conLai + ' email | thi\u1ebfu danh m\u1ee5c: ' + (thieu.join(', ') || 'kh\u00f4ng'));
 }
 
 /* ------------------------------------------------- CHỖ CHỪA CHO CỔNG THANH TOÁN */

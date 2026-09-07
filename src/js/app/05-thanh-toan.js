@@ -496,18 +496,29 @@
     if (hanhDong === 'xac-nhan-thanh-toan') { xacNhanThanhToan(); return; }
     if (hanhDong === 'chot-don') { chotDon(); return; }
     if (hanhDong === 'su-dung-san-pham') { moModalNhanHang(nutHanhDong.getAttribute('data-ma')); return; }
-    if (hanhDong === 'xac-nhan-tai') { xacNhanTai(); return; }
+    if (hanhDong === 'xac-nhan-tai') { xacNhanTai(nutHanhDong.getAttribute('data-dong')); return; }
     if (hanhDong === 've-trang-mua-hang') { veTrangChinh(); render(); return; }
     if (hanhDong === 'admin-dang-nhap') { dangNhapGoogle(); return; }
     if (hanhDong === 'admin-dang-xuat') { dangXuat(); return; }
     if (hanhDong === 'admin-mo-module') { adminMoModule(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'admin-hien-bi-mat') { adminHienBiMat(nutHanhDong.getAttribute('data-o')); return; }
     if (hanhDong === 'admin-luu-o') { adminLuuO(nutHanhDong.getAttribute('data-o')); return; }
+    if (hanhDong === 'admin-doi-nguon') {
+      adminDoiNguon(nutHanhDong.getAttribute('data-ma'), nutHanhDong.getAttribute('data-nguon'));
+      return;
+    }
+    if (hanhDong === 'admin-them-tep') { adminThemTep(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'admin-xoa-tep') {
+      adminXoaTep(nutHanhDong.getAttribute('data-ma'), nutHanhDong.getAttribute('data-dong'));
+      return;
+    }
+    if (hanhDong === 'admin-luu-dm') { adminLuuDanhMuc(nutHanhDong.getAttribute('data-ma')); return; }
   }
 
   function xuLyGoPhim(su){
     const dich = su.target;
     if (!dich || !dich.getAttribute) return;
+    if (adminGoDanhMuc(dich)) return;
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);
@@ -550,7 +561,7 @@
       dongHetModal();
       render();
       if (trang === 'admin') chuanBiAdmin();
-      if (trang === 'sanpham') taiThongTinKho();
+      if (trang === 'sanpham') { taiThongTinKho(); taiDanhMuc().then(function(){ render(); }); }
     });
   }
 
@@ -571,7 +582,7 @@
     taiThongTinLienHe();
     // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
     // không hỏi tới nên không phải tải.
-    if (state.trang === 'sanpham') taiThongTinKho();
+    if (state.trang === 'sanpham') { taiThongTinKho(); taiDanhMuc().then(function(){ render(); }); }
     // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
     // khách mua hàng không phải tải một byte nào của phần quản trị.
     if (state.trang === 'admin') chuanBiAdmin();

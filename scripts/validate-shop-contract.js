@@ -425,6 +425,18 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
     if (!mau.test(gs)) fail(`Thiếu ${ten} trong apps-script/gui-hang.gs.`);
   });
 
+  // Script KHÔNG được giữ bảng đường tải nữa: đường tải chỉ do máy chủ cấp phát
+  // biết. Script Property LINK_TAI từng tồn tại và từng in thẳng link vào thư.
+  if (/LINK_TAI['"]/.test(gs) || /function\s+bangDuongTai\s*\(/.test(gs)) {
+    fail("apps-script không được giữ bảng đường tải (LINK_TAI / bangDuongTai) — đường tải chỉ do máy chủ cấp phát biết.");
+  }
+  [
+    [/function\s+docDanhMuc\s*\(/, "hàm đọc danh mục từ Firebase"],
+    [/function\s+sanPhamThieuHang\s*\(/, "hàm kiểm sản phẩm chưa có hàng để giao"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(gs)) fail(`Thiếu ${ten} trong apps-script/gui-hang.gs.`);
+  });
+
   // Thư gửi khách KHÔNG được chứa đường tải file. Ai chuyển tiếp lá thư đó đi là
   // mất hàng, mà shop không cách nào biết. Thư chỉ được mang đường dẫn riêng.
   {
@@ -466,6 +478,10 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
   [/MỘT thiết bị/, "lời cảnh báo mỗi sản phẩm chỉ tải được trên một thiết bị"],
   [/state\.trang\s*===\s*'sanpham'/, "trang nhận hàng được rẽ nhánh theo state.trang"],
   [/function\s+moModalKhoaHoc\s*\(/, "bảng riêng cho hai khoá học"],
+  [/function\s+moModalDrive\s*\(/, "bảng riêng cho sản phẩm để trên Google Drive"],
+  [/function\s+taiDanhMuc\s*\(/, "hàm đọc danh mục sản phẩm"],
+  [/rtdb\.ref\('danhmuc'\)/, "danh mục đọc từ Realtime Database"],
+  [/function\s+laTronBo\s*\(/, "hàm nhận biết gói trọn bộ"],
   [/Vào module /, 'nút "Vào module ..." của hai khoá học'],
   [/bấm <strong>nút quay lại<\/strong>/, "lời dặn cách quay lại trang nhận hàng"],
 ].forEach(([mau, ten]) => {
@@ -491,7 +507,7 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
 // Nút tải xuống PHẢI nằm sau nhánh "máy chủ đã cho phép". Dựng sẵn rồi ẩn đi là
 // hỏng cả cơ chế — mở F12 lên là thấy đường dẫn.
 {
-  const than = banNoi.match(/function\s+veKetQuaNhanHang\s*\(\)\s*\{[\s\S]*?\n  \}/);
+  const than = banNoi.match(/function\s+veKetQuaNhanHang\s*\([^)]*\)\s*\{[\s\S]*?\n  \}/);
   if (!than) {
     fail("Thiếu hàm veKetQuaNhanHang — nơi duy nhất được dựng nút tải xuống.");
   } else {
@@ -577,6 +593,34 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
   // Trang quản trị KHÔNG được tự gọi API AI: làm vậy là khoá đi qua trình duyệt.
   if (/api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com/.test(banNoi)) {
     fail("Mã web gọi thẳng API AI — khoá sẽ lộ cho bất kỳ ai mở tab Network. Phải gọi qua máy chủ trung gian.");
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// 17) DANH MỤC SẢN PHẨM VÀ HAI NGUỒN HÀNG
+//     Kho riêng (R2) khoá được thiết bị; Google Drive công khai thì không.
+//     Trang quản trị PHẢI nói thẳng điều đó ngay tại chỗ chọn, để không ai
+//     chọn nhầm vì tưởng hai nguồn như nhau.
+// ---------------------------------------------------------------------------
+[
+  [/const\s+NGUON_HANG\s*=\s*\{/, "bảng khai hai nguồn hàng"],
+  [/function\s+veAdminDanhMuc\s*\(/, "module Danh mục sản phẩm trong trang quản trị"],
+  [/function\s+sanPhamCoHang\s*\(/, "hàm lọc ra sản phẩm có hàng để giao"],
+  [/function\s+adminLuuDanhMuc\s*\(/, "hàm lưu danh mục"],
+  [/rtdb\.ref\('danhmuc\/'\s*\+\s*maSP\)/, "danh mục ghi theo từng sản phẩm"],
+  [/không khoá được theo thiết bị/, "lời cảnh báo về giới hạn của Google Drive trong trang quản trị"],
+  [/không thu hồi được/, "lời cảnh báo rằng link Drive không thu hồi được"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Hai khoá học không có hàng để giao — chúng phải bị loại khỏi danh mục, nếu
+// không chủ shop ngồi khai tệp cho một thứ không có tệp nào.
+{
+  const than = banNoi.match(/function\s+sanPhamCoHang\s*\([\s\S]*?\n  \}/);
+  if (than && !/MODULE_KHOA_HOC/.test(than[0])) {
+    fail("sanPhamCoHang phải loại hai khoá học ra khỏi danh mục.");
   }
 }
 

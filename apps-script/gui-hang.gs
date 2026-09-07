@@ -83,13 +83,35 @@ function docThietLap(ten) {
   return giaTri;
 }
 
-/** Bảng "mã sản phẩm → đường tải", cất trong Script Property LINK_TAI dạng JSON. */
-function bangDuongTai() {
+/**
+ * Danh mục sản phẩm, đọc từ Firebase.
+ *
+ * Script này KHÔNG còn giữ đường tải nào. Trước đây có một Script Property tên
+ * LINK_TAI chứa bảng "mã sản phẩm → đường tải", và thư gửi khách in thẳng những
+ * đường đó ra: ai chuyển tiếp lá thư đi là mất hàng. Nay thư chỉ mang đường dẫn
+ * riêng của khách; đường tải thật do máy chủ cấp phát giữ. Hàm này chỉ dùng để
+ * KIỂM TRA xem chủ shop đã khai đủ danh mục ở trang /admin chưa.
+ */
+function docDanhMuc() {
+  var traLoi = UrlFetchApp.fetch(duongDanDB('danhmuc'), { muteHttpExceptions: true });
+  if (traLoi.getResponseCode() !== 200) return {};
   try {
-    return JSON.parse(docThietLap('LINK_TAI'));
+    return JSON.parse(traLoi.getContentText()) || {};
   } catch (e) {
-    throw new Error('Script Property "LINK_TAI" không phải JSON hợp lệ: ' + e.message);
+    return {};
   }
+}
+
+/** Sản phẩm nào chưa có hàng để giao. Hai khoá học không tính — chúng học trên web. */
+function sanPhamThieuHang() {
+  var dm = docDanhMuc();
+  return Object.keys(TEN_SAN_PHAM).filter(function (m) {
+    if (m === 'sp4' || m === 'sp5') return false;
+    var d = dm[m];
+    if (!d) return true;
+    if (d.nguon === 'drive') return !d.link;
+    return !(d.file && d.file.length);
+  });
 }
 
 /* ------------------------------------------------- NÓI CHUYỆN VỚI FIREBASE */
@@ -347,7 +369,6 @@ function guiHangChoDonDaXacNhan() {
  */
 function kiemTraThietLap() {
   var emailShop = docThietLap('EMAIL_SHOP');
-  var duongTai = bangDuongTai();
 
   // 1) Kết nối được Firebase chưa?
   var traLoi = UrlFetchApp.fetch(duongDanDB('donhang', 'shallow=true&limitToFirst=1&orderBy=%22%24key%22'),
@@ -357,8 +378,8 @@ function kiemTraThietLap() {
     noiDung += ' — ' + traLoi.getContentText().slice(0, 200);
   }
 
-  // 2) Sản phẩm nào chưa khai đường tải?
-  var thieu = Object.keys(TEN_SAN_PHAM).filter(function (m) { return !duongTai[m]; });
+  // 2) Sản phẩm nào chưa có hàng để giao?
+  var thieu = sanPhamThieuHang();
 
   // 3) Còn gửi được bao nhiêu email hôm nay?
   var conLai = MailApp.getRemainingDailyQuota();
@@ -382,13 +403,13 @@ function kiemTraThietLap() {
           '<li>' + thoatHtml(noiDung) + '</li>' +
           '<li>Số email còn gửi được hôm nay: <b>' + conLai + '</b></li>' +
           '<li>' + (thieu.length
-            ? 'CHƯA khai đường tải cho: <b>' + thoatHtml(thieu.join(', ')) + '</b>'
-            : 'Đã khai đủ đường tải cho cả ' + Object.keys(TEN_SAN_PHAM).length + ' sản phẩm.') + '</li>' +
+            ? 'CHƯA khai danh mục ở trang /admin cho: <b>' + thoatHtml(thieu.join(', ')) + '</b>'
+            : 'Đã khai đủ danh mục cho mọi sản phẩm có hàng.') + '</li>' +
         '</ul>' +
         '<hr><h3>Thư mẫu mà khách sẽ nhận</h3>' + thu.html +
       '</div>');
 
-  Logger.log(noiDung + ' | còn ' + conLai + ' email | thiếu link: ' + (thieu.join(', ') || 'không'));
+  Logger.log(noiDung + ' | còn ' + conLai + ' email | thiếu danh mục: ' + (thieu.join(', ') || 'không'));
 }
 
 /* ------------------------------------------------- CHỖ CHỪA CHO CỔNG THANH TOÁN */
