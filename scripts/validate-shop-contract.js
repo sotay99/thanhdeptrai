@@ -697,6 +697,27 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
 
+  // CẢ KHUNG THẺ là vùng bấm. Món chưa mua phải gỡ hành động khỏi thẻ, không thì
+  // nút đã thành khung chữ mà bấm vào chỗ trống của thẻ vẫn mở bảng — với sp8 và
+  // sp9 để trên Google Drive thì bảng mở ra là lộ nguyên đường dẫn Drive. Lỗi
+  // thật đã xảy ra.
+  {
+    const than = banNoi.match(/function\s+veTheNhanHang\s*\([\s\S]*?\n  \}/);
+    if (!than) {
+      fail("Thiếu hàm veTheNhanHang.");
+    } else if (!/\(mo \? ' data-hanh-dong="su-dung-san-pham"' : ''\)/.test(than[0])) {
+      fail("Thẻ của món chưa mua vẫn mang data-hanh-dong — bấm vào chỗ trống của thẻ sẽ mở bảng và lộ đường dẫn Drive.");
+    }
+  }
+
+  // Và một lớp chặn nữa ngay tại cửa mở bảng.
+  {
+    const than = banNoi.match(/function\s+moModalNhanHang\s*\([\s\S]*?\n  \}/);
+    if (than && !/if\s*\(!duocDung\(sp\.ma\)\)\s*return;/.test(than[0])) {
+      fail("moModalNhanHang phải tự chặn món khách chưa mua, không chỉ dựa vào việc thẻ không có hành động.");
+    }
+  }
+
   // Món chưa mua KHÔNG được là một cái nút bị mờ — nút mờ vẫn dụ người ta bấm.
   if (/nut-su-dung[^']*'\s*\+[^;]*disabled/.test(banNoi)) {
     fail("Món chưa mua phải là khung chữ, không phải nút disabled.");
