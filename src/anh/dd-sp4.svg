@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient>
+<linearGradient id="sky4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f8f"/><stop offset=".55" stop-color="#4a86c9"/><stop offset="1" stop-color="#f0a86a"/></linearGradient></defs>
+<rect width="240" height="240" rx="30" fill="url(#g4)"/>
+<rect x="74" y="40" width="92" height="166" rx="16" fill="#0f1318" stroke="#3d4753" stroke-width="3"/>
+<rect x="82" y="52" width="76" height="60" rx="6" fill="url(#sky4)"/>
+<path d="M82 96 L100 78 L114 92 L130 70 L146 88 L158 78 L158 112 L82 112 Z" fill="#1b2430"/>
+<circle cx="120" cy="82" r="18" fill="#fff" opacity=".95"/>
+<path d="M114 74 L131 82 L114 90 Z" fill="#14171c"/>
+<rect x="82" y="118" width="76" height="4" rx="2" fill="#39414c"/><rect x="82" y="118" width="34" height="4" rx="2" fill="#31a8ff"/>
+<g>
+ <circle cx="92" cy="136" r="7" fill="#2d9d5f"/><path d="M89 136 l2.5 2.5 L96 133" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+ <rect x="104" y="133" width="52" height="6" rx="3" fill="#39414c"/>
+ <circle cx="92" cy="156" r="7" fill="#2d9d5f"/><path d="M89 156 l2.5 2.5 L96 153" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+ <rect x="104" y="153" width="52" height="6" rx="3" fill="#39414c"/>
+ <circle cx="92" cy="176" r="7" fill="#1473e6"/><path d="M90 173 l5 3 l-5 3 Z" fill="#fff"/>
+ <rect x="104" y="173" width="52" height="6" rx="3" fill="#31a8ff"/>
+</g>
+<!-- mũ tốt nghiệp -->
+<g transform="translate(16,32)">
+ <path d="M0 22 L36 6 L72 22 L36 38 Z" fill="#e6eaf0"/>
+ <path d="M14 29 V46 c0 8 44 8 44 0 V29" fill="#c3cad4"/>
+ <line x1="70" y1="23" x2="70" y2="46" stroke="#ffd479" stroke-width="3"/><circle cx="70" cy="48" r="5" fill="#ffd479"/>
+</g>
+<rect x="166" y="176" width="60" height="26" rx="13" fill="#2d9d5f"/>
+<text x="196" y="194" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">FREE</text>
+</svg>

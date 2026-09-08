@@ -15,13 +15,23 @@
   // không cho ký tự "@" trong nội dung chuyển khoản).
   // Zalo trùng số điện thoại thì chỉ ghi một lần; trường trống thì bỏ qua.
 
+  // Nội dung chuyển khoản = LR + mã đơn, viết hoa, đúng 8 ký tự.
+  //
+  // Trước đây nội dung ghép từ email và số điện thoại của khách nên dài lê thê;
+  // ngân hàng cắt bớt là hỏng khâu đối chiếu. Nay chỉ còn một mã ngắn: khách gõ
+  // nhanh, ngân hàng không cắt, và máy đọc biến động số dư khớp được chính xác
+  // một đơn duy nhất. Chữ LR viết hoa để trùng với từ khoá đã đặt trong app đọc
+  // thông báo ngân hàng.
   function taoNoiDungCK(){
+    return 'LR' + (state.maDonNgan || '');
+  }
+
+  // Vân tay của đơn: đổi món hoặc đổi thông tin liên hệ thì đây là đơn khác,
+  // phải mang mã khác. Bấm tới bấm lui mà không sửa gì thì vẫn là đơn cũ.
+  function chuKyDon(){
     const kh = state.khachHang;
-    const phan = ['lr'];
-    if (kh.email) phan.push(kh.email.replace(/@/g, ' '));
-    if (kh.zalo) phan.push(kh.zalo);
-    if (kh.dienThoai && kh.dienThoai !== kh.zalo) phan.push(kh.dienThoai);
-    return phan.join(' ');
+    return sanPhamDaChon().map(function(sp){ return sp.ma; }).join(',') +
+      '|' + kh.email + '|' + kh.zalo + '|' + kh.dienThoai + '|' + tinhTien().thanhTien;
   }
 
   // ------------------------------------------- ĐỌC THÔNG TIN CHUYỂN KHOẢN
@@ -109,6 +119,7 @@
       zalo: kh.zalo,
       dienThoai: kh.dienThoai,
       noiDungCK: taoNoiDungCK(),
+      maDon: state.maDonNgan,
       taoLuc: Date.now(),
       daXacNhan: false
     }).then(function(){
@@ -367,7 +378,20 @@
     const ketQua = kiemTraKhachHang();
     if (!ketQua.hopLe || !state.daChon.length) return;
 
-    luuDonHang();
+    // Sinh mã đơn TRƯỚC khi dựng bảng: cả nội dung chuyển khoản lẫn mã QR đều
+    // lấy từ nó, mà hai thứ đó phải có ngay chứ không đợi được Firebase trả lời.
+    //
+    // Nhưng chỉ sinh mã MỚI khi đơn thật sự khác đơn vừa rồi. Khách hay bấm
+    // "Quay lại bước trước" để xem lại rồi bấm tiếp; nếu lần nào cũng sinh mã
+    // mới thì Firebase đầy đơn trùng, và tệ hơn: người đã kịp quét mã QR cũ sẽ
+    // chuyển tiền với nội dung không còn khớp đơn nào.
+    const chuKy = chuKyDon();
+    if (!state.maDonNgan || state.chuKyDon !== chuKy) {
+      state.maDonNgan = sinhMaDon();
+      state.chuKyDon = chuKy;
+      state.maDonHienTai = null;
+      luuDonHang();
+    }
 
     moModal({
       ma: 'thanh-toan',
@@ -380,11 +404,65 @@
     });
   }
 
-  // Bấm "Xác nhận đã thanh toán thành công": ghi nhận rồi ĐÓNG HẾT các bảng.
+  // Bấm "Xác nhận đã thanh toán thành công" ở bảng QR: mở thêm một bảng nữa.
+  //
+  // ĐỌC KỸ CHỖ NÀY — nó hay bị hiểu nhầm:
+  // Bảng này KHÔNG phải cái công tắc gửi hàng. Đơn hàng đã được tạo từ lúc mã QR
+  // hiện ra lần đầu và đang nằm chờ trong hệ thống. Thứ thật sự kích hoạt gửi
+  // hàng là app đọc biến động số dư báo về rằng TIỀN ĐÃ VÀO TÀI KHOẢN — khách
+  // không bấm nút nào thì vẫn nhận được hàng.
+  //
+  // Vậy bảng này để làm gì? Để khách biết điều gì sắp xảy ra và bằng đường nào,
+  // thay vì bấm xong rồi ngồi đoán. Đó là lý do lời văn ở đây nói về việc "khi
+  // shop nhận được tiền" chứ không nói "sau khi bạn bấm".
   function xacNhanThanhToan(){
+    const kh = state.khachHang;
+    const lienHe = kh.zalo || kh.dienThoai;
+    moModal({
+      ma: 'xac-nhan-lan-hai',
+      tieuDe: 'Đơn hàng đã được ghi nhận',
+      than: '' +
+        '<div class="khung-xac-nhan">' +
+          '<p class="cau-hoi">Đơn của bạn <strong>đã nằm trong hệ thống</strong> và đang chờ tiền về. ' +
+            'Bạn không cần làm gì thêm.</p>' +
+          '<div class="dong-ma-don">' +
+            '<span class="nhan">Nội dung chuyển khoản của đơn này</span>' +
+            '<span class="ma">' + escapeHtml(taoNoiDungCK()) + '</span>' +
+          '</div>' +
+          '<p class="ghi-chu-gui">' +
+            '⚡ <strong>Ngay khi shop nhận được tiền</strong>, hệ thống tự động gửi sản phẩm cho bạn' +
+            (kh.email
+              ? ' qua email <strong>' + escapeHtml(kh.email) + '</strong> — thường chỉ trong ít phút. ' +
+                'Nếu chưa thấy thư, xin xem cả hộp thư rác.'
+              : '.') +
+          '</p>' +
+          (kh.email
+            ? (lienHe
+                ? '<p class="ghi-chu-gui">📱 Nếu email trục trặc, shop vẫn nhắn cho bạn qua ' +
+                  '<strong>Zalo</strong> hoặc <strong>tin nhắn SMS</strong> tới số ' +
+                  escapeHtml(lienHe) + '. Bạn sẽ không bị bỏ sót.</p>'
+                : '')
+            : '<p class="ghi-chu-gui canh-bao">⚠️ Bạn <strong>chưa để lại email</strong> nên hệ thống không gửi tự động được. ' +
+              'Shop sẽ chủ động nhắn cho bạn qua <strong>Zalo</strong> hoặc <strong>tin nhắn SMS</strong> tới số ' +
+              escapeHtml(lienHe) + ' để giao sản phẩm, xin chờ ít phút.</p>') +
+          '<p class="nhac-nho">Nếu chuyển tiền rồi mà quá lâu chưa thấy hồi âm, nhắn cho shop kèm ' +
+            'nội dung chuyển khoản ở trên — shop tra ra đơn ngay.</p>' +
+        '</div>',
+      day: '' +
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Quay lại mã QR</button>' +
+        '<button type="button" class="nut nut-la" data-hanh-dong="chot-don">Tôi đã hiểu</button>'
+    });
+  }
+
+  // Bấm "Tôi đã hiểu": đánh dấu là khách tự báo đã chuyển tiền, rồi đóng hết
+  // bảng. Đây chỉ là ghi chú cho chủ shop dễ tra, KHÔNG phải bằng chứng tiền đã
+  // về — chuyện đó do app đọc biến động số dư xác nhận.
+  function chotDon(){
     danhDauDaThanhToan();
     dongHetModal();
     state.maDonHienTai = null;
+    state.maDonNgan = '';
+    state.chuKyDon = '';
   }
 
   // ------------------------------------------------------- GẮN SỰ KIỆN CHUNG
@@ -416,11 +494,31 @@
     if (hanhDong === 'sao-chep') { xuLySaoChep(nutHanhDong); return; }
     if (hanhDong === 'tai-anh-qr') { taiAnhModalThanhToan(nutHanhDong); return; }
     if (hanhDong === 'xac-nhan-thanh-toan') { xacNhanThanhToan(); return; }
+    if (hanhDong === 'chot-don') { chotDon(); return; }
+    if (hanhDong === 'su-dung-san-pham') { moModalNhanHang(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'xac-nhan-tai') { xacNhanTai(nutHanhDong.getAttribute('data-dong')); return; }
+    if (hanhDong === 've-trang-mua-hang') { veTrangChinh(); render(); return; }
+    if (hanhDong === 'admin-dang-nhap') { dangNhapGoogle(); return; }
+    if (hanhDong === 'admin-dang-xuat') { dangXuat(); return; }
+    if (hanhDong === 'admin-mo-module') { adminMoModule(nutHanhDong.getAttribute('data-module')); return; }
+    if (hanhDong === 'admin-hien-bi-mat') { adminHienBiMat(nutHanhDong.getAttribute('data-o')); return; }
+    if (hanhDong === 'admin-luu-o') { adminLuuO(nutHanhDong.getAttribute('data-o')); return; }
+    if (hanhDong === 'admin-doi-nguon') {
+      adminDoiNguon(nutHanhDong.getAttribute('data-ma'), nutHanhDong.getAttribute('data-nguon'));
+      return;
+    }
+    if (hanhDong === 'admin-them-tep') { adminThemTep(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'admin-xoa-tep') {
+      adminXoaTep(nutHanhDong.getAttribute('data-ma'), nutHanhDong.getAttribute('data-dong'));
+      return;
+    }
+    if (hanhDong === 'admin-luu-dm') { adminLuuDanhMuc(nutHanhDong.getAttribute('data-ma')); return; }
   }
 
   function xuLyGoPhim(su){
     const dich = su.target;
     if (!dich || !dich.getAttribute) return;
+    if (adminGoDanhMuc(dich)) return;
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);
@@ -440,17 +538,38 @@
     // đo lại để phần cuối trang không bị thanh che.
     window.addEventListener('resize', doChoThanhDay);
     window.addEventListener('hashchange', function(){
+      if (state.trang !== 'chinh') return;
       const ma = docHash();
       if (ma === state.module) return;
       state.module = ma;
       state.hieuUngVaoModule = true;   // quay lại bằng nút Back cũng trôi lại
       render();
     });
+    // Nút Back / Forward của trình duyệt: đường dẫn đổi thì trang đổi theo.
+    // Có nút này thì khách từ trang nhận hàng bấm vào một module rồi bấm Back
+    // là quay đúng về "/sanpham", chứ không mắc kẹt ở trang bán hàng.
+    //
+    // CHỈ xử lý khi ĐƯỜNG DẪN thật sự đổi. Chrome bắn popstate cả khi chỉ có
+    // #hash đổi, mà việc đó đã có hashchange lo rồi — vẽ lại lần thứ hai là
+    // xoá sạch hiệu ứng trôi vừa mới gắn xong, cả lưới đứng im.
+    window.addEventListener('popstate', function(){
+      const trang = docDuongDan();
+      if (trang === state.trang) return;
+      state.trang = trang;
+      state.module = docHash();
+      state.hieuUngVaoModule = true;
+      dongHetModal();
+      render();
+      if (trang === 'admin') chuanBiAdmin();
+      if (trang === 'sanpham') moTrangNhanHang();
+    });
   }
 
   // ------------------------------------------------------------- KHỞI ĐỘNG
 
   function boot(){
+    state.trang = docDuongDan();
+    state.nhanHang.maNhanHang = docMaNhanHangTrenDuongDan();
     state.module = docHash();
     state.hieuUngVaoModule = true;   // lần mở trang đầu tiên cũng có hiệu ứng trôi
     ganSuKien();
@@ -461,6 +580,12 @@
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
     taiThongTinCK();
     taiThongTinLienHe();
+    // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
+    // không hỏi tới nên không phải tải.
+    if (state.trang === 'sanpham') moTrangNhanHang();
+    // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
+    // khách mua hàng không phải tải một byte nào của phần quản trị.
+    if (state.trang === 'admin') chuanBiAdmin();
   }
 
   boot();

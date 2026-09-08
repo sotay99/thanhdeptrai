@@ -42,8 +42,8 @@ const SAN_PHAM_CHOT = [
   ["App Lightroom cho điện thoại Android - đã có bản quyền trọn đời", 299000, 99000],
   ["Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại", 99000, 79000],
   ["Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính", 359000, 125000],
-  ["Bộ Khóa học dành cho Lightroom điện thoại", 199000, 0],
-  ["Bộ Khóa học dành cho Lightroom máy tính", 199000, 0],
+  ["Khoá học chỉnh màu Lightroom điện thoại", 199000, 0],
+  ["Khoá học Lightroom máy tính PC", 199000, 0],
   ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
   ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
   ["Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)", 159000, 39000],
@@ -94,18 +94,32 @@ if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
-// 3) Nội dung chuyển khoản: tiền tố "lr", đổi "@" thành dấu cách, bỏ trường
-//    trống, và không lặp lại khi số zalo trùng số điện thoại.
+// 3) Nội dung chuyển khoản: "LR" viết hoa + mã đơn 6 ký tự, đúng 8 ký tự.
+//    Ngắn tới mức không ngân hàng nào cắt, và khớp từ khoá "LR" đã đặt trong
+//    app đọc thông báo ngân hàng.
 // ---------------------------------------------------------------------------
-if (!/const\s+phan\s*=\s*\['lr'\]/.test(banNoi)) {
-  fail("Nội dung chuyển khoản phải bắt đầu bằng ký hiệu 'lr'");
-}
-if (!/kh\.email\.replace\(\/@\/g,\s*' '\)/.test(banNoi)) {
-  fail("Email trong nội dung chuyển khoản phải đổi dấu '@' thành dấu cách");
-}
-if (!/kh\.dienThoai\s*&&\s*kh\.dienThoai\s*!==\s*kh\.zalo/.test(banNoi)) {
-  fail("Số điện thoại trùng số zalo thì chỉ được ghi MỘT lần trong nội dung chuyển khoản");
-}
+[
+  [/return\s+'LR'\s*\+\s*\(state\.maDonNgan\s*\|\|\s*''\)/, 'nội dung chuyển khoản là "LR" + mã đơn'],
+  [/const\s+DAI_MA_DON\s*=\s*6\s*;/, "mã đơn dài 6 ký tự"],
+  [/const\s+CHU_MA_DON\s*=\s*'23456789ABCDEFGHJKMNPQRSTUVWXYZ'/,
+    "bảng ký tự sinh mã đơn, đã bỏ 0 O 1 I L cho khỏi đọc nhầm"],
+  [/function\s+sinhMaDon\s*\(/, "hàm sinh mã đơn"],
+  [/state\.maDonNgan\s*=\s*sinhMaDon\(\);/, "sinh mã đơn trước khi dựng bảng thanh toán"],
+  [/maDon:\s*state\.maDonNgan/, "mã đơn được lưu vào đơn hàng"],
+  [/function\s+chuKyDon\s*\(/, "hàm vân tay đơn hàng"],
+  [/if\s*\(!state\.maDonNgan\s*\|\|\s*state\.chuKyDon\s*!==\s*chuKy\)/,
+    "chỉ sinh mã đơn mới khi đơn thật sự đổi — bấm tới bấm lui không đẻ đơn trùng"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Bốn cặp ký tự dễ đọc nhầm trên màn hình ngân hàng: 0/O, 1/I/L.
+["0", "O", "1", "I", "L"].forEach((ky) => {
+  const bang = banNoi.match(/const\s+CHU_MA_DON\s*=\s*'([^']*)'/);
+  if (bang && bang[1].includes(ky)) {
+    fail(`Bảng ký tự sinh mã đơn không được chứa "${ky}" — dễ đọc nhầm khi đối chiếu ngân hàng.`);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // 4) Quy tắc nhập liệu: email tối đa 35 ký tự, số tối đa 12 chữ số.
@@ -331,8 +345,8 @@ if (/class="ghi-chu">Vui lòng nhập/.test(banNoi)) {
     "mảng xanh của thẻ chưa chọn thấp đi một nửa, còn 28px"],
   [/\.khung-cam-ket-giao\s*\{[\s\S]*?animation:\s*nhun-nhay-cam-ket\s+3\.5s[^;]*infinite/,
     "khung cam kết nhún nhảy tuần hoàn, mỗi vòng 3,5 giây"],
-  [/@keyframes\s+nhun-nhay-cam-ket\s*\{[\s\S]*?13\.6%[\s\S]*?100%/,
-    "nhịp nhún nhảy của khung cam kết: nảy xong thì nghỉ ba giây"],
+  [/@keyframes\s+nhun-nhay-cam-ket\s*\{[\s\S]*?8\.2%[^}]*scale\(1\)[\s\S]*?100%/,
+    "nhịp nhún nhảy của khung cam kết: nảy xong thì nghỉ khoảng ba giây"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
 });
@@ -389,6 +403,325 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
+
+// ---------------------------------------------------------------------------
+// 14) APPS SCRIPT — email báo shop LUÔN kèm mẩu tin nhắn Zalo
+//     Chủ shop cần chép mẩu tin gửi cho khách, kể cả khi khách đã có email
+//     (khách chưa thấy email, khách hỏi lại, khách muốn được nhắn cho chắc).
+// ---------------------------------------------------------------------------
+{
+  const gs = doc("apps-script/gui-hang.gs");
+  [
+    [/function\s+soanTinZalo\s*\(/, "hàm soạn mẩu tin nhắn Zalo"],
+    [/Mẩu tin nhắn Zalo — bôi đen rồi chép:/, "nhãn mẩu tin nhắn Zalo trong email báo shop"],
+    [/thoatHtml\(soanTinZalo\(don\)\)/, "mẩu tin Zalo được nhúng vào email báo shop"],
+    [/linkNhanHangCuaDon\(don\)\s*\+\s*'\\n\\n'/, "mẩu tin Zalo có kèm đường dẫn nhận sản phẩm RIÊNG của đơn"],
+    [/function\s+sinhMaNhanHang\s*\(/, "hàm sinh mã nhận hàng riêng cho từng đơn"],
+    [/function\s+linkNhanHangCuaDon\s*\(/, "hàm dựng đường dẫn nhận hàng riêng của một đơn"],
+    [/LINK_NHAN_HANG\s*\+\s*'\?ma='/, "đường dẫn riêng mang mã nhận hàng theo dạng ?ma="],
+    [/capNhatDon\(don\.__ma,\s*\{\s*maNhanHang:\s*don\.maNhanHang\s*\}\)/,
+      "mã nhận hàng được lưu lại vào đơn trước khi gửi thư"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(gs)) fail(`Thiếu ${ten} trong apps-script/gui-hang.gs.`);
+  });
+
+  // Script KHÔNG được giữ bảng đường tải nữa: đường tải chỉ do máy chủ cấp phát
+  // biết. Script Property LINK_TAI từng tồn tại và từng in thẳng link vào thư.
+  if (/LINK_TAI['"]/.test(gs) || /function\s+bangDuongTai\s*\(/.test(gs)) {
+    fail("apps-script không được giữ bảng đường tải (LINK_TAI / bangDuongTai) — đường tải chỉ do máy chủ cấp phát biết.");
+  }
+  [
+    [/function\s+docDanhMuc\s*\(/, "hàm đọc danh mục từ Firebase"],
+    [/function\s+sanPhamThieuHang\s*\(/, "hàm kiểm sản phẩm chưa có hàng để giao"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(gs)) fail(`Thiếu ${ten} trong apps-script/gui-hang.gs.`);
+  });
+
+  // Thư gửi khách KHÔNG được chứa đường tải file. Ai chuyển tiếp lá thư đó đi là
+  // mất hàng, mà shop không cách nào biết. Thư chỉ được mang đường dẫn riêng.
+  {
+    const thu = gs.match(/function\s+soanThuGiaoHang\s*\([\s\S]*?\n\}/);
+    if (!thu) {
+      fail("Thiếu hàm soanThuGiaoHang trong apps-script/gui-hang.gs.");
+    } else {
+      if (/bangDuongTai\(\)/.test(thu[0])) {
+        fail("Thư giao hàng không được lấy bảng đường tải — đường tải chỉ do máy chủ cấp phát giữ.");
+      }
+      if (!/linkNhanHangCuaDon\(don\)/.test(thu[0])) {
+        fail("Thư giao hàng phải mang đường dẫn nhận hàng riêng của đơn.");
+      }
+    }
+  }
+
+  // Mẩu tin từng chỉ hiện khi khách KHÔNG có email. Nay phải luôn hiện.
+  if (/\(don\.email\s*\?\s*''\s*:[\s\S]{0,120}soanTinZalo/.test(gs)) {
+    fail('Mẩu tin nhắn Zalo không được đặt sau điều kiện "khách không có email" — phải luôn có trong email báo shop.');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 15) TRANG NHẬN HÀNG "/sanpham"
+//     Địa chỉ này nằm trong email và trong tin nhắn Zalo đã gửi cho khách nên
+//     KHÔNG được đổi. Hai luật xương sống:
+//       - Mỗi khách một đường dẫn riêng, KHÔNG bắt khách gõ mã kích hoạt.
+//       - Nút tải xuống chỉ được dựng ra SAU KHI máy chủ trả lời là được phép.
+// ---------------------------------------------------------------------------
+[
+  [/const\s+DUONG_DAN_NHAN_HANG\s*=\s*'\/sanpham'/, 'đường dẫn trang nhận hàng là "/sanpham"'],
+  [/function\s+docDuongDan\s*\(/, "hàm đọc đường dẫn để rẽ nhánh trang"],
+  [/function\s+docMaNhanHangTrenDuongDan\s*\(/, "hàm đọc mã nhận hàng từ chính đường dẫn"],
+  [/function\s+veTrangNhanHang\s*\(/, "hàm vẽ trang nhận hàng"],
+  [/function\s+veTheNhanHang\s*\(/, "hàm vẽ thẻ sản phẩm ở trang nhận hàng"],
+  [/>Sử dụng sản phẩm này</, 'nút "Sử dụng sản phẩm này" ở cuối thẻ nhận hàng'],
+  [/rtdb\.ref\('thongtinkho'\)/, "địa chỉ máy chủ cấp phát đọc từ Realtime Database"],
+  [/function\s+chuanHoaMaNhanHang\s*\(/, "hàm chuẩn hoá mã nhận hàng"],
+  [/MỘT thiết bị/, "lời cảnh báo mỗi sản phẩm chỉ tải được trên một thiết bị"],
+  [/state\.trang\s*===\s*'sanpham'/, "trang nhận hàng được rẽ nhánh theo state.trang"],
+  [/function\s+moModalKhoaHoc\s*\(/, "bảng riêng cho hai khoá học"],
+  [/function\s+moModalDrive\s*\(/, "bảng riêng cho sản phẩm để trên Google Drive"],
+  [/function\s+taiDanhMuc\s*\(/, "hàm đọc danh mục sản phẩm"],
+  [/rtdb\.ref\('danhmuc'\)/, "danh mục đọc từ Realtime Database"],
+  [/function\s+laTronBo\s*\(/, "hàm nhận biết gói trọn bộ"],
+  [/Vào module /, 'nút "Vào module ..." của hai khoá học'],
+  [/bấm <strong>nút quay lại<\/strong>/, "lời dặn cách quay lại trang nhận hàng"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Khách KHÔNG bao giờ phải gõ mã: mỗi người một đường dẫn riêng. Có ô nhập mã
+// nào mọc lại trong trang nhận hàng là sai hẳn thiết kế.
+if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
+  fail("Trang nhận hàng không được bắt khách gõ mã kích hoạt — mỗi khách đã có một đường dẫn riêng.");
+}
+
+// Hai khoá học phải đi nhánh riêng TRƯỚC khi rơi vào luồng tải file.
+{
+  const than = banNoi.match(/function\s+moModalNhanHang\s*\([\s\S]*?\n  \}/);
+  if (!than) {
+    fail("Thiếu hàm moModalNhanHang.");
+  } else if (than[0].indexOf("moModalKhoaHoc") < 0) {
+    fail("moModalNhanHang phải rẽ hai khoá học sang bảng riêng, không cho rơi vào luồng tải file.");
+  }
+}
+
+// Nút tải xuống PHẢI nằm sau nhánh "máy chủ đã cho phép". Dựng sẵn rồi ẩn đi là
+// hỏng cả cơ chế — mở F12 lên là thấy đường dẫn.
+{
+  const than = banNoi.match(/function\s+veKetQuaNhanHang\s*\([^)]*\)\s*\{[\s\S]*?\n  \}/);
+  if (!than) {
+    fail("Thiếu hàm veKetQuaNhanHang — nơi duy nhất được dựng nút tải xuống.");
+  } else {
+    const doan = than[0];
+    if (!/if\s*\(!kq\.duoc\)/.test(doan)) {
+      fail("veKetQuaNhanHang phải chặn trước ở nhánh máy chủ TỪ CHỐI rồi mới tới nút tải.");
+    }
+    if (doan.indexOf("nut-tai-ve") < doan.indexOf("if (!kq.duoc)")) {
+      fail("Nút tải xuống bị dựng TRƯỚC khi kiểm tra máy chủ có cho phép hay không.");
+    }
+  }
+  if (/\.nut-tai-ve[^{]*\{[^}]*display:\s*none/.test(cssApp)) {
+    fail("Không được dựng sẵn nút tải rồi ẩn bằng CSS — ẩn bằng CSS thì mở F12 là thấy.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 16) TRANG QUẢN TRỊ "/admin"
+//     Quyền THẬT nằm ở database.rules.json, không ở giao diện. Và khoá API của
+//     AI không bao giờ được đi qua trình duyệt khách.
+// ---------------------------------------------------------------------------
+{
+  const rules = doc("database.rules.json");
+  const EMAIL_CHU_SHOP = ["lookatmevanthanhpham@gmail.com", "219thanhdeptrai@gmail.com"];
+
+  [
+    [/const\s+DUONG_DAN_ADMIN\s*=\s*'\/admin'/, 'đường dẫn trang quản trị là "/admin"'],
+    [/function\s+veTrangAdmin\s*\(/, "hàm vẽ trang quản trị"],
+    [/function\s+laChuShop\s*\(/, "hàm kiểm email chủ shop"],
+    [/signInWithPopup/, "đăng nhập Google bằng cửa sổ bật lên"],
+    [/firebase-auth-compat\.js/, "SDK đăng nhập"],
+    [/napMotLan\(AUTH_SDK/, "SDK đăng nhập được nạp ĐỘNG, không nằm trong index.html"],
+    [/napMotLan\(CSS_ADMIN/, "CSS quản trị được nạp ĐỘNG"],
+    [/state\.trang\s*===\s*'admin'/, "trang quản trị được rẽ nhánh theo state.trang"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Hai email phải có mặt ở CẢ HAI nơi. Thiếu ở Rules là ai đăng nhập cũng ghi
+  // đè được số tài khoản; thiếu trong mã là chủ shop đăng nhập xong bị từ chối.
+  EMAIL_CHU_SHOP.forEach((email) => {
+    if (!banNoi.includes(email)) {
+      fail(`Email chủ shop ${email} không có trong danh sách EMAIL_CHU_SHOP của mã nguồn.`);
+    }
+    if (!rules.includes(email)) {
+      fail(`Email chủ shop ${email} không có trong database.rules.json — giao diện chặn được, Rules thì không.`);
+    }
+  });
+
+  // Rules phải đòi email ĐÃ XÁC MINH. Thiếu điều kiện này thì một tài khoản
+  // Google tự dựng, khai email trùng nhưng chưa xác minh, vẫn ghi được.
+  if (!/email_verified/.test(rules)) {
+    fail("database.rules.json phải đòi auth.token.email_verified === true cho quyền ghi của chủ shop.");
+  }
+
+  // Firebase hiểu "//" là dấu mở CHÚ THÍCH, nên một khoá JSON tên "//" làm hỏng
+  // cả bộ luật — Console từ chối với "Expected '{'". Lỗi này đã xảy ra thật.
+  // Chú thích của bộ luật để trong CLAUDE.md, không để trong chính tệp.
+  if (/"\/\//.test(rules)) {
+    fail('database.rules.json không được có khoá "//" — Firebase hiểu đó là dấu mở chú thích và từ chối cả bộ luật.');
+  }
+
+  // Nhánh giữ khoá AI TUYỆT ĐỐI không được cho đọc công khai.
+  {
+    const khoiAdmin = rules.match(/"admin"\s*:\s*\{[\s\S]*?\n    \},?\n/);
+    if (!khoiAdmin) {
+      fail('database.rules.json thiếu nhánh "admin" — nơi giữ khoá API của AI.');
+    } else if (/"\.read"\s*:\s*true/.test(khoiAdmin[0])) {
+      fail('Nhánh "admin" đang cho ĐỌC CÔNG KHAI — khoá API của AI sẽ lộ cho bất kỳ ai.');
+    }
+  }
+
+  // Ba nhánh web khách cần đọc thì phải còn đọc công khai, nếu không nút Zalo
+  // và mã QR ngoài web chết câm.
+  ["thongtinthanhtoan", "thongtinlienhe", "thongtinkho"].forEach((nhanh) => {
+    const khoi = rules.match(new RegExp('"' + nhanh + '"\\s*:\\s*\\{[\\s\\S]*?\\n    \\},?\\n'));
+    if (!khoi) fail(`database.rules.json thiếu nhánh "${nhanh}".`);
+    else if (!/"\.read"\s*:\s*true/.test(khoi[0])) {
+      fail(`Nhánh "${nhanh}" phải cho đọc công khai — web của khách đọc nó lúc chạy.`);
+    }
+  });
+
+  // Trang quản trị KHÔNG được tự gọi API AI: làm vậy là khoá đi qua trình duyệt.
+  if (/api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com/.test(banNoi)) {
+    fail("Mã web gọi thẳng API AI — khoá sẽ lộ cho bất kỳ ai mở tab Network. Phải gọi qua máy chủ trung gian.");
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// 17) DANH MỤC SẢN PHẨM VÀ HAI NGUỒN HÀNG
+//     Kho riêng (R2) khoá được thiết bị; Google Drive công khai thì không.
+//     Trang quản trị PHẢI nói thẳng điều đó ngay tại chỗ chọn, để không ai
+//     chọn nhầm vì tưởng hai nguồn như nhau.
+// ---------------------------------------------------------------------------
+[
+  [/const\s+NGUON_HANG\s*=\s*\{/, "bảng khai hai nguồn hàng"],
+  [/function\s+veAdminDanhMuc\s*\(/, "module Danh mục sản phẩm trong trang quản trị"],
+  [/function\s+sanPhamCoHang\s*\(/, "hàm lọc ra sản phẩm có hàng để giao"],
+  [/function\s+adminLuuDanhMuc\s*\(/, "hàm lưu danh mục"],
+  [/rtdb\.ref\('danhmuc\/'\s*\+\s*maSP\)/, "danh mục ghi theo từng sản phẩm"],
+  [/không khoá được theo thiết bị/, "lời cảnh báo về giới hạn của Google Drive trong trang quản trị"],
+  [/không thu hồi được/, "lời cảnh báo rằng link Drive không thu hồi được"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Hai khoá học không có hàng để giao — chúng phải bị loại khỏi danh mục, nếu
+// không chủ shop ngồi khai tệp cho một thứ không có tệp nào.
+{
+  const than = banNoi.match(/function\s+sanPhamCoHang\s*\([\s\S]*?\n  \}/);
+  if (than && !/MODULE_KHOA_HOC/.test(than[0])) {
+    fail("sanPhamCoHang phải loại hai khoá học ra khỏi danh mục.");
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// 18) MÁY CHỦ CẤP PHÁT (worker/kho-worker.js)
+//     Đây là thứ DUY NHẤT biết đường tới tệp thật. Bốn cửa kiểm tra trong
+//     /cap-phat là toàn bộ lớp bảo vệ của kho hàng — thiếu một cửa là thủng.
+// ---------------------------------------------------------------------------
+{
+  const wk = doc("worker/kho-worker.js");
+  if (!wk) {
+    fail("Thiếu worker/kho-worker.js — máy chủ cấp phát.");
+  } else {
+    [
+      [/\/cap-phat/, "đường /cap-phat"],
+      [/\/tai/, "đường /tai"],
+      [/orderBy=.*maNhanHang/, "tra đơn theo mã nhận hàng"],
+      [/khong-co-trong-don/, "cửa chặn sản phẩm không có trong đơn"],
+      [/da-dung-thiet-bi-khac/, "cửa khoá thiết bị"],
+      [/thietbi\/'\s*\+\s*maNhanHang/, "nhánh ghi nhớ thiết bị"],
+      [/crypto\.subtle\.sign/, "ký token bằng HMAC"],
+      [/crypto\.subtle\.verify/, "mở chữ ký token bằng HMAC"],
+      [/env\.KHO\.get/, "đọc tệp từ binding R2"],
+      [/Content-Disposition/, "buộc trình duyệt tải xuống thay vì mở trong tab"],
+      [/gocDuocPhep/, "chặn lời gọi từ địa chỉ lạ"],
+      [/\/don['"]/, "đường /don trả danh sách món đã mua"],
+      [/function\s+donCuaToi\s*\(/, "hàm trả đơn của khách"],
+    ].forEach(([mau, ten]) => {
+      if (!mau.test(wk)) fail(`Thiếu ${ten} trong worker/kho-worker.js.`);
+    });
+
+    // Bốn cửa phải nằm TRƯỚC lúc cấp token. Đảo thứ tự là cấp trước rồi mới hỏi.
+    const iToken = wk.indexOf("taoToken(env, {");
+    ["sai-ma", "khong-co-trong-don", "chua-khai", "da-dung-thiet-bi-khac"].forEach((cua) => {
+      const i = wk.indexOf(cua);
+      if (i === -1 || iToken === -1 || i > iToken) {
+        fail(`Cửa kiểm tra "${cua}" phải chạy TRƯỚC khi cấp token tải.`);
+      }
+    });
+
+    // Token phải có hạn. Token sống mãi thì chép ra dán cho ai cũng dùng được.
+    if (!/than\.h/.test(wk) || !/Date\.now\(\) > than\.h/.test(wk)) {
+      fail("Token tải phải có hạn dùng và phải được kiểm hạn khi rót tệp.");
+    }
+
+    // Khoá và địa chỉ Firebase KHÔNG được viết chết trong Worker.
+    if (/firebasedatabase\.app/.test(wk.replace(/^\s*\*.*$/gm, ""))) {
+      fail("Địa chỉ Firebase phải nằm trong biến môi trường của Worker, không viết chết trong mã.");
+    }
+  }
+
+  // /don chỉ được trả danh sách mã sản phẩm. Trả cả đơn là lộ email, số điện
+  // thoại và số tiền của khách cho bất cứ ai đoán trúng mã.
+  {
+    const wk = doc("worker/kho-worker.js");
+    const than = wk.match(/async function\s+donCuaToi\s*\([\s\S]*?\n\}/);
+    if (than && !/traJSON\(\{\s*duoc:\s*true,\s*maSanPham:\s*don\.maSanPham\s*\}/.test(than[0])) {
+      fail("/don chỉ được trả về maSanPham — trả cả đơn là lộ email và số điện thoại của khách.");
+    }
+  }
+
+  // Ba trạng thái của donCuaToi phải phân biệt được: null (chưa biết) khác hẳn
+  // mảng rỗng (biết chắc chưa mua gì).
+  [
+    [/function\s+duocDung\s*\(/, "hàm quyết định món nào bấm được"],
+    [/if\s*\(!state\.donCuaToi\)\s*return true/, "chưa biết đơn thì không làm mờ nút nào"],
+    [/if\s*\(MODULE_KHOA_HOC\[maSP\]\)\s*return true/, "hai khoá học luôn bấm được"],
+    [/khung-chua-mua/, "khung chữ thay cho nút ở món chưa mua"],
+    [/Bạn chưa mua sản phẩm này/, "dòng chữ báo chưa mua"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Món chưa mua KHÔNG được là một cái nút bị mờ — nút mờ vẫn dụ người ta bấm.
+  if (/nut-su-dung[^']*'\s*\+[^;]*disabled/.test(banNoi)) {
+    fail("Món chưa mua phải là khung chữ, không phải nút disabled.");
+  }
+
+  // Trang nhận hàng phải gửi kèm mã thiết bị, nếu không Worker không khoá được.
+  [
+    [/function\s+maThietBi\s*\(/, "hàm sinh mã thiết bị"],
+    [/thietBi:\s*maThietBi\(\)/, "mã thiết bị được gửi kèm khi xin cấp phát"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Nhánh thiết bị TUYỆT ĐỐI không cho khách đọc — đọc được là thấy mã nhận
+  // hàng của người khác.
+  {
+    const rules = doc("database.rules.json");
+    const khoi = rules.match(/"thietbi"\s*:\s*\{[\s\S]*?\n    \},?\n/);
+    if (!khoi) fail('database.rules.json thiếu nhánh "thietbi".');
+    else if (/"\.read"\s*:\s*true/.test(khoi[0]) || /"\.write"\s*:\s*true/.test(khoi[0])) {
+      fail('Nhánh "thietbi" không được mở cho khách — chỉ Worker (qua khoá dịch vụ) và chủ shop.');
+    }
+    if (!/"maNhanHang"/.test((rules.match(/"\.indexOn"[\s\S]{0,120}/) || [""])[0])) {
+      fail('donhang phải có .indexOn "maNhanHang" — Worker tra đơn theo mã đó.');
+    }
+  }
+}
 
 // Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
 if (/<a[^>]*zalo\.me/.test(banNoi)) {
@@ -506,13 +839,197 @@ if (!fs.existsSync(path.join(root, "src/anh/dac-quyen.jpg"))) {
 });
 
 // ---------------------------------------------------------------------------
-// 17) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 17) MỖI ĐỢT NHÚN NHẢY CHỈ MỘT LẦN NẢY, CÂU MỜI Ở Ô EMAIL, MỤC MENU MỚI
+// ---------------------------------------------------------------------------
+// Nhún nhảy hai lần liên tiếp nhìn lâu mỏi mắt, nên mỗi đợt chỉ được có ĐÚNG
+// MỘT mốc phóng to. Đếm số mốc scale lớn hơn 1 trong mỗi khối keyframes.
+[
+  ["nhun-nhay-mua-hang", 1],
+  ["nhun-nhay-cam-ket", 1],
+].forEach(([ten, soLanToiDa]) => {
+  const khoi = cssApp.match(new RegExp(`@keyframes\\s+${ten}\\s*\\{[^@]*?\\n\\}`));
+  if (!khoi) {
+    fail(`Không thấy khối @keyframes ${ten} trong src/css/app.css.`);
+    return;
+  }
+  const soLanPhongTo = (khoi[0].match(/scale\((?:1\.\d+|[2-9])/g) || []).length;
+  if (soLanPhongTo !== soLanToiDa) {
+    fail(`@keyframes ${ten} phải có đúng ${soLanToiDa} lần phóng to mỗi đợt, đang thấy ${soLanPhongTo}.`);
+  }
+});
+
+[
+  [/khuyến khích nhập Email để nhận sản phẩm Nhanh chỉ trong 1 phút/, "câu mời nhập email ở ô Email"],
+  [/bỏ qua nếu chưa có email/, "câu mời nói rõ có thể bỏ qua"],
+  [/class="nhan-phu"/, "chỗ hiện câu mời cạnh tên trường"],
+  [/function\s+veOTruong\(ten, nhan, giaTri, goiY, kieu, nhanPhu\)/, "tham số nhãn phụ của ô nhập liệu"],
+  [/ma:\s*'cong-nhan'[\s\S]{0,90}?kieu:\s*'modal'/, "mục Sự công nhận của khách hàng trong menu"],
+  [/Sự công nhận của khách hàng/, "tên mục menu mới"],
+  [/m\.ma === 'cong-nhan'/, "bảng Sự công nhận báo đang được thiết kế"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Mục mới phải đứng ngay dưới "Liên hệ shop".
+if (banNoi.indexOf("ma: 'cong-nhan'") < banNoi.indexOf("ma: 'lien-he'")) {
+  fail('Mục "Sự công nhận của khách hàng" phải nằm DƯỚI mục "Liên hệ shop".');
+}
+
+if (!/\.truong label \.nhan-phu\s*\{/.test(cssApp)) {
+  fail("Thiếu kiểu riêng cho câu mời cạnh tên trường trong src/css/app.css.");
+}
+
+// ---------------------------------------------------------------------------
+// 18) MODULE MỚI TRONG MENU VÀ BỐ CỤC ĐẦU THẺ SẢN PHẨM
+// ---------------------------------------------------------------------------
+[
+  [/ma:\s*'video-ngan'[\s\S]{0,90}?kieu:\s*'trang'/, "module Xem video ngắn"],
+  [/ma:\s*'khoa-photoshop'[\s\S]{0,110}?kieu:\s*'trang'/, "module Khoá Photoshop"],
+  [/ten:\s*'Khoá Photoshop - edit ảnh bằng điện thoại \(miễn phí\)'/, "tên mới của module Khoá Photoshop"],
+  [/ma:\s*'app-vip-pro'[\s\S]{0,90}?kieu:\s*'trang'/, "module Mua App VIP pro giá rẻ"],
+  [/ten:\s*'Liên hệ và Thông tin về Shop'/, "tên mới của mục Liên hệ"],
+  [/ten:\s*'Khoá học chỉnh màu Lightroom điện thoại \(miễn phí\)'/, "tên mới của module khoá học điện thoại"],
+  [/ten:\s*'Khoá học Lightroom máy tính PC \(miễn phí\)'/, "tên mới của module khoá học máy tính"],
+  [/function\s+veAnhDaiDien\s*\(/, "hàm dựng ảnh đại diện của thẻ sản phẩm"],
+  [/const\s+ANH_DAI_DIEN\s*=/, "bảng ảnh đại diện"],
+  [/class="dau-the"/, "đầu thẻ chia hai phần"],
+  [/class="so-tt" aria-hidden="true"/, "số thứ tự đóng khung"],
+  [/class="anh-dai-dien trong"/, "khung ảnh rỗng giữ chỗ khi chưa có ảnh"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+// Thứ tự các mục trong menu.
+[
+  ["video-ngan", "lien-he", '"Xem video ngắn" phải nằm TRÊN "Liên hệ và Thông tin về Shop"'],
+  ["khoa-hoc-may-tinh", "khoa-photoshop", '"Khoá Photoshop" phải nằm DƯỚI "Khoá học Lightroom máy tính PC"'],
+  ["lien-he", "cong-nhan", '"Sự công nhận" phải nằm DƯỚI "Liên hệ và Thông tin về Shop"'],
+].forEach(([truoc, sau, loi]) => {
+  if (banNoi.indexOf(`ma: '${truoc}'`) > banNoi.indexOf(`ma: '${sau}'`)) fail(loi);
+});
+
+// Ô "SẢN PHẨM N" cũ đã gộp vào dòng tên, không được còn sót.
+if (/class="so-thu-tu">SẢN PHẨM/.test(banNoi)) {
+  fail('Ô "SẢN PHẨM N" cũ phải được gộp vào dòng tên sản phẩm.');
+}
+
+[
+  [/\.the-sanpham \.dau-the\s*\{[\s\S]*?display:\s*flex/, "đầu thẻ xếp ngang: ảnh trái, chữ phải"],
+  [/\.the-sanpham \.anh-dai-dien\s*\{[\s\S]*?aspect-ratio:\s*1\s*\/\s*1/, "ảnh đại diện giữ khung vuông 1:1"],
+  [/\.the-sanpham \.so-tt\s*\{/, "kiểu riêng cho số thứ tự đóng khung"],
+  [/\.the-sanpham \.hang-gia\s*\{[\s\S]*?margin-top:\s*auto/,
+    "cụm giá và nút chọn luôn bám sát đáy thẻ, để mảng xanh khớp với nút"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 19) ẢNH ĐẠI DIỆN CỦA TỪNG SẢN PHẨM
+// ---------------------------------------------------------------------------
+SAN_PHAM_CHOT.forEach((_, i) => {
+  const ma = `sp${i + 1}`;
+  if (!new RegExp(`${ma}:\\s*'/assets/anh/dd-${ma}\\.svg'`).test(banNoi)) {
+    fail(`Sản phẩm ${ma} chưa được khai ảnh đại diện trong ANH_DAI_DIEN.`);
+  }
+  if (!fs.existsSync(path.join(root, `src/anh/dd-${ma}.svg`))) {
+    fail(`Thiếu tệp ảnh đại diện src/anh/dd-${ma}.svg.`);
+  }
+});
+
+// Chín ảnh phải có chín độ trễ KHÁC NHAU — trùng nhau là chúng nhô lên cùng lúc.
+{
+  const khoi = banNoi.match(/const\s+TRE_BONG_BENH\s*=\s*\{([\s\S]*?)\}/);
+  if (!khoi) {
+    fail("Thiếu bảng độ trễ bồng bềnh TRE_BONG_BENH.");
+  } else {
+    const so = (khoi[1].match(/:\s*([\d.]+)/g) || []).map((x) => x.trim());
+    if (so.length !== 9) fail(`TRE_BONG_BENH phải khai đủ 9 sản phẩm, đang thấy ${so.length}.`);
+    if (new Set(so).size !== so.length) fail("Các độ trễ trong TRE_BONG_BENH phải khác nhau hết.");
+  }
+}
+
+if (!/animation-delay:'\s*\+\s*tre\s*\+\s*'s/.test(banNoi)) {
+  fail("Ảnh đại diện chưa được gắn độ trễ riêng vào style.");
+}
+
+[
+  [/\.the-sanpham \.anh-dai-dien\s*\{[\s\S]*?animation:\s*bong-benh-anh\s+9s[^;]*infinite/,
+    "ảnh đại diện bồng bềnh, mỗi vòng 9 giây"],
+  [/@keyframes\s+bong-benh-anh\s*\{[\s\S]*?33\.3%[^}]*translateY\(0\)[\s\S]*?100%[^}]*translateY\(0\)/,
+    "nhịp bồng bềnh của ảnh: 3 giây nhô rồi 6 giây đứng im"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?position:\s*absolute[\s\S]*?top:\s*0;[\s\S]*?left:\s*0;/,
+    "số thứ tự dán sát góc trên bên trái của thẻ"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?z-index:\s*3/, "số thứ tự nằm trên ảnh đại diện"],
+  [/\.the-sanpham \.so-tt\s*\{[\s\S]*?pointer-events:\s*none/,
+    "số thứ tự không chắn cú bấm xuống thẻ"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(cssApp)) fail(`Thiếu ${ten} trong src/css/app.css.`);
+});
+
+// ---------------------------------------------------------------------------
+// 20) SỐ THỨ TỰ DÁN Ở GÓC THẺ, KHÔNG NẰM TRONG DÒNG TÊN
+// ---------------------------------------------------------------------------
+// Đặt số vào trong <h3> thì chính nó quyết định chiều cao dòng đầu và tên sản
+// phẩm giãn dòng lệch. Nó phải là con TRỰC TIẾP của thẻ, đứng trước .dau-the.
+if (!/class="so-tt" aria-hidden="true">'\s*\+\s*\(chiSo \+ 1\)\s*\+\s*'<\/span>'\s*\+[\s\S]{0,400}?'<div class="dau-the">/.test(banNoi)) {
+  fail("Số thứ tự phải là con trực tiếp của thẻ và đứng ngay trước khối .dau-the.");
+}
+if (/<h3 class="ten-sanpham">'\s*\+[\s\S]{0,120}?class="so-tt"/.test(banNoi)) {
+  fail("Số thứ tự không được nằm trong dòng tên sản phẩm nữa.");
+}
+
+// ---------------------------------------------------------------------------
+// 21) BẢNG HỎI LẠI TRƯỚC KHI CHỐT ĐƠN
+// ---------------------------------------------------------------------------
+// Cú bấm ở bảng này kích hoạt gửi hàng tự động, nên KHÔNG được chốt đơn thẳng
+// từ bảng mã QR — phải hỏi lại một câu rõ ràng.
+[
+  [/ma:\s*'xac-nhan-lan-hai'/, "bảng hỏi lại trước khi chốt đơn"],
+  [/data-hanh-dong="chot-don"/, "nút chốt đơn ở bảng hỏi lại"],
+  [/function\s+chotDon\s*\(\)\{[\s\S]{0,200}?danhDauDaThanhToan\(\)/,
+    "chỉ bảng hỏi lại mới thật sự chốt đơn"],
+  [/Ngay khi shop nhận được tiền<\/strong>, hệ thống tự động gửi sản phẩm/,
+    "ghi chú: gửi hàng khi shop NHẬN ĐƯỢC TIỀN, không phải khi khách bấm nút"],
+  [/đã nằm trong hệ thống<\/strong> và đang chờ tiền về/,
+    "ghi chú: đơn đã được tạo từ lúc hiện mã QR"],
+  [/chưa để lại email<\/strong>/, "cảnh báo khi khách không để lại email"],
+  [/qua <strong>Zalo<\/strong> hoặc <strong>tin nhắn SMS<\/strong>/,
+    "nói rõ sẽ liên hệ qua Zalo hoặc SMS khi khách không có email"],
+].forEach(([mau, ten]) => {
+  if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+});
+
+
+// Lời văn TUYỆT ĐỐI không được hứa "bấm xong là gửi ngay": thứ kích hoạt gửi
+// hàng là tiền về tài khoản, không phải cú bấm của khách.
+if (/(Ngay sau khi bạn xác nhận|sau khi bạn bấm)[^']{0,60}gửi/.test(banNoi)) {
+  fail('Bảng xác nhận không được hứa gửi hàng ngay sau cú bấm của khách.');
+}
+
+// Bảng mã QR không được gọi thẳng danhDauDaThanhToan.
+if (/function\s+xacNhanThanhToan\s*\(\)\{[\s\S]{0,300}?danhDauDaThanhToan\(\)/.test(banNoi)) {
+  fail("Bảng mã QR phải mở bảng hỏi lại, không được chốt đơn thẳng.");
+}
+
+if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
+  fail("Thiếu kiểu riêng cho bảng hỏi lại trong src/css/app.css.");
+}
+
+// ---------------------------------------------------------------------------
+// 22) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
 // Số tài khoản, tên chủ tài khoản, tên ngân hàng và SỐ ZALO của shop đều chỉ
 // được nằm trong Realtime Database, tuyệt đối không nằm trong mã nguồn.
-const CAM = [/10001034848/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i, /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/];
+const CAM = [
+  /1000103484[38]/, /PHAM\s+VAN\s+THANH/i, /\bTPBank\b/i,
+  /\b\+?84\s*9\s*1\s*7\s*1\s*1\s*4\s*9\s*4\s*1\b/, /917114941/,
+  // Kho file sản phẩm: cả đường dẫn tới file lẫn địa chỉ máy chủ cấp phát đều
+  // KHÔNG được nằm trong mã nguồn. Máy chủ đọc từ Realtime Database; đường dẫn
+  // file thì chỉ máy chủ biết, và nó chỉ trả về khi mã kích hoạt đúng.
+  /r2\.cloudflarestorage\.com/i, /[a-z0-9-]+\.r2\.dev/i, /[a-z0-9-]+\.workers\.dev/i,
+];
 const BO_QUA = new Set([".git", "public", "node_modules"]);
 
 function quet(thuMuc) {

@@ -4,7 +4,7 @@
   },
   "hosting": {
     "predeploy": [
-      "node scripts/build-static.js && node scripts/validate-bundle-scope.js && node scripts/validate-static.js && node scripts/validate-shop-contract.js"
+      "node scripts/build-static.js && node scripts/validate-bundle-scope.js && node scripts/validate-static.js && node scripts/validate-shop-contract.js && node scripts/thu-worker.mjs"
     ],
     "public": "public",
     "ignore": [

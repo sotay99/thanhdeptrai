@@ -103,11 +103,40 @@
       moModalVanBan(m);
       return;
     }
+    // Đang ở trang nhận hàng mà chọn một module thì phải rời "/sanpham" về "/",
+    // nếu không địa chỉ trên thanh trình duyệt nói một đằng còn nội dung hiện
+    // một nẻo.
+    //
+    // Cả quãng đường đó chỉ được ghi MỘT mục lịch sử: đường dẫn và #hash đổi
+    // trong cùng một cú pushState. Làm hai bước (đổi đường dẫn rồi mới đặt hash)
+    // là sinh hai mục, và khách phải bấm nút quay lại HAI lần mới về được trang
+    // nhận sản phẩm — trong khi thư của shop dặn họ bấm quay lại một lần.
+    const roiTrangNhanHang = state.trang === 'sanpham';
     state.module = m.ma;
     state.hieuUngVaoModule = true;   // vào lại module bao nhiêu lần cũng trôi lại
-    datHash(m.ma);
+    if (roiTrangNhanHang) {
+      state.trang = 'chinh';
+      dongHetModal();
+      if (window.history && window.history.pushState) {
+        window.history.pushState({}, '', '/#/' + m.ma);
+      } else {
+        datHash(m.ma);
+      }
+    } else {
+      datHash(m.ma);
+    }
     render();   // vẽ lại cả trang, menu giữ nguyên trạng thái đang mở/đóng
     if (window.scrollTo) window.scrollTo(0, 0);
+  }
+
+  // Rời trang có địa chỉ riêng (nhận hàng, quản trị) về trang chính.
+  function veTrangChinh(){
+    if (state.trang === 'chinh') return;
+    state.trang = 'chinh';
+    dongHetModal();
+    if (window.history && window.history.pushState) {
+      window.history.pushState({}, '', '/' + (window.location.hash || ''));
+    }
   }
 
   // ------------------------------------------ KÉO THẢ MỘT NHÓM NÚT NỔI (DỌC)
@@ -326,7 +355,7 @@
     // "Yêu cầu hoàn tiền" và "Liên hệ shop" là chức năng sắp làm, còn hai mục
     // kia là văn bản sắp viết — nói đúng việc đang diễn ra thay vì dùng chung
     // một câu cho tất cả.
-    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'lien-he';
+    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'lien-he' || m.ma === 'cong-nhan';
     moModal({
       ma: 'van-ban-' + m.ma,
       tieuDe: m.ten,
@@ -398,6 +427,10 @@
   // ---------------------------------------------------- VẼ TOÀN BỘ GIAO DIỆN
 
   function veNoiDungModule(){
+    // Hai trang có địa chỉ riêng, đứng ngoài hệ thống module: trang nhận hàng
+    // (gửi cho khách qua email và Zalo) và trang quản trị của chủ shop.
+    if (state.trang === 'admin') return veTrangAdmin();
+    if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
     return veManNangCap(m ? m.ten : '');
@@ -417,7 +450,17 @@
     const el = goc();
     if (!el) return;
     const m = timModule(state.module);
-    const coThanhDay = !!(m && m.ma === 'goi-vip');
+    // Thanh báo giá chỉ có ở module bán hàng. Trang nhận hàng không bán gì nên
+    // không có thanh nào ở đáy.
+    const coThanhDay = state.trang === 'chinh' && !!(m && m.ma === 'goi-vip');
+
+    // Trang quản trị có vỏ riêng: không nút nổi, không menu của khách, không
+    // thanh tiêu đề shop. Nó là chỗ làm việc, không phải chỗ mua hàng.
+    if (state.trang === 'admin') {
+      el.innerHTML = '<main class="khung-noi-dung khong-thanh-day admin-trang">' + veNoiDungModule() + '</main>';
+      doChoThanhDay();
+      return;
+    }
 
     el.innerHTML = '' +
       '<button type="button" class="nut-noi' + (state.menuMo ? ' menu-dang-mo' : '') +

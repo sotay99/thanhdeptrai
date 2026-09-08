@@ -12,6 +12,9 @@
 //   4) Mỗi ảnh trong src/anh/ có đúng một bản mang vân tay trong public/, và
 //      bản nối app trong public/ gọi đúng tên có vân tay đó (không còn đường
 //      dẫn trần nào sót lại).
+//   5) CSS nạp động (src/css/admin.css) cũng vậy: nó KHÔNG có thẻ <link> trong
+//      index.html mà được mã JS nạp khi mở "/admin", nên phải kiểm qua bản nối
+//      chứ không qua index.html.
 
 const fs = require("fs");
 const path = require("path");
@@ -55,6 +58,21 @@ if (fs.existsSync(anhSourceRoot)) {
       url: `/assets/anh/${path.basename(ten, duoi)}.${hash(nguon).slice(0, 12)}${duoi}`,
       nguon,
       ten,
+    });
+  }
+}
+
+// Bảng CSS nạp động, dựng lại y hệt cách build dựng. Cũng cần TRƯỚC phần so
+// bản nối, vì bản nối trong public/ đã thay tên tệp này rồi.
+const bangCssDong = new Map();
+{
+  const nguonAdmin = path.join(root, "src/css/admin.css");
+  if (fs.existsSync(nguonAdmin)) {
+    const noiDung = fs.readFileSync(nguonAdmin);
+    bangCssDong.set("/assets/css/admin.css", {
+      url: `/assets/css/admin.${hash(noiDung).slice(0, 12)}.css`,
+      nguon: noiDung,
+      ten: "admin.css",
     });
   }
 }
@@ -116,6 +134,7 @@ expected.forEach((item, index) => {
     }
     let banNoi = Buffer.concat(manifest.map((name) => fs.readFileSync(path.join(appSourceRoot, name)))).toString("utf8");
     for (const [tran, anh] of bangAnh) banNoi = banNoi.split(tran).join(anh.url);
+    for (const [tran, css] of bangCssDong) banNoi = banNoi.split(tran).join(css.url);
     source = Buffer.from(banNoi);
   }
 
@@ -141,6 +160,7 @@ if (!publicIndex) {
 // bản nối app đã deploy không được còn gọi ảnh bằng đường dẫn trần.
 const publicAnhRoot = path.join(hostingRoot, "assets/anh");
 const anhHopLe = new Set();
+const cssDongHopLe = new Set();
 {
   const banNoiUrl = references.find((url) => /^\/assets\/js\/app\.[a-f0-9]{12}\.js$/.test(url));
   const banNoi = banNoiUrl ? readIfExists(path.join(hostingRoot, banNoiUrl.replace(/^\//, ""))) : null;
@@ -162,6 +182,24 @@ const anhHopLe = new Set();
   if (!bangAnh.size && fs.existsSync(publicAnhRoot) && fs.readdirSync(publicAnhRoot).length) {
     fail("public/assets/anh còn ảnh nhưng src/anh/ đã trống");
   }
+
+  // CSS nạp động: cùng ba phép kiểm như ảnh.
+  for (const [tran, css] of bangCssDong) {
+    cssDongHopLe.add(css.url);
+    const daBuild = readIfExists(path.join(hostingRoot, css.url.replace(/^\//, "")));
+    if (!daBuild) {
+      fail(`Thiếu bản có vân tay của ${css.ten} trong public/ — chạy lại node scripts/build-static.js`);
+    } else if (hash(daBuild) !== hash(css.nguon)) {
+      fail(`${css.url} trong public/ KHÔNG khớp src/css/${css.ten}`);
+    }
+    if (chuBanNoi.includes(tran)) {
+      fail(`Bản nối app còn gọi ${tran} bằng đường dẫn trần — chạy lại node scripts/build-static.js`);
+    }
+    // Nạp động mà không ai gọi thì tệp nằm chết trong public/ — bắt luôn.
+    if (!chuBanNoi.includes(css.url)) {
+      fail(`Không mã nào nạp ${css.url} — CSS nạp động phải được gọi từ bản nối app.`);
+    }
+  }
 }
 
 // --- 5) Không để tài sản mồ côi trong public/assets --------------------------
@@ -174,7 +212,7 @@ if (fs.existsSync(assetRoot)) {
     });
   for (const file of walk(assetRoot)) {
     const url = `/${path.relative(hostingRoot, file).split(path.sep).join("/")}`;
-    if (!references.includes(url) && !anhHopLe.has(url)) {
+    if (!references.includes(url) && !anhHopLe.has(url) && !cssDongHopLe.has(url)) {
       fail(`Tài sản mồ côi trong public/ (không tệp nào trỏ tới): ${url}`);
     }
   }
@@ -187,6 +225,7 @@ if (failures.length) {
 }
 console.log(
   `Kiểm tra bản tĩnh ĐẠT: index.html, public/index.html, 4 tài sản có vân tay` +
+    (cssDongHopLe.size ? `, ${cssDongHopLe.size} CSS nạp động` : "") +
     (anhHopLe.size ? ` và ${anhHopLe.size} ảnh sản phẩm` : "") +
     " đều khớp nguồn.",
 );

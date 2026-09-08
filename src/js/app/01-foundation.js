@@ -32,8 +32,8 @@
     { ma: 'sp1', ten: 'App Lightroom cho điện thoại Android - đã có bản quyền trọn đời', giaGoc: 299000, giaChot: 99000 },
     { ma: 'sp2', ten: 'Bộ Preset 10.000 màu cao cấp cài sẵn cho Lightroom điện thoại', giaGoc: 99000, giaChot: 79000 },
     { ma: 'sp3', ten: 'Bộ Preset 650 màu cao cấp cài sẵn cho Lightroom Máy tính và photoshop máy tính', giaGoc: 359000, giaChot: 125000 },
-    { ma: 'sp4', ten: 'Bộ Khóa học dành cho Lightroom điện thoại', giaGoc: 199000, giaChot: 0 },
-    { ma: 'sp5', ten: 'Bộ Khóa học dành cho Lightroom máy tính', giaGoc: 199000, giaChot: 0 },
+    { ma: 'sp4', ten: 'Khoá học chỉnh màu Lightroom điện thoại', giaGoc: 199000, giaChot: 0 },
+    { ma: 'sp5', ten: 'Khoá học Lightroom máy tính PC', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp6', ten: 'Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
     { ma: 'sp7', ten: 'Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
     { ma: 'sp8', ten: 'Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)', giaGoc: 159000, giaChot: 39000 },
@@ -46,11 +46,15 @@
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: false },
     { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
+    { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: false },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
-    { ma: 'khoa-hoc-mobile',  ten: 'Khoá học lightroom mobile',        bieuTuong: '▤', kieu: 'trang', sanSang: false },
-    { ma: 'khoa-hoc-may-tinh',ten: 'Khóa học lightroom máy tính',      bieuTuong: '▣', kieu: 'trang', sanSang: false },
+    { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: false },
+    { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: false },
+    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
     { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
-    { ma: 'lien-he',          ten: 'Liên hệ shop',                     bieuTuong: '☎', kieu: 'modal', sanSang: false },
+    { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: false },
+    { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: false },
+    { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: false },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
     { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
     { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false }
@@ -71,6 +75,16 @@
   // ------------------------------------------------------------ TRẠNG THÁI
 
   const state = {
+    // Trang nào đang mở. Web có HAI trang thật, phân biệt bằng ĐƯỜNG DẪN chứ
+    // không phải #hash:
+    //   'chinh'   — trang bán hàng ở "/", các module chuyển bằng #hash
+    //   'sanpham' — trang nhận hàng ở "/sanpham", nơi khách đã mua lấy sản
+    //               phẩm. Đây là địa chỉ được gửi trong email và trong tin
+    //               nhắn Zalo nên KHÔNG được đổi.
+    //   'admin'   — trang quản trị ở "/admin", chỉ hai email của chủ shop mới
+    //               vào được. Quyền thật do database.rules.json giữ, giao diện
+    //               chỉ là lớp lịch sự bên ngoài.
+    trang: 'chinh',
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
     daChon: [],                  // mảng mã sản phẩm khách đã chọn
@@ -84,6 +98,47 @@
     // mà đọc từ Realtime Database lúc chạy. Xem chú thích ở nút "Liên hệ Zalo".
     zaloShop: '',
     maDonHienTai: null,
+    // Mã đơn NGẮN do web tự sinh, dùng làm nội dung chuyển khoản. Khác với
+    // maDonHienTai (khoá dài do Firebase cấp) — cái đó để tra cứu trong Console,
+    // cái này để khách gõ và để máy đọc biến động số dư đối chiếu.
+    maDonNgan: '',
+    // Vân tay của đơn (món đã chọn + thông tin liên hệ). Khách bấm "Quay lại
+    // bước trước" rồi bấm tiếp mà không đổi gì thì đơn vẫn là đơn cũ — giữ
+    // nguyên mã, không đẻ thêm một đơn trùng trong Firebase và không đổi nội
+    // dung chuyển khoản dưới chân người đã kịp quét mã QR.
+    chuKyDon: '',
+    // Trang nhận hàng: sản phẩm khách đang xin tải, mã nhận hàng đọc được từ
+    // đường dẫn, và kết quả lần hỏi máy chủ gần nhất.
+    nhanHang: {
+      maSanPham: '',      // sản phẩm khách đang xin
+      maNhanHang: '',     // mã đọc được từ đường dẫn
+      tep: [],            // danh sách tệp của sản phẩm đang mở, đã xếp thứ tự
+      dangHoiTep: '',     // chỉ số dòng đang chờ máy chủ trả lời
+      ketQuaTep: {}       // chỉ số dòng -> kết quả lần hỏi gần nhất
+    },
+    // Danh mục do chủ shop khai ở /admin: sản phẩm nào lấy hàng từ đâu, gồm
+    // tệp nào, khách nhìn thấy tên gì. KHÔNG chứa đường tải.
+    danhMuc: {},
+    // Danh sách mã sản phẩm khách đã mua, do máy chủ cấp phát trả về.
+    // null nghĩa là CHƯA BIẾT — khác hẳn với mảng rỗng (biết chắc là chưa mua
+    // gì). Chưa biết thì trang không làm mờ nút nào cả.
+    donCuaToi: null,
+    // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
+    // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
+    mayChuKho: '',
+    // Trang quản trị. nguoiDung là object người đang đăng nhập (null khi chưa),
+    // và cheDo cho biết Firebase Auth đã trả lời hay còn đang hỏi.
+    admin: {
+      sanSang: false,        // SDK đăng nhập đã nạp và đã biết trạng thái chưa
+      nguoiDung: null,       // { email, ten, anh } hoặc null
+      duocPhep: false,       // email có nằm trong danh sách chủ shop không
+      module: 'tong-quan',
+      dangDangNhap: false,
+      loi: '',
+      duLieu: {},            // các nhánh cài đặt đã đọc về
+      dangLuu: '',           // tên ô đang lưu, để nút hiện "Đang lưu…"
+      vuaLuu: ''             // tên ô vừa lưu xong, để hiện "Đã lưu" 3 giây
+    },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
     // không làm cả lưới nhấp nháy trôi lại từ đầu.
@@ -105,6 +160,26 @@
   }
 
   // 299000 -> "299.000 ₫"
+  // Bảng ký tự sinh mã đơn: CỐ Ý bỏ 0, O, 1, I, L — bốn cặp này nhìn trên màn
+  // hình ngân hàng rất dễ đọc nhầm nhau, mà mã đọc nhầm là đơn không khớp được.
+  const CHU_MA_DON = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  const DAI_MA_DON = 6;
+
+  // Mã đơn 6 ký tự từ bảng 30 chữ — bảy trăm triệu tổ hợp, đủ xa để không lo
+  // trùng ở quy mô một cửa hàng. Nội dung chuyển khoản vì thế chỉ còn 8 ký tự
+  // (LR + 6), ngắn tới mức không ngân hàng nào cắt bớt được.
+  function sinhMaDon(){
+    const so = new Uint32Array(DAI_MA_DON);
+    if (window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(so);
+    } else {
+      for (let i = 0; i < DAI_MA_DON; i++) so[i] = Math.floor(Math.random() * 4294967296);
+    }
+    let ma = '';
+    for (let i = 0; i < DAI_MA_DON; i++) ma += CHU_MA_DON.charAt(so[i] % CHU_MA_DON.length);
+    return ma;
+  }
+
   function dinhDangTien(so){
     const n = Number(so) || 0;
     return n.toLocaleString('vi-VN') + ' ₫';
@@ -174,4 +249,32 @@
   function datHash(ma){
     if (docHash() === ma) return;
     window.location.hash = '#/' + ma;
+  }
+
+  // ------------------------------------------------- ĐỊNH TUYẾN THEO ĐƯỜNG DẪN
+  //
+  // Firebase Hosting trả index.html cho mọi đường dẫn (xem rewrite trong
+  // firebase.json), nên "/sanpham" vào cùng một ứng dụng rồi mới rẽ nhánh ở đây.
+  // Chấp nhận cả "/sanpham" lẫn "/sanpham/" — khách hay gõ thêm dấu gạch cuối.
+
+  const DUONG_DAN_NHAN_HANG = '/sanpham';
+  const DUONG_DAN_ADMIN = '/admin';
+
+  function docDuongDan(){
+    const p = String(window.location.pathname || '/').replace(/\/+$/, '').toLowerCase();
+    if (p === DUONG_DAN_NHAN_HANG) return 'sanpham';
+    if (p === DUONG_DAN_ADMIN) return 'admin';
+    return 'chinh';
+  }
+
+  // Mỗi khách một đường dẫn riêng: mã nhận hàng nằm ngay trong đường dẫn
+  // ("/sanpham?ma=ABC123"). Khách KHÔNG phải gõ mã vào đâu cả — bấm link trong
+  // email hay trong tin nhắn Zalo là xong, đường dẫn tự mang mã theo.
+  function docMaNhanHangTrenDuongDan(){
+    const tim = String(window.location.search || '');
+    const khop = tim.match(/[?&]ma=([^&#]*)/i);
+    if (!khop) return '';
+    let raw = khop[1];
+    try { raw = decodeURIComponent(raw); } catch (e) { /* mã méo thì dùng nguyên */ }
+    return chuanHoaMaNhanHang(raw);
   }

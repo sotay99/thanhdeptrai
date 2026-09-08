@@ -9,6 +9,7 @@
 //
 //   src/css/base.css        -> public/assets/css/base.<vân tay>.css
 //   src/css/app.css         -> public/assets/css/app.<vân tay>.css
+//   src/css/admin.css       -> public/assets/css/admin.<vân tay>.css  (nạp ĐỘNG)
 //   src/js/firebase-init.js -> public/assets/js/firebase-init.<vân tay>.js
 //   src/js/app/*.js (nối)   -> public/assets/js/app.<vân tay>.js
 //   src/anh/*.jpg           -> public/assets/anh/<tên>.<vân tay>.jpg
@@ -16,6 +17,10 @@
 // Ảnh sản phẩm được mã JS gọi bằng đường dẫn TRẦN "/assets/anh/sp1.jpg"; build
 // thay nó bằng tên có vân tay NGAY TRƯỚC khi băm bản nối, nên vân tay của
 // app.js cũng đổi theo mỗi lần đổi ảnh.
+//
+// admin.css đi đúng cơ chế đó: nó KHÔNG có thẻ <link> trong index.html mà được
+// mã JS nạp động, chỉ khi khách mở "/admin". Nhờ vậy trang bán hàng của khách
+// không phải tải một byte nào của giao diện quản trị, và index.html vẫn mỏng.
 //
 // Vân tay đổi theo nội dung nên trình duyệt không bao giờ phục vụ bản cũ khi
 // đã deploy bản mới, mà vẫn cache vĩnh viễn được (xem header trong firebase.json).
@@ -104,11 +109,34 @@ function dungAnh() {
   return bang;
 }
 
+// --- CSS NẠP ĐỘNG -----------------------------------------------------------
+// Ghi admin.css ra public/ kèm vân tay và trả về bảng thay chuỗi, y như ảnh.
+function dungCssNapDong() {
+  const bang = new Map();
+  const nguon = path.join(root, "src/css/admin.css");
+  if (!fs.existsSync(nguon)) return bang;
+  const noiDung = readFile(nguon, "Admin CSS");
+  const tenMoi = `admin.${fingerprint(noiDung)}.css`;
+  cleanGenerated(publicCssRoot, /^admin\.[a-f0-9]{12}\.css$/);
+  fs.writeFileSync(path.join(publicCssRoot, tenMoi), noiDung);
+  bang.set("/assets/css/admin.css", `/assets/css/${tenMoi}`);
+  return bang;
+}
+
 const manifest = loadManifest();
 const bangAnh = dungAnh();
+const bangCssDong = dungCssNapDong();
 let banNoi = Buffer.concat(manifest.map((name) => readFile(path.join(appSourceRoot, name), `Phần ${name}`))).toString("utf8");
 for (const [tran, coVanTay] of bangAnh) {
   banNoi = banNoi.split(tran).join(coVanTay);
+}
+for (const [tran, coVanTay] of bangCssDong) {
+  banNoi = banNoi.split(tran).join(coVanTay);
+}
+// Đường dẫn CSS nạp động còn ở dạng trần nghĩa là tệp nguồn không tồn tại —
+// để lọt thì trang quản trị mở ra không có kiểu dáng nào.
+if (/\/assets\/css\/admin\.css/.test(banNoi)) {
+  die("Mã gọi /assets/css/admin.css nhưng không có src/css/admin.css");
 }
 // Đường dẫn ảnh trần nào còn sót lại nghĩa là JS gọi một ảnh KHÔNG có trong
 // src/anh/ — để lọt thì trang thật hiện ô ảnh vỡ, nên chặn ngay tại đây.
@@ -173,5 +201,6 @@ fs.writeFileSync(path.join(root, "public/index.html"), htmlBuffer);
 
 console.log(
   `Build tĩnh XONG: ${outputs.baseCss}, ${outputs.appCss}, ${outputs.firebase}, ${outputs.app}` +
+    (bangCssDong.size ? `, ${Array.from(bangCssDong.values()).join(", ").replace(/\/assets\/css\//g, "")} (nạp động)` : "") +
     (bangAnh.size ? `, và ${bangAnh.size} ảnh sản phẩm` : ""),
 );

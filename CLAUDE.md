@@ -51,6 +51,7 @@ node scripts/build-static.js
 node scripts/validate-bundle-scope.js
 node scripts/validate-static.js
 node scripts/validate-shop-contract.js
+node scripts/thu-worker.mjs
 ```
 
 `validate-shop-contract.js` là "hợp đồng bằng regex" — nó chỉ kiểm tra một
@@ -119,8 +120,207 @@ Vòng đời một đơn: `moi` → `daXacNhan` → `daGui` | `canXemTay`. Trư�
 nên hàng chờ gửi luôn ngắn. Đổi tên các giá trị này thì phải đổi ở CẢ HAI nơi:
 `05-thanh-toan.js` và `gui-hang.gs`.
 
+Có HAI tệp: `gui-hang.gs` là bản người viết (tiếng Việt đọc thoải mái), còn
+`gui-hang.ascii.gs` do `scripts/build-apps-script.js` sinh ra — mọi chuỗi hiển
+thị viết bằng dãy `\uXXXX` nên tệp là ASCII thuần. **Luôn dán bản `.ascii.gs`
+vào Google Apps Script**: chép mã qua trình duyệt hay trình soạn thảo có lúc
+làm hỏng ký tự có dấu, và lỗi chỉ lộ ra khi khách nhận email đầy chữ
+"Ä Ă£ gá»­i". Sửa nội dung thì sửa bản gốc rồi chạy lại script sinh.
+
+Thư gửi đi luôn đi qua `guiThu()` — nó bọc thân thư trong tài liệu HTML có
+`<meta charset="utf-8">` và dùng `GmailApp` (khai bảng mã cho cả tiêu đề).
+
 Tệp `.gs` KHÔNG chứa bí mật: khoá cơ sở dữ liệu và các đường tải sản phẩm nằm
 trong Script Properties của dự án Apps Script.
 
 Script chỉ biết khách đã bấm nút xác nhận, KHÔNG biết tiền đã về hay chưa —
 khâu đối soát vẫn thủ công cho tới khi nối cổng thanh toán vào `doPost()`.
+
+## Trang nhận hàng `/sanpham`
+
+Đây là địa chỉ shop gửi cho khách sau khi tiền về — nó nằm trong email tự động
+và trong mẩu tin nhắn Zalo đã gửi đi rồi, nên **KHÔNG được đổi**.
+
+Trang này có đường dẫn thật (không phải `#hash`): `docDuongDan()` trong
+`01-foundation.js` đọc `location.pathname`, `state.trang` giữ kết quả, và
+Firebase Hosting trả `index.html` cho mọi đường dẫn (rewrite `**` trong
+`firebase.json`). `scripts/serve-static.py` bắt chước đúng cách đó khi xem tại
+chỗ.
+
+**Khách KHÔNG bao giờ phải gõ mã.** Mỗi khách một đường dẫn riêng:
+`/sanpham?ma=<16 ký tự>`. Apps Script sinh mã đó lúc gửi hàng
+(`sinhMaNhanHang()`), lưu vào đơn ở trường `maNhanHang`, rồi ghép vào cả email
+lẫn mẩu tin Zalo. Đơn đã có mã thì giữ nguyên mã cũ — khách có thể đã cầm đường
+dẫn cũ trong tay.
+
+Luật xương sống, hợp đồng mục 15 canh bằng regex:
+
+- Đường dẫn tới file sản phẩm **không nằm trong mã nguồn, và cũng không nằm
+  trong email**. Thư gửi khách chỉ mang đường dẫn riêng; máy chủ cấp phát giữ
+  đường tải thật. (Thư từng liệt kê thẳng link tải — ai chuyển tiếp lá thư đó đi
+  là mất hàng mà shop không biết.)
+- Ngay cả **địa chỉ máy chủ cấp phát** cũng không nằm trong mã nguồn — nó đọc
+  từ nhánh `/thongtinkho` của Realtime Database lúc chạy, hệt cách giấu số tài
+  khoản và số Zalo.
+- **Nút tải xuống chỉ được dựng SAU KHI máy chủ trả lời là được phép** (nhánh
+  cuối của `veKetQuaNhanHang()`). Dựng sẵn rồi ẩn bằng CSS là hỏng cả cơ chế —
+  mở F12 lên là thấy.
+
+Mỗi sản phẩm chỉ tải được trên MỘT thiết bị. Lời cảnh báo đó xuất hiện hai lần
+(đầu trang và trong bảng nhận sản phẩm), cố ý — và khách phải tự bấm nút xác
+nhận thì máy chủ mới ghi nhớ thiết bị.
+
+Hai khoá học (sp4, sp5) đi nhánh riêng: chúng không có file để tải mà là module
+học trên web, nên bảng của chúng chỉ dặn đường và cho một nút
+"Vào module ..." (`moModalKhoaHoc()`).
+
+## Còn nợ: nối app Checkout
+
+App đọc biến động số dư (Checkout) **chưa được nối**. Khi làm, phải hướng dẫn
+người dùng từng bước một, thật chi tiết. Lưu ý: proxy của môi trường chặn
+`help.checkout.vn`, nên tài liệu chính thức không đọc trực tiếp được — phải dựa
+vào ảnh chụp màn hình người dùng gửi và nói rõ chỗ nào là suy đoán.
+
+## Trang quản trị `/admin`
+
+Chỉ hai email của chủ shop vào được. **Quyền THẬT nằm ở `database.rules.json`**,
+không ở giao diện — `EMAIL_CHU_SHOP` trong `04b-admin.js` chỉ để ẩn nút và hiện
+lời từ chối cho lịch sự. Hai nơi phải luôn khớp nhau; hợp đồng mục 16 canh việc
+đó, và canh cả `email_verified`.
+
+**Khoá API của AI không bao giờ đi qua trình duyệt khách.** Nhánh `/admin` cấm
+đọc công khai. Chatbot sau này hỏi Worker, Worker mới giữ khoá và gọi AI. Hợp
+đồng chặn mọi lời gọi thẳng tới `api.anthropic.com`, `api.openai.com`,
+`generativelanguage.googleapis.com` trong mã web.
+
+Ô khoá API hiện dạng che khi trang vừa mở, và bấm Lưu lúc còn che thì bị chặn —
+nếu không, một cú bấm nhầm ghi đè khoá thật bằng chuỗi dấu chấm.
+
+### `database.rules.json` KHÔNG được có khoá `"//"`
+
+Firebase hiểu `//` là dấu mở **chú thích**, nên một khoá JSON tên `"//"` làm
+hỏng cả bộ luật — Console từ chối với `Expected '{'`. Lỗi này đã xảy ra thật khi
+dán bộ luật vào Console. Chú thích của từng nhánh để ở đây, đừng để trong tệp:
+
+| Nhánh | Ai đọc | Ai ghi |
+|---|---|---|
+| `thongtinthanhtoan` | công khai (web khách dựng mã QR) | chỉ chủ shop |
+| `thongtinlienhe` | công khai (nút Zalo, link mạng xã hội) | chỉ chủ shop |
+| `thongtinkho` | công khai (trang `/sanpham` hỏi máy chủ cấp phát) | chỉ chủ shop |
+| `danhmuc` | công khai (tên hiển thị của sản phẩm và file) | chỉ chủ shop |
+| `admin` | **CHỈ chủ shop** — khoá API của AI nằm đây | chỉ chủ shop |
+| `donhang` | chỉ chủ shop | ai cũng TẠO được, không ai đọc được đơn người khác |
+
+Hợp đồng mục 16 canh cả sáu dòng này, và chặn hẳn khoá `"//"` mọc lại.
+
+### Danh mục sản phẩm — hai nguồn hàng KHÔNG ngang nhau
+
+Module "Danh mục sản phẩm" trong `/admin` cho chủ shop khai mỗi sản phẩm lấy
+hàng từ đâu. Hai nguồn khác hẳn nhau về mức bảo vệ, và giao diện phải nói thẳng
+điều đó ngay tại chỗ chọn:
+
+| Nguồn | Khoá thiết bị | Thu hồi được | Dùng khi |
+|---|---|---|---|
+| `r2` — kho riêng Cloudflare | có | có | mặc định |
+| `drive` — link Google Drive công khai | **không** | **không** | món quá nặng, chấp nhận đánh đổi |
+
+Dữ liệu ở nhánh `/danhmuc`, mỗi sản phẩm một mục:
+
+```
+danhmuc/sp2 = { nguon: 'r2', file: [ { tep: 'sp2/00-tron-bo.zip', ten: 'Trọn bộ preset' }, … ] }
+danhmuc/sp8 = { nguon: 'drive', link: 'https://drive.google.com/…' }
+```
+
+`tep` là tên thật trong kho (máy đọc), `ten` là tên khách nhìn thấy (người đọc).
+Tệp tên bắt đầu bằng `00-` được coi là gói trọn bộ: nó tự lên đầu danh sách và
+mang nhãn riêng. Hai khoá học (sp4, sp5) **không có** trong danh mục —
+`sanPhamCoHang()` loại chúng ra, vì chúng học trên web chứ không có tệp nào.
+
+Ở trang `/sanpham`, mỗi dòng tệp mang **chỉ số**, không mang tên tệp — tên thật
+nằm lại trong bộ nhớ trang, không in ra HTML.
+
+### Apps Script không còn giữ đường tải
+
+Script Property `LINK_TAI` đã bị bỏ. Trước đây nó chứa bảng "mã sản phẩm →
+đường tải" và thư gửi khách in thẳng những đường đó ra: ai chuyển tiếp lá thư đi
+là mất hàng mà shop không biết. Nay script chỉ đọc `/danhmuc` để **kiểm tra**
+xem chủ shop đã khai đủ chưa. Hợp đồng chặn `LINK_TAI` và `bangDuongTai` mọc lại.
+
+### CSS và SDK nạp động
+
+`src/css/admin.css` và `firebase-auth-compat.js` chỉ được nạp khi có người mở
+`/admin`. Khách mua hàng không tải một byte nào của phần quản trị, và
+`index.html` vẫn mỏng.
+
+`admin.css` đi qua cơ chế vân tay hệt như ảnh: mã JS viết đường dẫn trần
+`/assets/css/admin.css`, `build-static.js` thay bằng tên có vân tay trước khi
+băm bản nối. `validate-static.js` kiểm cả ba điều: tệp trong `public/` khớp
+nguồn, bản nối không còn đường dẫn trần, và có mã nào đó thật sự nạp nó.
+
+### Thử trang quản trị tại chỗ
+
+Proxy của môi trường chặn `www.gstatic.com` nên Firebase SDK thật không tải
+được khi chạy thử. Bộ thử dựng một bản Firebase giả bằng `addInitScript` và
+chặn mọi yêu cầu tới gstatic bằng `page.route`, nhờ vậy thử được trọn luồng:
+email lạ bị từ chối, hai email chủ shop vào được, ô cài đặt ghi ra đúng nhánh.
+
+## Máy chủ cấp phát — `worker/kho-worker.js`
+
+Cloudflare Worker gác cổng kho R2. Đây là **thứ duy nhất biết đường tới tệp
+thật**: web của khách không biết, mã nguồn trên GitHub không biết, email gửi
+khách cũng không biết.
+
+Hai đường: `POST /cap-phat` kiểm tra rồi cấp một đường dẫn dùng một lần;
+`GET /tai?t=…` mở chữ ký rồi rót tệp từ binding R2. Tách làm hai vì khâu kiểm
+tra cần gọi Firebase (chậm), còn khâu rót tệp thì chỉ việc mở chữ ký — quan
+trọng với tệp 2,8 GB tải đứt giữa chừng.
+
+Token là **chữ ký HMAC tự mang đủ thông tin** (tệp nào, hết hạn lúc nào, cho
+thiết bị nào), không lưu ở đâu cả nên không có gì để dọn. Sống 15 phút.
+
+**Bốn cửa trong `/cap-phat`** — thiếu một cửa là thủng kho:
+
+1. Mã nhận hàng có ứng với một đơn thật không (`sai-ma`)
+2. Sản phẩm có nằm trong đơn của họ không (`khong-co-trong-don`) — chặn khách
+   mua một món rồi dùng đường dẫn của mình đi lấy món khác
+3. Tệp có đúng là tệp của sản phẩm đó theo `/danhmuc` không — chặn khách tự gõ
+   tên tệp
+4. Thiết bị: khoá theo **từng sản phẩm**, ghi ở `/thietbi/<mã>/<sp>`
+
+Hợp đồng mục 18 kiểm cả **thứ tự**: bốn cửa phải chạy trước `taoToken`. Đảo thứ
+tự là cấp trước rồi mới hỏi.
+
+`scripts/thu-worker.mjs` **chạy thật** Worker trong Node với Firebase và R2 giả
+lập — 25 mục. Nó nằm trong predeploy của `firebase.json`, nên không deploy được
+khi kho hàng đang thủng.
+
+### Mã thiết bị
+
+Trang `/sanpham` sinh một mã ngẫu nhiên và cất trong `localStorage`. Khách xoá
+dữ liệu duyệt web, đổi trình duyệt hay mở ẩn danh thì mã đổi và họ bị coi là
+máy khác — **đó là chuyện sẽ xảy ra thường xuyên**, nên luồng cấp quyền lại cho
+chủ shop không phải tính năng phụ. Xoá `/thietbi/<mã>/<sp>` là mở khoá lại.
+
+### Món khách chưa mua
+
+Trang `/sanpham` hỏi máy chủ (`POST /don`) xem đơn gồm những món nào, rồi biến
+nút "Sử dụng sản phẩm này" của những món chưa mua thành một **khung chữ không
+bấm được**. Cố ý không dùng `disabled`: một cái nút xám vẫn là nút, khách cứ bấm
+rồi ngồi đoán vì sao không có gì xảy ra.
+
+`state.donCuaToi` có ba trạng thái, đừng gộp hai cái đầu:
+
+| Giá trị | Nghĩa | Trang làm gì |
+|---|---|---|
+| `null` | **chưa biết** (chưa hỏi xong, mất mạng, đường dẫn không có mã) | không làm mờ nút nào |
+| `[]` | biết chắc chưa mua gì | mờ hết trừ hai khoá học |
+| `['sp3']` | mua sp3 | mờ mọi món khác |
+
+Hai khoá học (sp4, sp5) **luôn** bấm được, kể cả khách không mua — chúng miễn phí.
+
+Đây chỉ là lớp giao diện. Người mở console sửa `state.donCuaToi` vẫn không tải
+được gì: cửa thật là cửa thứ hai trong `/cap-phat` của Worker.
+
+`POST /don` chỉ trả về **danh sách mã sản phẩm**, không email, không số tiền,
+không mã đơn — khách không được phép đọc nhánh `donhang` vì đọc được là thấy
+thông tin của mọi khách khác.

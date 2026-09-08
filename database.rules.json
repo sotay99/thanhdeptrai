@@ -2,45 +2,109 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "thongtinthanhtoan": {
-      "//": "Thông tin chuyển khoản: cả web đọc công khai (khách không đăng nhập), nhưng KHÔNG ai ghi được từ trình duyệt. Sửa số tài khoản thì sửa thẳng trong Firebase Console.",
       ".read": true,
-      ".write": false
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     },
-
     "thongtinlienhe": {
-      "//": "Số Zalo của shop: web đọc công khai để dựng nút Liên hệ Zalo, KHÔNG ai ghi được từ trình duyệt. Giữ ở đây thay vì trong mã nguồn để số không lộ ra trên GitHub.",
       ".read": true,
-      ".write": false
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     },
-
+    "admin": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      "khoaAI": {
+        "khoa": {
+          ".validate": "newData.isString() && newData.val().length <= 300"
+        },
+        "nhaCungCap": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "model": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "$khac": {
+          ".validate": false
+        }
+      }
+    },
+    "danhmuc": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
+    },
+    "thongtinkho": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
+    },
     "donhang": {
-      "//": "Đơn hàng: cho TẠO MỚI và cho cập nhật cờ xác nhận, nhưng KHÔNG cho đọc — khách này không xem được đơn của khách khác. Chủ shop xem trong Firebase Console.",
-      "//2": "indexOn trangThai để khâu gửi hàng tự động lọc nhanh những đơn đang chờ gửi, thay vì tải cả kho đơn về.",
-      ".read": false,
-      ".indexOn": ["trangThai"],
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      ".indexOn": [
+        "trangThai",
+        "maNhanHang"
+      ],
       "$madon": {
-        ".read": false,
+        ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
         ".write": true,
         ".validate": "newData.hasChildren(['sanPham', 'thanhTien', 'taoLuc'])",
-        "sanPham": { ".validate": "newData.hasChildren()" },
-        "tongTien": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-        "phanTramGiam": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
-        "thanhTien": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-        "maSanPham": { ".validate": "newData.hasChildren()" },
-        "trangThai": { ".validate": "newData.isString() && newData.val().length <= 20" },
-        "guiLuc": { ".validate": "newData.isNumber()" },
-        "ghiChuGui": { ".validate": "newData.isString() && newData.val().length <= 300" },
-        "email": { ".validate": "newData.isString() && newData.val().length <= 35" },
-        "zalo": { ".validate": "newData.isString() && newData.val().length <= 13" },
-        "dienThoai": { ".validate": "newData.isString() && newData.val().length <= 13" },
-        "noiDungCK": { ".validate": "newData.isString() && newData.val().length <= 120" },
-        "taoLuc": { ".validate": "newData.isNumber()" },
-        "daXacNhan": { ".validate": "newData.isBoolean()" },
-        "xacNhanLuc": { ".validate": "newData.isNumber()" },
-        "$khac": { ".validate": false }
+        "sanPham": {
+          ".validate": "newData.hasChildren()"
+        },
+        "tongTien": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "phanTramGiam": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        "thanhTien": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "maSanPham": {
+          ".validate": "newData.hasChildren()"
+        },
+        "trangThai": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "maDon": {
+          ".validate": "newData.isString() && newData.val().length <= 12"
+        },
+        "maNhanHang": {
+          ".validate": "newData.isString() && newData.val().length <= 32"
+        },
+        "guiLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "ghiChuGui": {
+          ".validate": "newData.isString() && newData.val().length <= 300"
+        },
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 35"
+        },
+        "zalo": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "dienThoai": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "noiDungCK": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "taoLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "daXacNhan": {
+          ".validate": "newData.isBoolean()"
+        },
+        "xacNhanLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "$khac": {
+          ".validate": false
+        }
       }
+    },
+    "thietbi": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     }
   }
 }

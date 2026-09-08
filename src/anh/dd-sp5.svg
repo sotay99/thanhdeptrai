@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient>
+<linearGradient id="sky5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#123a63"/><stop offset=".5" stop-color="#3f7db5"/><stop offset="1" stop-color="#e8a765"/></linearGradient></defs>
+<rect width="240" height="240" rx="30" fill="url(#g5)"/>
+<!-- laptop -->
+<rect x="34" y="62" width="172" height="112" rx="10" fill="#0f1318" stroke="#3d4753" stroke-width="4"/>
+<rect x="44" y="72" width="152" height="92" rx="5" fill="url(#sky5)"/>
+<path d="M44 140 L70 110 L90 132 L112 100 L138 130 L160 112 L196 148 L196 164 L44 164 Z" fill="#1b2430"/>
+<circle cx="120" cy="118" r="24" fill="#fff" opacity=".95"/>
+<path d="M112 106 L136 118 L112 130 Z" fill="#14171c"/>
+<path d="M20 174 h200 l10 16 H10 Z" fill="#39414c"/>
+<rect x="88" y="180" width="64" height="5" rx="2.5" fill="#232931"/>
+<!-- mũ tốt nghiệp -->
+<g transform="translate(14,16)">
+ <path d="M0 22 L36 6 L72 22 L36 38 Z" fill="#e6eaf0"/>
+ <path d="M14 29 V46 c0 8 44 8 44 0 V29" fill="#c3cad4"/>
+ <line x1="70" y1="23" x2="70" y2="46" stroke="#ffd479" stroke-width="3"/><circle cx="70" cy="48" r="5" fill="#ffd479"/>
+</g>
+<rect x="164" y="18" width="60" height="26" rx="13" fill="#2d9d5f"/>
+<text x="194" y="36" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">FREE</text>
+</svg>
