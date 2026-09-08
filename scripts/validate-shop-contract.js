@@ -740,6 +740,7 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     [/state\.trangThaiDon\s*=\s*'thieu-ma'/, "trạng thái thiếu mã"],
     [/state\.trangThaiDon\s*=\s*'khong-hoi-duoc'/, "trạng thái không hỏi được máy chủ"],
     [/đúng đường dẫn shop đã gửi/, "lời dặn bấm đúng đường dẫn shop gửi"],
+    [/Bấm nút bên dưới là mở thư mục chứa toàn bộ tệp/, "câu hướng dẫn ở bảng Google Drive"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
@@ -749,6 +750,27 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     const than = banNoi.match(/function\s+duocDung\s*\([\s\S]*?\n  \}/);
     if (than && /khong-hoi-duoc/.test(than[0])) {
       fail("Không hỏi được máy chủ thì KHÔNG được khoá món nào — đó là lỗi phía mình, không phải khách bấm nhầm link.");
+    }
+  }
+
+  // Dải báo đường dẫn sai phải nhún một nhịp rồi nghỉ 2 giây, lặp mãi. Nhịp nhún
+  // dài đúng bằng nhịp của khung cam kết giao hàng ở modal đơn hàng — hai chỗ
+  // nhún giống hệt nhau, chỉ khác quãng nghỉ.
+  {
+    const khoi = cssApp.match(/\.bao-duong-dan-sai\s*\{[^}]*\}/);
+    if (!khoi || !/animation:\s*nhun-nhay-bao-sai\s+2\.3s[^;]*infinite/.test(khoi[0])) {
+      fail("Dải báo đường dẫn sai phải nhún theo nhịp 2,3s lặp mãi.");
+    }
+    const nhip = cssApp.match(/@keyframes\s+nhun-nhay-bao-sai\s*\{[\s\S]*?\n\}/);
+    if (!nhip) {
+      fail("Thiếu @keyframes nhun-nhay-bao-sai.");
+    } else if (!/12\.5%/.test(nhip[0])) {
+      // 12,5% của 2,3s = 0,2875s nhún, còn lại đúng 2 giây nghỉ. Đổi mốc này là
+      // đổi quãng nghỉ mà không ai nhận ra.
+      fail("Nhịp nhún phải kết thúc ở mốc 12,5% — đúng 2 giây nghỉ sau đó.");
+    }
+    if (!/@media\s*\(prefers-reduced-motion: reduce\)\s*\{\s*\.bao-duong-dan-sai\s*\{\s*animation:\s*none/.test(cssApp)) {
+      fail("Dải báo đường dẫn sai phải tắt hiệu ứng khi máy khách xin giảm chuyển động.");
     }
   }
 

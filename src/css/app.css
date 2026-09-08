@@ -1569,6 +1569,13 @@
 }
 
 /* Dải báo đường dẫn sai, đặt ngay đầu trang nhận hàng. */
+/* Dải này báo một chuyện khách cần biết ngay, nên nó nhún một nhịp rồi nghỉ,
+   lặp mãi — cùng nhịp với khung cam kết giao hàng ở modal đơn hàng, chỉ khác
+   quãng nghỉ: 2 giây thay vì hơn 3 giây.
+
+   Chu kỳ 2,3 giây, phần nhún chiếm 12,5% đầu (≈0,29 giây) rồi đứng im 2 giây.
+   Con số 5,8% và 12,5% chọn để nhịp nhún dài đúng bằng nhịp của khung cam kết
+   (3,8% và 8,2% của 3,5 giây) — hai chỗ nhún giống hệt nhau, chỉ nghỉ khác. */
 .bao-duong-dan-sai {
   display: flex;
   gap: 11px;
@@ -1577,6 +1584,20 @@
   border: 1px solid rgba(229, 83, 75, .45);
   border-radius: 12px;
   background: rgba(229, 83, 75, .1);
+  transform-origin: center;
+  will-change: transform;
+  animation: nhun-nhay-bao-sai 2.3s ease-in-out infinite;
+}
+
+@keyframes nhun-nhay-bao-sai {
+  0%    { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, .5); }
+  5.8%  { transform: scale(1.06) rotate(-.5deg);  box-shadow: 0 0 0 7px rgba(229, 83, 75, .24); }
+  12.5% { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 11px rgba(229, 83, 75, 0); }
+  100%  { transform: scale(1) rotate(0deg);       box-shadow: 0 0 0 0 rgba(229, 83, 75, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bao-duong-dan-sai { animation: none; }
 }
 .bao-duong-dan-sai .dau { flex: 0 0 auto; font-size: 18px; line-height: 1.4; }
 .bao-duong-dan-sai .chu { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
