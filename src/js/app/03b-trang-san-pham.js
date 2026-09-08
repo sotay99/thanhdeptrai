@@ -307,6 +307,10 @@
   function moModalNhanHang(maSanPham){
     const sp = timSanPham(maSanPham);
     if (!sp) return;
+    // Chặn lần hai, ngay tại cửa mở bảng. Lớp thứ nhất là không gắn hành động
+    // vào thẻ; lớp này để phòng ngày nào đó ai đó gắn lại mà quên mất vì sao.
+    // Với sp8/sp9 thì bảng mở ra là lộ nguyên đường dẫn Google Drive.
+    if (!duocDung(sp.ma)) return;
 
     // Hai khoá học không phải file để tải mà là module học ngay trên web, nên
     // chúng đi một đường riêng hẳn.

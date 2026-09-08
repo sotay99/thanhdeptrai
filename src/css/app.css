@@ -1600,3 +1600,8 @@
 .khung-nhan-hang .canh-bao-thiet-bi {
   overflow-wrap: anywhere;
 }
+
+/* Thẻ của món chưa mua: không còn là vùng bấm nên bỏ luôn dấu hiệu mời bấm. */
+.the-nhan-hang.chua-mua { cursor: default; }
+.the-nhan-hang.chua-mua:hover { transform: none; box-shadow: none; }
+.the-nhan-hang.chua-mua:hover::before { opacity: .25; }

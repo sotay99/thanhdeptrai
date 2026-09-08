@@ -89,9 +89,15 @@
   function veTheNhanHang(sp, chiSo){
     const choTroi = state.hieuUngVaoModule ? ' cho-troi-len' : '';
     const giaHienBanDau = state.hieuUngVaoModule ? sp.giaGoc : sp.giaChot;
+    const mo = duocDung(sp.ma);
+    // CẢ KHUNG THẺ là vùng bấm, nên món chưa mua phải gỡ luôn hành động khỏi
+    // thẻ — không thì nút đã thành khung chữ mà bấm vào chỗ trống của thẻ vẫn
+    // mở bảng. Lỗi thật đã xảy ra: sp8 và sp9 để trên Google Drive, bảng mở ra
+    // là lộ nguyên đường dẫn Drive cho người chưa mua.
     return '' +
-      '<article class="the-sanpham the-nhan-hang' + choTroi +
-        '" data-hanh-dong="su-dung-san-pham" data-ma="' + escapeHtml(sp.ma) + '">' +
+      '<article class="the-sanpham the-nhan-hang' + (mo ? '' : ' chua-mua') + choTroi + '"' +
+        (mo ? ' data-hanh-dong="su-dung-san-pham"' : '') +
+        ' data-ma="' + escapeHtml(sp.ma) + '">' +
         '<span class="so-tt" aria-hidden="true">' + (chiSo + 1) + '</span>' +
         '<div class="dau-the">' +
           veAnhDaiDien(sp) +
@@ -113,7 +119,7 @@
         // Món khách chưa mua thì KHÔNG còn là nút nữa — nó thành một khung chữ
         // không bấm được. Cố ý không dùng thuộc tính disabled: một cái nút xám
         // vẫn là nút, khách cứ bấm rồi tự hỏi vì sao không có gì xảy ra.
-        (duocDung(sp.ma)
+        (mo
           ? '<button type="button" class="nut nut-rong nut-chinh nut-su-dung" data-hanh-dong="su-dung-san-pham" data-ma="' +
             escapeHtml(sp.ma) + '">Sử dụng sản phẩm này</button>'
           : '<div class="khung-chua-mua"><span aria-hidden="true">🔒</span> Bạn chưa mua sản phẩm này</div>') +
