@@ -8,6 +8,11 @@
  *
  * HAI ĐƯỜNG VÀO:
  *
+ *   POST /don        Khách hỏi: "đơn của tôi gồm những món nào?". Worker trả
+ *                    về DUY NHẤT danh sách mã sản phẩm — không email, không số
+ *                    tiền, không số điện thoại. Trang nhận hàng dùng nó để làm
+ *                    mờ những món khách chưa mua.
+ *
  *   POST /cap-phat   Khách hỏi: "cho tôi tải tệp này". Worker tra đơn hàng
  *                    trong Firebase, kiểm tệp có đúng là hàng của họ không,
  *                    khoá thiết bị, rồi trả về một đường dẫn DÙNG MỘT LẦN.
@@ -45,6 +50,7 @@ export default {
     const dia = new URL(yeuCau.url);
 
     if (yeuCau.method === 'OPTIONS') return traLoiOptions(yeuCau, env);
+    if (dia.pathname === '/don' && yeuCau.method === 'POST') return donCuaToi(yeuCau, env);
     if (dia.pathname === '/cap-phat' && yeuCau.method === 'POST') return capPhat(yeuCau, env);
     if (dia.pathname === '/tai' && yeuCau.method === 'GET') return rotTep(dia, env);
     if (dia.pathname === '/' || dia.pathname === '/khoe') {
@@ -176,6 +182,49 @@ async function moToken(env, token) {
   return than;
 }
 
+/* ------------------------------------------------------------ ĐƠN CỦA TÔI */
+//
+// Khách KHÔNG được phép đọc nhánh donhang (rules chặn), vì đọc được là thấy
+// email và số điện thoại của mọi khách khác. Nhưng trang nhận hàng cần biết họ
+// đã mua món nào để làm mờ những món chưa mua. Worker trả lời hộ, và chỉ trả
+// đúng một thứ: danh sách mã sản phẩm.
+//
+// ĐÂY CHỈ LÀ LỚP GIAO DIỆN CHO DỄ NHÌN. Người sửa lời đáp này trong trình duyệt
+// vẫn không tải được gì — cửa thật nằm ở /cap-phat.
+
+async function donCuaToi(yeuCau, env) {
+  if (!gocDuocPhep(yeuCau, env)) {
+    return new Response('Không nhận lời gọi từ địa chỉ này.', { status: 403 });
+  }
+  let than;
+  try {
+    than = await yeuCau.json();
+  } catch (e) {
+    return tuChoi('yeu-cau-hong', yeuCau, env);
+  }
+  const maNhanHang = String(than && than.ma || '').trim();
+  if (!maNhanHang) return tuChoi('thieu-ma', yeuCau, env);
+
+  try {
+    const don = await timDon(env, maNhanHang);
+    if (!don) return tuChoi('sai-ma', yeuCau, env);
+    if (!Array.isArray(don.maSanPham)) return tuChoi('don-hong', yeuCau, env);
+    return traJSON({ duoc: true, maSanPham: don.maSanPham }, yeuCau, env);
+  } catch (e) {
+    console.error('Lỗi khi tra đơn:', e && e.message);
+    return tuChoi('may-chu-tu-choi', yeuCau, env);
+  }
+}
+
+/** Tìm đơn theo mã nhận hàng. Trả về đơn, hoặc null nếu không có. */
+async function timDon(env, maNhanHang) {
+  const ketQua = await docDB(env, 'donhang',
+    'orderBy=' + encodeURIComponent('"maNhanHang"') +
+    '&equalTo=' + encodeURIComponent('"' + maNhanHang + '"') + '&limitToFirst=1');
+  const khoa = ketQua ? Object.keys(ketQua) : [];
+  return khoa.length ? ketQua[khoa[0]] : null;
+}
+
 /* ------------------------------------------------------------- CẤP PHÁT */
 
 async function capPhat(yeuCau, env) {
@@ -201,12 +250,8 @@ async function capPhat(yeuCau, env) {
 
   try {
     // 1) Mã này có phải mã của một đơn thật không?
-    const ketQua = await docDB(env, 'donhang',
-      'orderBy=' + encodeURIComponent('"maNhanHang"') +
-      '&equalTo=' + encodeURIComponent('"' + maNhanHang + '"') + '&limitToFirst=1');
-    const khoa = ketQua ? Object.keys(ketQua) : [];
-    if (!khoa.length) return tuChoi('sai-ma', yeuCau, env);
-    const don = ketQua[khoa[0]];
+    const don = await timDon(env, maNhanHang);
+    if (!don) return tuChoi('sai-ma', yeuCau, env);
 
     // 2) Sản phẩm này có nằm trong đơn của họ không? Đây là chỗ chặn khách mua
     //    một món rồi lấy đường dẫn của mình đi tải món khác.
@@ -240,7 +285,7 @@ async function capPhat(yeuCau, env) {
       await ghiDB(env, duongThietBi, {
         thietBi: thietBi,
         moLuc: Date.now(),
-        maDon: don.maDon || khoa[0]
+        maDon: don.maDon || ''
       });
     }
 

@@ -1532,3 +1532,23 @@
 }
 
 .nut-mo-drive { text-decoration: none; }
+
+/* Món khách chưa mua: KHÔNG phải nút, mà là một khung chữ. Cố ý không làm nó
+   trông giống nút bị mờ — nút mờ vẫn dụ người ta bấm rồi ngồi đoán. */
+.khung-chua-mua {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px dashed rgba(255, 167, 46, .45);
+  border-radius: 10px;
+  background: rgba(255, 167, 46, .08);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--cam);
+  cursor: default;
+  user-select: none;
+}

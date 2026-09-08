@@ -110,8 +110,13 @@
           '<span class="gia-chot" data-gia-chot="' + sp.giaChot + '" data-gia-goc="' + sp.giaGoc + '">' +
             dinhDangTien(giaHienBanDau) + '</span>' +
         '</div>' +
-        '<button type="button" class="nut nut-rong nut-chinh nut-su-dung" data-hanh-dong="su-dung-san-pham" data-ma="' +
-          escapeHtml(sp.ma) + '">Sử dụng sản phẩm này</button>' +
+        // Món khách chưa mua thì KHÔNG còn là nút nữa — nó thành một khung chữ
+        // không bấm được. Cố ý không dùng thuộc tính disabled: một cái nút xám
+        // vẫn là nút, khách cứ bấm rồi tự hỏi vì sao không có gì xảy ra.
+        (duocDung(sp.ma)
+          ? '<button type="button" class="nut nut-rong nut-chinh nut-su-dung" data-hanh-dong="su-dung-san-pham" data-ma="' +
+            escapeHtml(sp.ma) + '">Sử dụng sản phẩm này</button>'
+          : '<div class="khung-chua-mua"><span aria-hidden="true">🔒</span> Bạn chưa mua sản phẩm này</div>') +
       '</article>';
   }
 

@@ -106,6 +106,58 @@
     return ma;
   }
 
+  // ---------------------------------------------------- ĐƠN CỦA KHÁCH LÀ GÌ
+  //
+  // Trang cần biết khách đã mua món nào để làm mờ những món chưa mua. Khách
+  // KHÔNG được phép đọc nhánh donhang (đọc được là thấy email, số điện thoại
+  // của mọi khách khác), nên máy chủ cấp phát trả lời hộ, và chỉ trả đúng danh
+  // sách mã sản phẩm.
+  //
+  // ĐÂY CHỈ LÀ LỚP GIAO DIỆN. Người mở console sửa danh sách này vẫn không tải
+  // được gì — cửa thật nằm ở máy chủ. Vì thế khi CHƯA biết (chưa hỏi xong, mất
+  // mạng, đường dẫn không có mã) thì cứ để nút bình thường: thà để khách bấm
+  // rồi nhận lời giải thích rõ ràng, còn hơn làm mờ hết rồi họ tưởng mình mua
+  // hụt.
+  function taiDonCuaToi(){
+    const ma = state.nhanHang.maNhanHang;
+    if (!ma) return Promise.resolve(false);
+    if (!state.mayChuKho) {
+      return taiThongTinKho().then(function(duoc){
+        return duoc ? hoiDon(ma) : false;
+      });
+    }
+    return hoiDon(ma);
+  }
+
+  function hoiDon(ma){
+    return fetch(state.mayChuKho + '/don', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ma: ma })
+    }).then(function(tra){
+      if (!tra.ok) return false;
+      return tra.json();
+    }).then(function(kq){
+      if (!kq || !kq.duoc || !kq.maSanPham) return false;
+      state.donCuaToi = kq.maSanPham;
+      return true;
+    }).catch(function(e){
+      console.error('Không hỏi được đơn của khách:', e);
+      return false;
+    });
+  }
+
+  // Món này khách có quyền dùng không?
+  //
+  //   - Chưa biết đơn  → cho hết, để khách bấm rồi máy chủ trả lời.
+  //   - Hai khoá học   → luôn cho, chúng miễn phí và không đi qua máy chủ.
+  //   - Còn lại        → phải có trong đơn.
+  function duocDung(maSP){
+    if (MODULE_KHOA_HOC[maSP]) return true;
+    if (!state.donCuaToi) return true;
+    return state.donCuaToi.indexOf(maSP) !== -1;
+  }
+
   // Hỏi máy chủ cấp phát: đường dẫn này có được phép tải món này không?
   //
   // Máy chủ trả về { duoc: true, duongDan: '...' } khi hợp lệ, hoặc
@@ -186,6 +238,14 @@
         'quyền lại.';
     }
     return 'Chưa mở khoá được. Bạn nhắn cho shop kèm đường dẫn bạn đang mở, shop xử lý ngay.';
+  }
+
+  // Vào trang nhận hàng: đọc danh mục và hỏi đơn của khách, xong cái nào vẽ lại
+  // cái đó. Hai việc chạy song song vì chúng không phụ thuộc nhau.
+  function moTrangNhanHang(){
+    taiThongTinKho();
+    taiDanhMuc().then(function(){ if (state.trang === 'sanpham') render(); });
+    taiDonCuaToi().then(function(){ if (state.trang === 'sanpham') render(); });
   }
 
   // ------------------------------------------------------- VẼ TRANG NHẬN HÀNG

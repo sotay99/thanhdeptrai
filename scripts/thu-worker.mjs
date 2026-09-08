@@ -116,6 +116,27 @@ console.log('— Cửa vào —');
   ok((await r.json()).lyDo === 'thieu-thiet-bi', 'Mã thiết bị méo thì từ chối', 'không từ chối');
 }
 
+console.log('\n— Hỏi đơn của mình —');
+{
+  const goiDon = (than, goc = 'https://thanhdeptrai.vn') =>
+    worker.fetch(new Request(GOC + '/don', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: goc },
+      body: JSON.stringify(than)
+    }), env);
+
+  const kq = await (await goiDon({ ma: 'MANHANHANG0000001' })).json();
+  ok(kq.duoc === true, 'Mã đúng thì trả về đơn', JSON.stringify(kq));
+  ok(JSON.stringify(kq.maSanPham) === '["sp1","sp2"]', 'Trả đúng danh sách món đã mua', JSON.stringify(kq.maSanPham));
+  ok(!('email' in kq) && !('zalo' in kq) && !('thanhTien' in kq) && !('maDon' in kq),
+    'CHỈ trả mã sản phẩm — không email, không số tiền, không mã đơn', JSON.stringify(kq));
+
+  const sai = await (await goiDon({ ma: 'BIA-DAT-RA' })).json();
+  ok(sai.lyDo === 'sai-ma', 'Mã bịa thì không moi được đơn nào', JSON.stringify(sai));
+
+  const la = await goiDon({ ma: 'MANHANHANG0000001' }, 'https://ke-trom.com');
+  ok(la.status === 403, 'Địa chỉ lạ không hỏi được đơn của khách', la.status);
+}
+
 console.log('\n— Chặn lấy hàng không phải của mình —');
 {
   // Đơn 1 mua sp1 và sp2, KHÔNG mua sp7.

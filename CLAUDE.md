@@ -300,3 +300,27 @@ Trang `/sanpham` sinh một mã ngẫu nhiên và cất trong `localStorage`. Kh
 dữ liệu duyệt web, đổi trình duyệt hay mở ẩn danh thì mã đổi và họ bị coi là
 máy khác — **đó là chuyện sẽ xảy ra thường xuyên**, nên luồng cấp quyền lại cho
 chủ shop không phải tính năng phụ. Xoá `/thietbi/<mã>/<sp>` là mở khoá lại.
+
+### Món khách chưa mua
+
+Trang `/sanpham` hỏi máy chủ (`POST /don`) xem đơn gồm những món nào, rồi biến
+nút "Sử dụng sản phẩm này" của những món chưa mua thành một **khung chữ không
+bấm được**. Cố ý không dùng `disabled`: một cái nút xám vẫn là nút, khách cứ bấm
+rồi ngồi đoán vì sao không có gì xảy ra.
+
+`state.donCuaToi` có ba trạng thái, đừng gộp hai cái đầu:
+
+| Giá trị | Nghĩa | Trang làm gì |
+|---|---|---|
+| `null` | **chưa biết** (chưa hỏi xong, mất mạng, đường dẫn không có mã) | không làm mờ nút nào |
+| `[]` | biết chắc chưa mua gì | mờ hết trừ hai khoá học |
+| `['sp3']` | mua sp3 | mờ mọi món khác |
+
+Hai khoá học (sp4, sp5) **luôn** bấm được, kể cả khách không mua — chúng miễn phí.
+
+Đây chỉ là lớp giao diện. Người mở console sửa `state.donCuaToi` vẫn không tải
+được gì: cửa thật là cửa thứ hai trong `/cap-phat` của Worker.
+
+`POST /don` chỉ trả về **danh sách mã sản phẩm**, không email, không số tiền,
+không mã đơn — khách không được phép đọc nhánh `donhang` vì đọc được là thấy
+thông tin của mọi khách khác.

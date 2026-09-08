@@ -647,6 +647,8 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
       [/env\.KHO\.get/, "đọc tệp từ binding R2"],
       [/Content-Disposition/, "buộc trình duyệt tải xuống thay vì mở trong tab"],
       [/gocDuocPhep/, "chặn lời gọi từ địa chỉ lạ"],
+      [/\/don['"]/, "đường /don trả danh sách món đã mua"],
+      [/function\s+donCuaToi\s*\(/, "hàm trả đơn của khách"],
     ].forEach(([mau, ten]) => {
       if (!mau.test(wk)) fail(`Thiếu ${ten} trong worker/kho-worker.js.`);
     });
@@ -669,6 +671,33 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     if (/firebasedatabase\.app/.test(wk.replace(/^\s*\*.*$/gm, ""))) {
       fail("Địa chỉ Firebase phải nằm trong biến môi trường của Worker, không viết chết trong mã.");
     }
+  }
+
+  // /don chỉ được trả danh sách mã sản phẩm. Trả cả đơn là lộ email, số điện
+  // thoại và số tiền của khách cho bất cứ ai đoán trúng mã.
+  {
+    const wk = doc("worker/kho-worker.js");
+    const than = wk.match(/async function\s+donCuaToi\s*\([\s\S]*?\n\}/);
+    if (than && !/traJSON\(\{\s*duoc:\s*true,\s*maSanPham:\s*don\.maSanPham\s*\}/.test(than[0])) {
+      fail("/don chỉ được trả về maSanPham — trả cả đơn là lộ email và số điện thoại của khách.");
+    }
+  }
+
+  // Ba trạng thái của donCuaToi phải phân biệt được: null (chưa biết) khác hẳn
+  // mảng rỗng (biết chắc chưa mua gì).
+  [
+    [/function\s+duocDung\s*\(/, "hàm quyết định món nào bấm được"],
+    [/if\s*\(!state\.donCuaToi\)\s*return true/, "chưa biết đơn thì không làm mờ nút nào"],
+    [/if\s*\(MODULE_KHOA_HOC\[maSP\]\)\s*return true/, "hai khoá học luôn bấm được"],
+    [/khung-chua-mua/, "khung chữ thay cho nút ở món chưa mua"],
+    [/Bạn chưa mua sản phẩm này/, "dòng chữ báo chưa mua"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Món chưa mua KHÔNG được là một cái nút bị mờ — nút mờ vẫn dụ người ta bấm.
+  if (/nut-su-dung[^']*'\s*\+[^;]*disabled/.test(banNoi)) {
+    fail("Món chưa mua phải là khung chữ, không phải nút disabled.");
   }
 
   // Trang nhận hàng phải gửi kèm mã thiết bị, nếu không Worker không khoá được.

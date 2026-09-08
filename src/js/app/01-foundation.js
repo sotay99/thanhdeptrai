@@ -119,6 +119,10 @@
     // Danh mục do chủ shop khai ở /admin: sản phẩm nào lấy hàng từ đâu, gồm
     // tệp nào, khách nhìn thấy tên gì. KHÔNG chứa đường tải.
     danhMuc: {},
+    // Danh sách mã sản phẩm khách đã mua, do máy chủ cấp phát trả về.
+    // null nghĩa là CHƯA BIẾT — khác hẳn với mảng rỗng (biết chắc là chưa mua
+    // gì). Chưa biết thì trang không làm mờ nút nào cả.
+    donCuaToi: null,
     // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
     // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
     mayChuKho: '',

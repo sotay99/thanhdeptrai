@@ -561,7 +561,7 @@
       dongHetModal();
       render();
       if (trang === 'admin') chuanBiAdmin();
-      if (trang === 'sanpham') { taiThongTinKho(); taiDanhMuc().then(function(){ render(); }); }
+      if (trang === 'sanpham') moTrangNhanHang();
     });
   }
 
@@ -582,7 +582,7 @@
     taiThongTinLienHe();
     // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
     // không hỏi tới nên không phải tải.
-    if (state.trang === 'sanpham') { taiThongTinKho(); taiDanhMuc().then(function(){ render(); }); }
+    if (state.trang === 'sanpham') moTrangNhanHang();
     // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
     // khách mua hàng không phải tải một byte nào của phần quản trị.
     if (state.trang === 'admin') chuanBiAdmin();
