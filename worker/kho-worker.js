@@ -210,8 +210,15 @@ async function capPhat(yeuCau, env) {
 
     // 2) Sản phẩm này có nằm trong đơn của họ không? Đây là chỗ chặn khách mua
     //    một món rồi lấy đường dẫn của mình đi tải món khác.
-    const daMua = (don.maSanPham || []).indexOf(maSanPham) !== -1;
-    if (!daMua) return tuChoi('khong-co-trong-don', yeuCau, env);
+    //
+    //    maSanPham BẮT BUỘC là danh sách. Nếu nó là một chuỗi thì indexOf hoá
+    //    ra tìm chuỗi con: đơn ghi "sp30" sẽ cho qua cả "sp3". Đơn do web ghi
+    //    luôn là danh sách; đơn gõ tay trong Console thì rất dễ thành chuỗi,
+    //    nên chặn hẳn ở đây thay vì để nó âm thầm cho qua.
+    if (!Array.isArray(don.maSanPham)) return tuChoi('don-hong', yeuCau, env);
+    if (don.maSanPham.indexOf(maSanPham) === -1) {
+      return tuChoi('khong-co-trong-don', yeuCau, env);
+    }
 
     // 3) Tệp này có đúng là tệp của sản phẩm đó không? Danh mục là nguồn sự
     //    thật; khách tự gõ tên tệp khác thì không qua được cửa này.

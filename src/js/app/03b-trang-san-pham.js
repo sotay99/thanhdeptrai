@@ -161,6 +161,10 @@
     if (lyDo === 'mat-mang') {
       return 'Không kết nối được máy chủ. Bạn kiểm tra lại mạng rồi bấm lại giúp shop.';
     }
+    if (lyDo === 'don-hong') {
+      return 'Đơn hàng của bạn đang có chỗ ghi chưa đúng nên hệ thống không đọc được. ' +
+        'Bạn nhắn cho shop kèm đường dẫn bạn đang mở, shop sửa ngay.';
+    }
     if (lyDo === 'khong-co-trong-don') {
       return 'Sản phẩm này không có trong đơn hàng của bạn. Nếu bạn tin là có nhầm lẫn, ' +
         'nhắn cho shop kèm đường dẫn bạn đang mở.';

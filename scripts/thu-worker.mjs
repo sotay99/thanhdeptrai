@@ -132,6 +132,16 @@ console.log('\n— Chặn lấy hàng không phải của mình —');
   ok((await r.json()).lyDo === 'khong-co-trong-don', 'Sản phẩm Drive không đi qua cửa cấp phát', 'LỌT');
 }
 
+{
+  // Đơn gõ tay trong Firebase Console rất dễ ghi maSanPham thành một dòng chữ
+  // thay vì danh sách. Lúc đó indexOf hoá ra tìm chuỗi con — "sp30" cho qua cả
+  // "sp3". Chuyện này đã suýt xảy ra thật khi dựng đơn thử.
+  DB.donhang['-Nchuoi'] = { maDon: 'X', maNhanHang: 'MANHANHANG0000009', maSanPham: 'sp30' };
+  const kq = await (await goi({ ma: 'MANHANHANG0000009', sanPham: 'sp3', tep: 'sp3/01.zip', thietBi: THIET_BI_A })).json();
+  ok(kq.lyDo === 'don-hong', 'Đơn ghi maSanPham thành chuỗi thì từ chối, không đoán mò', JSON.stringify(kq));
+  delete DB.donhang['-Nchuoi'];
+}
+
 console.log('\n— Cấp phát đúng —');
 let duongDan1 = '';
 {
