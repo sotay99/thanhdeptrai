@@ -77,25 +77,40 @@ Tên biến phải đúng chữ `KHO` viết hoa.
 Khai xong nhớ **Deploy** lại một lần nữa — biến mới chỉ có hiệu lực sau khi
 deploy.
 
-## Bước 6 — Thử
+## Bước 6 — Lấy địa chỉ Worker và thử
 
-Mở địa chỉ Worker trong trình duyệt (dạng
-`https://kho-thanhdeptrai.<tên-tài-khoản>.workers.dev`).
+**Đừng ghép địa chỉ bằng tay.** Phần `<tên-tài-khoản>` là tên miền phụ Cloudflare
+tự cấp cho tài khoản — không phải email, không phải tên đăng nhập, mà là một
+chữ Cloudflare sinh ra. Chép nguyên địa chỉ nó hiện sẵn:
 
-Thấy dòng chữ **"Máy chủ cấp phát đang chạy."** là xong.
+**Workers & Pages** → bấm vào Worker `kho-thanhdeptrai`. Ngay trang đầu có địa
+chỉ đầy đủ, thường kèm nút **Visit** hoặc biểu tượng chép.
+
+Không thấy địa chỉ nào thì vào **Settings → Domains & Routes**, tìm mục
+`workers.dev` và bấm **Enable**.
+
+Dán địa chỉ vào trình duyệt. Thấy dòng chữ **"Máy chủ cấp phát đang chạy."**
+là xong. Giữ địa chỉ đó lại, Bước 7 cần.
 
 ## Bước 7 — Khai địa chỉ Worker vào Firebase
 
 Việc cuối. Trang `/sanpham` phải biết hỏi ai.
 
-Vào Realtime Database, thêm nhánh `thongtinkho` với một trường `mayChu` bằng
-đúng địa chỉ Worker của anh (thay `<tên-tài-khoản>` bằng phần Cloudflare cấp,
-và không có dấu `/` ở cuối):
+Vào Realtime Database, thêm nhánh `thongtinkho` với một trường tên **`mayChu`**
+và giá trị là địa chỉ Worker chép được ở Bước 6.
+
+> **Chữ C viết hoa: `mayChu`, không phải `maychu`.** Firebase phân biệt hoa
+> thường, mã của web đi tìm đúng chữ `mayChu`. Gõ sai một chữ là web không thấy
+> gì và vẫn báo "Hệ thống nhận hàng đang được hoàn thiện" — ngồi dò mãi không ra
+> vì nhìn qua thì mọi thứ đều có vẻ đúng.
+
+Cấu trúc phải thành ra thế này (địa chỉ thay bằng của anh, **không có dấu `/`
+ở cuối**):
 
 ```json
 {
   "thongtinkho": {
-    "mayChu": "https://kho-thanhdeptrai.<tên-tài-khoản>.workers.dev"
+    "mayChu": "https://kho-thanhdeptrai.CHEP-DIA-CHI-THAT-VAO-DAY"
   }
 }
 ```
