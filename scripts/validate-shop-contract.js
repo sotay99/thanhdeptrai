@@ -624,6 +624,76 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// 18) MÁY CHỦ CẤP PHÁT (worker/kho-worker.js)
+//     Đây là thứ DUY NHẤT biết đường tới tệp thật. Bốn cửa kiểm tra trong
+//     /cap-phat là toàn bộ lớp bảo vệ của kho hàng — thiếu một cửa là thủng.
+// ---------------------------------------------------------------------------
+{
+  const wk = doc("worker/kho-worker.js");
+  if (!wk) {
+    fail("Thiếu worker/kho-worker.js — máy chủ cấp phát.");
+  } else {
+    [
+      [/\/cap-phat/, "đường /cap-phat"],
+      [/\/tai/, "đường /tai"],
+      [/orderBy=.*maNhanHang/, "tra đơn theo mã nhận hàng"],
+      [/khong-co-trong-don/, "cửa chặn sản phẩm không có trong đơn"],
+      [/da-dung-thiet-bi-khac/, "cửa khoá thiết bị"],
+      [/thietbi\/'\s*\+\s*maNhanHang/, "nhánh ghi nhớ thiết bị"],
+      [/crypto\.subtle\.sign/, "ký token bằng HMAC"],
+      [/crypto\.subtle\.verify/, "mở chữ ký token bằng HMAC"],
+      [/env\.KHO\.get/, "đọc tệp từ binding R2"],
+      [/Content-Disposition/, "buộc trình duyệt tải xuống thay vì mở trong tab"],
+      [/gocDuocPhep/, "chặn lời gọi từ địa chỉ lạ"],
+    ].forEach(([mau, ten]) => {
+      if (!mau.test(wk)) fail(`Thiếu ${ten} trong worker/kho-worker.js.`);
+    });
+
+    // Bốn cửa phải nằm TRƯỚC lúc cấp token. Đảo thứ tự là cấp trước rồi mới hỏi.
+    const iToken = wk.indexOf("taoToken(env, {");
+    ["sai-ma", "khong-co-trong-don", "chua-khai", "da-dung-thiet-bi-khac"].forEach((cua) => {
+      const i = wk.indexOf(cua);
+      if (i === -1 || iToken === -1 || i > iToken) {
+        fail(`Cửa kiểm tra "${cua}" phải chạy TRƯỚC khi cấp token tải.`);
+      }
+    });
+
+    // Token phải có hạn. Token sống mãi thì chép ra dán cho ai cũng dùng được.
+    if (!/than\.h/.test(wk) || !/Date\.now\(\) > than\.h/.test(wk)) {
+      fail("Token tải phải có hạn dùng và phải được kiểm hạn khi rót tệp.");
+    }
+
+    // Khoá và địa chỉ Firebase KHÔNG được viết chết trong Worker.
+    if (/firebasedatabase\.app/.test(wk.replace(/^\s*\*.*$/gm, ""))) {
+      fail("Địa chỉ Firebase phải nằm trong biến môi trường của Worker, không viết chết trong mã.");
+    }
+  }
+
+  // Trang nhận hàng phải gửi kèm mã thiết bị, nếu không Worker không khoá được.
+  [
+    [/function\s+maThietBi\s*\(/, "hàm sinh mã thiết bị"],
+    [/thietBi:\s*maThietBi\(\)/, "mã thiết bị được gửi kèm khi xin cấp phát"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Nhánh thiết bị TUYỆT ĐỐI không cho khách đọc — đọc được là thấy mã nhận
+  // hàng của người khác.
+  {
+    const rules = doc("database.rules.json");
+    const khoi = rules.match(/"thietbi"\s*:\s*\{[\s\S]*?\n    \},?\n/);
+    if (!khoi) fail('database.rules.json thiếu nhánh "thietbi".');
+    else if (/"\.read"\s*:\s*true/.test(khoi[0]) || /"\.write"\s*:\s*true/.test(khoi[0])) {
+      fail('Nhánh "thietbi" không được mở cho khách — chỉ Worker (qua khoá dịch vụ) và chủ shop.');
+    }
+    if (!/"maNhanHang"/.test((rules.match(/"\.indexOn"[\s\S]{0,120}/) || [""])[0])) {
+      fail('donhang phải có .indexOn "maNhanHang" — Worker tra đơn theo mã đó.');
+    }
+  }
+}
+
 // Thẻ <a href="https://zalo.me/..."> in thẳng số vào HTML — cấm hẳn.
 if (/<a[^>]*zalo\.me/.test(banNoi)) {
   fail('Không được dựng sẵn thẻ <a href> tới zalo.me — số Zalo phải đọc từ Realtime Database lúc chạy.');

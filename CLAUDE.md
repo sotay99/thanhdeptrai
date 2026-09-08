@@ -51,6 +51,7 @@ node scripts/build-static.js
 node scripts/validate-bundle-scope.js
 node scripts/validate-static.js
 node scripts/validate-shop-contract.js
+node scripts/thu-worker.mjs
 ```
 
 `validate-shop-contract.js` là "hợp đồng bằng regex" — nó chỉ kiểm tra một
@@ -262,3 +263,40 @@ Proxy của môi trường chặn `www.gstatic.com` nên Firebase SDK thật kh�
 được khi chạy thử. Bộ thử dựng một bản Firebase giả bằng `addInitScript` và
 chặn mọi yêu cầu tới gstatic bằng `page.route`, nhờ vậy thử được trọn luồng:
 email lạ bị từ chối, hai email chủ shop vào được, ô cài đặt ghi ra đúng nhánh.
+
+## Máy chủ cấp phát — `worker/kho-worker.js`
+
+Cloudflare Worker gác cổng kho R2. Đây là **thứ duy nhất biết đường tới tệp
+thật**: web của khách không biết, mã nguồn trên GitHub không biết, email gửi
+khách cũng không biết.
+
+Hai đường: `POST /cap-phat` kiểm tra rồi cấp một đường dẫn dùng một lần;
+`GET /tai?t=…` mở chữ ký rồi rót tệp từ binding R2. Tách làm hai vì khâu kiểm
+tra cần gọi Firebase (chậm), còn khâu rót tệp thì chỉ việc mở chữ ký — quan
+trọng với tệp 2,8 GB tải đứt giữa chừng.
+
+Token là **chữ ký HMAC tự mang đủ thông tin** (tệp nào, hết hạn lúc nào, cho
+thiết bị nào), không lưu ở đâu cả nên không có gì để dọn. Sống 15 phút.
+
+**Bốn cửa trong `/cap-phat`** — thiếu một cửa là thủng kho:
+
+1. Mã nhận hàng có ứng với một đơn thật không (`sai-ma`)
+2. Sản phẩm có nằm trong đơn của họ không (`khong-co-trong-don`) — chặn khách
+   mua một món rồi dùng đường dẫn của mình đi lấy món khác
+3. Tệp có đúng là tệp của sản phẩm đó theo `/danhmuc` không — chặn khách tự gõ
+   tên tệp
+4. Thiết bị: khoá theo **từng sản phẩm**, ghi ở `/thietbi/<mã>/<sp>`
+
+Hợp đồng mục 18 kiểm cả **thứ tự**: bốn cửa phải chạy trước `taoToken`. Đảo thứ
+tự là cấp trước rồi mới hỏi.
+
+`scripts/thu-worker.mjs` **chạy thật** Worker trong Node với Firebase và R2 giả
+lập — 25 mục. Nó nằm trong predeploy của `firebase.json`, nên không deploy được
+khi kho hàng đang thủng.
+
+### Mã thiết bị
+
+Trang `/sanpham` sinh một mã ngẫu nhiên và cất trong `localStorage`. Khách xoá
+dữ liệu duyệt web, đổi trình duyệt hay mở ẩn danh thì mã đổi và họ bị coi là
+máy khác — **đó là chuyện sẽ xảy ra thường xuyên**, nên luồng cấp quyền lại cho
+chủ shop không phải tính năng phụ. Xoá `/thietbi/<mã>/<sp>` là mở khoá lại.

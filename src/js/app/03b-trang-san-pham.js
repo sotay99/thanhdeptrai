@@ -73,6 +73,39 @@
     return /(^|\/)00-/.test(String(tep || ''));
   }
 
+  // ------------------------------------------------------------- MÃ THIẾT BỊ
+  //
+  // Máy chủ khoá mỗi sản phẩm vào MỘT thiết bị, nên phải có cách nhận ra "cùng
+  // một máy". Không có cách nào chắc chắn tuyệt đối trên web, nên dùng cách
+  // thật thà nhất: trang tự sinh một mã ngẫu nhiên và cất trong bộ nhớ của
+  // trình duyệt. Cùng trình duyệt thì cùng mã.
+  //
+  // NÓI THẲNG GIỚI HẠN: khách xoá dữ liệu duyệt web, đổi trình duyệt, hay mở
+  // cửa sổ ẩn danh thì mã đổi, và họ bị coi là máy khác. Đó chính là lý do phải
+  // có luồng cấp quyền lại cho chủ shop — không phải chuyện hiếm gặp.
+  const KHOA_THIET_BI = 'tdt-thiet-bi';
+
+  function maThietBi(){
+    let ma = '';
+    try {
+      ma = window.localStorage.getItem(KHOA_THIET_BI) || '';
+    } catch (e) {
+      // Trình duyệt chặn lưu trữ (ẩn danh, khoá cookie): vẫn cấp một mã dùng
+      // trong phiên này để khách tải được, chỉ là lần sau vào lại sẽ là máy mới.
+      ma = '';
+    }
+    if (!ma) {
+      const so = new Uint8Array(16);
+      if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(so);
+      else for (let i = 0; i < so.length; i++) so[i] = Math.floor(Math.random() * 256);
+      ma = Array.prototype.map.call(so, function(b){
+        return ('0' + b.toString(16)).slice(-2);
+      }).join('');
+      try { window.localStorage.setItem(KHOA_THIET_BI, ma); } catch (e) { /* không lưu được thì thôi */ }
+    }
+    return ma;
+  }
+
   // Hỏi máy chủ cấp phát: đường dẫn này có được phép tải món này không?
   //
   // Máy chủ trả về { duoc: true, duongDan: '...' } khi hợp lệ, hoặc
@@ -96,7 +129,12 @@
     return fetch(state.mayChuKho + '/cap-phat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sanPham: maSanPham, ma: maNhanHang, tep: tep })
+      body: JSON.stringify({
+        sanPham: maSanPham,
+        ma: maNhanHang,
+        tep: tep,
+        thietBi: maThietBi()
+      })
     }).then(function(tra){
       if (!tra.ok) return { duoc: false, lyDo: 'may-chu-tu-choi' };
       return tra.json();
@@ -122,6 +160,17 @@
     }
     if (lyDo === 'mat-mang') {
       return 'Không kết nối được máy chủ. Bạn kiểm tra lại mạng rồi bấm lại giúp shop.';
+    }
+    if (lyDo === 'khong-co-trong-don') {
+      return 'Sản phẩm này không có trong đơn hàng của bạn. Nếu bạn tin là có nhầm lẫn, ' +
+        'nhắn cho shop kèm đường dẫn bạn đang mở.';
+    }
+    if (lyDo === 'thieu-thiet-bi') {
+      return 'Trình duyệt của bạn đang chặn lưu trữ nên hệ thống không nhận ra được máy. ' +
+        'Bạn thử tắt chế độ ẩn danh, hoặc mở bằng trình duyệt khác.';
+    }
+    if (lyDo === 'yeu-cau-hong') {
+      return 'Yêu cầu không hợp lệ. Bạn tải lại trang rồi bấm lại giúp shop.';
     }
     if (lyDo === 'sai-ma') {
       return 'Đường dẫn này không dùng được cho sản phẩm bạn vừa chọn. Bạn xem lại ' +

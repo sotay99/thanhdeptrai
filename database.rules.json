@@ -39,7 +39,8 @@
     "donhang": {
       ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
       ".indexOn": [
-        "trangThai"
+        "trangThai",
+        "maNhanHang"
       ],
       "$madon": {
         ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
@@ -100,6 +101,10 @@
           ".validate": false
         }
       }
+    },
+    "thietbi": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     }
   }
 }
