@@ -649,6 +649,8 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
       [/gocDuocPhep/, "chặn lời gọi từ địa chỉ lạ"],
       [/\/don['"]/, "đường /don trả danh sách món đã mua"],
       [/function\s+donCuaToi\s*\(/, "hàm trả đơn của khách"],
+      [/const\s+PHUT_SONG_THEO_SAN_PHAM\s*=\s*\{/, "bảng hạn dùng theo từng sản phẩm"],
+      [/phutSong\(maSanPham\)/, "hạn token lấy theo sản phẩm"],
     ].forEach(([mau, ten]) => {
       if (!mau.test(wk)) fail(`Thiếu ${ten} trong worker/kho-worker.js.`);
     });
@@ -699,6 +701,44 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
   if (/nut-su-dung[^']*'\s*\+[^;]*disabled/.test(banNoi)) {
     fail("Món chưa mua phải là khung chữ, không phải nút disabled.");
   }
+
+  // Đường dẫn tải KHÔNG được mang con số hạn ra ngoài — khách không cần biết
+  // mình có bao lâu, và biết thì chỉ tổ dò.
+  {
+    const wk = doc("worker/kho-worker.js");
+    if (/duongDan:[^;]*(phut|han|ttl|exp)=/.test(wk)) {
+      fail("Đường dẫn tải không được mang hạn dùng ra ngoài.");
+    }
+  }
+
+  // Ba trạng thái đường dẫn phải phân biệt được. Gộp "mất mạng" vào "mã sai" là
+  // vu cho khách bấm nhầm link trong khi lỗi nằm ở phía mình.
+  [
+    [/function\s+veBaoDuongDanSai\s*\(/, "dải báo đường dẫn sai ở đầu trang"],
+    [/state\.trangThaiDon\s*=\s*'sai-ma'/, "trạng thái mã sai"],
+    [/state\.trangThaiDon\s*=\s*'thieu-ma'/, "trạng thái thiếu mã"],
+    [/state\.trangThaiDon\s*=\s*'khong-hoi-duoc'/, "trạng thái không hỏi được máy chủ"],
+    [/đúng đường dẫn shop đã gửi/, "lời dặn bấm đúng đường dẫn shop gửi"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // 'khong-hoi-duoc' KHÔNG được khoá món nào — lỗi phía mình thì đừng đổ cho khách.
+  {
+    const than = banNoi.match(/function\s+duocDung\s*\([\s\S]*?\n  \}/);
+    if (than && /khong-hoi-duoc/.test(than[0])) {
+      fail("Không hỏi được máy chủ thì KHÔNG được khoá món nào — đó là lỗi phía mình, không phải khách bấm nhầm link.");
+    }
+  }
+
+  // Mọi lời báo phải tự xuống hàng, nếu không câu dài tràn qua mép phải màn hình.
+  ["\\.dong-tep-nhan \\.loi-nhan-hang", "\\.khung-chua-mua", "\\.bao-duong-dan-sai \\.chu"].forEach((chon) => {
+    const khoi = cssApp.match(new RegExp(chon + "\\s*\\{[^}]*\\}"));
+    if (!khoi) fail(`Thiếu khối CSS ${chon}.`);
+    else if (!/overflow-wrap:\s*anywhere/.test(khoi[0])) {
+      fail(`${chon} thiếu overflow-wrap: anywhere — câu dài sẽ tràn qua mép phải màn hình.`);
+    }
+  });
 
   // Trang nhận hàng phải gửi kèm mã thiết bị, nếu không Worker không khoá được.
   [

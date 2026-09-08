@@ -210,14 +210,23 @@ console.log('\n— Rót tệp —');
   ok(r.status === 403, 'Sửa một ký tự trong token là chữ ký hỏng', r.status);
 }
 {
-  // Token hết hạn: dựng thủ công bằng chính hàm ký của Worker qua một lần cấp,
-  // rồi tua đồng hồ tới sau hạn.
+  // Hạn của đường dẫn tuỳ SẢN PHẨM: sp1 5 phút, sp7 60 phút. Tua đồng hồ để thử
+  // từng mốc thay vì ngồi đợi thật.
   const that = Date.now;
+  const thuHan = async (sanPham, tep, ma, phutTua) => {
+    const kq = await (await goi({ ma, sanPham, tep, thietBi: THIET_BI_A })).json();
+    Date.now = () => that() + phutTua * 60 * 1000;
+    const r = await worker.fetch(new Request(kq.duongDan), env);
+    Date.now = that;
+    return r.status;
+  };
+  ok(await thuHan('sp1', 'sp1.apk', 'MANHANHANG0000001', 4) === 200, 'sp1: 4 phút sau vẫn tải được', 'chết sớm');
+  ok(await thuHan('sp1', 'sp1.apk', 'MANHANHANG0000001', 6) === 403, 'sp1: quá 5 phút thì đường dẫn chết', 'còn sống');
+  ok(await thuHan('sp7', 'sp7/photoshop.zip', 'MANHANHANG0000002', 30) === 200, 'sp7: 30 phút sau vẫn tải được', 'chết sớm');
+  ok(await thuHan('sp7', 'sp7/photoshop.zip', 'MANHANHANG0000002', 61) === 403, 'sp7: quá 60 phút thì đường dẫn chết', 'còn sống');
+  // Đường dẫn không mang con số hạn ra ngoài — khách không biết mình có bao lâu.
   const kq = await (await goi({ ma: 'MANHANHANG0000001', sanPham: 'sp1', tep: 'sp1.apk', thietBi: THIET_BI_A })).json();
-  Date.now = () => that() + 16 * 60 * 1000;
-  const r = await worker.fetch(new Request(kq.duongDan), env);
-  Date.now = that;
-  ok(r.status === 403, 'Quá 15 phút thì đường dẫn chết', r.status);
+  ok(!/[?&](phut|han|ttl|exp)=/.test(kq.duongDan), 'Đường dẫn không lộ hạn dùng ra ngoài', kq.duongDan);
 }
 {
   const r = await worker.fetch(new Request(GOC + '/'), env);

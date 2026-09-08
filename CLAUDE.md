@@ -324,3 +324,44 @@ Hai khoá học (sp4, sp5) **luôn** bấm được, kể cả khách không mua
 `POST /don` chỉ trả về **danh sách mã sản phẩm**, không email, không số tiền,
 không mã đơn — khách không được phép đọc nhánh `donhang` vì đọc được là thấy
 thông tin của mọi khách khác.
+
+### Hạn của đường dẫn tải — theo TỪNG sản phẩm
+
+`PHUT_SONG_THEO_SAN_PHAM` trong Worker:
+
+| Sản phẩm | Hạn | Vì sao |
+|---|---|---|
+| sp1, sp2, sp3 | 5 phút | tệp nhẹ, hạn càng ngắn thì cửa sổ chia sẻ link càng hẹp |
+| sp6 (816 MB) | 20 phút | |
+| sp7 (2,8 GB) | 60 phút | mạng chậm, khách còn chọn thư mục lưu |
+| còn lại | 15 phút | |
+
+Hạn chỉ tính lúc **bắt đầu** tải — đã bắt đầu thì chạy tới hết, kể cả một tiếng.
+Đường dẫn **không mang con số này ra ngoài**; hợp đồng chặn việc gắn nó vào URL.
+
+Nói thật với người dùng khi được hỏi: trong thời gian còn hạn, ai cầm được
+đường dẫn cũng tải được. Khâu rót tệp không kiểm lại thiết bị vì người nhận link
+chia sẻ cũng nhận luôn mọi thứ đi kèm link. Cái chặn được là chia sẻ **lâu dài**.
+
+### Ba trạng thái đường dẫn — đừng gộp
+
+`state.trangThaiDon`:
+
+| Giá trị | Trang làm gì |
+|---|---|
+| `co-don` | mờ những món không có trong đơn |
+| `sai-ma`, `thieu-ma` | dải cảnh báo đầu trang + khoá mọi món (trừ hai khoá học) |
+| `khong-hoi-duoc` | **không kết luận gì** — không cảnh báo, không khoá |
+
+`khong-hoi-duoc` là mất mạng hoặc Worker chưa dựng: lỗi phía mình. Gộp nó vào
+`sai-ma` là vu cho khách bấm nhầm link. Hợp đồng chặn việc đó.
+
+### Chữ phải tự xuống hàng
+
+`.dong-tep-nhan .loi-nhan-hang`, `.khung-chua-mua`, `.bao-duong-dan-sai .chu`
+bắt buộc có `overflow-wrap: anywhere`, hợp đồng canh cả ba. Và
+`.dong-tep-nhan .vung-tep` phải **co được** (`flex: 1 1 200px; min-width: 0`) —
+trước đây nó là `flex: 0 0 auto` nên lời báo lỗi dài tràn qua mép phải màn hình.
+
+Bộ thử đo thật trên bốn cỡ màn (1280, 800, 390, 320): phần tử không vượt khung
+cha, và trang không cuộn ngang.

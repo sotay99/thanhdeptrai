@@ -120,7 +120,10 @@
   // hụt.
   function taiDonCuaToi(){
     const ma = state.nhanHang.maNhanHang;
-    if (!ma) return Promise.resolve(false);
+    if (!ma) {
+      state.trangThaiDon = 'thieu-ma';
+      return Promise.resolve(false);
+    }
     if (!state.mayChuKho) {
       return taiThongTinKho().then(function(duoc){
         return duoc ? hoiDon(ma) : false;
@@ -135,14 +138,22 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ma: ma })
     }).then(function(tra){
-      if (!tra.ok) return false;
+      if (!tra.ok) return null;
       return tra.json();
     }).then(function(kq){
-      if (!kq || !kq.duoc || !kq.maSanPham) return false;
-      state.donCuaToi = kq.maSanPham;
-      return true;
+      if (kq && kq.duoc && kq.maSanPham) {
+        state.donCuaToi = kq.maSanPham;
+        state.trangThaiDon = 'co-don';
+        return true;
+      }
+      // Máy chủ nói thẳng là mã này không ứng với đơn nào. Khác hẳn với "không
+      // hỏi được" — ở đây mình BIẾT CHẮC đường dẫn sai, nên phải nói ra.
+      if (kq && kq.lyDo === 'sai-ma') state.trangThaiDon = 'sai-ma';
+      else state.trangThaiDon = 'khong-hoi-duoc';
+      return false;
     }).catch(function(e){
       console.error('Không hỏi được đơn của khách:', e);
+      state.trangThaiDon = 'khong-hoi-duoc';
       return false;
     });
   }
@@ -154,6 +165,8 @@
   //   - Còn lại        → phải có trong đơn.
   function duocDung(maSP){
     if (MODULE_KHOA_HOC[maSP]) return true;
+    // Đường dẫn sai hẳn: khoá mọi món, vì chắc chắn không món nào là của họ.
+    if (state.trangThaiDon === 'sai-ma' || state.trangThaiDon === 'thieu-ma') return false;
     if (!state.donCuaToi) return true;
     return state.donCuaToi.indexOf(maSP) !== -1;
   }
@@ -261,11 +274,32 @@
           'Lỡ mở nhầm máy thì nhắn cho shop, shop cấp quyền lại cho bạn.' +
         '</div>' +
       '</section>' +
+      veBaoDuongDanSai() +
       '<div class="luoi-sanpham">' +
         SAN_PHAM.map(function(sp, i){ return veTheSanPham(sp, i, 'nhan-hang'); }).join('') +
       '</div>' +
       '<button type="button" class="nut nut-rong nut-ve-mua-hang" data-hanh-dong="ve-trang-mua-hang">' +
         '<span aria-hidden="true">🛒</span> Về trang mua hàng của shop</button>';
+  }
+
+  // Đường dẫn sai thì phải nói ngay ở đầu trang, đừng để khách bấm hết món này
+  // tới món kia rồi mới hiểu ra. Hai khoá học vẫn mở nên trang không vô dụng.
+  function veBaoDuongDanSai(){
+    const tt = state.trangThaiDon;
+    if (tt !== 'sai-ma' && tt !== 'thieu-ma') return '';
+    const vi = tt === 'thieu-ma'
+      ? 'Địa chỉ bạn đang mở <strong>thiếu mã nhận hàng</strong>.'
+      : 'Mã nhận hàng trong địa chỉ bạn đang mở <strong>không đúng</strong>.';
+    return '' +
+      '<div class="bao-duong-dan-sai">' +
+        '<span class="dau" aria-hidden="true">⚠️</span>' +
+        '<div class="chu">' +
+          '<p>' + vi + ' Vui lòng bấm <strong>đúng đường dẫn shop đã gửi</strong> ' +
+            'trong email hoặc trong tin nhắn — đừng gõ tay địa chỉ.</p>' +
+          '<p class="phu">Hai khoá học miễn phí bên dưới vẫn xem được bình thường. ' +
+            'Nếu bạn tin là có nhầm lẫn, nhắn cho shop.</p>' +
+        '</div>' +
+      '</div>';
   }
 
   // ------------------------------------------------------- BẢNG NHẬN SẢN PHẨM
