@@ -42,7 +42,30 @@
  * =============================================================================
  */
 
-const PHUT_SONG_CUA_TOKEN = 15;
+// Đường dẫn tải sống bao lâu, tính theo TỪNG SẢN PHẨM.
+//
+// Hạn này chỉ tính lúc BẮT ĐẦU tải: đã bắt đầu rồi thì chạy tới hết, kể cả tệp
+// 2,8 GB mất một tiếng. Nên con số ở đây là "khách có bao lâu để bấm", không
+// phải "khách có bao lâu để tải xong".
+//
+// Món nhẹ thì hạn ngắn, vì hạn càng ngắn thì cửa sổ chia sẻ link cho người
+// khác càng hẹp. Món nặng phải rộng tay hơn: mạng chậm, khách còn chọn thư
+// mục lưu, còn bị hỏi ghi đè...
+//
+// Khách KHÔNG thấy con số này ở đâu cả — đường dẫn không mang nó ra ngoài.
+const PHUT_SONG_THEO_SAN_PHAM = {
+  sp1: 5,
+  sp2: 5,
+  sp3: 5,
+  sp6: 20,
+  sp7: 60
+};
+const PHUT_SONG_MAC_DINH = 15;
+
+function phutSong(maSanPham) {
+  const phut = PHUT_SONG_THEO_SAN_PHAM[maSanPham];
+  return typeof phut === 'number' ? phut : PHUT_SONG_MAC_DINH;
+}
 const CHU_MA_THIET_BI = /^[A-Za-z0-9_-]{8,64}$/;
 
 export default {
@@ -289,11 +312,12 @@ async function capPhat(yeuCau, env) {
       });
     }
 
-    // 5) Xong cửa. Cấp một đường dẫn sống 15 phút, gắn với đúng thiết bị này.
+    // 5) Xong cửa. Cấp một đường dẫn có hạn, gắn với đúng thiết bị này. Hạn dài
+    //    ngắn tuỳ sản phẩm (xem PHUT_SONG_THEO_SAN_PHAM ở đầu tệp).
     const token = await taoToken(env, {
       t: tep,
       d: thietBi,
-      h: Date.now() + PHUT_SONG_CUA_TOKEN * 60 * 1000
+      h: Date.now() + phutSong(maSanPham) * 60 * 1000
     });
     const dia = new URL(yeuCau.url);
     return traJSON({
@@ -325,7 +349,7 @@ async function rotTep(dia, env) {
   mu.set('etag', doiTuong.httpEtag);
   // Trình duyệt tải xuống chứ không mở trong tab, và mang tên tệp gọn gàng.
   mu.set('Content-Disposition', 'attachment; filename="' + tenTepGon(than.t) + '"');
-  // Đường dẫn sống 15 phút nên không được để proxy nào cache lại.
+  // Đường dẫn có hạn nên không được để proxy nào cache lại.
   mu.set('Cache-Control', 'private, no-store');
   return new Response(doiTuong.body, { headers: mu });
 }

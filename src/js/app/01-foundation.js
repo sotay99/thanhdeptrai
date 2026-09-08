@@ -123,6 +123,13 @@
     // null nghĩa là CHƯA BIẾT — khác hẳn với mảng rỗng (biết chắc là chưa mua
     // gì). Chưa biết thì trang không làm mờ nút nào cả.
     donCuaToi: null,
+    // Máy chủ nói gì về đường dẫn khách đang mở:
+    //   'chua-hoi'       — chưa hỏi xong
+    //   'co-don'         — mã đúng, đã biết khách mua gì
+    //   'sai-ma'         — mã KHÔNG ứng với đơn nào (biết chắc đường dẫn sai)
+    //   'thieu-ma'       — địa chỉ không có ?ma= gì cả
+    //   'khong-hoi-duoc' — mất mạng, máy chủ chưa dựng... (KHÔNG kết luận gì)
+    trangThaiDon: 'chua-hoi',
     // Địa chỉ máy chủ cấp phát đường dẫn tải. GIỐNG số tài khoản và số Zalo:
     // không nằm trong mã nguồn, đọc từ Realtime Database lúc chạy.
     mayChuKho: '',
