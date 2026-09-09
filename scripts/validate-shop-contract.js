@@ -94,12 +94,16 @@ if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
-// 3) Nội dung chuyển khoản: "LR" viết hoa + mã đơn 6 ký tự, đúng 8 ký tự.
-//    Ngắn tới mức không ngân hàng nào cắt, và khớp từ khoá "LR" đã đặt trong
-//    app đọc thông báo ngân hàng.
+// 3) Nội dung chuyển khoản: "LR" viết hoa + DẤU CÁCH + mã đơn 6 ký tự, đúng
+//    9 ký tự. Ngắn tới mức không ngân hàng nào cắt, và khớp từ khoá "LR" đã
+//    đặt trong app đọc thông báo ngân hàng.
+//
+//    Dấu cách là bắt buộc: không có nó thì "LRWNAT7M" dính thành một khối,
+//    khách đọc lại trên app ngân hàng không biết đâu là mã đơn của mình.
 // ---------------------------------------------------------------------------
 [
-  [/return\s+'LR'\s*\+\s*\(state\.maDonNgan\s*\|\|\s*''\)/, 'nội dung chuyển khoản là "LR" + mã đơn'],
+  [/return\s+'LR '\s*\+\s*\(state\.maDonNgan\s*\|\|\s*''\)/,
+    'nội dung chuyển khoản là "LR" + dấu cách + mã đơn'],
   [/const\s+DAI_MA_DON\s*=\s*6\s*;/, "mã đơn dài 6 ký tự"],
   [/const\s+CHU_MA_DON\s*=\s*'23456789ABCDEFGHJKMNPQRSTUVWXYZ'/,
     "bảng ký tự sinh mã đơn, đã bỏ 0 O 1 I L cho khỏi đọc nhầm"],

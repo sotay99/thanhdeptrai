@@ -93,7 +93,7 @@ function docThietLap(ten) {
  * KIỂM TRA xem chủ shop đã khai đủ danh mục ở trang /admin chưa.
  */
 function docDanhMuc() {
-  var traLoi = UrlFetchApp.fetch(duongDanDB('danhmuc'), { muteHttpExceptions: true });
+  var traLoi = goiFirebase('danhmuc');
   if (traLoi.getResponseCode() !== 200) return {};
   try {
     return JSON.parse(traLoi.getContentText()) || {};
@@ -122,13 +122,41 @@ function duongDanDB(duong, thamSo) {
   return thamSo ? url + '&' + thamSo : url;
 }
 
+/**
+ * Gọi Firebase, và KHÔNG BAO GIỜ để địa chỉ lọt vào lời báo lỗi.
+ *
+ * Địa chỉ có mang ?auth=<khoá cơ sở dữ liệu>. Khi UrlFetchApp ném lỗi, lời
+ * ném của nó chứa nguyên địa chỉ — mà Google lại gửi lời ném đó vào thư "script
+ * failed" của anh. Khoá đọc-ghi toàn bộ cơ sở dữ liệu đi vào hộp thư như vậy là
+ * chuyện đã xảy ra thật. Nên mọi cú gọi đều đi qua đây, và lỗi được viết lại.
+ *
+ * Tiện thể thử lại vài lần: "Address unavailable" là lỗi mạng chốc lát của phía
+ * Google, một nhịp nghỉ là qua. Không thử lại thì cả lượt chạy hỏng, đơn của
+ * khách nằm chờ tới phút sau.
+ */
+function goiFirebase(duong, thamSo, tuyChon) {
+  var opts = tuyChon || {};
+  opts.muteHttpExceptions = true;
+  var loiCuoi = '';
+  for (var lan = 1; lan <= 3; lan++) {
+    try {
+      return UrlFetchApp.fetch(duongDanDB(duong, thamSo), opts);
+    } catch (loi) {
+      // Cắt sạch địa chỉ khỏi lời báo — nó mang khoá.
+      loiCuoi = String(loi && loi.message || loi).split('http')[0].trim() || 'l\u1ed7i m\u1ea1ng';
+      if (lan < 3) Utilities.sleep(1500 * lan);
+    }
+  }
+  throw new Error('Kh\u00f4ng g\u1ecdi \u0111\u01b0\u1ee3c Firebase sau 3 l\u1ea7n th\u1eed (' + loiCuoi + '). ' +
+    'Th\u01b0\u1eddng l\u00e0 m\u1ea1ng ph\u00eda Google ch\u1eadp ch\u1eddn; l\u01b0\u1ee3t ch\u1ea1y sau s\u1ebd t\u1ef1 l\u00e0m l\u1ea1i.');
+}
+
 /** Lấy danh sách đơn đang chờ gửi. Lọc ngay tại Firebase nên luôn nhẹ. */
 function layDonChoGui() {
-  var url = duongDanDB('donhang',
+  var traLoi = goiFirebase('donhang',
     'orderBy=' + encodeURIComponent('"trangThai"') +
     '&equalTo=' + encodeURIComponent('"daXacNhan"') +
     '&limitToFirst=' + SO_DON_MOI_LAN);
-  var traLoi = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
   if (traLoi.getResponseCode() !== 200) {
     throw new Error('Firebase tr\u1ea3 v\u1ec1 m\u00e3 ' + traLoi.getResponseCode() + ': ' + traLoi.getContentText().slice(0, 300));
   }
@@ -143,11 +171,10 @@ function layDonChoGui() {
 
 /** Ghi đè vài trường của một đơn. */
 function capNhatDon(maDon, thayDoi) {
-  var traLoi = UrlFetchApp.fetch(duongDanDB('donhang/' + maDon), {
+  var traLoi = goiFirebase('donhang/' + maDon, '', {
     method: 'patch',
     contentType: 'application/json',
-    payload: JSON.stringify(thayDoi),
-    muteHttpExceptions: true
+    payload: JSON.stringify(thayDoi)
   });
   if (traLoi.getResponseCode() !== 200) {
     throw new Error('Kh\u00f4ng c\u1eadp nh\u1eadt \u0111\u01b0\u1ee3c \u0111\u01a1n ' + maDon + ': ' + traLoi.getContentText().slice(0, 200));
@@ -376,9 +403,7 @@ function kiemTraThietLap() {
   // orderBy/limitToFirst ("orderBy not supported for with shallow GET"). Mà bỏ
   // orderBy thì lại không giới hạn được số đơn tải về. Nên đọc đúng một đơn
   // theo khoá — nhẹ như nhau mà không đụng luật của Firebase.
-  var traLoi = UrlFetchApp.fetch(
-    duongDanDB('donhang', 'orderBy=%22%24key%22&limitToFirst=1'),
-    { muteHttpExceptions: true });
+  var traLoi = goiFirebase('donhang', 'orderBy=%22%24key%22&limitToFirst=1');
   var noiFirebase = traLoi.getResponseCode() === 200;
   var noiDung = 'Firebase tr\u1ea3 m\u00e3 ' + traLoi.getResponseCode();
   if (!noiFirebase) {
