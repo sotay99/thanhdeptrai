@@ -513,12 +513,26 @@
       return;
     }
     if (hanhDong === 'admin-luu-dm') { adminLuuDanhMuc(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'admin-don-loc') { adminDonDoiLoc(nutHanhDong.getAttribute('data-loc')); return; }
+    if (hanhDong === 'admin-don-tai-lai') { adminDonTaiLai(); return; }
+    if (hanhDong === 'admin-don-trang-thai') {
+      adminDonDoiTrangThai(nutHanhDong.getAttribute('data-khoa'), nutHanhDong.getAttribute('data-tri'));
+      return;
+    }
+    if (hanhDong === 'admin-don-tao-ma') { adminDonTaoMa(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-thiet-bi') { adminDonXemThietBi(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-dong-thiet-bi') { adminDonDongThietBi(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-mo-khoa') {
+      adminDonMoKhoa(nutHanhDong.getAttribute('data-khoa'), nutHanhDong.getAttribute('data-sp'));
+      return;
+    }
   }
 
   function xuLyGoPhim(su){
     const dich = su.target;
     if (!dich || !dich.getAttribute) return;
     if (adminGoDanhMuc(dich)) return;
+    if (adminDonGoTim(dich)) return;
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);

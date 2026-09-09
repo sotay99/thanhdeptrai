@@ -145,6 +145,7 @@
       duLieu: {},            // các nhánh cài đặt đã đọc về
       dangLuu: '',           // tên ô đang lưu, để nút hiện "Đang lưu…"
       vuaLuu: ''             // tên ô vừa lưu xong, để hiện "Đã lưu" 3 giây
+      // donHang — kho tạm của mục Đơn hàng, phần 04D tự dựng khi cần tới
     },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)

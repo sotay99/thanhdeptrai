@@ -450,8 +450,7 @@
         '<div class="khung-nhan-hang">' +
           '<p class="ten-mon">Bạn đang nhận: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
           '<div class="ghi-chu-chuyen-huong">' +
-            '<p>Sản phẩm này nặng nên shop để trên <strong>Google Drive</strong>. ' +
-              'Bấm nút bên dưới là mở thư mục chứa toàn bộ tệp của sản phẩm.</p>' +
+            '<p>Bấm nút bên dưới là mở thư mục chứa toàn bộ tệp của sản phẩm.</p>' +
             '<p class="cach-quay-lai">Trong thư mục đó bạn tải từng tệp mình cần, hoặc tải tất cả một lượt. ' +
               'Muốn quay lại trang này thì bấm <strong>nút quay lại</strong> trên thiết bị hoặc trình duyệt.</p>' +
           '</div>' +
