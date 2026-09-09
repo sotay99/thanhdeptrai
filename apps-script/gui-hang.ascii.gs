@@ -371,10 +371,17 @@ function kiemTraThietLap() {
   var emailShop = docThietLap('EMAIL_SHOP');
 
   // 1) Kết nối được Firebase chưa?
-  var traLoi = UrlFetchApp.fetch(duongDanDB('donhang', 'shallow=true&limitToFirst=1&orderBy=%22%24key%22'),
+  //
+  // KHÔNG dùng shallow=true ở đây: Firebase từ chối thẳng khi shallow đi cùng
+  // orderBy/limitToFirst ("orderBy not supported for with shallow GET"). Mà bỏ
+  // orderBy thì lại không giới hạn được số đơn tải về. Nên đọc đúng một đơn
+  // theo khoá — nhẹ như nhau mà không đụng luật của Firebase.
+  var traLoi = UrlFetchApp.fetch(
+    duongDanDB('donhang', 'orderBy=%22%24key%22&limitToFirst=1'),
     { muteHttpExceptions: true });
+  var noiFirebase = traLoi.getResponseCode() === 200;
   var noiDung = 'Firebase tr\u1ea3 m\u00e3 ' + traLoi.getResponseCode();
-  if (traLoi.getResponseCode() !== 200) {
+  if (!noiFirebase) {
     noiDung += ' \u2014 ' + traLoi.getContentText().slice(0, 200);
   }
 
@@ -396,8 +403,22 @@ function kiemTraThietLap() {
   };
   var thu = soanThuGiaoHang(don);
 
-  guiThu(emailShop, '[Ki\u1ec3m tra] Thi\u1ebft l\u1eadp g\u1eedi h\u00e0ng t\u1ef1 \u0111\u1ed9ng',
+  // Tiêu đề thư phải nói ngay đạt hay hỏng. Thư mẫu bên dưới lúc nào cũng đẹp,
+  // nên nếu chỉ ghi kết quả bằng một dòng nhỏ giữa thư thì người đọc lướt qua
+  // và tưởng mọi thứ đã xong — chuyện đã xảy ra thật.
+  var tieuDe = noiFirebase
+      ? '[Ki\u1ec3m tra] \u0110\u1ea0T \u2014 thi\u1ebft l\u1eadp g\u1eedi h\u00e0ng t\u1ef1 \u0111\u1ed9ng'
+      : '[Ki\u1ec3m tra] H\u1eceNG \u2014 ch\u01b0a n\u1ed1i \u0111\u01b0\u1ee3c Firebase';
+
+  guiThu(emailShop, tieuDe,
       '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.7">' +
+        (noiFirebase ? '' :
+          '<div style="background:#ffe9e7;border:2px solid #e5534b;border-radius:8px;padding:14px;margin-bottom:16px">' +
+            '<b style="color:#b3261e;font-size:16px">CH\u01afA N\u1ed0I \u0110\u01af\u1ee2C FIREBASE</b><br>' +
+            'Thi\u1ebft l\u1eadp ch\u01b0a d\u00f9ng \u0111\u01b0\u1ee3c. Th\u01b0 m\u1eabu b\u00ean d\u01b0\u1edbi ch\u1ec9 l\u00e0 v\u00ed d\u1ee5 \u2014 ' +
+            'kh\u00e1ch s\u1ebd KH\u00d4NG nh\u1eadn \u0111\u01b0\u1ee3c g\u00ec cho t\u1edbi khi s\u1eeda xong.<br>' +
+            'M\u00e3 401: sai FIREBASE_SECRET. M\u00e3 404: sai FIREBASE_DB_URL (nh\u1edb k\u00e8m t\u00ean v\u00f9ng).' +
+          '</div>') +
         '<h3>K\u1ebft qu\u1ea3 ki\u1ec3m tra</h3>' +
         '<ul>' +
           '<li>' + thoatHtml(noiDung) + '</li>' +
