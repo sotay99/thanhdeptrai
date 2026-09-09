@@ -23,7 +23,7 @@
   // một đơn duy nhất. Chữ LR viết hoa để trùng với từ khoá đã đặt trong app đọc
   // thông báo ngân hàng.
   function taoNoiDungCK(){
-    return 'LR' + (state.maDonNgan || '');
+    return 'LR ' + (state.maDonNgan || '');
   }
 
   // Vân tay của đơn: đổi món hoặc đổi thông tin liên hệ thì đây là đơn khác,
