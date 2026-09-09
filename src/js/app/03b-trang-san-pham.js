@@ -352,6 +352,17 @@
     return '' +
       '<div class="khung-nhan-hang">' +
         '<p class="ten-mon">Bạn đang nhận: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
+        // Dải xanh này đứng TRÊN cảnh báo thiết bị vì nó phải được đọc trước:
+        // khách mở đường dẫn ngay trong Zalo hay ứng dụng thư thì trình duyệt
+        // nhúng của các app đó hay chặn hoặc làm hỏng cú tải, mà mỗi sản phẩm
+        // chỉ mở khoá được một máy — hỏng lần đầu là phải xin cấp quyền lại.
+        '<div class="canh-bao-trinh-duyet">' +
+          '<span aria-hidden="true">🌐</span> ' +
+          '<span class="chu">Hãy Truy cập trang này bằng <strong>Trình duyệt web</strong> ' +
+          '(Chrome, hoặc Safari, Cốc Cốc, Firefox,… hoặc trình duyệt web mặc định của thiết bị) ' +
+          'để có trải nghiệm tải sản phẩm về một cách tốt nhất ' +
+          '(không nên truy cập trang này ngay bên trong app zalo hoặc email)</span>' +
+        '</div>' +
         '<div class="canh-bao-thiet-bi">' +
           '<span aria-hidden="true">⚠️</span> ' +
           '<span>Sản phẩm này <strong>chỉ tải được trên MỘT thiết bị</strong>. Bấm tải ở máy nào ' +
@@ -458,7 +469,7 @@
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
         '<a class="nut nut-la nut-mo-drive" href="' + escapeHtml(dm.link) + '" ' +
-          'target="_blank" rel="noopener noreferrer">Mở thư mục Google Drive</a>'
+          'target="_blank" rel="noopener noreferrer">Mở thư mục và tải file về</a>'
     });
   }
 

@@ -1398,6 +1398,25 @@
 }
 .khung-nhan-hang .canh-bao-thiet-bi strong { color: #ff8a82; font-weight: 700; }
 
+/* Lời dặn mở bằng trình duyệt thật. Nền xanh lá nhạt — đây là lời khuyên giúp
+   khách làm đúng, không phải điều nguy hiểm, nên không dùng tông đỏ của cảnh
+   báo thiết bị ngay bên dưới. Hai khối cạnh nhau mà cùng màu thì mắt gộp thành
+   một và người ta chỉ đọc cái đầu. */
+.khung-nhan-hang .canh-bao-trinh-duyet {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(45, 157, 95, .45);
+  border-radius: 10px;
+  background: rgba(45, 157, 95, .12);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--chu-diu);
+}
+.khung-nhan-hang .canh-bao-trinh-duyet .chu { overflow-wrap: anywhere; }
+.khung-nhan-hang .canh-bao-trinh-duyet strong { color: var(--la-dam-net); font-weight: 700; }
+
 /* Ghi chú của hai khoá học: tông xanh của web, không phải tông cảnh báo — đây
    là lời dặn đường chứ không phải điều nguy hiểm. */
 .ghi-chu-chuyen-huong {

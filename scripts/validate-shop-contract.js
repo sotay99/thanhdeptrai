@@ -745,6 +745,10 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     [/state\.trangThaiDon\s*=\s*'khong-hoi-duoc'/, "trạng thái không hỏi được máy chủ"],
     [/đúng đường dẫn shop đã gửi/, "lời dặn bấm đúng đường dẫn shop gửi"],
     [/Bấm nút bên dưới là mở thư mục chứa toàn bộ tệp/, "câu hướng dẫn ở bảng Google Drive"],
+    [/>Mở thư mục và tải file về<\/a>/, "tên nút ở bảng Google Drive"],
+    [/class="canh-bao-trinh-duyet"/, "dải dặn mở bằng trình duyệt thật"],
+    [/không nên truy cập trang này ngay bên trong app zalo hoặc email/,
+      "câu dặn đừng mở trong app Zalo hay ứng dụng thư"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
@@ -778,8 +782,25 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     }
   }
 
+  // Dải dặn trình duyệt phải đứng TRÊN cảnh báo thiết bị, và phải khác màu nó.
+  // Cùng tông đỏ đặt cạnh nhau thì mắt gộp thành một khối và người ta chỉ đọc
+  // cái đầu — mất luôn một trong hai lời dặn.
+  {
+    const than = banNoi.match(/function\s+veThanNhanHang\s*\([\s\S]*?\n  \}/);
+    if (!than) {
+      fail("Thiếu hàm veThanNhanHang.");
+    } else if (than[0].indexOf("canh-bao-trinh-duyet") > than[0].indexOf("canh-bao-thiet-bi")) {
+      fail("Dải dặn trình duyệt phải nằm TRÊN cảnh báo thiết bị.");
+    }
+    const khoi = cssApp.match(/\.khung-nhan-hang \.canh-bao-trinh-duyet\s*\{[^}]*\}/);
+    if (!khoi) fail("Thiếu khối CSS .khung-nhan-hang .canh-bao-trinh-duyet.");
+    else if (!/background:\s*rgba\(45,\s*157,\s*95/.test(khoi[0])) {
+      fail("Dải dặn trình duyệt phải có nền xanh lá nhạt, khác tông đỏ của cảnh báo thiết bị.");
+    }
+  }
+
   // Mọi lời báo phải tự xuống hàng, nếu không câu dài tràn qua mép phải màn hình.
-  ["\\.dong-tep-nhan \\.loi-nhan-hang", "\\.khung-chua-mua", "\\.bao-duong-dan-sai \\.chu"].forEach((chon) => {
+  ["\\.dong-tep-nhan \\.loi-nhan-hang", "\\.khung-chua-mua", "\\.bao-duong-dan-sai \\.chu", "\\.canh-bao-trinh-duyet \\.chu"].forEach((chon) => {
     const khoi = cssApp.match(new RegExp(chon + "\\s*\\{[^}]*\\}"));
     if (!khoi) fail(`Thiếu khối CSS ${chon}.`);
     else if (!/overflow-wrap:\s*anywhere/.test(khoi[0])) {
