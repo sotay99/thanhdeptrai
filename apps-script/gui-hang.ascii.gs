@@ -458,77 +458,114 @@ function kiemTraThietLap() {
   Logger.log(noiDung + ' | c\u00f2n ' + conLai + ' email | thi\u1ebfu danh m\u1ee5c: ' + (thieu.join(', ') || 'kh\u00f4ng'));
 }
 
-/* ------------------------------------------- NHẬN BÁO CÓ TỪ CỔNG THANH TOÁN */
+/* ------------------------------------------- NHẬN BÁO CÓ TỪ APP CHECKOUT */
 
 /**
  * TỪ ĐÂY VIỆC GỬI HÀNG CĂN THEO TIỀN ĐÃ VỀ, KHÔNG PHẢI THEO CÚ BẤM CỦA KHÁCH.
  *
- * App Checkout trên điện thoại đọc thông báo biến động số dư của ngân hàng rồi
- * đẩy sang đây. Nhận được là script tìm đơn khớp, đánh dấu đã trả tiền, và gọi
- * luôn khâu gửi hàng — nên khách nhận được sản phẩm ngay cả lúc chủ shop đang
- * ngủ.
+ * App Checkout nằm trên điện thoại Android, đọc SMS và thông báo của app ngân
+ * hàng, lọc lấy những cái có chứa từ khoá "LR" rồi gọi sang đây bằng GET với
+ * ba tham số:
  *
- * BA ĐIỀU PHẢI GIỮ, MẤT MỘT LÀ HỎNG:
+ *     message  — nguyên văn tin nhắn ngân hàng
+ *     type     — 'sms' hoặc 'notification'
+ *     source   — tên ngân hàng gửi thông báo
  *
- * 1. ĐỊA CHỈ NÀY AI GỌI CŨNG ĐƯỢC. Web App của Apps Script không có cách nào
- *    hạn chế người gọi. Nên phải có mật khẩu riêng (Script Property WEBHOOK_KEY)
- *    đi kèm mỗi cú gọi; sai mật khẩu là từ chối thẳng. Thiếu lớp này thì bất kỳ
- *    ai đoán ra địa chỉ đều tự đánh dấu đơn của mình là đã trả tiền.
+ * KHÔNG CÓ TRƯỜNG SỐ TIỀN. Số tiền nằm lẫn trong câu tiếng Việt của ngân hàng
+ * và phải tự bóc ra — đây là chỗ dễ sai nhất trong cả hệ thống, xem bocTienTuTinNhan.
+ *
+ * BỐN ĐIỀU PHẢI GIỮ, MẤT MỘT LÀ MẤT HÀNG HOẶC MẤT TIỀN:
+ *
+ * 1. ĐỊA CHỈ NÀY AI GỌI CŨNG ĐƯỢC. Web App của Apps Script không hạn chế được
+ *    người gọi. Nên mỗi cú gọi phải mang mật khẩu (Script Property WEBHOOK_KEY);
+ *    sai là từ chối thẳng. Thiếu lớp này thì ai đoán ra địa chỉ cũng tự đánh dấu
+ *    đơn của mình là đã trả tiền.
  *
  * 2. SỐ TIỀN PHẢI ĐỦ. Khớp mã đơn thôi chưa đủ — người ta chuyển 1.000đ với
- *    đúng nội dung là lấy được cả gói. Thiếu tiền thì chuyển đơn sang cần xem
- *    tay, không gửi hàng.
+ *    đúng nội dung là lấy được cả gói.
  *
- * 3. MỘT GIAO DỊCH CHỈ TÍNH MỘT LẦN. Cổng nào cũng có lúc gửi lại cùng một báo
- *    có (mất mạng giữa chừng, app thử lại). Đơn đã ở trạng thái đã gửi thì bỏ
- *    qua, đừng gửi lá thư thứ hai cho khách.
+ * 3. KHÔNG CHẮC THÌ KHÔNG GIAO. Bóc không ra số tiền, hay bóc ra mà không chắc
+ *    đó là tiền vào chứ không phải số dư, thì chuyển đơn sang 'canXemTay' và
+ *    báo chủ shop. Thà chậm một lúc còn hơn giao nhầm.
+ *
+ * 4. MỘT GIAO DỊCH CHỈ TÍNH MỘT LẦN. App này đọc CẢ SMS lẫn thông báo, nên
+ *    cùng một lần chuyển tiền rất hay tới đây hai lượt. Đơn đã ở trạng thái
+ *    'daGui' thì bỏ qua, đừng gửi lá thư thứ hai cho khách.
  */
+
+/** Bỏ dấu tiếng Việt, để so khớp "Số dư" và "So du" như nhau. */
+function boDau(chu) {
+  return String(chu || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
 
 /** Rút mã đơn ra khỏi nội dung chuyển khoản ngân hàng gửi về. */
 function docMaDonTrongNoiDung(chu) {
   // Ngân hàng viết hoa, bỏ dấu, và RẤT HAY nuốt dấu cách hoặc chèn thêm chữ.
   // Nên không so khớp nguyên chuỗi, chỉ đi tìm "LR" rồi 6 ký tự của bảng mã.
-  var s = String(chu || '').toUpperCase();
+  var s = boDau(chu).toUpperCase();
   var khop = s.match(/LR\s*([23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})/);
   return khop ? khop[1] : '';
 }
 
 /**
- * Moi số tiền và nội dung ra khỏi gói dữ liệu cổng gửi tới.
+ * Bóc SỐ TIỀN VÀO ra khỏi một câu thông báo ngân hàng.
  *
- * Mỗi cổng đặt tên trường một kiểu và còn đổi theo phiên bản, nên thay vì đoán
- * đúng một tên, hàm này lục mọi tên thường gặp — kể cả khi chúng nằm lồng trong
- * một nhánh con. Cổng nào đổi tên trường thì thêm một chữ vào danh sách là xong,
- * không phải viết lại gì.
+ * ĐÂY LÀ HÀM DỄ LÀM MẤT HÀNG NHẤT. Một tin nhắn ngân hàng luôn có ÍT NHẤT HAI
+ * con số tiền:
+ *
+ *     NGANHANG: TK xxxx...|PS:+99.000VND|SD: 1.234.567VND|ND: LR WNAT7M
+ *                             ^^^^^^^ tiền vào        ^^^^^^^^^ SỐ DƯ
+ *
+ * Bắt nhầm số dư thì đơn nào cũng "đủ tiền" và cả kho hàng đi theo. Nên:
+ *
+ *   · Bỏ mọi con số đứng ngay sau "SD", "So du", "Balance", "Số dư", và cả
+ *     "SD KHA DUNG" — Ngân hàng của shop báo BA con số tiền chứ không phải hai:
+ *
+ *       PS:+1.000.000VND  SD: 1.044.353VND  SD KHA DUNG: 1.044.353VND
+ *              tiền vào         số dư            số dư khả dụng
+ *
+ *     Bỏ sót con thứ ba là hỏng đúng lúc nguy hiểm nhất: khi CHÍNH ANH chuyển
+ *     tiền đi, số phát sinh mang dấu trừ nên bị loại, số dư bị loại, và số dư
+ *     khả dụng còn lại một mình — script sẽ tưởng đó là tiền khách vừa trả.
+ *   · Bỏ mọi con số mang dấu trừ — đó là tiền RA khỏi tài khoản.
+ *   · Ưu tiên tuyệt đối con số mang dấu cộng.
+ *   · Bỏ số dưới 1.000 — đó là ngày giờ, số thứ tự, không phải tiền.
+ *   · Còn nhiều hơn một ứng viên mà không cái nào có dấu cộng thì TRẢ VỀ 0,
+ *     tức là "không chắc". Bên gọi sẽ không giao hàng. Đoán bừa ở đây là hỏng.
  */
-function bocBaoCo(du) {
-  var TEN_TIEN = ['amount', 'transferAmount', 'creditAmount', 'money', 'soTien', 'value', 'amountIn'];
-  var TEN_NOI_DUNG = ['description', 'content', 'noiDung', 'transferContent', 'comment', 'message', 'detail', 'body'];
-  var TEN_MA_GD = ['id', 'transactionId', 'tid', 'referenceCode', 'reference', 'maGiaoDich', 'transactionID'];
+function bocTienTuTinNhan(chu) {
+  var s = String(chu || '');
+  var khongDau = boDau(s);
+  var ungVien = [];
 
-  var ra = { tien: 0, noiDung: '', maGD: '' };
+  // Hai dạng đáng tin: số có dấu +/- đứng trước, hoặc số có "VND" đứng sau.
+  // Con số trần không dấu không đơn vị thì bỏ qua — nó hay là số tài khoản.
+  var mau = /([+\-])?\s*(\d[\d.,]*)\s*(VND|VNĐ|đ|dồng|dong)?/gi;
+  var khop;
+  while ((khop = mau.exec(khongDau)) !== null) {
+    var dau = khop[1] || '';
+    var donVi = khop[3] || '';
+    if (!dau && !donVi) continue;
 
-  function lucQua(o, sau) {
-    if (!o || typeof o !== 'object' || sau > 4) return;
-    Object.keys(o).forEach(function (k) {
-      var v = o[k];
-      if (v && typeof v === 'object') { lucQua(v, sau + 1); return; }
-      var kt = k.toLowerCase();
-      if (!ra.tien && TEN_TIEN.some(function (t) { return t.toLowerCase() === kt; })) {
-        // "1.500.000" hay "1,500,000" đều phải ra 1500000.
-        var so = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-        if (!isNaN(so)) ra.tien = so;
-      }
-      if (!ra.noiDung && TEN_NOI_DUNG.some(function (t) { return t.toLowerCase() === kt; })) {
-        ra.noiDung = String(v == null ? '' : v);
-      }
-      if (!ra.maGD && TEN_MA_GD.some(function (t) { return t.toLowerCase() === kt; })) {
-        ra.maGD = String(v == null ? '' : v);
-      }
-    });
+    var so = parseInt(String(khop[2]).replace(/[^\d]/g, ''), 10);
+    if (isNaN(so) || so < 1000) continue;
+    if (dau === '-') continue;
+
+    // Nhìn lui 20 ký tự: nếu đó là chỗ ngân hàng báo SỐ DƯ thì bỏ qua. Phải đủ
+    // 20 mới trùm hết được cụm dài nhất là "SD KHA DUNG: ".
+    var truoc = khongDau.slice(Math.max(0, khop.index - 20), khop.index).toUpperCase();
+    if (/(SO DU|SODU|BALANCE|KHA DUNG|KHADUNG|\bSD\b)[^A-Z0-9]*$/.test(truoc)) continue;
+
+    ungVien.push({ so: so, cong: dau === '+' });
   }
-  lucQua(du, 0);
-  return ra;
+
+  if (!ungVien.length) return 0;
+  var cong = ungVien.filter(function (u) { return u.cong; });
+  if (cong.length) return cong[0].so;
+  if (ungVien.length === 1) return ungVien[0].so;
+  return 0;   // nhiều ứng viên, không cái nào chắc — nói thẳng là không biết
 }
 
 /** Tìm đơn theo mã đơn ngắn in trong nội dung chuyển khoản. */
@@ -550,73 +587,110 @@ function timDonTheoMaDon(maDon) {
 }
 
 /**
- * Cổng thanh toán gọi vào đây. Trả về JSON để phía cổng biết đã nhận.
- *
- * LUÔN trả 200 kèm { ok: ... }: cổng nào cũng coi mã lỗi là "gửi hỏng" và thử
- * lại mãi, làm ngập cả log lẫn hộp thư. Chuyện gì xảy ra thì ghi vào log và báo
- * cho chủ shop, đừng bắt cổng thử lại một việc sẽ hỏng y như cũ.
+ * App Checkout gọi bằng GET. Giữ luôn doPost để phòng khi app đổi cách gọi,
+ * hoặc sau này anh đổi sang cổng khác — cả hai cửa cùng đi vào một lõi.
  */
-function doPost(e) {
-  var ghi = function (chu) { Logger.log('[webhook] ' + chu); };
+function doGet(e) { return xuLyBaoCo(e); }
+function doPost(e) { return xuLyBaoCo(e); }
+
+function xuLyBaoCo(e) {
+  var ghi = function (chu) { Logger.log('[bao-co] ' + chu); };
   try {
-    // 1) Mật khẩu. Chấp nhận cả trong địa chỉ (?key=…) lẫn trong gói dữ liệu,
-    //    vì app mỗi hãng cho khai một kiểu.
+    var thamSo = (e && e.parameter) || {};
+
+    // 1) Mật khẩu.
     var matKhau = PropertiesService.getScriptProperties().getProperty('WEBHOOK_KEY');
     if (!matKhau) {
       ghi('Ch\u01b0a khai WEBHOOK_KEY \u2014 t\u1eeb ch\u1ed1i t\u1ea5t c\u1ea3 cho t\u1edbi khi khai.');
       return traLoiJSON({ ok: false, vi: 'chua-khai-khoa' });
     }
-    var than = (e && e.postData && e.postData.contents) || '';
-    var du = {};
-    try { du = JSON.parse(than) || {}; } catch (loi) { du = {}; }
-    var khoaGui = (e && e.parameter && (e.parameter.key || e.parameter.k)) || du.key || du.secret || '';
-    if (String(khoaGui) !== String(matKhau)) {
+    // Vài app nối tham số bằng dấu "?" thay vì "&", làm khoá dính luôn phần
+    // sau nó. Cắt ra thay vì từ chối oan — người dùng sẽ không bao giờ đoán
+    // được vì sao "khoá đúng mà vẫn báo sai".
+    var khoaGui = String(thamSo.key || thamSo.k || '').split('?')[0].split('&')[0];
+    if (!khoaGui) {
+      var than = (e && e.postData && e.postData.contents) || '';
+      try { khoaGui = String((JSON.parse(than) || {}).key || ''); } catch (loi) { khoaGui = ''; }
+    }
+    if (khoaGui !== String(matKhau)) {
       ghi('Sai m\u1eadt kh\u1ea9u, b\u1ecf qua.');
       return traLoiJSON({ ok: false, vi: 'sai-khoa' });
     }
 
-    // 2) Moi số tiền và nội dung ra khỏi gói dữ liệu.
-    var bao = bocBaoCo(du);
-    ghi('B\u00e1o c\u00f3: ' + bao.tien + '\u0111 | ' + bao.noiDung);
-    var maDon = docMaDonTrongNoiDung(bao.noiDung);
+    // 2) Lấy nội dung. App Checkout đặt tên trường là 'message'; các cổng khác
+    //    dùng tên khác nên nhận luôn vài tên thường gặp.
+    var noiDung = String(thamSo.message || thamSo.content || thamSo.noiDung || thamSo.description || '');
+    var nguon = String(thamSo.source || '');
+    if (!noiDung && e && e.postData && e.postData.contents) {
+      try {
+        var goi = JSON.parse(e.postData.contents) || {};
+        noiDung = String(goi.message || goi.content || goi.description || '');
+      } catch (loi2) { /* không phải JSON thì thôi */ }
+    }
+    if (!noiDung) {
+      ghi('G\u1ecdi t\u1edbi m\u00e0 kh\u00f4ng c\u00f3 n\u1ed9i dung n\u00e0o.');
+      return traLoiJSON({ ok: true, vi: 'khong-co-noi-dung' });
+    }
+
+    // Chỉ nhận báo có từ đúng ngân hàng của shop, NẾU chủ shop có khai. Không
+    // khai thì nhận tất — để anh chạy được ngay mà chưa phải cấu hình gì thêm.
+    var nguonCho = PropertiesService.getScriptProperties().getProperty('NGUON_BAO_CO');
+    if (nguonCho && nguon && boDau(nguon).toUpperCase().indexOf(boDau(nguonCho).toUpperCase()) === -1) {
+      ghi('B\u1ecf qua b\u00e1o c\u00f3 t\u1eeb ngu\u1ed3n l\u1ea1: ' + nguon);
+      return traLoiJSON({ ok: true, vi: 'nguon-la' });
+    }
+
+    ghi('Nh\u1eadn: [' + nguon + '] ' + noiDung);
+
+    var maDon = docMaDonTrongNoiDung(noiDung);
     if (!maDon) {
-      // Không có mã đơn thì đây thường là tiền của người khác chuyển vào, hoặc
-      // khách gõ tay sai nội dung. Báo chủ shop xem, đừng im lặng nuốt mất.
-      baoShopBaoCoLa(bao, 'Kh\u00f4ng t\u00ecm th\u1ea5y m\u00e3 \u0111\u01a1n trong n\u1ed9i dung chuy\u1ec3n kho\u1ea3n.');
+      // Thường là tiền của người khác chuyển vào, hoặc khách gõ tay sai nội
+      // dung. Báo chủ shop xem, đừng im lặng nuốt mất.
+      baoShopBaoCoLa(noiDung, nguon, 0, 'Kh\u00f4ng t\u00ecm th\u1ea5y m\u00e3 \u0111\u01a1n trong n\u1ed9i dung chuy\u1ec3n kho\u1ea3n.');
       return traLoiJSON({ ok: true, vi: 'khong-co-ma-don' });
     }
 
     var don = timDonTheoMaDon(maDon);
     if (!don) {
-      baoShopBaoCoLa(bao, 'C\u00f3 m\u00e3 \u0111\u01a1n ' + maDon + ' nh\u01b0ng kh\u00f4ng t\u00ecm th\u1ea5y \u0111\u01a1n n\u00e0o mang m\u00e3 \u0111\u00f3.');
+      baoShopBaoCoLa(noiDung, nguon, 0, 'C\u00f3 m\u00e3 \u0111\u01a1n ' + maDon + ' nh\u01b0ng kh\u00f4ng t\u00ecm th\u1ea5y \u0111\u01a1n n\u00e0o mang m\u00e3 \u0111\u00f3.');
       return traLoiJSON({ ok: true, vi: 'khong-co-don' });
     }
 
-    // 3) Đã gửi rồi thì thôi. Cổng gửi lại cùng một báo có là chuyện thường.
+    // 3) Đã gửi rồi thì thôi. App đọc CẢ SMS lẫn thông báo nên cùng một lần
+    //    chuyển tiền rất hay tới đây hai lượt.
     if (don.trangThai === 'daGui') {
       ghi('\u0110\u01a1n ' + maDon + ' \u0111\u00e3 g\u1eedi t\u1eeb tr\u01b0\u1edbc, b\u1ecf qua b\u00e1o c\u00f3 l\u1eb7p.');
       return traLoiJSON({ ok: true, vi: 'da-gui-tu-truoc' });
     }
 
-    // 4) Tiền phải đủ. Khớp mã mà thiếu tiền thì KHÔNG gửi hàng.
+    // 4) Bóc số tiền. Không chắc thì KHÔNG giao.
+    var tien = bocTienTuTinNhan(noiDung);
     var canTra = Number(don.thanhTien || 0);
-    if (bao.tien < canTra) {
-      capNhatDon(don.__ma, { trangThai: 'canXemTay', ghiChuGui: 'Bao co thieu tien: nhan ' + bao.tien + ' / can ' + canTra });
-      baoShopBaoCoLa(bao, '\u0110\u01a1n ' + maDon + ' nh\u1eadn thi\u1ebfu ti\u1ec1n: ' + dinhDangTien(bao.tien) +
-        ' trong khi c\u1ea7n ' + dinhDangTien(canTra) + '. \u0110\u00e3 chuy\u1ec3n sang "c\u1ea7n xem tay", CH\u01afA g\u1eedi h\u00e0ng.');
+    if (!tien) {
+      capNhatDon(don.__ma, { trangThai: 'canXemTay', ghiChuGui: 'Khong boc duoc so tien tu tin nhan ngan hang' });
+      baoShopBaoCoLa(noiDung, nguon, 0,
+        '\u0110\u01a1n ' + maDon + ': kh\u00f4ng ch\u1eafc ch\u1eafn b\u00f3c \u0111\u00fang s\u1ed1 ti\u1ec1n t\u1eeb tin nh\u1eafn ng\u00e2n h\u00e0ng, n\u00ean KH\u00d4NG g\u1eedi h\u00e0ng. ' +
+        'B\u1ea1n t\u1ef1 \u0111\u1ed1i chi\u1ebfu r\u1ed3i b\u1ea5m g\u1eedi tay \u1edf trang qu\u1ea3n tr\u1ecb.');
+      return traLoiJSON({ ok: true, vi: 'khong-boc-duoc-tien' });
+    }
+    if (tien < canTra) {
+      capNhatDon(don.__ma, { trangThai: 'canXemTay', ghiChuGui: 'Bao co thieu tien: nhan ' + tien + ' / can ' + canTra });
+      baoShopBaoCoLa(noiDung, nguon, tien,
+        '\u0110\u01a1n ' + maDon + ' nh\u1eadn thi\u1ebfu ti\u1ec1n: ' + dinhDangTien(tien) + ' trong khi c\u1ea7n ' +
+        dinhDangTien(canTra) + '. \u0110\u00e3 chuy\u1ec3n sang "c\u1ea7n xem tay", CH\u01afA g\u1eedi h\u00e0ng.');
       return traLoiJSON({ ok: true, vi: 'thieu-tien' });
     }
 
     // 5) Đủ tiền. Đánh dấu rồi gửi ngay, không đợi lượt quét định kỳ.
     capNhatDon(don.__ma, { trangThai: 'daXacNhan', daXacNhan: true, xacNhanLuc: Date.now() });
-    ghi('\u0110\u01a1n ' + maDon + ' \u0111\u00e3 \u0111\u1ee7 ti\u1ec1n, g\u1eedi h\u00e0ng ngay.');
+    ghi('\u0110\u01a1n ' + maDon + ' \u0111\u1ee7 ti\u1ec1n (' + tien + '), g\u1eedi h\u00e0ng ngay.');
     guiHangChoDonDaXacNhan();
-    return traLoiJSON({ ok: true, vi: 'da-gui', maDon: maDon });
+    return traLoiJSON({ ok: true, vi: 'da-gui', maDon: maDon, tien: tien });
 
   } catch (loi) {
     ghi('L\u1ed7i: ' + loi.message);
     try {
-      guiThu(docThietLap('EMAIL_SHOP'), '[C\u1ed5ng thanh to\u00e1n] C\u00f3 b\u00e1o c\u00f3 x\u1eed l\u00fd h\u1ecfng',
+      guiThu(docThietLap('EMAIL_SHOP'), '[B\u00e1o c\u00f3] C\u00f3 giao d\u1ecbch x\u1eed l\u00fd h\u1ecfng',
         '<p>Script nh\u1eadn \u0111\u01b0\u1ee3c m\u1ed9t b\u00e1o c\u00f3 nh\u01b0ng x\u1eed l\u00fd h\u1ecfng:</p><p><b>' + thoatHtml(loi.message) + '</b></p>' +
         '<p>\u0110\u01a1n c\u1ee7a kh\u00e1ch c\u00f3 th\u1ec3 \u0111ang n\u1eb1m ch\u1edd. V\u00e0o trang qu\u1ea3n tr\u1ecb m\u1ee5c \u0110\u01a1n h\u00e0ng \u0111\u1ec3 xem.</p>');
     } catch (loi2) { /* hộp thư đầy hay hết hạn mức — đã ghi log ở trên rồi */ }
@@ -630,34 +704,43 @@ function traLoiJSON(du) {
 }
 
 /** Báo chủ shop một khoản tiền vào mà script không tự xử được. */
-function baoShopBaoCoLa(bao, vi) {
-  Logger.log('[webhook] ' + vi);
-  guiThu(docThietLap('EMAIL_SHOP'), '[C\u1ed5ng thanh to\u00e1n] C\u1ea7n b\u1ea1n xem tay',
+function baoShopBaoCoLa(noiDung, nguon, tien, vi) {
+  Logger.log('[bao-co] ' + vi);
+  guiThu(docThietLap('EMAIL_SHOP'), '[B\u00e1o c\u00f3] C\u1ea7n b\u1ea1n xem tay',
     '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.7">' +
       '<p>' + thoatHtml(vi) + '</p>' +
       '<ul>' +
-        '<li>S\u1ed1 ti\u1ec1n: <b>' + thoatHtml(dinhDangTien(bao.tien)) + '</b></li>' +
-        '<li>N\u1ed9i dung: <b>' + thoatHtml(bao.noiDung || '(tr\u1ed1ng)') + '</b></li>' +
+        '<li>Ng\u00e2n h\u00e0ng: <b>' + thoatHtml(nguon || '(kh\u00f4ng r\u00f5)') + '</b></li>' +
+        '<li>S\u1ed1 ti\u1ec1n script \u0111\u1ecdc \u0111\u01b0\u1ee3c: <b>' + thoatHtml(tien ? dinhDangTien(tien) : 'kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c') + '</b></li>' +
       '</ul>' +
+      '<p>Nguy\u00ean v\u0103n tin nh\u1eafn ng\u00e2n h\u00e0ng:</p>' +
+      '<pre style="white-space:pre-wrap;word-break:break-word;padding:12px 14px;background:#f4f7fb;' +
+        'border-left:3px solid #1473e6;border-radius:6px;font-size:13px;margin:0">' +
+        thoatHtml(noiDung) + '</pre>' +
       '<p>Kh\u00f4ng c\u00f3 h\u00e0ng n\u00e0o \u0111\u01b0\u1ee3c g\u1eedi cho kho\u1ea3n n\u00e0y.</p>' +
     '</div>');
 }
 
 /**
- * Bấm Run hàm này để thử luồng cổng thanh toán mà KHÔNG cần chuyển tiền thật.
+ * Bấm Run hàm này để thử trọn luồng báo có mà KHÔNG cần chuyển tiền thật.
  * Sửa hai dòng đầu cho khớp một đơn đang chờ của anh rồi chạy.
  */
-function kiemTraCongThanhToan() {
+function kiemTraBaoCo() {
   var MA_DON_THU = 'WNAT7M';   // mã đơn ngắn, đọc ở trang quản trị mục Đơn hàng
-  var SO_TIEN_THU = 99000;     // số tiền khách chuyển
+  var SO_TIEN_THU = 99000;     // số tiền của đơn đó
 
+  // Đúng định dạng thật ngân hàng của shop gửi, kể cả cụm "SD KHA DUNG" hay bẫy người viết mã.
+  var tin = '(NGANHANG): 09/09/26;21:23 TK: xxxx0000000 PS:+' + SO_TIEN_THU + 'VND ' +
+    'SD: 9.999.999VND SD KHA DUNG: 9.999.999VND ND: LR ' + MA_DON_THU + ' SO GD: 000TEST000';
   var gia = {
-    postData: { contents: JSON.stringify({
-      amount: SO_TIEN_THU,
-      description: 'CHUYEN TIEN LR ' + MA_DON_THU,
-      id: 'THU-' + Date.now()
-    }) },
-    parameter: { key: PropertiesService.getScriptProperties().getProperty('WEBHOOK_KEY') }
+    parameter: {
+      key: PropertiesService.getScriptProperties().getProperty('WEBHOOK_KEY'),
+      message: tin,
+      type: 'sms',
+      source: 'NGANHANG'
+    }
   };
-  Logger.log(doPost(gia).getContent());
+  Logger.log('Tin th\u1eed: ' + tin);
+  Logger.log('S\u1ed1 ti\u1ec1n b\u00f3c \u0111\u01b0\u1ee3c: ' + bocTienTuTinNhan(tin));
+  Logger.log('K\u1ebft qu\u1ea3: ' + doGet(gia).getContent());
 }

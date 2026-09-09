@@ -1226,6 +1226,10 @@ const CAM = [
   // KHÔNG được nằm trong mã nguồn. Máy chủ đọc từ Realtime Database; đường dẫn
   // file thì chỉ máy chủ biết, và nó chỉ trả về khi mã kích hoạt đúng.
   /r2\.cloudflarestorage\.com/i, /[a-z0-9-]+\.r2\.dev/i, /[a-z0-9-]+\.workers\.dev/i,
+  // Cả BỐN SỐ CUỐI tài khoản cũng không được, kể cả trong bộ thử. Ảnh chụp
+  // màn hình ngân hàng che phần đầu số tài khoản nhưng để hở phần đuôi, và
+  // phần đuôi đó chép vào mã lúc viết bộ thử là chuyện đã suýt xảy ra.
+  /1034843/, /0917114941/,
 ];
 const BO_QUA = new Set([".git", "public", "node_modules"]);
 
