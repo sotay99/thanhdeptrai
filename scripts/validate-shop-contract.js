@@ -1099,7 +1099,96 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
-// 22) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
+// 22) MỤC ĐƠN HÀNG TRONG TRANG QUẢN TRỊ.
+//    Chỗ này đọc thông tin khách và cấp đường dẫn nhận hàng — sai một điểm là
+//    hoặc lộ dữ liệu khách, hoặc phá link đã gửi đi rồi.
+// ---------------------------------------------------------------------------
+{
+  const cssAdmin = doc("src/css/admin.css");
+
+  [
+    [/function\s+veAdminDonHang\s*\(/, "hàm vẽ mục Đơn hàng"],
+    [/if\s*\(ma === 'don-hang'\)\s*return veAdminDonHang\(\);/, "mục Đơn hàng được nối vào bộ chọn module"],
+    [/function\s+adminDonMoKhoa\s*\(/, "nút cấp quyền lại cho khách đổi máy"],
+    [/rtdb\.ref\('thietbi\/'\s*\+\s*don\.maNhanHang\s*\+\s*'\/'\s*\+\s*maSP\)\.remove\(\)/, "thao tác xoá khoá thiết bị của đúng một sản phẩm"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  if (!/\.admin-the-don\s*\{/.test(cssAdmin)) {
+    fail("Thiếu kiểu riêng cho thẻ đơn hàng trong src/css/admin.css.");
+  }
+
+  // Danh sách đơn CHỈ tải khi thật sự mở mục Đơn hàng. Đọc sẵn là kéo cả thông
+  // tin liên lạc của khách về máy chủ shop mỗi lần mở trang quản trị.
+  {
+    const than = banNoi.match(/function\s+adminMoModule\s*\([\s\S]*?\n  \}/);
+    if (!than) fail("Thiếu hàm adminMoModule.");
+    else if (!/ma === 'don-hang'[\s\S]*taiDanhSachDon\(\)/.test(than[0])) {
+      fail("Danh sách đơn phải chỉ tải khi mở mục Đơn hàng, không đọc sẵn cùng các nhánh cài đặt.");
+    }
+  }
+  if (/NHANH_ADMIN\s*=\s*\{[^}]*donhang/.test(banNoi)) {
+    fail("Nhánh 'donhang' không được nằm trong NHANH_ADMIN — như vậy là đọc sẵn đơn của khách mỗi lần mở trang quản trị.");
+  }
+
+  // Đọc đơn theo KHOÁ, không theo 'taoLuc'. Khoá push vốn xếp theo thời gian nên
+  // không cần chỉ mục mới; sắp theo taoLuc là bắt chủ shop dán lại Rules.
+  if (/orderByChild\('taoLuc'\)/.test(banNoi)) {
+    fail("Đừng sắp đơn theo 'taoLuc' — nhánh donhang không có chỉ mục đó, đổi sang orderByKey().");
+  }
+  if (!/orderByKey\(\)\.limitToLast\(/.test(banNoi)) {
+    fail("Thiếu truy vấn orderByKey().limitToLast() cho bộ lọc 'tất cả'.");
+  }
+  if (!/orderByChild\('trangThai'\)\.equalTo\(/.test(banNoi)) {
+    fail("Thiếu truy vấn lọc theo 'trangThai' — thiếu nó là tải cả kho đơn về mỗi lần lọc.");
+  }
+  {
+    const rules = doc("database.rules.json");
+    const khoi = rules.match(/"donhang"\s*:\s*\{[\s\S]*?"\.indexOn"\s*:\s*\[[^\]]*\]/);
+    if (!khoi || !/"trangThai"/.test(khoi[0])) {
+      fail('database.rules.json thiếu .indexOn "trangThai" ở nhánh donhang — Firebase sẽ từ chối truy vấn lọc.');
+    }
+  }
+
+  // Mã nhận hàng sinh ở trang quản trị phải TRÙNG LUẬT với Apps Script: cùng
+  // bảng chữ (bỏ 0/1/I/L/O) và cùng độ dài. Khác nhau là hai nơi cấp ra hai
+  // kiểu mã, khách đọc bằng mắt sẽ nhầm.
+  {
+    const gs = doc("apps-script/gui-hang.gs");
+    const bangGS = gs.match(/CHU_MA_NHAN_HANG\s*=\s*'([^']+)'/);
+    const bangJS = banNoi.match(/CHU_MA_NHAN_HANG\s*=\s*'([^']+)'/);
+    const daiGS = gs.match(/DAI_MA_NHAN_HANG\s*=\s*(\d+)/);
+    const daiJS = banNoi.match(/DAI_MA_NHAN_HANG\s*=\s*(\d+)/);
+    if (!bangJS || !daiJS) {
+      fail("Trang quản trị thiếu bảng chữ hoặc độ dài mã nhận hàng.");
+    } else if (bangGS && bangJS[1] !== bangGS[1]) {
+      fail("Bảng chữ mã nhận hàng ở trang quản trị khác Apps Script — hai nơi phải cấp ra cùng một kiểu mã.");
+    } else if (daiGS && daiJS[1] !== daiGS[1]) {
+      fail("Độ dài mã nhận hàng ở trang quản trị khác Apps Script.");
+    }
+  }
+
+  // Cấp mã lần hai là phá link đã gửi cho khách. Phải chặn hẳn.
+  {
+    const than = banNoi.match(/function\s+adminDonTaoMa\s*\([\s\S]*?\n  \}/);
+    if (!than) fail("Thiếu hàm adminDonTaoMa.");
+    else if (!/if\s*\(don\.maNhanHang\)\s*return;/.test(than[0])) {
+      fail("adminDonTaoMa phải từ chối cấp đè mã — cấp lần hai là link đã gửi cho khách thành vô dụng.");
+    }
+  }
+
+  // Cấp quyền lại là việc không lùi được, phải hỏi lại trước khi làm.
+  {
+    const than = banNoi.match(/function\s+adminDonMoKhoa\s*\([\s\S]*?\n  \}/);
+    if (than && !/window\.confirm\(/.test(than[0])) {
+      fail("Nút cấp quyền lại phải hỏi lại trước khi xoá khoá thiết bị.");
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
 // ---------------------------------------------------------------------------
@@ -1148,4 +1237,4 @@ if (failures.length) {
   failures.forEach((m) => console.error(`- ${m}`));
   process.exit(1);
 }
-console.log("Hợp đồng phần bán hàng ĐẠT: 9 sản phẩm đúng giá gốc và giá chốt, giảm lần hai 10%/sản phẩm, quy tắc nhập liệu, thanh neo đáy, và không có thông tin ngân hàng nào trong mã nguồn.");
+console.log("Hợp đồng phần bán hàng ĐẠT: 9 sản phẩm đúng giá gốc và giá chốt, giảm lần hai 10%/sản phẩm, quy tắc nhập liệu, thanh neo đáy, mục Đơn hàng trong trang quản trị, và không có thông tin ngân hàng nào trong mã nguồn.");

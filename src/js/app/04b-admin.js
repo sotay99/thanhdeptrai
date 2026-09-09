@@ -295,17 +295,15 @@
     if (ma === 'nhan-tien') return veAdminNhanTien();
     if (ma === 'khoa-ai')   return veAdminKhoaAI();
     if (ma === 'danh-muc')  return veAdminDanhMuc();
+    if (ma === 'don-hang')  return veAdminDonHang();
     return veAdminChuaLam(ma);
   }
 
   function veAdminChuaLam(ma){
     const m = MODULE_ADMIN.filter(function(x){ return x.ma === ma; })[0];
     const ten = m ? m.ten : ma;
-    const vi = (ma === 'don-hang')
-      ? 'Phần này cần máy chủ kho (Worker) mới chạy được. Dựng xong Worker là mở được ngay.'
-      : 'Phần này đang được xây dựng.';
     return '<header class="admin-dau"><h2>' + escapeHtml(ten) + '</h2></header>' +
-      '<div class="admin-trong"><p>' + escapeHtml(vi) + '</p></div>';
+      '<div class="admin-trong"><p>Phần này đang được xây dựng.</p></div>';
   }
 
   function veAdminTongQuan(){
@@ -429,6 +427,9 @@
     state.admin.module = ma;
     render();
     if (window.scrollTo) window.scrollTo(0, 0);
+    // Danh sách đơn chỉ tải khi thật sự mở mục Đơn hàng, và chỉ tải lần đầu.
+    // Đơn hàng là dữ liệu nặng và nhạy cảm nhất trong kho, không đọc sẵn.
+    if (ma === 'don-hang' && !khoDon().daTai && !khoDon().dangTai) taiDanhSachDon();
   }
 
   function adminHienBiMat(khoaTruong){
