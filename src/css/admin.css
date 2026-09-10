@@ -626,6 +626,15 @@
   color: var(--chu-mo);
 }
 
+/* Nút xoá mang tông đỏ và bị đẩy sang mép phải, tách hẳn khỏi nhóm nút đổi
+   trạng thái — để không ai bấm nhầm nó khi đang định bấm nút bên cạnh. */
+.nut-xoa-don {
+  margin-left: auto;
+  border-color: rgba(229, 83, 75, .5);
+  color: var(--do);
+}
+.nut-xoa-don:hover { border-color: var(--do); background: rgba(229, 83, 75, .12); }
+
 .admin-the-don .day-don {
   display: flex;
   flex-wrap: wrap;

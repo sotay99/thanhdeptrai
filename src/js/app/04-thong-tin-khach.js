@@ -127,9 +127,13 @@
       else o.classList.remove('sai');
     });
 
+    // Lời nhắc luôn hiện, chỉ đổi độ đậm: chưa ô nào có chữ thì nó là lý do nút
+    // đang khoá, điền rồi thì lùi về làm ghi chú. Đổi CHỮ ở đây thì thành hai
+    // câu nói cùng một việc, và khách phải đọc lại từ đầu mỗi lần gõ.
     const canhBao = document.querySelector('[data-loi="chung"]');
     if (canhBao) {
-      canhBao.textContent = ketQua.coItNhatMot ? '' : 'Cần nhập ít nhất một trong năm trường trên.';
+      if (ketQua.coItNhatMot) canhBao.classList.remove('dang-thieu');
+      else canhBao.classList.add('dang-thieu');
     }
     const nut = document.querySelector('[data-hanh-dong="tien-hanh-thanh-toan"]');
     if (nut) nut.disabled = !ketQua.hopLe;
@@ -190,11 +194,17 @@
           '- khuyến khích nhập Email để nhận sản phẩm Nhanh chỉ trong 1 phút, bỏ qua nếu chưa có email') +
         veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, không dấu cách, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
-        veOTruong('whatsapp', 'Số WhatsApp của bạn', kh.whatsapp,
+        veOTruong('whatsapp', 'Số WhatsApp của bạn (nếu có)', kh.whatsapp,
           'Bỏ qua nếu bạn không dùng. Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
-        veOTruong('telegram', 'Số Telegram của bạn', kh.telegram,
+        veOTruong('telegram', 'Số Telegram của bạn (nếu có)', kh.telegram,
           'Bỏ qua nếu bạn không dùng. Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
-        '<p class="loi" data-loi="chung"></p>',
+        // Lời nhắc đứng CUỐI, sau cả năm ô, và luôn có mặt. Khách vừa gõ xong ô
+        // cuối là mắt rơi đúng vào nó, ngay trước lúc với tay xuống nút thanh
+        // toán. Nó đậm thêm khi chưa ô nào có chữ — lúc đó không còn là lời
+        // nhắc nữa mà là lý do nút đang khoá.
+        '<p class="loi loi-chung" data-loi="chung">' +
+          'Vui lòng nhập thông tin vào ít nhất 1 trong 5 trường (khung nhập liệu) ở phía trên' +
+        '</p>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
         '<button type="button" class="nut nut-chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',

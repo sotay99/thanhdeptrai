@@ -214,10 +214,14 @@
       return '<li>' + escapeHtml(String(x)) + '</li>';
     }).join('');
 
+    // Đủ NĂM kênh, đúng thứ tự chúng hiện trong bảng khách điền. Thiếu một
+    // dòng ở đây là chủ shop tưởng khách không để lại gì và bỏ mặc họ.
     const lienLac = [
       ['Email', don.email],
       ['Zalo', don.zalo],
-      ['Điện thoại', don.dienThoai]
+      ['Điện thoại', don.dienThoai],
+      ['WhatsApp', don.whatsapp],
+      ['Telegram', don.telegram]
     ].filter(function(d){ return d[1]; }).map(function(d){
       return '<div class="dong-lien-lac"><span class="nhan">' + escapeHtml(d[0]) + '</span>' +
         '<span class="tri">' + escapeHtml(String(d[1])) + '</span>' +
@@ -251,7 +255,11 @@
         '</div>' +
         veKhoiNhanHang(don, dangLam) +
         veKhoiThietBi(don, moRong) +
-        '<footer class="day-don">' + veNutTrangThai(don, tt, dangLam) + '</footer>' +
+        '<footer class="day-don">' + veNutTrangThai(don, tt, dangLam) +
+          '<button type="button" class="nut nut-nho nut-vien nut-xoa-don"' +
+            ' data-hanh-dong="admin-don-xoa" data-khoa="' + escapeHtml(don.khoa) + '"' +
+            (dangLam ? ' disabled' : '') + '>Xoá đơn</button>' +
+        '</footer>' +
       '</article>';
   }
 
@@ -450,6 +458,35 @@
     const k = khoDon();
     if (k.moRong === khoa) k.moRong = '';
     veLaiDonHang();
+  }
+
+  // Xoá hẳn đơn khỏi Firebase. Không lùi được, nên hỏi lại và nói rõ mất gì:
+  // mã nhận hàng biến mất theo, và nếu khách đang giữ đường dẫn thì đường dẫn
+  // đó chết luôn. Câu hỏi lại in cả mã đơn để chủ shop soi lại trước khi gật.
+  function adminDonXoa(khoa){
+    const don = donTheoKhoa(khoa);
+    if (!don || !firebaseSanSang || !rtdb) return;
+    const ten = don.maDon || khoa;
+    if (!window.confirm(
+      'Xoá hẳn đơn ' + ten + ' khỏi Firebase?\n\n' +
+      'KHÔNG KHÔI PHỤC ĐƯỢC. Mã nhận hàng của đơn này mất theo, và nếu khách đang ' +
+      'giữ đường dẫn nhận hàng thì đường dẫn đó chết luôn.')) return;
+
+    const k = khoDon();
+    k.dangLam = khoa;
+    veLaiDonHang();
+    rtdb.ref('donhang/' + khoa).remove().then(function(){
+      k.dangLam = '';
+      k.danhSach = k.danhSach.filter(function(d){ return d.khoa !== khoa; });
+      if (k.moRong === khoa) k.moRong = '';
+      delete k.thietBi[khoa];
+      veLaiDonHang();
+    }).catch(function(e){
+      console.error('Không xoá được đơn ' + khoa + ':', e);
+      k.dangLam = '';
+      veLaiDonHang();
+      alert('Không xoá được. Firebase từ chối hoặc mất mạng.');
+    });
   }
 
   function adminDonMoKhoa(khoa, maSP){

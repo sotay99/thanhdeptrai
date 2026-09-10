@@ -1181,8 +1181,15 @@ if (/<h3 class="ten-sanpham">'\s*\+[\s\S]{0,120}?class="so-tt"/.test(banNoi)) {
   [/đã nằm trong hệ thống<\/strong> và đang chờ tiền về/,
     "ghi chú: đơn đã được tạo từ lúc hiện mã QR"],
   [/chưa để lại email<\/strong>/, "cảnh báo khi khách không để lại email"],
-  [/qua <strong>Zalo<\/strong> hoặc <strong>tin nhắn SMS<\/strong>/,
-    "nói rõ sẽ liên hệ qua Zalo hoặc SMS khi khách không có email"],
+  // Câu trấn an phải kể ĐÚNG những kênh khách để lại, không phải một câu chết
+  // nói mãi "Zalo hoặc SMS". Khách chỉ điền WhatsApp mà đọc thấy "nhắn tới số "
+  // bỏ lửng thì hoang mang đúng lúc vừa chuyển tiền xong.
+  [/function\s+kenhLienHeCuaKhach\s*\(/, "hàm liệt kê đúng những kênh khách đã để lại"],
+  [/ten:\s*'WhatsApp'/, "WhatsApp nằm trong danh sách kênh liên hệ"],
+  [/ten:\s*'Telegram'/, "Telegram nằm trong danh sách kênh liên hệ"],
+  [/mọi cách bạn đã để lại<\/strong>/, "câu trấn an nói shop tìm bằng mọi cách khách để lại"],
+  [/Shop chưa có cách nào liên hệ với bạn/,
+    "lời dặn khi không còn kênh nào — thà nói thẳng còn hơn in ra một câu bỏ lửng"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
@@ -1346,6 +1353,35 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   });
   if (!/\.the-trang-thai\.tim\s*\{/.test(doc("src/css/admin.css"))) {
     fail("Thiếu màu riêng cho nhãn 'Khách báo đã trả' — nó phải khác hẳn bốn trạng thái kia.");
+  }
+
+  // Thẻ đơn phải hiện ĐỦ năm kênh liên lạc. Thiếu một dòng là chủ shop tưởng
+  // khách không để lại gì và bỏ mặc họ.
+  ["'Email', don.email", "'Zalo', don.zalo", "'Điện thoại', don.dienThoai",
+   "'WhatsApp', don.whatsapp", "'Telegram', don.telegram"].forEach((d) => {
+    if (banNoi.indexOf("[" + d + "]") === -1) {
+      fail(`Thẻ đơn ở trang quản trị thiếu dòng ${d}.`);
+    }
+  });
+
+  // Xoá đơn không lùi được, nên phải hỏi lại và phải nói rõ mất những gì.
+  {
+    const than = banNoi.match(/function\s+adminDonXoa\s*\([\s\S]*?\n  \}/);
+    if (!than) fail("Thiếu hàm xoá đơn adminDonXoa.");
+    else {
+      if (!/window\.confirm\(/.test(than[0])) fail("Nút xoá đơn phải hỏi lại trước khi xoá.");
+      if (!/KHÔNG KHÔI PHỤC ĐƯỢC/.test(than[0])) {
+        fail("Lời hỏi lại khi xoá đơn phải nói rõ là không khôi phục được.");
+      }
+      if (!/rtdb\.ref\('donhang\/' \+ khoa\)\.remove\(\)/.test(than[0])) {
+        fail("adminDonXoa phải xoá đúng nhánh donhang của đơn đó.");
+      }
+    }
+    if (!/data-hanh-dong="admin-don-xoa"/.test(banNoi)) fail("Thiếu nút Xoá đơn trên thẻ đơn.");
+    if (!/hanhDong === 'admin-don-xoa'/.test(banNoi)) fail("Chưa nối nút Xoá đơn vào bộ điều phối.");
+    if (!/\.nut-xoa-don\s*\{/.test(doc("src/css/admin.css"))) {
+      fail("Nút Xoá đơn phải có kiểu riêng, tách khỏi nhóm nút đổi trạng thái.");
+    }
   }
 }
 
