@@ -40,7 +40,8 @@
       ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
       ".indexOn": [
         "trangThai",
-        "maNhanHang"
+        "maNhanHang",
+        "maDon"
       ],
       "$madon": {
         ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
