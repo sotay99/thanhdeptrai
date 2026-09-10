@@ -440,9 +440,35 @@
   // Vậy bảng này để làm gì? Để khách biết điều gì sắp xảy ra và bằng đường nào,
   // thay vì bấm xong rồi ngồi đoán. Đó là lý do lời văn ở đây nói về việc "khi
   // shop nhận được tiền" chứ không nói "sau khi bạn bấm".
+  // Những kênh khách THẬT SỰ để lại, kèm tên gọi khách hiểu được. Trước đây
+  // chỗ này chỉ biết Zalo và điện thoại, nên khách chỉ điền WhatsApp là câu
+  // trấn an in ra "nhắn tới số " rồi bỏ lửng — vừa sai vừa làm khách hoang mang
+  // đúng lúc họ vừa chuyển tiền xong.
+  //
+  // Điện thoại trùng số Zalo thì chỉ kể một lần: hai dòng cùng một con số làm
+  // khách tưởng mình gõ nhầm ở đâu đó.
+  function kenhLienHeCuaKhach(kh){
+    const kenh = [];
+    if (kh.zalo) kenh.push({ ten: 'Zalo', so: kh.zalo });
+    if (kh.dienThoai && kh.dienThoai !== kh.zalo) kenh.push({ ten: 'tin nhắn SMS', so: kh.dienThoai });
+    if (kh.whatsapp) kenh.push({ ten: 'WhatsApp', so: kh.whatsapp });
+    if (kh.telegram) kenh.push({ ten: 'Telegram', so: kh.telegram });
+    return kenh;
+  }
+
+  // "Zalo 090…", "Zalo 090… và WhatsApp 091…", "Zalo 090…, WhatsApp 091… và
+  // Telegram 092…" — dấu phẩy cho các mục giữa, chữ "và" cho mục cuối.
+  function keTenKenh(kenh){
+    const chu = kenh.map(function(k){
+      return '<strong>' + escapeHtml(k.ten) + '</strong> ' + escapeHtml(k.so);
+    });
+    if (chu.length === 1) return chu[0];
+    return chu.slice(0, -1).join(', ') + ' và ' + chu[chu.length - 1];
+  }
+
   function xacNhanThanhToan(){
     const kh = state.khachHang;
-    const lienHe = kh.zalo || kh.dienThoai;
+    const kenh = kenhLienHeCuaKhach(kh);
     moModal({
       ma: 'xac-nhan-lan-hai',
       tieuDe: 'Đơn hàng đã được ghi nhận',
@@ -462,14 +488,18 @@
               : '.') +
           '</p>' +
           (kh.email
-            ? (lienHe
-                ? '<p class="ghi-chu-gui">📱 Nếu email trục trặc, shop vẫn nhắn cho bạn qua ' +
-                  '<strong>Zalo</strong> hoặc <strong>tin nhắn SMS</strong> tới số ' +
-                  escapeHtml(lienHe) + '. Bạn sẽ không bị bỏ sót.</p>'
-                : '')
-            : '<p class="ghi-chu-gui canh-bao">⚠️ Bạn <strong>chưa để lại email</strong> nên hệ thống không gửi tự động được. ' +
-              'Shop sẽ chủ động nhắn cho bạn qua <strong>Zalo</strong> hoặc <strong>tin nhắn SMS</strong> tới số ' +
-              escapeHtml(lienHe) + ' để giao sản phẩm, xin chờ ít phút.</p>') +
+            ? (kenh.length
+                ? '<p class="ghi-chu-gui">📱 Nếu email trục trặc, shop vẫn tìm bạn bằng ' +
+                  '<strong>mọi cách bạn đã để lại</strong>: ' + keTenKenh(kenh) +
+                  '. Bạn sẽ không bị bỏ sót.</p>'
+                : '<p class="ghi-chu-gui">📧 Bạn để lại email nên sản phẩm sẽ tới thẳng hộp thư đó. ' +
+                  'Nếu quá lâu chưa thấy, nhắn cho shop kèm nội dung chuyển khoản ở trên.</p>')
+            : (kenh.length
+                ? '<p class="ghi-chu-gui canh-bao">⚠️ Bạn <strong>chưa để lại email</strong> nên hệ thống ' +
+                  'không gửi tự động được. Shop sẽ chủ động nhắn cho bạn qua ' + keTenKenh(kenh) +
+                  ' để giao sản phẩm, xin chờ ít phút.</p>'
+                : '<p class="ghi-chu-gui canh-bao">⚠️ Shop chưa có cách nào liên hệ với bạn. ' +
+                  'Hãy nhắn cho shop kèm nội dung chuyển khoản ở trên để nhận sản phẩm.</p>')) +
           '<p class="nhac-nho">Nếu chuyển tiền rồi mà quá lâu chưa thấy hồi âm, nhắn cho shop kèm ' +
             'nội dung chuyển khoản ở trên — shop tra ra đơn ngay.</p>' +
           // Đường thoát cho khách đang sốt ruột. Mở đúng bảng "Liên hệ và
@@ -552,6 +582,8 @@
       return;
     }
     if (hanhDong === 'admin-don-tao-ma') { adminDonTaoMa(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-xoa') { adminDonXoa(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-gui-email') { adminDonGuiEmail(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-thiet-bi') { adminDonXemThietBi(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-dong-thiet-bi') { adminDonDongThietBi(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-mo-khoa') {

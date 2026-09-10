@@ -1181,8 +1181,15 @@ if (/<h3 class="ten-sanpham">'\s*\+[\s\S]{0,120}?class="so-tt"/.test(banNoi)) {
   [/đã nằm trong hệ thống<\/strong> và đang chờ tiền về/,
     "ghi chú: đơn đã được tạo từ lúc hiện mã QR"],
   [/chưa để lại email<\/strong>/, "cảnh báo khi khách không để lại email"],
-  [/qua <strong>Zalo<\/strong> hoặc <strong>tin nhắn SMS<\/strong>/,
-    "nói rõ sẽ liên hệ qua Zalo hoặc SMS khi khách không có email"],
+  // Câu trấn an phải kể ĐÚNG những kênh khách để lại, không phải một câu chết
+  // nói mãi "Zalo hoặc SMS". Khách chỉ điền WhatsApp mà đọc thấy "nhắn tới số "
+  // bỏ lửng thì hoang mang đúng lúc vừa chuyển tiền xong.
+  [/function\s+kenhLienHeCuaKhach\s*\(/, "hàm liệt kê đúng những kênh khách đã để lại"],
+  [/ten:\s*'WhatsApp'/, "WhatsApp nằm trong danh sách kênh liên hệ"],
+  [/ten:\s*'Telegram'/, "Telegram nằm trong danh sách kênh liên hệ"],
+  [/mọi cách bạn đã để lại<\/strong>/, "câu trấn an nói shop tìm bằng mọi cách khách để lại"],
+  [/Shop chưa có cách nào liên hệ với bạn/,
+    "lời dặn khi không còn kênh nào — thà nói thẳng còn hơn in ra một câu bỏ lửng"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
@@ -1346,6 +1353,105 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   });
   if (!/\.the-trang-thai\.tim\s*\{/.test(doc("src/css/admin.css"))) {
     fail("Thiếu màu riêng cho nhãn 'Khách báo đã trả' — nó phải khác hẳn bốn trạng thái kia.");
+  }
+
+  // Thẻ đơn phải hiện ĐỦ năm kênh liên lạc. Thiếu một dòng là chủ shop tưởng
+  // khách không để lại gì và bỏ mặc họ.
+  ["'Email', don.email", "'Zalo', don.zalo", "'Điện thoại', don.dienThoai",
+   "'WhatsApp', don.whatsapp", "'Telegram', don.telegram"].forEach((d) => {
+    if (banNoi.indexOf("[" + d + "]") === -1) {
+      fail(`Thẻ đơn ở trang quản trị thiếu dòng ${d}.`);
+    }
+  });
+
+  // Xoá đơn không lùi được, nên phải hỏi lại và phải nói rõ mất những gì.
+  {
+    const than = banNoi.match(/function\s+adminDonXoa\s*\([\s\S]*?\n  \}/);
+    if (!than) fail("Thiếu hàm xoá đơn adminDonXoa.");
+    else {
+      if (!/window\.confirm\(/.test(than[0])) fail("Nút xoá đơn phải hỏi lại trước khi xoá.");
+      if (!/KHÔNG KHÔI PHỤC ĐƯỢC/.test(than[0])) {
+        fail("Lời hỏi lại khi xoá đơn phải nói rõ là không khôi phục được.");
+      }
+      if (!/rtdb\.ref\('donhang\/' \+ khoa\)\.remove\(\)/.test(than[0])) {
+        fail("adminDonXoa phải xoá đúng nhánh donhang của đơn đó.");
+      }
+    }
+    if (!/data-hanh-dong="admin-don-xoa"/.test(banNoi)) fail("Thiếu nút Xoá đơn trên thẻ đơn.");
+    if (!/hanhDong === 'admin-don-xoa'/.test(banNoi)) fail("Chưa nối nút Xoá đơn vào bộ điều phối.");
+    if (!/\.nut-xoa-don\s*\{/.test(doc("src/css/admin.css"))) {
+      fail("Nút Xoá đơn phải có kiểu riêng, tách khỏi nhóm nút đổi trạng thái.");
+    }
+  }
+
+  // ------------------------------------------------- GỬI EMAIL TAY CHO KHÁCH
+  {
+    const gsSend = doc("apps-script/gui-hang.gs");
+
+    // 'emailGuiLuc' là BẰNG CHỨNG thư đã bay đi, còn 'daGui' chỉ là cái nhãn —
+    // nút "Đánh dấu đã gửi" ở trang quản trị đặt được nhãn đó mà chẳng gửi gì.
+    // Nên chỉ ĐÚNG MỘT nơi được ghi bằng chứng: ngay sau lệnh gửi thư thật.
+    {
+      const dat = (gsSend.match(/emailGuiLuc:\s*Date\.now\(\)/g) || []).length;
+      if (dat !== 1) {
+        fail(`Chỉ ĐÚNG MỘT nơi trong Apps Script được ghi emailGuiLuc (đang có ${dat}).`);
+      }
+      if (!/guiThu\(don\.email[\s\S]{0,700}?emailGuiLuc:\s*Date\.now\(\)/.test(gsSend)) {
+        fail("emailGuiLuc phải được ghi NGAY SAU lệnh gửi thư cho khách, không ở chỗ nào khác.");
+      }
+      if (!/soLanGuiEmail:\s*\(Number\(don\.soLanGuiEmail\)\s*\|\|\s*0\)\s*\+\s*1/.test(gsSend)) {
+        fail("Thiếu bộ đếm số lần gửi email.");
+      }
+    }
+    // Rules phải cho phép hai trường đó — nhánh donhang khai "$khac": false.
+    ["emailGuiLuc", "soLanGuiEmail"].forEach((t) => {
+      if (!new RegExp('"' + t + '"\\s*:\\s*\\{').test(doc("database.rules.json"))) {
+        fail(`database.rules.json thiếu trường ${t} — Firebase sẽ từ chối cả đơn.`);
+      }
+    });
+
+    [
+      [/function\s+veKhoiGuiEmail\s*\(/, "khối nút gửi email trên thẻ đơn"],
+      [/function\s+adminDonGuiEmail\s*\(/, "hành động gửi email tay"],
+      [/function\s+ngheDonGuiXong\s*\(/, "người nghe báo lúc thư bay đi thật"],
+      [/function\s+thoiNgheHetDon\s*\(/, "hàm gỡ người nghe khi rời danh sách"],
+      [/Gửi email kèm link sản phẩm cho khách/, "tên nút khi chưa gửi lần nào"],
+      [/Gửi email lại lần nữa cho khách/, "tên nút khi đã gửi rồi"],
+      [/Đã gửi email cho khách/, "lời báo sau khi gửi xong"],
+      [/class="dau-da-gui-email"/, "dấu đã gửi email trên đầu thẻ đơn"],
+    ].forEach(([mau, ten]) => {
+      if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+    });
+
+    {
+      const than = banNoi.match(/function\s+adminDonGuiEmail\s*\([\s\S]*?\n  \}/);
+      if (!than) {
+        fail("Thiếu hàm adminDonGuiEmail.");
+      } else {
+        // Cấp mã nhận hàng TRƯỚC khi xin gửi. Ngược lại thì thư bay đi với
+        // đường dẫn rỗng và khách nhận được một lá thư vô dụng.
+        if (than[0].indexOf("maNhanHang") > than[0].indexOf("trangThai: 'daXacNhan'")) {
+          fail("Phải cấp mã nhận hàng TRƯỚC khi đặt yêu cầu gửi.");
+        }
+        if (!/if\s*\(!don\.email\)/.test(than[0])) {
+          fail("Nút gửi email phải từ chối đơn không có email.");
+        }
+        // Mốc cũ: so với lần gửi trước, không chỉ nhìn "có emailGuiLuc không".
+        if (!/mocCu\s*=\s*Number\(don\.emailGuiLuc\)\s*\|\|\s*0/.test(than[0])) {
+          fail("Phải nhớ mốc gửi cũ, nếu không lần gửi lại báo xong ngay bằng dấu vết lần trước.");
+        }
+      }
+    }
+    // Bằng chứng gửi xong là emailGuiLuc MỚI HƠN mốc cũ, không phải trạng thái.
+    {
+      const than = banNoi.match(/function\s+ngheDonGuiXong\s*\([\s\S]*?\n  \}/);
+      if (than && !/Number\(moi\.emailGuiLuc \|\| 0\)\s*>\s*mocCu/.test(than[0])) {
+        fail("Phải căn theo emailGuiLuc mới hơn mốc cũ, không căn theo trạng thái 'daGui'.");
+      }
+    }
+    if (!/\.khoi-gui-email\s*\{/.test(doc("src/css/admin.css"))) {
+      fail("Thiếu kiểu riêng cho khối gửi email.");
+    }
   }
 }
 

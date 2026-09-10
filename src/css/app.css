@@ -1649,11 +1649,34 @@
 .the-nhan-hang.chua-mua:hover::before { opacity: .25; }
 
 
+/* Lời nhắc "ít nhất 1 trong 5 trường" ở cuối bảng xác nhận đơn hàng. Luôn có
+   mặt, và đậm thêm khi chưa ô nào có chữ — lúc đó nó không còn là ghi chú nữa
+   mà là lý do nút thanh toán đang khoá. */
+.loi-chung {
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border: 1.5px solid rgba(229, 83, 75, .55);
+  border-radius: 10px;
+  background: rgba(229, 83, 75, .1);
+  color: var(--do);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.loi-chung.dang-thieu {
+  border-color: var(--do);
+  background: rgba(229, 83, 75, .18);
+}
+
 /* Đường thoát cho khách đang sốt ruột ở bảng xác nhận thanh toán. Tiêu đề dài
-   nên phải cho chữ xuống dòng và canh giữa, cao tối thiểu 48px cho ngón tay. */
+   nên phải cho chữ xuống dòng và canh giữa, cao tối thiểu 48px cho ngón tay.
+   Viền xanh đậm của web để nó nổi hẳn lên giữa mấy dòng chữ quanh nó. */
 .khung-xac-nhan .nut-goi-shop {
   margin-top: 14px;
   padding: 12px 16px;
+  border: 2px solid var(--xanh);
+  color: var(--xanh);
   height: auto;
   min-height: 48px;
   white-space: normal;
@@ -1661,4 +1684,8 @@
   line-height: 1.6;
   font-size: 13.5px;
   overflow-wrap: anywhere;
+}
+.khung-xac-nhan .nut-goi-shop:hover {
+  border-color: var(--xanh);
+  background: var(--xanh-nen);
 }

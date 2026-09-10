@@ -74,6 +74,12 @@
         "guiLuc": {
           ".validate": "newData.isNumber()"
         },
+        "emailGuiLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "soLanGuiEmail": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
         "ghiChuGui": {
           ".validate": "newData.isString() && newData.val().length <= 300"
         },
