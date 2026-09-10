@@ -31,7 +31,8 @@ function ok(dieuKien, ten, chiTiet) {
 // MailApp ghi thư vào một mảng, LockService luôn cho qua.
 
 function dungSanKhau(donBanDau) {
-  const kho = { donhang: JSON.parse(JSON.stringify(donBanDau)), danhmuc: {} };
+  const kho = { donhang: JSON.parse(JSON.stringify(donBanDau)), danhmuc: {},
+    thongtinlienhe: { zalo: '0912345678' } };
   const thu = [];
   const log = [];
 
@@ -100,7 +101,7 @@ function dungSanKhau(donBanDau) {
     'function guiThu(nguoiNhan, tieuDe, thanHtml) { __thu.push({ toi: nguoiNhan, tieuDe: tieuDe, than: thanHtml }); }'
   );
   const ten2 = ten.concat(['__thu']);
-  const dung2 = new Function(...ten2, nguonVa + '\n;return { doGet: doGet, doPost: doPost, docMaDonTrongNoiDung: docMaDonTrongNoiDung, bocTienTuTinNhan: bocTienTuTinNhan };');
+  const dung2 = new Function(...ten2, nguonVa + '\n;return { doGet, doPost, docMaDonTrongNoiDung, bocTienTuTinNhan, linkZalo, soanTinZalo, soanTinSMS, soanThuBaoShop, soanThuGiaoHang };');
   const api = dung2.apply({}, ten.map((t) => moiTruong[t]).concat([thu]));
 
   return { api, kho, thu, log, thietLap };
@@ -265,6 +266,79 @@ console.log('\n— Gói dữ liệu méo —');
   ok(JSON.parse(api.doGet({ parameter: { key: 'MAT-KHAU-DUNG' } }).getContent()).vi === 'khong-co-noi-dung',
     'Gọi mà không kèm message thì không nổ', '');
   ok(JSON.parse(api.doGet({}).getContent()).vi === 'sai-khoa', 'Gọi trống trơn thì bị chặn ở cửa mật khẩu', '');
+}
+
+console.log('\n— Đường dẫn Zalo —');
+{
+  const { api } = dungSanKhau(DON_MAU);
+  const z = api.linkZalo;
+  ok(z('0912345678') === 'https://zalo.me/84912345678', 'Số bắt đầu bằng 0 → đổi thành 84', z('0912345678'));
+  ok(z('84912345678') === 'https://zalo.me/84912345678', 'Số đã là 84 thì giữ nguyên', z('84912345678'));
+  ok(z('+84912345678') === 'https://zalo.me/84912345678', 'Số có +84 thì bỏ dấu cộng', z('+84912345678'));
+  ok(z('0912 345 678') === 'https://zalo.me/84912345678', 'Số có dấu cách vẫn dựng được', z('0912 345 678'));
+  ok(z('1234567') === '', 'Số không phải 0/84/+84 thì ẩn đường dẫn', z('1234567'));
+  ok(z('+1202555') === '', 'Số nước ngoài cũng ẩn', z('+1202555'));
+  ok(z('') === '' && z(null) === '', 'Không có số thì không có đường dẫn', '');
+  ok(z('0912') === '', 'Số quá ngắn thì ẩn, không dựng đường dẫn hỏng', z('0912'));
+}
+
+console.log('\n— Mẩu tin Zalo và SMS —');
+{
+  const { api } = dungSanKhau(DON_MAU);
+  const don = Object.assign({ __ma: '-Naaa' }, DON_MAU['-Naaa'], { maNhanHang: 'ABCDEFGH23456789' });
+
+  const zalo = api.soanTinZalo(don);
+  ok(zalo.indexOf('/sanpham?ma=ABCDEFGH23456789') !== -1, 'Mẩu Zalo mang đường dẫn riêng của đơn', zalo.slice(0, 60));
+  // Nuốt dấu xuống dòng đơn là bệnh của khâu chép-dán vào Zalo. Xuống dòng đôi
+  // thì mất một cái vẫn còn một cái, mẩu tin giữ được hình dạng.
+  ok(!/[^\n]\n[^\n]/.test(zalo), 'Mọi dấu xuống dòng đều là đôi, không có cái đơn nào', JSON.stringify(zalo.slice(0, 120)));
+
+  const sms = api.soanTinSMS(don);
+  ok(sms.indexOf('/sanpham?ma=ABCDEFGH23456789') !== -1, 'Mẩu SMS mang đường dẫn riêng của đơn', sms);
+  // Một chữ có dấu là cả tin rớt xuống bảng mã Unicode: hạn mức tụt từ 160 còn
+  // 70 ký tự, tốn gấp ba tiền và dễ bị cắt cụt mất đường dẫn.
+  ok(/^[\x20-\x7E]+$/.test(sms), 'Mẩu SMS không có ký tự có dấu nào', sms);
+  ok(sms.length <= 160, 'Mẩu SMS gọn trong MỘT tin (' + sms.length + '/160 ký tự)', String(sms.length));
+  ok(/cam on/i.test(sms) && /chia se/i.test(sms), 'Mẩu SMS có lời cảm ơn và lời dặn đừng chia sẻ', sms);
+}
+
+console.log('\n— Thư gửi shop —');
+{
+  const { api } = dungSanKhau(DON_MAU);
+  const don = Object.assign({ __ma: '-Naaa' }, DON_MAU['-Naaa'],
+    { maNhanHang: 'ABCDEFGH23456789', zalo: '0912345678', noiDungCK: 'LR WNAT7M' });
+  const thu = api.soanThuBaoShop(don, 'Đã gửi hàng');
+
+  ok(thu.indexOf('https://zalo.me/84912345678') !== -1,
+    'Dòng Zalo có đường dẫn bấm thẳng vào cuộc trò chuyện', 'thiếu đường dẫn');
+  ok(thu.indexOf('Đã gửi đường dẫn sản phẩm cho khách') !== -1,
+    'Nói rõ hàng đã gửi rồi', 'thiếu câu');
+  ok(!/Script chỉ biết khách đã bấm nút xác nhận/.test(thu),
+    'Bỏ hẳn câu cũ "script không biết tiền đã về" — từ khi nối báo có thì câu đó sai', 'còn câu cũ');
+  ok(/\/admin/.test(thu), 'Có đường dẫn tới trang quản trị để soát lại', 'thiếu');
+  ok(thu.indexOf('Mẩu tin SMS') !== -1, 'Có mẩu tin SMS bên dưới mẩu Zalo', 'thiếu mẩu SMS');
+  ok(thu.indexOf('Mẩu tin nhắn Zalo') < thu.indexOf('Mẩu tin SMS'), 'Mẩu SMS đứng DƯỚI mẩu Zalo', 'sai thứ tự');
+
+  // Số gõ sai thì ẩn đường dẫn đi, đừng dựng một cái hỏng.
+  const thu2 = api.soanThuBaoShop(Object.assign({}, don, { zalo: '1234567' }), 'Đã gửi hàng');
+  ok(thu2.indexOf('zalo.me') === -1, 'Số Zalo sai thì KHÔNG dựng đường dẫn', 'vẫn dựng');
+  ok(thu2.indexOf('không dựng được đường dẫn Zalo') !== -1, 'Và nói rõ vì sao', 'không nói');
+
+  const thu3 = api.soanThuBaoShop(Object.assign({}, don, { zalo: '' }), 'Đã gửi hàng');
+  ok(thu3.indexOf('zalo.me') === -1, 'Không có số thì cũng không có đường dẫn', 'vẫn dựng');
+}
+
+console.log('\n— Thư gửi khách —');
+{
+  const { api } = dungSanKhau(DON_MAU);
+  const don = Object.assign({ __ma: '-Naaa' }, DON_MAU['-Naaa'], { maNhanHang: 'ABCDEFGH23456789' });
+  const thu = api.soanThuGiaoHang(don).html;
+
+  ok(thu.indexOf('Liên hệ với shop') !== -1, 'Có khối liên hệ ở cuối thư', 'thiếu');
+  ok(thu.indexOf('thanhdeptrai.vn') !== -1, 'Có website', 'thiếu');
+  ok(/mailto:/.test(thu), 'Có email của shop bấm được', 'thiếu');
+  ok(thu.indexOf('https://zalo.me/84912345678') !== -1, 'Có số Zalo kèm đường dẫn', 'thiếu');
+  ok(!/hoàn tiền 100%/i.test(thu), 'Đã bỏ dòng hoàn tiền 100% trong 15 ngày', 'còn dòng cũ');
 }
 
 console.log('\n===== ' + (hong.length ? 'CÓ ' + hong.length + ' MỤC HỎNG' : 'TẤT CẢ ' + dat + ' MỤC ĐỀU ĐẠT') + ' =====');

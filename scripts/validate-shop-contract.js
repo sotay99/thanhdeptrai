@@ -419,7 +419,20 @@ if (/\.map\(veKhoiMoTa\)/.test(banNoi)) {
     [/function\s+soanTinZalo\s*\(/, "hàm soạn mẩu tin nhắn Zalo"],
     [/Mẩu tin nhắn Zalo — bôi đen rồi chép:/, "nhãn mẩu tin nhắn Zalo trong email báo shop"],
     [/thoatHtml\(soanTinZalo\(don\)\)/, "mẩu tin Zalo được nhúng vào email báo shop"],
-    [/linkNhanHangCuaDon\(don\)\s*\+\s*'\\n\\n'/, "mẩu tin Zalo có kèm đường dẫn nhận sản phẩm RIÊNG của đơn"],
+    // Thân tin viết bằng \n đơn rồi nhân đôi ở đúng một chỗ, nên chỗ này chỉ
+    // còn một dấu xuống dòng. Việc nhân đôi được canh riêng ngay bên dưới.
+    [/linkNhanHangCuaDon\(don\)\s*\+\s*'\\n'/, "mẩu tin Zalo có kèm đường dẫn nhận sản phẩm RIÊNG của đơn"],
+    // Dán một đoạn nhiều dòng vào Zalo, nhiều thiết bị nuốt mất dấu xuống dòng
+    // đơn và biến nó thành dấu cách — mẩu tin dính thành một khối, khách không
+    // đọc ra đâu là đường dẫn. Bỏ dòng này là mẩu tin hỏng mà không ai thấy.
+    [/than\.replace\(\/\\n\/g,\s*'\\n\\n'\)/, "mẩu tin Zalo nhân đôi mọi dấu xuống dòng"],
+    // Đường lui khi khách không để lại email lẫn Zalo. Viết KHÔNG DẤU: một chữ
+    // có dấu là cả tin rớt xuống bảng mã Unicode, hạn mức tụt từ 160 còn 70 ký
+    // tự, tốn gấp ba tiền và dễ bị cắt cụt mất đường dẫn.
+    [/function\s+soanTinSMS\s*\(/, "hàm soạn mẩu tin SMS"],
+    [/thoatHtml\(soanTinSMS\(don\)\)/, "mẩu tin SMS được nhúng vào email báo shop"],
+    [/function\s+linkZalo\s*\(/, "hàm dựng đường dẫn zalo.me"],
+    [/function\s+veKhoiLienHe\s*\(/, "khối liên hệ ở cuối thư gửi khách"],
     [/function\s+sinhMaNhanHang\s*\(/, "hàm sinh mã nhận hàng riêng cho từng đơn"],
     [/function\s+linkNhanHangCuaDon\s*\(/, "hàm dựng đường dẫn nhận hàng riêng của một đơn"],
     [/LINK_NHAN_HANG\s*\+\s*'\?ma='/, "đường dẫn riêng mang mã nhận hàng theo dạng ?ma="],
@@ -786,21 +799,26 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
   // Cùng tông đỏ đặt cạnh nhau thì mắt gộp thành một khối và người ta chỉ đọc
   // cái đầu — mất luôn một trong hai lời dặn.
   {
-    const than = banNoi.match(/function\s+veThanNhanHang\s*\([\s\S]*?\n  \}/);
+    // Dải này phải nằm NGOÀI trang, trong veTrangNhanHang — khách đọc nó trước
+    // khi bấm món nào. Nằm trong bảng từng sản phẩm thì đọc được khi đã muộn.
+    const than = banNoi.match(/function\s+veTrangNhanHang\s*\([\s\S]*?\n  \}/);
     if (!than) {
-      fail("Thiếu hàm veThanNhanHang.");
-    } else if (than[0].indexOf("canh-bao-trinh-duyet") > than[0].indexOf("canh-bao-thiet-bi")) {
-      fail("Dải dặn trình duyệt phải nằm TRÊN cảnh báo thiết bị.");
+      fail("Thiếu hàm veTrangNhanHang.");
+    } else if (than[0].indexOf("canh-bao-trinh-duyet") === -1) {
+      fail("Dải dặn trình duyệt phải nằm ngay ngoài trang nhận hàng, không phải trong bảng sản phẩm.");
+    } else if (than[0].indexOf("Bấm đúng sản phẩm") > than[0].indexOf("canh-bao-trinh-duyet") ||
+               than[0].indexOf("canh-bao-trinh-duyet") > than[0].indexOf("bang-luu-y-thiet-bi")) {
+      fail("Thứ tự phải là: câu dẫn → dải trình duyệt → dải cảnh báo thiết bị.");
     }
-    const khoi = cssApp.match(/\.khung-nhan-hang \.canh-bao-trinh-duyet\s*\{[^}]*\}/);
-    if (!khoi) fail("Thiếu khối CSS .khung-nhan-hang .canh-bao-trinh-duyet.");
+    const khoi = cssApp.match(/(?:^|\n)\.canh-bao-trinh-duyet\s*\{[^}]*\}/);
+    if (!khoi) fail("Thiếu khối CSS .canh-bao-trinh-duyet.");
     else if (!/background:\s*rgba\(45,\s*157,\s*95/.test(khoi[0])) {
-      fail("Dải dặn trình duyệt phải có nền xanh lá nhạt, khác tông đỏ của cảnh báo thiết bị.");
+      fail("Dải dặn trình duyệt phải có nền xanh lá nhạt, khác tông cam của cảnh báo thiết bị.");
     }
   }
 
   // Mọi lời báo phải tự xuống hàng, nếu không câu dài tràn qua mép phải màn hình.
-  ["\\.dong-tep-nhan \\.loi-nhan-hang", "\\.khung-chua-mua", "\\.bao-duong-dan-sai \\.chu", "\\.canh-bao-trinh-duyet \\.chu"].forEach((chon) => {
+  ["\\.dong-tep-nhan \\.loi-nhan-hang", "\\.khung-chua-mua", "\\.bao-duong-dan-sai \\.chu", "\\n\\.canh-bao-trinh-duyet \\.chu"].forEach((chon) => {
     const khoi = cssApp.match(new RegExp(chon + "\\s*\\{[^}]*\\}"));
     if (!khoi) fail(`Thiếu khối CSS ${chon}.`);
     else if (!/overflow-wrap:\s*anywhere/.test(khoi[0])) {
