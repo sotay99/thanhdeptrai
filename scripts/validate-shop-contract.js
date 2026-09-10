@@ -822,7 +822,7 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     [/Bấm nút bên dưới là mở thư mục chứa toàn bộ tệp/, "câu hướng dẫn ở bảng Google Drive"],
     [/>Mở thư mục và tải file về<\/a>/, "tên nút ở bảng Google Drive"],
     [/class="canh-bao-trinh-duyet"/, "dải dặn mở bằng trình duyệt thật"],
-    [/không nên truy cập trang này ngay bên trong app zalo hoặc email/,
+    [/không nên truy cập trang này ngay bên trong app zalo hoặc email, hoặc bên trong app nào đó/,
       "câu dặn đừng mở trong app Zalo hay ứng dụng thư"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);

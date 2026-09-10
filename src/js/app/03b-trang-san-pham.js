@@ -283,7 +283,7 @@
           '<span class="chu">Hãy Truy cập trang này bằng <strong>Trình duyệt web</strong> ' +
           '(Chrome, hoặc Safari, Cốc Cốc, Firefox,… hoặc trình duyệt web mặc định của thiết bị) ' +
           'để có trải nghiệm tải sản phẩm về một cách tốt nhất ' +
-          '(không nên truy cập trang này ngay bên trong app zalo hoặc email)</span>' +
+          '(không nên truy cập trang này ngay bên trong app zalo hoặc email, hoặc bên trong app nào đó)</span>' +
         '</div>' +
         '<div class="bang-luu-y-thiet-bi">' +
           '<span aria-hidden="true">⚠️</span> <strong>Mỗi sản phẩm chỉ tải được trên MỘT thiết bị ' +
