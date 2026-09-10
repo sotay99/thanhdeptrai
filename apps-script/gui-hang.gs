@@ -364,8 +364,7 @@ function soanTinZalo(don) {
     'Sản phẩm bạn đã mua:\n' + ten + '\n' +
     'Đây là đường dẫn nhận sản phẩm của riêng bạn:\n' +
     linkNhanHangCuaDon(don) + '\n' +
-    'Bấm vào đó, chọn đúng sản phẩm bạn đã mua là tải về được ngay, không phải ' +
-    'nhập mã nào cả.\n' +
+    'Bấm vào đó, chọn đúng sản phẩm bạn đã mua là tải về được ngay, không phải nhập mã nào cả.\n' +
     'Xin đừng chia sẻ đường dẫn này cho người khác — mỗi sản phẩm chỉ tải được ' +
     'trên MỘT thiết bị (một trình duyệt), nên hãy mở nó trên đúng chiếc máy bạn sẽ dùng.\n' +
     'Cần hỗ trợ cài đặt cứ nhắn cho shop nhé. Cảm ơn bạn đã tin tưởng!';

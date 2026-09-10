@@ -584,6 +584,8 @@
     if (hanhDong === 'admin-don-tao-ma') { adminDonTaoMa(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-xoa') { adminDonXoa(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-gui-email') { adminDonGuiEmail(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-mau-tin') { adminDonXemMauTin(nutHanhDong.getAttribute('data-khoa')); return; }
+    if (hanhDong === 'admin-don-phe-duyet') { adminDonPheDuyet(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-thiet-bi') { adminDonXemThietBi(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-dong-thiet-bi') { adminDonDongThietBi(nutHanhDong.getAttribute('data-khoa')); return; }
     if (hanhDong === 'admin-don-mo-khoa') {
