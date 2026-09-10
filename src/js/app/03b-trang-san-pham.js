@@ -246,9 +246,13 @@
         'xem mình đã mua món nào, hoặc nhắn cho shop.';
     }
     if (lyDo === 'da-dung-thiet-bi-khac') {
-      return 'Sản phẩm này đã được tải trên một thiết bị khác. Mỗi sản phẩm chỉ mở ' +
-        'khoá được trên MỘT thiết bị. Nếu bạn đổi máy, nhắn cho shop để được cấp ' +
-        'quyền lại.';
+      // Nói rõ "khác trình duyệt" vì đó mới là ca hay gặp nhất: khách mở link
+      // trong Zalo lần đầu, sau đó mở lại bằng Chrome. Cùng một cái máy, nhưng
+      // mã thiết bị nằm ở localStorage nên hai trình duyệt là hai máy khác nhau.
+      // Không nói ra thì khách tưởng hệ thống hỏng và mất lòng tin.
+      return 'Sản phẩm này đã được tải trên một thiết bị khác (hoặc cùng một thiết bị ' +
+        'nhưng KHÁC Trình duyệt web). Mỗi sản phẩm chỉ mở khoá được trên MỘT thiết bị ' +
+        '(và một trình duyệt). Nếu bạn đổi máy, nhắn cho shop để được cấp quyền lại.';
     }
     return 'Chưa mở khoá được. Bạn nhắn cho shop kèm đường dẫn bạn đang mở, shop xử lý ngay.';
   }
@@ -268,10 +272,24 @@
       '<section class="gioi-thieu">' +
         '<h2>Nhận sản phẩm bạn đã mua</h2>' +
         '<p>Bấm đúng sản phẩm bạn đã mua là tải về được ngay — không cần nhập mã nào cả.</p>' +
+        // Dải xanh này đứng NGOÀI trang chứ không nằm trong bảng từng sản phẩm,
+        // và đứng TRÊN cảnh báo thiết bị: khách phải đọc nó TRƯỚC khi bấm bất cứ
+        // món nào. Mở đường dẫn ngay trong Zalo hay ứng dụng thư thì trình duyệt
+        // nhúng của các app đó hay chặn hoặc làm hỏng cú tải — mà mỗi sản phẩm
+        // chỉ mở khoá được một trình duyệt, hỏng lần đầu là phải xin cấp quyền
+        // lại. Nằm trong bảng thì khách đọc được nó khi đã muộn.
+        '<div class="canh-bao-trinh-duyet">' +
+          '<span aria-hidden="true">🌐</span> ' +
+          '<span class="chu">Hãy Truy cập trang này bằng <strong>Trình duyệt web</strong> ' +
+          '(Chrome, hoặc Safari, Cốc Cốc, Firefox,… hoặc trình duyệt web mặc định của thiết bị) ' +
+          'để có trải nghiệm tải sản phẩm về một cách tốt nhất ' +
+          '(không nên truy cập trang này ngay bên trong app zalo hoặc email, hoặc bên trong app nào đó)</span>' +
+        '</div>' +
         '<div class="bang-luu-y-thiet-bi">' +
-          '<span aria-hidden="true">⚠️</span> <strong>Mỗi sản phẩm chỉ tải được trên MỘT thiết bị.</strong> ' +
+          '<span aria-hidden="true">⚠️</span> <strong>Mỗi sản phẩm chỉ tải được trên MỘT thiết bị ' +
+          '(trên MỘT trình duyệt web).</strong> ' +
           'Hãy chắc chắn bạn đang ở đúng chiếc máy sẽ dùng sản phẩm rồi mới bấm tải. ' +
-          'Lỡ mở nhầm máy thì nhắn cho shop, shop cấp quyền lại cho bạn.' +
+          'Lỡ mở nhầm máy thì nhắn cho shop, shop cấp quyền lại cho máy của bạn.' +
         '</div>' +
       '</section>' +
       veBaoDuongDanSai() +
@@ -352,22 +370,12 @@
     return '' +
       '<div class="khung-nhan-hang">' +
         '<p class="ten-mon">Bạn đang nhận: <strong>' + escapeHtml(sp.ten) + '</strong></p>' +
-        // Dải xanh này đứng TRÊN cảnh báo thiết bị vì nó phải được đọc trước:
-        // khách mở đường dẫn ngay trong Zalo hay ứng dụng thư thì trình duyệt
-        // nhúng của các app đó hay chặn hoặc làm hỏng cú tải, mà mỗi sản phẩm
-        // chỉ mở khoá được một máy — hỏng lần đầu là phải xin cấp quyền lại.
-        '<div class="canh-bao-trinh-duyet">' +
-          '<span aria-hidden="true">🌐</span> ' +
-          '<span class="chu">Hãy Truy cập trang này bằng <strong>Trình duyệt web</strong> ' +
-          '(Chrome, hoặc Safari, Cốc Cốc, Firefox,… hoặc trình duyệt web mặc định của thiết bị) ' +
-          'để có trải nghiệm tải sản phẩm về một cách tốt nhất ' +
-          '(không nên truy cập trang này ngay bên trong app zalo hoặc email)</span>' +
-        '</div>' +
         '<div class="canh-bao-thiet-bi">' +
           '<span aria-hidden="true">⚠️</span> ' +
-          '<span>Sản phẩm này <strong>chỉ tải được trên MỘT thiết bị</strong>. Bấm tải ở máy nào ' +
-          'là hệ thống ghi nhớ máy đó. Hãy chắc chắn đây là chiếc máy bạn sẽ dùng sản phẩm ' +
-          'rồi mới bấm nút bên dưới.</span>' +
+          '<span>Mỗi nút <strong>“Tải xuống”</strong> là một sản phẩm riêng lẻ, và mỗi sản phẩm ' +
+          'riêng lẻ <strong>chỉ tải được trên MỘT thiết bị (một trình duyệt)</strong>. Bấm tải ở ' +
+          'máy nào là hệ thống ghi nhớ máy đó gắn với sản phẩm riêng lẻ đó. Hãy chắc chắn đây là ' +
+          'chiếc máy bạn sẽ dùng sản phẩm rồi mới bấm nút “Tải xuống” ở bên dưới.</span>' +
         '</div>' +
         (tep.length
           ? '<div class="danh-sach-tep">' + tep.map(veDongTep).join('') + '</div>'

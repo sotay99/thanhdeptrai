@@ -88,7 +88,7 @@
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
     daChon: [],                  // mảng mã sản phẩm khách đã chọn
-    khachHang: { email: '', zalo: '', dienThoai: '' },
+    khachHang: { email: '', zalo: '', dienThoai: '', whatsapp: '', telegram: '' },
     // Ghi nhớ trường nào đang được TỰ ĐỘNG điền theo trường kia. Khách tự gõ
     // vào trường nào thì trường đó thoát khỏi cơ chế đồng bộ.
     tuDongDien: { zalo: false, dienThoai: false },
@@ -173,9 +173,14 @@
   const CHU_MA_DON = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
   const DAI_MA_DON = 6;
 
+  // Tiền tố đứng trước mã đơn trong nội dung chuyển khoản. Khai ở MỘT chỗ vì nó
+  // phải khớp với hàm đọc mã bên apps-script/gui-hang.gs — hai nơi lệch nhau là
+  // tiền về mà script không nhận ra đơn nào, khách trả tiền rồi ngồi đợi.
+  const TIEN_TO_CK = 'LR21';
+
   // Mã đơn 6 ký tự từ bảng 30 chữ — bảy trăm triệu tổ hợp, đủ xa để không lo
   // trùng ở quy mô một cửa hàng. Nội dung chuyển khoản vì thế chỉ còn 8 ký tự
-  // (LR + 6), ngắn tới mức không ngân hàng nào cắt bớt được.
+  // (LR21 + 6), ngắn tới mức không ngân hàng nào cắt bớt được.
   function sinhMaDon(){
     const so = new Uint32Array(DAI_MA_DON);
     if (window.crypto && window.crypto.getRandomValues) {

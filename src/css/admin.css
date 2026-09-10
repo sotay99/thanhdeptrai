@@ -480,6 +480,10 @@
 .the-trang-thai.vang { border-color: var(--cam); color: var(--cam); }
 .the-trang-thai.xanh { border-color: var(--la-dam-net); color: var(--la-dam-net); }
 .the-trang-thai.do   { border-color: var(--do); color: var(--do); }
+/* Tím cho "Khách báo đã trả": không phải xong (xanh), không phải hỏng (đỏ),
+   không phải đang chờ máy (vàng) — mà là đang chờ MẮT NGƯỜI. Phải khác hẳn
+   bốn màu kia để chủ shop nhận ra ngay nhóm cần mình vào cuộc. */
+.the-trang-thai.tim  { border-color: #a97bff; color: #a97bff; }
 
 .admin-the-don .than-don { padding: 12px 0 0; }
 

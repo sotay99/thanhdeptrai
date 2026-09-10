@@ -39,14 +39,23 @@
   const CHU_MA_NHAN_HANG = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
   const DAI_MA_NHAN_HANG = 16;
 
+  // NĂM trạng thái, và ranh giới quan trọng nhất nằm giữa 'khachBao' và
+  // 'daXacNhan': cái trước là LỜI KHAI của khách, cái sau là TIỀN ĐÃ VỀ do ngân
+  // hàng báo. Bộ gửi hàng tự động chỉ quét 'daXacNhan'. Gộp hai cái này làm một
+  // là ai bấm "đã thanh toán" cũng lấy được hàng miễn phí.
   const TRANG_THAI_DON = {
-    'moi':       { ten: 'Mới',         mau: 'xam',  mo: 'Khách bấm thanh toán nhưng chưa xác nhận đã chuyển tiền.' },
-    'daXacNhan': { ten: 'Chờ gửi',     mau: 'vang', mo: 'Khách báo đã chuyển tiền. Soát tài khoản rồi gửi hàng.' },
+    'moi':       { ten: 'Mới',         mau: 'xam',  mo: 'Khách bấm thanh toán nhưng chưa nói gì thêm.' },
+    'khachBao':  { ten: 'Khách báo đã trả', mau: 'tim',
+      mo: 'Khách tự bấm “đã thanh toán”. Đây là lời khai, CHƯA phải tiền đã về — soát tài khoản rồi gửi tay.' },
+    'daXacNhan': { ten: 'Chờ gửi',     mau: 'vang', mo: 'Ngân hàng đã báo có đủ tiền. Hệ thống đang gửi hàng.' },
     'daGui':     { ten: 'Đã gửi',      mau: 'xanh', mo: 'Đã gửi đường dẫn nhận hàng cho khách.' },
     'canXemTay': { ten: 'Cần xem tay', mau: 'do',   mo: 'Gửi tự động không xong, phải tự xử lý.' }
   };
 
+  // "Khách báo đã trả" đứng đầu vì đó mới là chỗ cần mắt người: tiền về thì máy
+  // tự lo, còn nhóm này là những đơn máy CỐ Ý không đụng tới.
   const BO_LOC_DON = [
+    { ma: 'khachBao',  ten: 'Khách báo đã trả' },
     { ma: 'daXacNhan', ten: 'Chờ gửi' },
     { ma: 'moi',       ten: 'Mới' },
     { ma: 'daGui',     ten: 'Đã gửi' },
@@ -56,7 +65,9 @@
 
   function trangThaiDon(don){
     const t = String(don && don.trangThai || '');
-    return TRANG_THAI_DON[t] ? t : (don && don.daXacNhan ? 'daXacNhan' : 'moi');
+    // Đơn cũ chưa có trường trangThai: cờ daXacNhan chỉ nói khách đã bấm nút,
+    // nên xếp vào 'khachBao' chứ không phải 'daXacNhan'.
+    return TRANG_THAI_DON[t] ? t : (don && don.daXacNhan ? 'khachBao' : 'moi');
   }
 
   // Kho tạm của module này. Đặt hẳn một hàm khởi tạo để phần 01 không phải
@@ -65,7 +76,7 @@
     const a = state.admin;
     if (!a.donHang) {
       a.donHang = {
-        loc: 'daXacNhan',
+        loc: 'khachBao',
         tim: '',
         dangTai: false,
         daTai: false,

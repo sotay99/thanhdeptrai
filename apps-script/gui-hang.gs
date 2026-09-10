@@ -44,6 +44,13 @@ var TEN_SAN_PHAM = {
 var SO_DON_MOI_LAN = 25;      // xử lý tối đa bấy nhiêu đơn mỗi lượt chạy
 var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Thànhđẹptrai.vn';
+var WEB_SHOP = 'thanhdeptrai.vn';
+
+// SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
+// 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
+// trị sửa, nên đổi ở /admin là thư gửi khách đổi theo ngay, không phải dán lại
+// script này. Đây cũng là lý do không có số điện thoại nào viết chết trong
+// toàn bộ mã nguồn.
 
 // Bảng ký tự sinh mã nhận hàng — đúng bảng của mã đơn, đã bỏ 0 O 1 I L để khách
 // đọc lại trong email không phân vân số 0 hay chữ O.
@@ -92,6 +99,41 @@ function docThietLap(ten) {
  * riêng của khách; đường tải thật do máy chủ cấp phát giữ. Hàm này chỉ dùng để
  * KIỂM TRA xem chủ shop đã khai đủ danh mục ở trang /admin chưa.
  */
+/** Đọc thông tin liên hệ của shop. Hỏng thì trả về rỗng, thư vẫn gửi được. */
+function docLienHe() {
+  try {
+    var traLoi = goiFirebase('thongtinlienhe');
+    if (traLoi.getResponseCode() !== 200) return {};
+    return JSON.parse(traLoi.getContentText()) || {};
+  } catch (loi) {
+    return {};
+  }
+}
+
+/**
+ * Dựng đường dẫn zalo.me từ một số điện thoại.
+ *
+ * Zalo chỉ nhận số dạng quốc tế không dấu cộng: 84xxxxxxxxx. Nên:
+ *   0912345678   → 84912345678
+ *   84912345678  → giữ nguyên
+ *   +84912345678 → bỏ dấu cộng
+ *
+ * Số không bắt đầu bằng 0, 84 hay +84 thì TRẢ VỀ RỖNG — bên gọi sẽ ẩn luôn
+ * đường dẫn đi. Dựng bừa một đường dẫn hỏng còn tệ hơn không có: bấm vào nó
+ * Zalo báo lỗi, và người bấm tưởng khách đã chặn mình.
+ */
+function linkZalo(so) {
+  var s = String(so || '').replace(/[^\d+]/g, '');
+  if (s.indexOf('+84') === 0) s = s.slice(1);
+  else if (s.indexOf('84') === 0) { /* đã đúng dạng */ }
+  else if (s.indexOf('0') === 0) s = '84' + s.slice(1);
+  else return '';
+  // Số Việt Nam ở dạng 84xxxxxxxxx dài 11 hoặc 12 chữ số. Ngoài khoảng đó là
+  // số gõ sai, đừng dựng đường dẫn.
+  if (!/^84\d{8,10}$/.test(s)) return '';
+  return 'https://zalo.me/' + s;
+}
+
 function docDanhMuc() {
   var traLoi = goiFirebase('danhmuc');
   if (traLoi.getResponseCode() !== 200) return {};
@@ -246,8 +288,8 @@ function soanThuGiaoHang(don) {
         '<div>Số tiền đã thanh toán: <b>' + dinhDangTien(don.thanhTien) + '</b></div>' +
         '<div style="color:#666;font-size:13px">Mã đơn hàng: ' + thoatHtml(don.__ma) + '</div>' +
       '</div>' +
-      '<p style="margin:0 0 8px"><b>Cần hỗ trợ cài đặt?</b> Cứ nhắn cho shop, shop hướng dẫn tận nơi.</p>' +
-      '<p style="margin:0 0 18px;color:#555">Nếu không hài lòng, bạn được <b>hoàn tiền 100% trong 15 ngày</b> đầu sử dụng.</p>' +
+      '<p style="margin:0 0 16px"><b>Cần hỗ trợ cài đặt?</b> Cứ nhắn cho shop, shop hướng dẫn tận nơi.</p>' +
+      veKhoiLienHe() +
       '<p style="margin:0;color:#888;font-size:13px">' + thoatHtml(TEN_SHOP) + '</p>' +
     '</div>';
 
@@ -259,22 +301,122 @@ function soanThuGiaoHang(don) {
  * Khách không để lại email thì phải nhắn tay — có sẵn mẩu này thì việc nhắn chỉ
  * còn là chép và dán, không phải gõ lại từng chữ mỗi đơn.
  */
+/**
+ * Khối liên hệ ở cuối thư gửi khách.
+ *
+ * Số zalo đọc từ Realtime Database chứ không viết chết ở đây. Không đọc được
+ * (mất mạng, Firebase từ chối) thì bỏ hẳn dòng zalo đi — in ra một dòng trống
+ * hay một đường dẫn hỏng thì khách bấm vào và nghĩ shop bỏ mặc mình.
+ */
+function veKhoiLienHe() {
+  var lienHe = docLienHe();
+  var zalo = String(lienHe.zalo || '').trim();
+  var email = String(lienHe.emailShop || '').trim();
+  var duongZalo = linkZalo(zalo);
+
+  var dongEmail = email
+    ? '<div>Email: <a href="mailto:' + thoatHtml(email) + '" style="color:#1473e6">' +
+      thoatHtml(email) + '</a></div>'
+    : '';
+
+  var dongZalo = '';
+  if (zalo) {
+    dongZalo = '<div>Số zalo: <b>' + thoatHtml(zalo) + '</b>' +
+      (duongZalo ? ' — <a href="' + thoatHtml(duongZalo) + '" style="color:#1473e6">' +
+        thoatHtml(duongZalo) + '</a>' : '') +
+      '</div>';
+  }
+
+  return '<div style="padding:14px 16px;background:#f4f7fb;border-radius:6px;margin:0 0 18px;' +
+      'font-size:14px;line-height:1.8">' +
+      '<div style="margin:0 0 6px"><b>Liên hệ với shop</b></div>' +
+      '<div>Website: <a href="https://' + thoatHtml(WEB_SHOP) + '" style="color:#1473e6">' +
+        thoatHtml(WEB_SHOP) + '</a></div>' +
+      dongEmail +
+      dongZalo +
+    '</div>';
+}
+
 function soanTinZalo(don) {
   var ten = (don.maSanPham || []).map(function (m) { return '· ' + (TEN_SAN_PHAM[m] || m); }).join('\n');
-  return '' +
-    'Chào bạn, shop đã nhận được thanh toán đơn ' + (don.maDon || don.__ma) + '.\n\n' +
-    'Sản phẩm bạn đã mua:\n' + ten + '\n\n' +
+  var than = '' +
+    'Chào bạn, shop đã nhận được thanh toán đơn ' + (don.maDon || don.__ma) + '.\n' +
+    'Sản phẩm bạn đã mua:\n' + ten + '\n' +
     'Đây là đường dẫn nhận sản phẩm của riêng bạn:\n' +
-    linkNhanHangCuaDon(don) + '\n\n' +
+    linkNhanHangCuaDon(don) + '\n' +
     'Bấm vào đó, chọn đúng sản phẩm bạn đã mua là tải về được ngay, không phải ' +
-    'nhập mã nào cả.\n\n' +
+    'nhập mã nào cả.\n' +
     'Xin đừng chia sẻ đường dẫn này cho người khác — mỗi sản phẩm chỉ tải được ' +
-    'trên MỘT thiết bị, nên hãy mở nó trên đúng chiếc máy bạn sẽ dùng.\n\n' +
+    'trên MỘT thiết bị (một trình duyệt), nên hãy mở nó trên đúng chiếc máy bạn sẽ dùng.\n' +
     'Cần hỗ trợ cài đặt cứ nhắn cho shop nhé. Cảm ơn bạn đã tin tưởng!';
+
+  // NHÂN ĐÔI MỌI DẤU XUỐNG DÒNG, và đây không phải chuyện thẩm mỹ.
+  //
+  // Chép một đoạn nhiều dòng rồi dán vào ô soạn tin của Zalo, rất nhiều thiết
+  // bị nuốt mất dấu xuống dòng đơn và biến nó thành dấu cách — mẩu tin dính
+  // thành một khối chữ dài, khách đọc không ra đâu là đường dẫn. Xuống dòng đôi
+  // thì dù có bị nuốt một cái vẫn còn một cái, mẩu tin giữ được hình dạng.
+  //
+  // Viết thân tin bằng \n đơn rồi nhân đôi ở đúng một chỗ này, thay vì rải \n\n
+  // khắp nơi — sửa câu chữ về sau không phải nhớ quy ước.
+  return than.replace(/\n/g, '\n\n');
+}
+
+/**
+ * Mẩu tin SMS — đường lui khi khách không để lại cả email lẫn Zalo.
+ *
+ * Nhà mạng tính tiền theo từng 160 ký tự, VÀ chỉ đếm được 160 khi toàn bộ tin
+ * là ASCII. Một chữ có dấu tiếng Việt là cả tin rớt xuống bảng mã Unicode và
+ * hạn mức tụt còn 70 ký tự — tức là cùng một nội dung bỗng tốn gấp ba lần tiền
+ * và rất dễ bị cắt cụt mất đường dẫn. Nên mẩu này viết KHÔNG DẤU, và ngắn hết
+ * mức có thể: chỉ còn lời cảm ơn, đường dẫn, và lời dặn đừng chia sẻ.
+ */
+function soanTinSMS(don) {
+  return 'Thanhdeptrai.vn cam on ban! Link san pham rieng: ' +
+    linkNhanHangCuaDon(don) + ' Xin dung chia se cho ai.';
+}
+
+/**
+ * Một ô liên lạc trong bảng: số trần, kèm đường dẫn bấm được nếu dựng được.
+ *
+ * Dùng lại đúng luật chuẩn hoá của linkZalo (0 → 84, +84 → 84, còn lại thì bỏ)
+ * rồi để bên gọi tự ghép thành địa chỉ của dịch vụ mình. Số không dựng được
+ * thì chỉ hiện số trần — bấm vào một đường dẫn hỏng còn tệ hơn không có.
+ */
+function veOLienLac(so, ghepDuong) {
+  var s = String(so || '').trim();
+  if (!s) return '<i>không có</i>';
+  var chuan = linkZalo(s);   // trả về 'https://zalo.me/84…' hoặc rỗng
+  if (!chuan) return thoatHtml(s);
+  var s84 = chuan.replace('https://zalo.me/', '');
+  var duong = ghepDuong(s84);
+  return thoatHtml(s) + ' — <a href="' + thoatHtml(duong) + '" style="color:#1473e6">' +
+    thoatHtml(duong) + '</a>';
 }
 
 function soanThuBaoShop(don, ketQua) {
   var ma = (don.maSanPham || []).join(', ');
+  var soZalo = String(don.zalo || '').trim();
+  var duongZalo = linkZalo(soZalo);
+  var soNhan = soZalo || String(don.dienThoai || '').trim();
+
+  // WhatsApp và Telegram cũng dựng đường dẫn bấm được, theo đúng cách của
+  // từng bên: wa.me nhận số quốc tế KHÔNG có dấu cộng, t.me thì có. Số gõ sai
+  // thì hiện số trần, không dựng đường dẫn hỏng.
+  var oWhatsApp = veOLienLac(don.whatsapp, function (s84) { return 'https://wa.me/' + s84; });
+  var oTelegram = veOLienLac(don.telegram, function (s84) { return 'https://t.me/+' + s84; });
+
+  // Dòng Zalo mang luôn đường dẫn bấm được. Chủ shop nhìn thư trên điện thoại
+  // là bấm thẳng vào cuộc trò chuyện với khách, không phải mở Zalo rồi gõ số
+  // đi tìm. Số gõ sai (không bắt đầu bằng 0, 84 hay +84) thì linkZalo trả về
+  // rỗng và đường dẫn tự ẩn — bấm vào một đường dẫn hỏng còn tệ hơn không có.
+  var oZalo = soZalo
+    ? thoatHtml(soZalo) +
+      (duongZalo
+        ? ' — <a href="' + thoatHtml(duongZalo) + '" style="color:#1473e6">' + thoatHtml(duongZalo) + '</a>'
+        : ' <span style="color:#b45309">(số này không dựng được đường dẫn Zalo)</span>')
+    : '<i>không có</i>';
+
   var html =
     '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#222">' +
       '<h3 style="margin:0 0 10px">' + thoatHtml(ketQua) + '</h3>' +
@@ -283,26 +425,48 @@ function soanThuBaoShop(don, ketQua) {
         '<tr><td><b>Mã đơn</b></td><td>' + thoatHtml(don.__ma) + '</td></tr>' +
         '<tr><td><b>Số tiền</b></td><td>' + dinhDangTien(don.thanhTien) + '</td></tr>' +
         '<tr><td><b>Email</b></td><td>' + (thoatHtml(don.email) || '<i>không có</i>') + '</td></tr>' +
-        '<tr><td><b>Zalo</b></td><td>' + (thoatHtml(don.zalo) || '<i>không có</i>') + '</td></tr>' +
+        '<tr><td><b>Zalo</b></td><td>' + oZalo + '</td></tr>' +
         '<tr><td><b>Điện thoại</b></td><td>' + (thoatHtml(don.dienThoai) || '<i>không có</i>') + '</td></tr>' +
+        '<tr><td><b>WhatsApp</b></td><td>' + oWhatsApp + '</td></tr>' +
+        '<tr><td><b>Telegram</b></td><td>' + oTelegram + '</td></tr>' +
         '<tr><td><b>Sản phẩm</b></td><td>' + thoatHtml(ma) + '</td></tr>' +
       '</table>' +
-      '<p style="margin:14px 0 0;color:#b45309"><b>Nhớ đối chiếu tiền đã về tài khoản chưa.</b> ' +
-        'Script chỉ biết khách đã bấm nút xác nhận, không biết tiền đã về.</p>' +
-      // Mẩu tin nhắn Zalo LUÔN có mặt, kể cả khi khách đã có email: khách chưa
-      // thấy email, khách hỏi lại, khách muốn được nhắn cho chắc — lúc nào chủ
-      // shop cũng chỉ việc bôi đen rồi chép, không phải ngồi gõ lại.
-      '<p style="margin:16px 0 6px"><b>Mẩu tin nhắn Zalo — bôi đen rồi chép:</b>' +
-        (don.zalo || don.dienThoai
-          ? ' <span style="color:#555">(gửi tới ' + thoatHtml(don.zalo || don.dienThoai) + ')</span>'
+
+      // Lời dặn này từng ghi "script chỉ biết khách đã bấm nút, không biết tiền
+      // đã về". Từ khi nối app Checkout thì câu đó sai: script gửi hàng CHÍNH VÌ
+      // tiền đã về. Nhưng vẫn phải soát tay, vì có hai đường vào cùng dẫn tới
+      // đây — báo có từ ngân hàng, và cú bấm "đã thanh toán" của khách. Đường
+      // thứ hai vẫn chưa chứng minh được đồng nào.
+      '<div style="margin:14px 0 0;padding:12px 14px;background:#fff6e6;border-left:3px solid #b45309;' +
+        'border-radius:6px;color:#7a4a06">' +
+        '<b>Đã gửi đường dẫn sản phẩm cho khách.</b> Soát lại tài khoản một lượt cho chắc: ' +
+        'đơn có thể tới đây vì ngân hàng báo có, mà cũng có thể chỉ vì khách tự bấm ' +
+        '“đã thanh toán”. Vào <a href="https://' + thoatHtml(WEB_SHOP) + '/admin" ' +
+        'style="color:#1473e6">' + thoatHtml(WEB_SHOP) + '/admin</a> mục <b>Đơn hàng</b> ' +
+        'để xem lại đơn này và trạng thái của nó.' +
+      '</div>' +
+
+      // Hai mẩu tin LUÔN có mặt, kể cả khi khách đã có email: khách chưa thấy
+      // email, khách hỏi lại, khách muốn được nhắn cho chắc — lúc nào chủ shop
+      // cũng chỉ việc bôi đen rồi chép, không phải ngồi gõ lại.
+      '<p style="margin:18px 0 6px"><b>Mẩu tin nhắn Zalo — bôi đen rồi chép:</b>' +
+        (soNhan
+          ? ' <span style="color:#555">(gửi tới ' + thoatHtml(soNhan) + ')</span>'
           : ' <span style="color:#b45309">(khách không để lại số nào)</span>') +
       '</p>' +
       '<pre style="white-space:pre-wrap;word-break:break-word;padding:12px 14px;background:#f4f7fb;' +
         'border-left:3px solid #1473e6;border-radius:6px;font-family:Arial,sans-serif;font-size:13px;' +
         'line-height:1.7;margin:0">' + thoatHtml(soanTinZalo(don)) + '</pre>' +
+
+      '<p style="margin:18px 0 6px"><b>Mẩu tin SMS — dùng khi khách không có email lẫn Zalo:</b>' +
+        ' <span style="color:#555">(viết không dấu cho gọn trong một tin)</span></p>' +
+      '<pre style="white-space:pre-wrap;word-break:break-word;padding:12px 14px;background:#f7f7f7;' +
+        'border-left:3px solid #888;border-radius:6px;font-family:Arial,sans-serif;font-size:13px;' +
+        'line-height:1.7;margin:0">' + thoatHtml(soanTinSMS(don)) + '</pre>' +
     '</div>';
   return html;
 }
+
 
 /* ------------------------------------------------------------ VIỆC CHÍNH */
 
@@ -500,12 +664,20 @@ function boDau(chu) {
     .replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
-/** Rút mã đơn ra khỏi nội dung chuyển khoản ngân hàng gửi về. */
+/**
+ * Rút mã đơn ra khỏi nội dung chuyển khoản ngân hàng gửi về.
+ *
+ * TIỀN TỐ NÀY PHẢI KHỚP src/js/app/01-foundation.js (hằng số TIEN_TO_CK). Web
+ * in ra thứ khách chép, hàm này đọc lại thứ đó. Lệch nhau là tiền về mà script
+ * không nhận ra đơn nào — khách trả tiền rồi ngồi đợi, chẳng ai biết vì sao.
+ */
+var TIEN_TO_CK = 'LR21';
+
 function docMaDonTrongNoiDung(chu) {
   // Ngân hàng viết hoa, bỏ dấu, và RẤT HAY nuốt dấu cách hoặc chèn thêm chữ.
-  // Nên không so khớp nguyên chuỗi, chỉ đi tìm "LR" rồi 6 ký tự của bảng mã.
+  // Nên không so khớp nguyên chuỗi, chỉ đi tìm tiền tố rồi 6 ký tự của bảng mã.
   var s = boDau(chu).toUpperCase();
-  var khop = s.match(/LR\s*([23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})/);
+  var khop = s.match(new RegExp(TIEN_TO_CK + '\\s*([23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})'));
   return khop ? khop[1] : '';
 }
 

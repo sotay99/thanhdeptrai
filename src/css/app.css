@@ -1344,6 +1344,8 @@
 
 /* Lời cảnh báo một-thiết-bị ở đầu trang. Tông cam như mọi cảnh báo khác của
    web, và nhún nhẹ một nhịp khi trang vừa mở để mắt không lướt qua nó. */
+.canh-bao-trinh-duyet + .bang-luu-y-thiet-bi { margin-top: 10px; }
+
 .bang-luu-y-thiet-bi {
   margin-top: 12px;
   padding: 12px 14px;
@@ -1402,10 +1404,10 @@
    khách làm đúng, không phải điều nguy hiểm, nên không dùng tông đỏ của cảnh
    báo thiết bị ngay bên dưới. Hai khối cạnh nhau mà cùng màu thì mắt gộp thành
    một và người ta chỉ đọc cái đầu. */
-.khung-nhan-hang .canh-bao-trinh-duyet {
+.canh-bao-trinh-duyet {
   display: flex;
   gap: 9px;
-  margin-bottom: 10px;
+  margin-top: 12px;
   padding: 12px 14px;
   border: 1px solid rgba(45, 157, 95, .45);
   border-radius: 10px;
@@ -1414,8 +1416,8 @@
   line-height: 1.7;
   color: var(--chu-diu);
 }
-.khung-nhan-hang .canh-bao-trinh-duyet .chu { overflow-wrap: anywhere; }
-.khung-nhan-hang .canh-bao-trinh-duyet strong { color: var(--la-dam-net); font-weight: 700; }
+.canh-bao-trinh-duyet .chu { overflow-wrap: anywhere; }
+.canh-bao-trinh-duyet strong { color: var(--la-dam-net); font-weight: 700; }
 
 /* Ghi chú của hai khoá học: tông xanh của web, không phải tông cảnh báo — đây
    là lời dặn đường chứ không phải điều nguy hiểm. */
@@ -1645,3 +1647,18 @@
 .the-nhan-hang.chua-mua { cursor: default; }
 .the-nhan-hang.chua-mua:hover { transform: none; box-shadow: none; }
 .the-nhan-hang.chua-mua:hover::before { opacity: .25; }
+
+
+/* Đường thoát cho khách đang sốt ruột ở bảng xác nhận thanh toán. Tiêu đề dài
+   nên phải cho chữ xuống dòng và canh giữa, cao tối thiểu 48px cho ngón tay. */
+.khung-xac-nhan .nut-goi-shop {
+  margin-top: 14px;
+  padding: 12px 16px;
+  height: auto;
+  min-height: 48px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.6;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
