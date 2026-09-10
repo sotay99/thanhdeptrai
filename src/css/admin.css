@@ -647,3 +647,50 @@
 @media (max-width: 560px) {
   .dong-lien-lac .nhan { flex: 0 0 100%; }
 }
+
+/* ------------------------------------------------ GỬI EMAIL TAY CHO KHÁCH */
+
+.khoi-gui-email {
+  margin-top: 12px;
+  padding: 12px 13px;
+  border: 1px solid var(--vien);
+  border-radius: 10px;
+  background: var(--nen);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--chu-diu);
+  overflow-wrap: anywhere;
+}
+.khoi-gui-email .ghi-chu-gui-email {
+  margin: 9px 0 0;
+  font-size: 12px;
+  color: var(--chu-mo);
+}
+
+/* Bốn trạng thái, bốn màu — nhìn là biết đang ở đâu mà không phải đọc chữ. */
+.khoi-gui-email.dang-cho { border-color: var(--cam); background: rgba(255, 167, 46, .1); }
+.khoi-gui-email.xong     { border-color: var(--la-dam-net); background: rgba(45, 157, 95, .12); }
+.khoi-gui-email.xong strong { color: var(--la-dam-net); }
+.khoi-gui-email.qua-lau  { border-color: var(--do); background: rgba(229, 83, 75, .1); }
+.khoi-gui-email.khong-email { border-style: dashed; color: var(--chu-mo); }
+
+.khoi-gui-email .quay {
+  display: inline-block;
+  animation: quay-cho-gui 1.4s linear infinite;
+}
+@keyframes quay-cho-gui { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .khoi-gui-email .quay { animation: none; }
+}
+
+/* Dấu "đã gửi email" trên đầu thẻ. Đứng cạnh nhãn trạng thái nhưng nhạt hơn
+   hẳn: trạng thái là thứ chủ shop lọc theo, còn dấu này chỉ là bằng chứng. */
+.dau-da-gui-email {
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  border: 1px solid rgba(45, 157, 95, .45);
+  border-radius: 999px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  color: var(--la-dam-net);
+}

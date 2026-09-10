@@ -432,6 +432,8 @@
   // ---------------------------------------------------------------- HÀNH ĐỘNG
 
   function adminMoModule(ma){
+    // Rời mục Đơn hàng thì gỡ hết người nghe Firebase đang gắn vào từng đơn.
+    if (state.admin.module === 'don-hang' && ma !== 'don-hang') thoiNgheHetDon();
     state.admin.module = ma;
     render();
     if (window.scrollTo) window.scrollTo(0, 0);

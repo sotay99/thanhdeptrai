@@ -536,9 +536,15 @@ function guiHangChoDonDaXacNhan() {
         var thu = soanThuGiaoHang(don);
         guiThu(don.email, thu.tieuDe, thu.html, { name: TEN_SHOP, replyTo: emailShop });
 
+        // 'emailGuiLuc' và 'soLanGuiEmail' chỉ được ghi ở ĐÚNG chỗ này — ngay sau
+        // khi lá thư thật sự bay đi. Trạng thái 'daGui' một mình nói dối được:
+        // nút "Đánh dấu đã gửi" ở trang quản trị cũng đặt nó mà chẳng gửi thư
+        // nào. Hai trường này là bằng chứng, còn trạng thái chỉ là nhãn.
         capNhatDon(don.__ma, {
           trangThai: 'daGui',
           guiLuc: Date.now(),
+          emailGuiLuc: Date.now(),
+          soLanGuiEmail: (Number(don.soLanGuiEmail) || 0) + 1,
           ghiChuGui: thu.thieu.length
             ? 'Đã gửi email, nhưng thiếu đường tải cho: ' + thu.thieu.join(', ')
             : 'Đã gửi email đầy đủ.'

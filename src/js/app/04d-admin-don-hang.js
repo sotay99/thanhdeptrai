@@ -84,7 +84,9 @@
         danhSach: [],
         moRong: '',      // khoá đơn đang mở phần thiết bị
         thietBi: {},     // khoá đơn -> { <mã sp>: { thietBi, moLuc } }
-        dangLam: ''      // thao tác đang chạy, để nút tự khoá lại
+        dangLam: '',     // thao tác đang chạy, để nút tự khoá lại
+        dangGui: {},     // khoá đơn -> 'cho' | 'xong' | 'qua-lau'
+        theoDoi: {}      // khoá đơn -> hàm gỡ người nghe Firebase
       };
     }
     return a.donHang;
@@ -236,6 +238,12 @@
             '<span class="ma-don">' + escapeHtml(don.maDon || don.khoa) + '</span>' +
             '<span class="luc-don">' + escapeHtml(gioPhutNgay(don.taoLuc)) + '</span>' +
           '</div>' +
+          (don.emailGuiLuc
+            ? '<span class="dau-da-gui-email" title="' + escapeHtml(
+                'Lá thư gần nhất bay đi lúc ' + gioPhutNgay(don.emailGuiLuc)) + '">✉ Đã gửi email' +
+              (Number(don.soLanGuiEmail) > 1 ? ' · ' + Number(don.soLanGuiEmail) + ' lần' : '') +
+              '</span>'
+            : '') +
           '<span class="the-trang-thai ' + mo.mau + '" title="' + escapeHtml(mo.mo) + '">' +
             escapeHtml(mo.ten) + '</span>' +
         '</header>' +
@@ -254,6 +262,7 @@
           lienLac +
         '</div>' +
         veKhoiNhanHang(don, dangLam) +
+        veKhoiGuiEmail(don) +
         veKhoiThietBi(don, moRong) +
         '<footer class="day-don">' + veNutTrangThai(don, tt, dangLam) +
           '<button type="button" class="nut nut-nho nut-vien nut-xoa-don"' +
@@ -282,6 +291,70 @@
         '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="sao-chep"' +
           ' data-chuoi="' + escapeHtml(don.maNhanHang) + '">Chép riêng mã</button>' +
       '</div>' +
+      '</div>';
+  }
+
+  /**
+   * Nút gửi email tay.
+   *
+   * CÁCH NÓ CHẠY, và vì sao không gọi thẳng Apps Script từ đây:
+   *
+   * Trang này chạy trong trình duyệt, mà mã của nó tải công khai — ai cũng xem
+   * được. Đặt địa chỉ Web App và mật khẩu webhook vào đây là biếu chúng cho bất
+   * kỳ ai bấm F12. Thêm nữa, Apps Script không gửi tiêu đề CORS nên trình duyệt
+   * cũng không đọc được câu trả lời.
+   *
+   * Nên nút này không gọi ai cả: nó chỉ ĐẶT TRẠNG THÁI 'daXacNhan' — nghĩa là
+   * "đã xác nhận có tiền". Bộ gửi hàng chạy sẵn mỗi phút thấy trạng thái đó thì
+   * gửi, y hệt như khi ngân hàng báo có. Không thêm bí mật nào vào trình duyệt,
+   * không thêm đường dây nào để hỏng.
+   *
+   * Đổi lại: mất tới một phút. Nên nút không đứng im chờ — nó gắn người nghe
+   * vào đúng đơn đó trong Firebase và tự đổi chữ ngay khi thư bay đi thật.
+   *
+   * KHÔNG có email thì không bấm được. Bấm cũng vô ích: bộ gửi hàng gặp đơn
+   * thiếu email sẽ chuyển sang 'canXemTay' chứ không gửi gì.
+   */
+  function veKhoiGuiEmail(don){
+    const k = khoDon();
+    const tt = khoDon().dangGui[don.khoa] || '';
+    const daGui = !!don.emailGuiLuc;
+
+    if (!don.email) {
+      return '<div class="khoi-gui-email khong-email">' +
+        '<span aria-hidden="true">✉️</span> Đơn này không có email nên không gửi tự động được. ' +
+        'Chép mẩu tin ở thư báo rồi nhắn tay cho khách.' +
+        '</div>';
+    }
+
+    if (tt === 'cho') {
+      return '<div class="khoi-gui-email dang-cho">' +
+        '<span class="quay" aria-hidden="true">⏳</span> Đang gửi… hệ thống gửi trong vòng một phút, ' +
+        'bạn cứ để yên trang này.' +
+        '</div>';
+    }
+    if (tt === 'xong') {
+      return '<div class="khoi-gui-email xong">' +
+        '<span aria-hidden="true">✅</span> <strong>Đã gửi email cho khách.</strong> ' +
+        'Thư đã bay tới ' + escapeHtml(don.email) + '.' +
+        '</div>';
+    }
+    if (tt === 'qua-lau') {
+      return '<div class="khoi-gui-email qua-lau">' +
+        '<span aria-hidden="true">⚠️</span> Chờ quá lâu mà chưa thấy thư bay đi. ' +
+        'Kiểm tra trigger của Apps Script còn chạy không, rồi bấm Tải lại để xem trạng thái mới nhất.' +
+        '</div>';
+    }
+
+    return '<div class="khoi-gui-email">' +
+      '<button type="button" class="nut nut-nho ' + (daGui ? 'nut-vien' : 'nut-chinh') + ' nut-gui-email"' +
+        ' data-hanh-dong="admin-don-gui-email" data-khoa="' + escapeHtml(don.khoa) + '">' +
+        (daGui ? 'Gửi email lại lần nữa cho khách' : 'Gửi email kèm link sản phẩm cho khách') +
+      '</button>' +
+      (daGui
+        ? '<p class="ghi-chu-gui-email">Lần gửi gần nhất: ' + escapeHtml(gioPhutNgay(don.emailGuiLuc)) +
+          '. Bấm nút là khách nhận thêm một lá thư y hệt.</p>'
+        : '') +
       '</div>';
   }
 
@@ -375,9 +448,25 @@
 
   // ---------------------------------------------------------------- HÀNH ĐỘNG
 
+  // Người nghe Firebase phải được gỡ khi rời khỏi danh sách. Bỏ quên thì mỗi
+  // lần đổi bộ lọc lại chồng thêm một người nghe lên cùng một đơn, và trang
+  // càng dùng càng nặng.
+  function thoiNgheHetDon(){
+    const k = khoDon();
+    Object.keys(k.theoDoi).forEach(function(khoa){
+      const t = k.theoDoi[khoa];
+      if (!t) return;
+      if (firebaseSanSang && rtdb) rtdb.ref('donhang/' + khoa).off('value', t.nghe);
+      window.clearTimeout(t.dongHo);
+      delete k.theoDoi[khoa];
+    });
+    k.dangGui = {};
+  }
+
   function adminDonDoiLoc(loc){
     const k = khoDon();
     if (!loc || k.loc === loc) return;
+    thoiNgheHetDon();
     k.loc = loc;
     k.danhSach = [];
     k.moRong = '';
@@ -386,6 +475,7 @@
   }
 
   function adminDonTaiLai(){
+    thoiNgheHetDon();
     khoDon().moRong = '';
     taiDanhSachDon();
   }
@@ -458,6 +548,130 @@
     const k = khoDon();
     if (k.moRong === khoa) k.moRong = '';
     veLaiDonHang();
+  }
+
+  // Chờ tối đa bấy nhiêu giây rồi mới chịu là hỏng. Bộ gửi hàng chạy mỗi phút,
+  // nên 100 giây là đã qua ít nhất một lượt kể cả khi vừa lỡ mất lượt vừa rồi.
+  const GIAY_CHO_GUI_EMAIL = 100;
+
+  /**
+   * Bấm "Gửi email cho khách".
+   *
+   * Ba việc, theo đúng thứ tự, và thứ tự này quan trọng: cấp mã nhận hàng
+   * TRƯỚC, vì lá thư cần đường dẫn riêng của khách. Cấp sau thì thư bay đi với
+   * đường dẫn rỗng.
+   */
+  function adminDonGuiEmail(khoa){
+    const don = donTheoKhoa(khoa);
+    if (!don || !firebaseSanSang || !rtdb) return;
+    const k = khoDon();
+    if (k.dangGui[khoa] === 'cho') return;   // đang chờ rồi, đừng bấm chồng
+
+    if (!don.email) {
+      alert('Đơn này không có email nên không gửi tự động được.');
+      return;
+    }
+    const daGui = !!don.emailGuiLuc;
+    if (daGui && !window.confirm(
+      'Gửi THÊM một lá thư nữa cho ' + don.email + '?\n\n' +
+      'Khách sẽ nhận đúng lá thư như lần trước, kèm đúng đường dẫn cũ.')) return;
+
+    // Mốc để biết thư MỚI đã bay đi hay chưa. So với mốc cũ chứ không chỉ nhìn
+    // "có emailGuiLuc hay không" — nếu không, lần gửi lại sẽ báo xong ngay lập
+    // tức bằng dấu vết của lần gửi trước.
+    const mocCu = Number(don.emailGuiLuc) || 0;
+
+    k.dangGui[khoa] = 'cho';
+    veLaiDonHang();
+
+    const capMa = don.maNhanHang
+      ? Promise.resolve(don.maNhanHang)
+      : (function(){
+          const ma = sinhMaNhanHang();
+          return rtdb.ref('donhang/' + khoa).update({ maNhanHang: ma }).then(function(){
+            don.maNhanHang = ma;
+            return ma;
+          });
+        })();
+
+    capMa.then(function(){
+      // 'daXacNhan' = đã xác nhận CÓ TIỀN. Ngân hàng báo có đặt nó, và chủ shop
+      // tự đối chiếu rồi bấm nút này cũng đặt nó. Điều bất di bất dịch là KHÁCH
+      // không bao giờ đặt được — cú bấm của khách chỉ tới 'khachBao'.
+      return rtdb.ref('donhang/' + khoa).update({ trangThai: 'daXacNhan' });
+    }).then(function(){
+      ngheDonGuiXong(khoa, mocCu);
+    }).catch(function(e){
+      console.error('Không đặt được yêu cầu gửi cho đơn ' + khoa + ':', e);
+      k.dangGui[khoa] = '';
+      veLaiDonHang();
+      alert('Không gửi được yêu cầu. Firebase từ chối hoặc mất mạng.');
+    });
+  }
+
+  /**
+   * Nghe đúng một đơn cho tới khi thư bay đi thật.
+   *
+   * Nghe bằng người nghe của Firebase chứ không hỏi lại từng giây: đỡ tốn, và
+   * đổi chữ ngay giây thư bay đi thay vì đợi tới nhịp hỏi kế tiếp.
+   *
+   * Bằng chứng là 'emailGuiLuc' mới hơn mốc cũ, KHÔNG phải trạng thái 'daGui':
+   * trạng thái đó chủ shop tự bấm tay cũng đặt được, còn 'emailGuiLuc' chỉ Apps
+   * Script ghi, và chỉ ngay sau khi lá thư thật sự rời đi.
+   */
+  function ngheDonGuiXong(khoa, mocCu){
+    const k = khoDon();
+    const ref = rtdb.ref('donhang/' + khoa);
+
+    function thoi(){
+      if (!k.theoDoi[khoa]) return;
+      ref.off('value', k.theoDoi[khoa].nghe);
+      window.clearTimeout(k.theoDoi[khoa].dongHo);
+      delete k.theoDoi[khoa];
+    }
+    thoi();
+
+    const nghe = ref.on('value', function(anh){
+      const moi = anh && anh.val();
+      if (!moi) return;
+      const don = donTheoKhoa(khoa);
+      if (don) Object.keys(moi).forEach(function(t){ don[t] = moi[t]; });
+
+      if (Number(moi.emailGuiLuc || 0) > mocCu) {
+        thoi();
+        k.dangGui[khoa] = 'xong';
+        veLaiDonHang();
+        // Giữ lời báo trên màn hình vài giây rồi mới cho đơn rời khỏi nhóm đang
+        // xem. Bỏ đi ngay thì đơn biến mất đúng lúc chủ shop đang nhìn nó, và
+        // họ không biết việc đã xong hay vừa hỏng.
+        window.setTimeout(function(){
+          if (k.dangGui[khoa] !== 'xong') return;
+          k.dangGui[khoa] = '';
+          if (k.loc !== 'tat-ca' && k.loc !== 'daGui') {
+            k.danhSach = k.danhSach.filter(function(d){ return d.khoa !== khoa; });
+          }
+          veLaiDonHang();
+        }, GIAY_HIEN_DA_LUU * 1000 + 2000);
+        return;
+      }
+      // Bộ gửi hàng gặp trục trặc thì nó chuyển đơn sang 'canXemTay' — nói ngay
+      // thay vì để chủ shop ngồi nhìn chữ "đang gửi" cho tới lúc hết giờ.
+      if (moi.trangThai === 'canXemTay') {
+        thoi();
+        k.dangGui[khoa] = 'qua-lau';
+        veLaiDonHang();
+      }
+    });
+
+    const dongHo = window.setTimeout(function(){
+      thoi();
+      if (k.dangGui[khoa] === 'cho') {
+        k.dangGui[khoa] = 'qua-lau';
+        veLaiDonHang();
+      }
+    }, GIAY_CHO_GUI_EMAIL * 1000);
+
+    k.theoDoi[khoa] = { nghe: nghe, dongHo: dongHo };
   }
 
   // Xoá hẳn đơn khỏi Firebase. Không lùi được, nên hỏi lại và nói rõ mất gì:
