@@ -30,12 +30,24 @@
     return boDauCach(chuoi).slice(0, GIOI_HAN_EMAIL);
   }
 
-  // Email hợp lệ: không quá 35 ký tự, có ít nhất một "@" và ít nhất một "."
-  // (cho phép nhiều dấu chấm). Trả về chuỗi lỗi, hoặc '' nếu không có lỗi.
+  // Email hợp lệ: không quá 35 ký tự, ĐÚNG MỘT dấu "@" và dấu đó không đứng
+  // đầu cũng không đứng cuối, và có ít nhất một "." (cho phép nhiều dấu chấm).
+  //
+  // Vì sao đúng một: "a@b@c.com" là email không tồn tại, mà luật cũ (ít nhất
+  // một "@") vẫn cho qua. Đơn ghi xuống với email hỏng thì khâu gửi hàng tự
+  // động ném thư vào hư không — khách trả tiền rồi ngồi đợi, còn shop tưởng đã
+  // giao xong. Vì sao không ở hai đầu: "@abc.com" và "abc.com@" cũng vậy.
+  //
+  // Ô nhập vẫn cho gõ thoải mái, chỉ viền đỏ và khoá nút thanh toán. Câu báo
+  // cố ý nói chung chung "Email chưa đúng dạng" chứ không giảng giải từng luật
+  // — khách chỉ cần biết mình gõ sai, không cần học quy tắc của shop.
   function loiEmail(email){
     if (!email) return '';
     if (email.length > GIOI_HAN_EMAIL) return 'Email không được quá ' + GIOI_HAN_EMAIL + ' ký tự.';
-    if (email.indexOf('@') === -1) return 'Email phải có ký tự “@”.';
+    const soCong = email.split('@').length - 1;
+    if (soCong !== 1) return 'Email chưa đúng dạng.';
+    const viTri = email.indexOf('@');
+    if (viTri === 0 || viTri === email.length - 1) return 'Email chưa đúng dạng.';
     if (email.indexOf('.') === -1) return 'Email phải có ít nhất một dấu chấm “.”.';
     return '';
   }
@@ -48,15 +60,22 @@
     return '';
   }
 
+  // Năm trường liên lạc, xếp đúng thứ tự chúng hiện trong bảng. Thêm trường mới
+  // chỉ là thêm một dòng ở đây — phần kiểm, phần vẽ và phần cập nhật đều đọc
+  // theo danh sách này nên không nơi nào bị bỏ sót.
+  const TRUONG_LIEN_LAC = ['email', 'zalo', 'dienThoai', 'whatsapp', 'telegram'];
+
   function kiemTraKhachHang(){
     const kh = state.khachHang;
     const loi = {
       email: loiEmail(kh.email),
       zalo: loiSo(kh.zalo, 'Số zalo'),
-      dienThoai: loiSo(kh.dienThoai, 'Số điện thoại')
+      dienThoai: loiSo(kh.dienThoai, 'Số điện thoại'),
+      whatsapp: loiSo(kh.whatsapp, 'Số WhatsApp'),
+      telegram: loiSo(kh.telegram, 'Số Telegram')
     };
-    const coItNhatMot = !!(kh.email || kh.zalo || kh.dienThoai);
-    const khongLoi = !loi.email && !loi.zalo && !loi.dienThoai;
+    const coItNhatMot = TRUONG_LIEN_LAC.some(function(t){ return !!kh[t]; });
+    const khongLoi = TRUONG_LIEN_LAC.every(function(t){ return !loi[t]; });
     return { loi: loi, coItNhatMot: coItNhatMot, hopLe: coItNhatMot && khongLoi };
   }
 
@@ -84,6 +103,11 @@
         state.khachHang.zalo = state.khachHang.dienThoai;
         state.tuDongDien.zalo = state.khachHang.dienThoai !== '';
       }
+    } else if (ten === 'whatsapp' || ten === 'telegram') {
+      // Gọt ký tự y như số Zalo, nhưng KHÔNG đồng bộ với trường nào cả. Zalo và
+      // điện thoại đi cặp vì ở Việt Nam chúng gần như luôn là một số; WhatsApp
+      // và Telegram thì không — tự điền sang là đoán thay khách.
+      state.khachHang[ten] = chuanHoaSo(giaTri);
     }
     capNhatFormKhachHang();
   }
@@ -91,7 +115,7 @@
   // Cập nhật TẠI CHỖ (không vẽ lại cả modal) để con trỏ nhập không bị nhảy.
   function capNhatFormKhachHang(){
     const ketQua = kiemTraKhachHang();
-    ['email', 'zalo', 'dienThoai'].forEach(function(ten){
+    TRUONG_LIEN_LAC.forEach(function(ten){
       const o = document.querySelector('[data-truong="' + ten + '"]');
       if (!o) return;
       // Chỉ ghi đè khi ô đang lệch với trạng thái — gán vô cớ sẽ đẩy con trỏ
@@ -105,7 +129,7 @@
 
     const canhBao = document.querySelector('[data-loi="chung"]');
     if (canhBao) {
-      canhBao.textContent = ketQua.coItNhatMot ? '' : 'Cần nhập ít nhất một trong ba trường trên.';
+      canhBao.textContent = ketQua.coItNhatMot ? '' : 'Cần nhập ít nhất một trong năm trường trên.';
     }
     const nut = document.querySelector('[data-hanh-dong="tien-hanh-thanh-toan"]');
     if (nut) nut.disabled = !ketQua.hopLe;
@@ -158,7 +182,7 @@
         // Lời mời nhập liệu và lời cam kết giao hàng gộp vào MỘT khung đỏ nhạt
         // nổi bật, nhún nhảy để khách chắc chắn đọc trước khi gõ.
         '<div class="khung-cam-ket-giao">' +
-          '<p>Vui lòng nhập <strong>ít nhất 1 trong 3 trường</strong> (khung nhập liệu) dưới đây để shop liên hệ giao sản phẩm.</p>' +
+          '<p>Vui lòng nhập <strong>ít nhất 1 trong 5 trường</strong> (khung nhập liệu) dưới đây để shop liên hệ giao sản phẩm.</p>' +
           '<p>Shop <strong>cam kết giao sản phẩm ngay lập tức</strong> khi vừa nhận được tiền thanh toán của bạn: ưu tiên giao qua <strong>email</strong> (thông qua hệ thống tự động), hoặc giao qua <strong>tin nhắn Zalo</strong> (nếu bạn chưa nhập email), hoặc <strong>tin nhắn SMS</strong> (nếu không thể liên hệ qua Zalo).</p>' +
         '</div>' +
         veOTruong('email', 'Email', kh.email,
@@ -166,6 +190,10 @@
           '- khuyến khích nhập Email để nhận sản phẩm Nhanh chỉ trong 1 phút, bỏ qua nếu chưa có email') +
         veOTruong('zalo', 'Số zalo', kh.zalo, 'Chỉ nhập số, không dấu cách, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         veOTruong('dienThoai', 'Số điện thoại', kh.dienThoai, 'Tự lấy theo số zalo khi đang để trống, sửa lại được thoải mái.', 'text') +
+        veOTruong('whatsapp', 'Số WhatsApp của bạn', kh.whatsapp,
+          'Bỏ qua nếu bạn không dùng. Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
+        veOTruong('telegram', 'Số Telegram của bạn', kh.telegram,
+          'Bỏ qua nếu bạn không dùng. Chỉ nhập số, tối đa ' + GIOI_HAN_SO + ' số, dấu “+” (nếu có) đứng đầu.', 'text') +
         '<p class="loi" data-loi="chung"></p>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +

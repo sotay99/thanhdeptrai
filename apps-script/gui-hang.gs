@@ -45,12 +45,12 @@ var SO_DON_MOI_LAN = 25;      // xử lý tối đa bấy nhiêu đơn mỗi lư
 var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Thànhđẹptrai.vn';
 var WEB_SHOP = 'thanhdeptrai.vn';
-var EMAIL_LIEN_HE = '219thanhdeptrai@gmail.com';
 
-// SỐ ZALO CỦA SHOP KHÔNG NẰM Ở ĐÂY. Nó đọc từ nhánh 'thongtinlienhe' của
-// Realtime Database lúc chạy — cùng một chỗ mà trang quản trị sửa, nên đổi số
-// ở /admin là thư gửi khách đổi theo ngay, không phải dán lại script này. Đây
-// cũng là lý do không có số điện thoại nào viết chết trong toàn bộ mã nguồn.
+// SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
+// 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
+// trị sửa, nên đổi ở /admin là thư gửi khách đổi theo ngay, không phải dán lại
+// script này. Đây cũng là lý do không có số điện thoại nào viết chết trong
+// toàn bộ mã nguồn.
 
 // Bảng ký tự sinh mã nhận hàng — đúng bảng của mã đơn, đã bỏ 0 O 1 I L để khách
 // đọc lại trong email không phân vân số 0 hay chữ O.
@@ -311,7 +311,13 @@ function soanThuGiaoHang(don) {
 function veKhoiLienHe() {
   var lienHe = docLienHe();
   var zalo = String(lienHe.zalo || '').trim();
+  var email = String(lienHe.emailShop || '').trim();
   var duongZalo = linkZalo(zalo);
+
+  var dongEmail = email
+    ? '<div>Email: <a href="mailto:' + thoatHtml(email) + '" style="color:#1473e6">' +
+      thoatHtml(email) + '</a></div>'
+    : '';
 
   var dongZalo = '';
   if (zalo) {
@@ -326,8 +332,7 @@ function veKhoiLienHe() {
       '<div style="margin:0 0 6px"><b>Liên hệ với shop</b></div>' +
       '<div>Website: <a href="https://' + thoatHtml(WEB_SHOP) + '" style="color:#1473e6">' +
         thoatHtml(WEB_SHOP) + '</a></div>' +
-      '<div>Email: <a href="mailto:' + thoatHtml(EMAIL_LIEN_HE) + '" style="color:#1473e6">' +
-        thoatHtml(EMAIL_LIEN_HE) + '</a></div>' +
+      dongEmail +
       dongZalo +
     '</div>';
 }
@@ -371,11 +376,35 @@ function soanTinSMS(don) {
     linkNhanHangCuaDon(don) + ' Xin dung chia se cho ai.';
 }
 
+/**
+ * Một ô liên lạc trong bảng: số trần, kèm đường dẫn bấm được nếu dựng được.
+ *
+ * Dùng lại đúng luật chuẩn hoá của linkZalo (0 → 84, +84 → 84, còn lại thì bỏ)
+ * rồi để bên gọi tự ghép thành địa chỉ của dịch vụ mình. Số không dựng được
+ * thì chỉ hiện số trần — bấm vào một đường dẫn hỏng còn tệ hơn không có.
+ */
+function veOLienLac(so, ghepDuong) {
+  var s = String(so || '').trim();
+  if (!s) return '<i>không có</i>';
+  var chuan = linkZalo(s);   // trả về 'https://zalo.me/84…' hoặc rỗng
+  if (!chuan) return thoatHtml(s);
+  var s84 = chuan.replace('https://zalo.me/', '');
+  var duong = ghepDuong(s84);
+  return thoatHtml(s) + ' — <a href="' + thoatHtml(duong) + '" style="color:#1473e6">' +
+    thoatHtml(duong) + '</a>';
+}
+
 function soanThuBaoShop(don, ketQua) {
   var ma = (don.maSanPham || []).join(', ');
   var soZalo = String(don.zalo || '').trim();
   var duongZalo = linkZalo(soZalo);
   var soNhan = soZalo || String(don.dienThoai || '').trim();
+
+  // WhatsApp và Telegram cũng dựng đường dẫn bấm được, theo đúng cách của
+  // từng bên: wa.me nhận số quốc tế KHÔNG có dấu cộng, t.me thì có. Số gõ sai
+  // thì hiện số trần, không dựng đường dẫn hỏng.
+  var oWhatsApp = veOLienLac(don.whatsapp, function (s84) { return 'https://wa.me/' + s84; });
+  var oTelegram = veOLienLac(don.telegram, function (s84) { return 'https://t.me/+' + s84; });
 
   // Dòng Zalo mang luôn đường dẫn bấm được. Chủ shop nhìn thư trên điện thoại
   // là bấm thẳng vào cuộc trò chuyện với khách, không phải mở Zalo rồi gõ số
@@ -398,6 +427,8 @@ function soanThuBaoShop(don, ketQua) {
         '<tr><td><b>Email</b></td><td>' + (thoatHtml(don.email) || '<i>không có</i>') + '</td></tr>' +
         '<tr><td><b>Zalo</b></td><td>' + oZalo + '</td></tr>' +
         '<tr><td><b>Điện thoại</b></td><td>' + (thoatHtml(don.dienThoai) || '<i>không có</i>') + '</td></tr>' +
+        '<tr><td><b>WhatsApp</b></td><td>' + oWhatsApp + '</td></tr>' +
+        '<tr><td><b>Telegram</b></td><td>' + oTelegram + '</td></tr>' +
         '<tr><td><b>Sản phẩm</b></td><td>' + thoatHtml(ma) + '</td></tr>' +
       '</table>' +
 
@@ -633,12 +664,20 @@ function boDau(chu) {
     .replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
-/** Rút mã đơn ra khỏi nội dung chuyển khoản ngân hàng gửi về. */
+/**
+ * Rút mã đơn ra khỏi nội dung chuyển khoản ngân hàng gửi về.
+ *
+ * TIỀN TỐ NÀY PHẢI KHỚP src/js/app/01-foundation.js (hằng số TIEN_TO_CK). Web
+ * in ra thứ khách chép, hàm này đọc lại thứ đó. Lệch nhau là tiền về mà script
+ * không nhận ra đơn nào — khách trả tiền rồi ngồi đợi, chẳng ai biết vì sao.
+ */
+var TIEN_TO_CK = 'LR21';
+
 function docMaDonTrongNoiDung(chu) {
   // Ngân hàng viết hoa, bỏ dấu, và RẤT HAY nuốt dấu cách hoặc chèn thêm chữ.
-  // Nên không so khớp nguyên chuỗi, chỉ đi tìm "LR" rồi 6 ký tự của bảng mã.
+  // Nên không so khớp nguyên chuỗi, chỉ đi tìm tiền tố rồi 6 ký tự của bảng mã.
   var s = boDau(chu).toUpperCase();
-  var khop = s.match(/LR\s*([23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})/);
+  var khop = s.match(new RegExp(TIEN_TO_CK + '\\s*([23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})'));
   return khop ? khop[1] : '';
 }
 

@@ -86,6 +86,12 @@
         "dienThoai": {
           ".validate": "newData.isString() && newData.val().length <= 13"
         },
+        "whatsapp": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "telegram": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
         "noiDungCK": {
           ".validate": "newData.isString() && newData.val().length <= 120"
         },

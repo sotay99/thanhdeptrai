@@ -94,16 +94,20 @@ if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
-// 3) Nội dung chuyển khoản: "LR" viết hoa + DẤU CÁCH + mã đơn 6 ký tự, đúng
-//    9 ký tự. Ngắn tới mức không ngân hàng nào cắt, và khớp từ khoá "LR" đã
-//    đặt trong app đọc thông báo ngân hàng.
+// 3) Nội dung chuyển khoản: "LR21" viết hoa + DẤU CÁCH + mã đơn 6 ký tự, đúng
+//    11 ký tự. Ngắn tới mức không ngân hàng nào cắt, và chứa "LR" nên vẫn lọt
+//    qua từ khoá đã đặt trong app đọc thông báo ngân hàng.
 //
-//    Dấu cách là bắt buộc: không có nó thì "LRWNAT7M" dính thành một khối,
+//    Dấu cách là bắt buộc: không có nó thì "LR21WNAT7M" dính thành một khối,
 //    khách đọc lại trên app ngân hàng không biết đâu là mã đơn của mình.
+//
+//    TIỀN TỐ PHẢI KHỚP HAI NƠI — web in ra, Apps Script đọc lại. Mục kiểm cuối
+//    khối này so hai nơi với nhau, nên đổi một nơi mà quên nơi kia là đỏ ngay.
 // ---------------------------------------------------------------------------
 [
-  [/return\s+'LR '\s*\+\s*\(state\.maDonNgan\s*\|\|\s*''\)/,
-    'nội dung chuyển khoản là "LR" + dấu cách + mã đơn'],
+  [/const\s+TIEN_TO_CK\s*=\s*'LR21'\s*;/, 'hằng số tiền tố nội dung chuyển khoản là LR21'],
+  [/return\s+TIEN_TO_CK\s*\+\s*' '\s*\+\s*\(state\.maDonNgan\s*\|\|\s*''\)/,
+    'nội dung chuyển khoản là tiền tố + dấu cách + mã đơn'],
   [/const\s+DAI_MA_DON\s*=\s*6\s*;/, "mã đơn dài 6 ký tự"],
   [/const\s+CHU_MA_DON\s*=\s*'23456789ABCDEFGHJKMNPQRSTUVWXYZ'/,
     "bảng ký tự sinh mã đơn, đã bỏ 0 O 1 I L cho khỏi đọc nhầm"],
@@ -116,6 +120,18 @@ if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
+
+// Tiền tố ở web và tiền tố Apps Script đọc lại PHẢI là một. Lệch nhau thì tiền
+// về mà script không nhận ra đơn nào: khách trả tiền rồi ngồi đợi, chủ shop
+// không thấy gì bất thường, và không ai biết vì sao.
+{
+  const web = banNoi.match(/const\s+TIEN_TO_CK\s*=\s*'([^']+)'/);
+  const gs = doc("apps-script/gui-hang.gs").match(/var\s+TIEN_TO_CK\s*=\s*'([^']+)'/);
+  if (!gs) fail("apps-script/gui-hang.gs thiếu hằng số TIEN_TO_CK.");
+  else if (web && web[1] !== gs[1]) {
+    fail(`Tiền tố nội dung chuyển khoản lệch nhau: web dùng "${web[1]}", Apps Script đọc "${gs[1]}".`);
+  }
+}
 
 // Bốn cặp ký tự dễ đọc nhầm trên màn hình ngân hàng: 0/O, 1/I/L.
 ["0", "O", "1", "I", "L"].forEach((ky) => {
@@ -131,8 +147,54 @@ if (!/function phanTramGiamSanPham\(/.test(banNoi)) {
 if (!/const\s+GIOI_HAN_EMAIL\s*=\s*35\s*;/.test(banNoi)) fail("Email phải giới hạn 35 ký tự");
 if (!/const\s+GIOI_HAN_SO\s*=\s*12\s*;/.test(banNoi)) fail("Số zalo / số điện thoại phải giới hạn 12 số");
 if (!/coItNhatMot\s*&&\s*khongLoi/.test(banNoi)) {
-  fail("Phải bắt buộc nhập ít nhất một trong ba trường trước khi cho thanh toán");
+  fail("Phải bắt buộc nhập ít nhất một trong năm trường trước khi cho thanh toán");
 }
+// Năm trường liên lạc, khai ở MỘT chỗ. Phần kiểm, phần vẽ và phần cập nhật đều
+// đọc theo danh sách đó, nên thêm trường mà quên một nơi là không thể.
+if (!/const\s+TRUONG_LIEN_LAC\s*=\s*\['email', 'zalo', 'dienThoai', 'whatsapp', 'telegram'\]/.test(banNoi)) {
+  fail("Thiếu danh sách TRUONG_LIEN_LAC đủ năm trường liên lạc.");
+}
+// Email: ĐÚNG MỘT dấu "@", không ở đầu, không ở cuối. Luật cũ (ít nhất một @)
+// cho lọt "a@b@c.com" và "@abc.com" — đơn ghi xuống với email hỏng thì khâu
+// gửi hàng ném thư vào hư không, khách trả tiền rồi ngồi đợi.
+{
+  const than = banNoi.match(/function\s+loiEmail\s*\([\s\S]*?\n  \}/);
+  if (!than) fail("Thiếu hàm loiEmail.");
+  else {
+    if (!/split\('@'\)\.length\s*-\s*1/.test(than[0]) || !/!==\s*1/.test(than[0])) {
+      fail("loiEmail phải bắt buộc ĐÚNG MỘT dấu @, không phải 'ít nhất một'.");
+    }
+    if (!/viTri\s*===\s*0\s*\|\|\s*viTri\s*===\s*email\.length\s*-\s*1/.test(than[0])) {
+      fail("loiEmail phải chặn dấu @ đứng đầu hoặc đứng cuối.");
+    }
+  }
+}
+// WhatsApp và Telegram gọt ký tự y như số Zalo, nhưng KHÔNG đồng bộ với trường
+// nào — Zalo và điện thoại đi cặp vì ở Việt Nam chúng gần như luôn là một số,
+// hai cái này thì không, tự điền sang là đoán thay khách.
+{
+  const than = banNoi.match(/function\s+capNhatTruong\s*\([\s\S]*?\n  \}/);
+  if (!than) fail("Thiếu hàm capNhatTruong.");
+  else {
+    const nhanh = than[0].match(/ten === 'whatsapp' \|\| ten === 'telegram'[\s\S]*?\n    \}/);
+    if (!nhanh) fail("capNhatTruong chưa xử lý hai trường whatsapp và telegram.");
+    else if (/tuDongDien/.test(nhanh[0])) {
+      fail("WhatsApp và Telegram KHÔNG được đồng bộ sang trường khác.");
+    }
+  }
+}
+// Hai trường mới phải được LƯU vào đơn, và Rules phải cho phép chúng — nhánh
+// donhang khai "$khac": .validate false, nên một trường lạ là Firebase từ chối
+// CẢ đơn, không phải chỉ trường đó.
+["whatsapp", "telegram"].forEach((t) => {
+  if (!new RegExp(t + ":\\s*kh\\." + t).test(banNoi)) {
+    fail(`Đơn hàng chưa lưu trường ${t}.`);
+  }
+  const rules = doc("database.rules.json");
+  if (!new RegExp('"' + t + '"\\s*:\\s*\\{').test(rules)) {
+    fail(`database.rules.json thiếu trường ${t} trong nhánh donhang — Firebase sẽ từ chối cả đơn.`);
+  }
+});
 // Cả ba trường đều phải gọt sạch dấu cách ngay lúc gõ / lúc dán vào.
 if (!/function boDauCach\(/.test(banNoi) || !/replace\(\/\\s\+\/g, ''\)/.test(banNoi)) {
   fail("Email, số zalo và số điện thoại đều phải loại bỏ mọi dấu cách");
@@ -330,7 +392,7 @@ if (banNoi.indexOf('nut-dac-quyen') > banNoi.indexOf('veKhuQuaTang();')) {
   [/hệ thống tự động gửi hàng[\s\S]{0,200}?<strong>email<\/strong>[\s\S]{0,120}?<strong>Zalo<\/strong>[\s\S]{0,80}?SMS/,
     "ba đường giao hàng: email tự động, Zalo, SMS"],
   [/class="khung-cam-ket-giao"/, "khung cam kết trong bảng xác nhận đơn hàng"],
-  [/ít nhất 1 trong 3 trường<\/strong> \(khung nhập liệu\)/, 'câu mời nhập "ít nhất 1 trong 3 trường (khung nhập liệu)"'],
+  [/ít nhất 1 trong 5 trường<\/strong> \(khung nhập liệu\)/, 'câu mời nhập "ít nhất 1 trong 5 trường (khung nhập liệu)"'],
   [/cam kết giao sản phẩm ngay lập tức/, "lời cam kết giao ngay khi nhận được tiền"],
   [/ưu tiên giao qua <strong>email<\/strong> \(thông qua hệ thống tự động\)/, "ưu tiên giao qua email tự động"],
   [/nếu bạn chưa nhập email/, "giao qua Zalo khi khách chưa nhập email"],
@@ -1228,6 +1290,82 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
       fail("Nút cấp quyền lại phải hỏi lại trước khi xoá khoá thiết bị.");
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// 23) CÚ BẤM CỦA KHÁCH KHÔNG BAO GIỜ ĐƯỢC LÀ LỆNH GIAO HÀNG.
+//
+//     Đây là lỗ nghiêm trọng nhất từng có trong hệ thống, và nó đã từng mở
+//     thật: nút "Xác nhận đã thanh toán thành công" đặt trangThai='daXacNhan',
+//     đúng thứ bộ gửi hàng quét mỗi phút. Ai mở trang, chọn hàng, bấm nút đó
+//     mà không chuyển một đồng nào cũng nhận được sản phẩm trong vòng một phút.
+//
+//     Ranh giới: cú bấm của khách → 'khachBao' (lời khai). Ngân hàng báo có
+//     → 'daXacNhan' (bằng chứng). CHỈ hàm nhận báo có được đặt 'daXacNhan'.
+// ---------------------------------------------------------------------------
+{
+  const gs = doc("apps-script/gui-hang.gs");
+
+  // 1. Nút của khách phải ghi 'khachBao', tuyệt đối không phải 'daXacNhan'.
+  const than = banNoi.match(/function\s+danhDauDaThanhToan\s*\([\s\S]*?\n  \}/);
+  if (!than) {
+    fail("Thiếu hàm danhDauDaThanhToan.");
+  } else {
+    if (!/trangThai:\s*'khachBao'/.test(than[0])) {
+      fail("Nút xác nhận của khách phải đặt trạng thái 'khachBao'.");
+    }
+    if (/trangThai:\s*'daXacNhan'/.test(than[0])) {
+      fail("LỖ BẢO MẬT: cú bấm của khách đặt 'daXacNhan' — bộ gửi hàng sẽ giao hàng miễn phí cho bất kỳ ai bấm nút.");
+    }
+  }
+
+  // 2. Bộ gửi hàng vẫn chỉ quét đúng 'daXacNhan'.
+  if (!/equalTo=.*encodeURIComponent\('"daXacNhan"'\)/.test(gs)) {
+    fail("Bộ gửi hàng phải lọc theo đúng trạng thái 'daXacNhan'.");
+  }
+  // 3. Và chỉ nhánh nhận báo có mới được đặt trạng thái đó.
+  {
+    const dat = (gs.match(/trangThai:\s*'daXacNhan'/g) || []).length;
+    if (dat !== 1) {
+      fail(`Chỉ ĐÚNG MỘT nơi trong Apps Script được đặt trangThai='daXacNhan' (đang có ${dat}).`);
+    }
+    const bao = gs.match(/function\s+xuLyBaoCo\s*\([\s\S]*?\n\}/);
+    if (!bao || !/trangThai:\s*'daXacNhan'/.test(bao[0])) {
+      fail("Nơi duy nhất đặt 'daXacNhan' phải là hàm nhận báo có từ ngân hàng.");
+    }
+  }
+
+  // 4. Trang quản trị phải phân biệt được hai trạng thái, nếu không chủ shop
+  //    nhìn vào tưởng đơn khách tự khai là đơn đã có tiền.
+  [
+    [/'khachBao':\s*\{\s*ten:\s*'Khách báo đã trả'/, "trạng thái 'Khách báo đã trả' trong trang quản trị"],
+    [/\{ ma: 'khachBao',\s*ten: 'Khách báo đã trả' \}/, "bộ lọc 'Khách báo đã trả'"],
+    [/loc:\s*'khachBao'/, "mục Đơn hàng mở sẵn ở nhóm cần mắt người"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+  if (!/\.the-trang-thai\.tim\s*\{/.test(doc("src/css/admin.css"))) {
+    fail("Thiếu màu riêng cho nhãn 'Khách báo đã trả' — nó phải khác hẳn bốn trạng thái kia.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 24) EMAIL VÀ SỐ ZALO LIÊN HỆ CỦA SHOP ĐỌC TỪ DATABASE, KHÔNG VIẾT CHẾT.
+// ---------------------------------------------------------------------------
+{
+  const gs = doc("apps-script/gui-hang.gs");
+  if (/EMAIL_LIEN_HE\s*=\s*'[^']+@/.test(gs)) {
+    fail("Email liên hệ của shop không được viết chết trong Apps Script — đọc từ thongtinlienhe.");
+  }
+  if (!/lienHe\.emailShop/.test(gs)) {
+    fail("Khối liên hệ trong thư gửi khách phải đọc emailShop từ Realtime Database.");
+  }
+  // Ba ô mới ở trang quản trị là nguồn của những giá trị đó.
+  ["telegram", "whatsapp", "emailShop"].forEach((t) => {
+    if (!new RegExp("truong: '" + t + "'").test(banNoi)) {
+      fail(`Trang quản trị thiếu ô '${t}' trong mục Liên hệ và mạng xã hội.`);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

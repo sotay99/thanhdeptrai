@@ -1647,3 +1647,18 @@
 .the-nhan-hang.chua-mua { cursor: default; }
 .the-nhan-hang.chua-mua:hover { transform: none; box-shadow: none; }
 .the-nhan-hang.chua-mua:hover::before { opacity: .25; }
+
+
+/* Đường thoát cho khách đang sốt ruột ở bảng xác nhận thanh toán. Tiêu đề dài
+   nên phải cho chữ xuống dòng và canh giữa, cao tối thiểu 48px cho ngón tay. */
+.khung-xac-nhan .nut-goi-shop {
+  margin-top: 14px;
+  padding: 12px 16px;
+  height: auto;
+  min-height: 48px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.6;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}

@@ -15,15 +15,23 @@
   // không cho ký tự "@" trong nội dung chuyển khoản).
   // Zalo trùng số điện thoại thì chỉ ghi một lần; trường trống thì bỏ qua.
 
-  // Nội dung chuyển khoản = LR + mã đơn, viết hoa, đúng 8 ký tự.
+  // Nội dung chuyển khoản = LR21 + dấu cách + mã đơn, viết hoa, đúng 11 ký tự.
   //
   // Trước đây nội dung ghép từ email và số điện thoại của khách nên dài lê thê;
   // ngân hàng cắt bớt là hỏng khâu đối chiếu. Nay chỉ còn một mã ngắn: khách gõ
   // nhanh, ngân hàng không cắt, và máy đọc biến động số dư khớp được chính xác
-  // một đơn duy nhất. Chữ LR viết hoa để trùng với từ khoá đã đặt trong app đọc
-  // thông báo ngân hàng.
+  // một đơn duy nhất.
+  //
+  // TIỀN TỐ NÀY PHẢI KHỚP BA NƠI, đổi một nơi mà quên hai nơi kia là đơn của
+  // khách rơi vào im lặng:
+  //   1. đây — thứ khách chép vào ô nội dung chuyển khoản
+  //   2. docMaDonTrongNoiDung() trong apps-script/gui-hang.gs — thứ đọc nó ra
+  //   3. ô Keyword của app Checkout (checkout.vn) — bộ lọc quyết định tin nhắn
+  //      nào được đẩy sang script. Để 'LR' ở đó vẫn khớp 'LR21' vì nó so khớp
+  //      chuỗi con, nên không bắt buộc sửa; nhưng biết là nó có ở đó.
+  // Hợp đồng regex canh mục 1 và 2 luôn cùng một chuỗi.
   function taoNoiDungCK(){
-    return 'LR ' + (state.maDonNgan || '');
+    return TIEN_TO_CK + ' ' + (state.maDonNgan || '');
   }
 
   // Vân tay của đơn: đổi món hoặc đổi thông tin liên hệ thì đây là đơn khác,
@@ -31,7 +39,8 @@
   function chuKyDon(){
     const kh = state.khachHang;
     return sanPhamDaChon().map(function(sp){ return sp.ma; }).join(',') +
-      '|' + kh.email + '|' + kh.zalo + '|' + kh.dienThoai + '|' + tinhTien().thanhTien;
+      '|' + kh.email + '|' + kh.zalo + '|' + kh.dienThoai +
+      '|' + kh.whatsapp + '|' + kh.telegram + '|' + tinhTien().thanhTien;
   }
 
   // ------------------------------------------- ĐỌC THÔNG TIN CHUYỂN KHOẢN
@@ -106,8 +115,11 @@
       maSanPham: sanPhamDaChon().map(function(sp){ return sp.ma; }),
       // Trạng thái là thứ khâu gửi hàng tự động lọc theo, nên chỉ có một giá trị
       // tại một thời điểm:
-      //   'moi'        — khách vừa bấm Tiến hành thanh toán, chưa xác nhận
-      //   'daXacNhan'  — khách bấm "Đã thanh toán", chờ gửi hàng
+      //   'moi'        — khách vừa bấm Tiến hành thanh toán, chưa nói gì thêm
+      //   'khachBao'   — khách tự bấm "Đã thanh toán". LỜI KHAI, không phải
+      //                  bằng chứng. Bộ gửi hàng KHÔNG đụng tới trạng thái này.
+      //   'daXacNhan'  — ngân hàng đã báo có đủ tiền. CHỈ hàm nhận báo có trong
+      //                  apps-script/gui-hang.gs được đặt trạng thái này.
       //   'daGui'      — đã gửi hàng cho khách
       //   'canXemTay'  — không gửi tự động được, chủ shop phải xử lý
       // Nhờ vậy hàng chờ gửi luôn là một danh sách NGẮN, không phải quét cả kho.
@@ -118,6 +130,8 @@
       email: kh.email,
       zalo: kh.zalo,
       dienThoai: kh.dienThoai,
+      whatsapp: kh.whatsapp,
+      telegram: kh.telegram,
       noiDungCK: taoNoiDungCK(),
       maDon: state.maDonNgan,
       taoLuc: Date.now(),
@@ -131,10 +145,21 @@
     });
   }
 
+  // Khách bấm "Đã thanh toán thành công" thì đơn sang 'khachBao', KHÔNG phải
+  // 'daXacNhan'.
+  //
+  // ĐÂY LÀ RANH GIỚI GIỮ CẢ KHO HÀNG. Bộ gửi hàng tự động chỉ quét đúng trạng
+  // thái 'daXacNhan', và chỉ MỘT nơi được phép đặt trạng thái đó: hàm nhận báo
+  // có từ ngân hàng trong apps-script/gui-hang.gs. Nếu cú bấm của khách cũng
+  // đặt 'daXacNhan' — như mã cũ từng làm — thì bất kỳ ai mở trang, chọn hàng,
+  // bấm "đã thanh toán" mà không chuyển một đồng nào cũng nhận được sản phẩm
+  // trong vòng một phút.
+  //
+  // Cú bấm này chỉ là lời khách tự khai, để chủ shop dễ tra khi đối chiếu.
   function danhDauDaThanhToan(){
     if (!firebaseSanSang || !rtdb || !state.maDonHienTai) return Promise.resolve();
     return rtdb.ref('donhang/' + state.maDonHienTai)
-      .update({ daXacNhan: true, trangThai: 'daXacNhan', xacNhanLuc: Date.now() })
+      .update({ daXacNhan: true, trangThai: 'khachBao', xacNhanLuc: Date.now() })
       .catch(function(e){ console.error('Không cập nhật được trạng thái đơn hàng:', e); });
   }
 
@@ -447,6 +472,13 @@
               escapeHtml(lienHe) + ' để giao sản phẩm, xin chờ ít phút.</p>') +
           '<p class="nhac-nho">Nếu chuyển tiền rồi mà quá lâu chưa thấy hồi âm, nhắn cho shop kèm ' +
             'nội dung chuyển khoản ở trên — shop tra ra đơn ngay.</p>' +
+          // Đường thoát cho khách đang sốt ruột. Mở đúng bảng "Liên hệ và
+          // Thông tin về Shop" ở menu trái, chồng lên bảng này — đóng nó ra là
+          // khách trở lại đúng chỗ đang đứng, không mất nội dung chuyển khoản.
+          '<button type="button" class="nut nut-vien nut-rong nut-goi-shop" ' +
+            'data-hanh-dong="mo-module" data-module="lien-he">' +
+            'Nếu bạn Gặp trục trặc hoặc muốn nhận sản phẩm ngay lập tức: ' +
+            'Bấm vào đây để liên hệ với shop</button>' +
         '</div>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Quay lại mã QR</button>' +

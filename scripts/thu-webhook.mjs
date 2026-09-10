@@ -32,7 +32,7 @@ function ok(dieuKien, ten, chiTiet) {
 
 function dungSanKhau(donBanDau) {
   const kho = { donhang: JSON.parse(JSON.stringify(donBanDau)), danhmuc: {},
-    thongtinlienhe: { zalo: '0912345678' } };
+    thongtinlienhe: { zalo: '0912345678', emailShop: 'shop@vidu.com' } };
   const thu = [];
   const log = [];
 
@@ -138,14 +138,17 @@ console.log('— Đọc mã đơn trong nội dung ngân hàng —');
 {
   const { api } = dungSanKhau(DON_MAU);
   const d = api.docMaDonTrongNoiDung;
-  ok(d('LR WNAT7M') === 'WNAT7M', 'Nội dung chuẩn', d('LR WNAT7M'));
-  ok(d('LRWNAT7M') === 'WNAT7M', 'Ngân hàng nuốt dấu cách vẫn đọc ra', d('LRWNAT7M'));
-  ok(d('CHUYEN TIEN LR WNAT7M GD 123456') === 'WNAT7M', 'Có chữ thừa hai đầu vẫn đọc ra', d('CHUYEN TIEN LR WNAT7M GD 123456'));
-  ok(d('lr wnat7m') === 'WNAT7M', 'Viết thường vẫn đọc ra', d('lr wnat7m'));
+  ok(d('LR21 WNAT7M') === 'WNAT7M', 'Nội dung chuẩn', d('LR21 WNAT7M'));
+  ok(d('LR21WNAT7M') === 'WNAT7M', 'Ngân hàng nuốt dấu cách vẫn đọc ra', d('LR21WNAT7M'));
+  ok(d('CHUYEN TIEN LR21 WNAT7M GD 123456') === 'WNAT7M', 'Có chữ thừa hai đầu vẫn đọc ra', d('CHUYEN TIEN LR21 WNAT7M GD 123456'));
+  ok(d('lr21 wnat7m') === 'WNAT7M', 'Viết thường vẫn đọc ra', d('lr21 wnat7m'));
   ok(d('TIEN AN TRUA') === '', 'Không có mã thì trả về rỗng', d('TIEN AN TRUA'));
+  // Tiền tố cũ KHÔNG còn đọc được. Đây là chủ ý: nếu "LR" trần vẫn khớp thì
+  // việc đổi sang LR21 chẳng phân biệt được gì với hệ thống khác cùng dùng "LR".
+  ok(d('LR WNAT7M') === '', 'Tiền tố cũ "LR" trần không còn được nhận', d('LR WNAT7M'));
   ok(d('') === '', 'Nội dung trống thì trả về rỗng', d(''));
   // Bảng mã đã bỏ 0 O 1 I L, nên chuỗi mang chúng KHÔNG phải mã đơn.
-  ok(d('LR WNAT70') === '', 'Chuỗi chứa số 0 không phải mã đơn', d('LR WNAT70'));
+  ok(d('LR21 WNAT70') === '', 'Chuỗi chứa số 0 không phải mã đơn', d('LR21 WNAT70'));
 }
 
 console.log('\n— Bóc số tiền khỏi tin nhắn ngân hàng thật —');
@@ -154,16 +157,16 @@ console.log('\n— Bóc số tiền khỏi tin nhắn ngân hàng thật —');
   const b = api.bocTienTuTinNhan;
 
   // Đúng định dạng thật: PS:+X | SD: Y | SD KHA DUNG: Z. Ba con số tiền.
-  ok(b(tinNganHang('+', '99.000', 'LR WNAT7M')) === 99000,
-    'Tiền vào: lấy đúng số phát sinh, không lấy số dư', String(b(tinNganHang('+', '99.000', 'LR WNAT7M'))));
-  ok(b(tinNganHang('+', '1.000.000', 'LR WNAT7M')) === 1000000,
-    'Số triệu có dấu chấm phân cách vẫn đúng', String(b(tinNganHang('+', '1.000.000', 'LR WNAT7M'))));
+  ok(b(tinNganHang('+', '99.000', 'LR21 WNAT7M')) === 99000,
+    'Tiền vào: lấy đúng số phát sinh, không lấy số dư', String(b(tinNganHang('+', '99.000', 'LR21 WNAT7M'))));
+  ok(b(tinNganHang('+', '1.000.000', 'LR21 WNAT7M')) === 1000000,
+    'Số triệu có dấu chấm phân cách vẫn đúng', String(b(tinNganHang('+', '1.000.000', 'LR21 WNAT7M'))));
 
   // ĐÂY LÀ CA NGUY HIỂM NHẤT. Chính chủ shop chuyển tiền ĐI: số phát sinh mang
   // dấu trừ nên bị loại, số dư bị loại — nếu "SD KHA DUNG" không bị loại nốt
   // thì nó còn lại một mình và bị tưởng là tiền khách trả.
-  ok(b(tinNganHang('-', '500.000', 'LR WNAT7M')) === 0,
-    'Tiền CHUYỂN ĐI: không bóc ra đồng nào, kể cả số dư khả dụng', String(b(tinNganHang('-', '500.000', 'LR WNAT7M'))));
+  ok(b(tinNganHang('-', '500.000', 'LR21 WNAT7M')) === 0,
+    'Tiền CHUYỂN ĐI: không bóc ra đồng nào, kể cả số dư khả dụng', String(b(tinNganHang('-', '500.000', 'LR21 WNAT7M'))));
 
   ok(b('SD: 1.044.353VND SD KHA DUNG: 1.044.353VND') === 0,
     'Tin chỉ có số dư thì không có tiền vào nào', String(b('SD: 1.044.353VND SD KHA DUNG: 1.044.353VND')));
@@ -173,30 +176,30 @@ console.log('\n— Bóc số tiền khỏi tin nhắn ngân hàng thật —');
     '"Số dư" có dấu cũng bị loại', String(b('Số dư: 5.000.000 VND')));
 
   // Các kiểu ngân hàng khác
-  ok(b('SD TK VCB 0123456789 +99,000 VND luc 09-09-2026. SD 1,234,567 VND. Ref LR WNAT7M') === 99000,
+  ok(b('SD TK VCB 0123456789 +99,000 VND luc 09-09-2026. SD 1,234,567 VND. Ref LR21 WNAT7M') === 99000,
     'Vietcombank: dấu phẩy phân cách, vẫn lấy đúng số vào',
-    String(b('SD TK VCB 0123456789 +99,000 VND luc 09-09-2026. SD 1,234,567 VND. Ref LR WNAT7M')));
-  ok(b('Thay doi: +125000VND. So du: 1234567VND. ND: LR WNAT7M') === 125000,
-    'Số liền không phân cách vẫn đúng', String(b('Thay doi: +125000VND. So du: 1234567VND. ND: LR WNAT7M')));
+    String(b('SD TK VCB 0123456789 +99,000 VND luc 09-09-2026. SD 1,234,567 VND. Ref LR21 WNAT7M')));
+  ok(b('Thay doi: +125000VND. So du: 1234567VND. ND: LR21 WNAT7M') === 125000,
+    'Số liền không phân cách vẫn đúng', String(b('Thay doi: +125000VND. So du: 1234567VND. ND: LR21 WNAT7M')));
 
-  ok(b('Nhan tien 99.000 VND ND LR WNAT7M') === 99000,
-    'Chỉ một con số duy nhất thì lấy con đó', String(b('Nhan tien 99.000 VND ND LR WNAT7M')));
+  ok(b('Nhan tien 99.000 VND ND LR21 WNAT7M') === 99000,
+    'Chỉ một con số duy nhất thì lấy con đó', String(b('Nhan tien 99.000 VND ND LR21 WNAT7M')));
   ok(b('') === 0 && b('khong co so nao') === 0, 'Không có số thì trả về 0', '');
-  ok(b('GD luc 09/09/26 21:23 ND LR WNAT7M') === 0,
-    'Ngày giờ không bị nhầm thành tiền', String(b('GD luc 09/09/26 21:23 ND LR WNAT7M')));
-  ok(b('TK: xxxx9876543 ND: LR WNAT7M') === 0,
-    'Số tài khoản trần không bị nhầm thành tiền', String(b('TK: xxxx9876543 ND: LR WNAT7M')));
+  ok(b('GD luc 09/09/26 21:23 ND LR21 WNAT7M') === 0,
+    'Ngày giờ không bị nhầm thành tiền', String(b('GD luc 09/09/26 21:23 ND LR21 WNAT7M')));
+  ok(b('TK: xxxx9876543 ND: LR21 WNAT7M') === 0,
+    'Số tài khoản trần không bị nhầm thành tiền', String(b('TK: xxxx9876543 ND: LR21 WNAT7M')));
 
   // Nhiều con số cùng có đơn vị mà không con nào có dấu + — không đoán bừa.
-  ok(b('Phi 15.000VND va 99.000VND ND LR WNAT7M') === 0,
+  ok(b('Phi 15.000VND va 99.000VND ND LR21 WNAT7M') === 0,
     'Nhiều ứng viên mà không cái nào chắc thì trả về 0, không đoán bừa',
-    String(b('Phi 15.000VND va 99.000VND ND LR WNAT7M')));
+    String(b('Phi 15.000VND va 99.000VND ND LR21 WNAT7M')));
 }
 
 console.log('\n— Cửa mật khẩu —');
 {
   const { api, kho, thu } = dungSanKhau(DON_MAU);
-  const ra = goi(api, tinNganHang('+', '99.000', 'LR WNAT7M'), 'MAT-KHAU-BAY');
+  const ra = goi(api, tinNganHang('+', '99.000', 'LR21 WNAT7M'), 'MAT-KHAU-BAY');
   ok(ra.ok === false && ra.vi === 'sai-khoa', 'Sai mật khẩu thì từ chối', JSON.stringify(ra));
   ok(kho.donhang['-Naaa'].trangThai === 'moi', 'Và KHÔNG đụng vào đơn', kho.donhang['-Naaa'].trangThai);
   ok(thu.length === 0, 'Và không gửi lá thư nào', String(thu.length));
@@ -205,7 +208,7 @@ console.log('\n— Cửa mật khẩu —');
 console.log('\n— Đủ tiền thì gửi hàng —');
 {
   const { api, kho, thu } = dungSanKhau(DON_MAU);
-  const ra = goi(api, tinNganHang('+', '99.000', 'LR WNAT7M'));
+  const ra = goi(api, tinNganHang('+', '99.000', 'LR21 WNAT7M'));
   ok(ra.ok === true && ra.vi === 'da-gui', 'Trả về đã gửi', JSON.stringify(ra));
   ok(kho.donhang['-Naaa'].trangThai === 'daGui', 'Đơn chuyển sang đã gửi', kho.donhang['-Naaa'].trangThai);
   ok(!!kho.donhang['-Naaa'].maNhanHang, 'Đơn được cấp mã nhận hàng', JSON.stringify(kho.donhang['-Naaa'].maNhanHang));
@@ -216,14 +219,14 @@ console.log('\n— Đủ tiền thì gửi hàng —');
 console.log('\n— Trả dư tiền vẫn gửi —');
 {
   const { api, kho } = dungSanKhau(DON_MAU);
-  goi(api, tinNganHang('+', '200.000', 'LR WNAT7M'));
+  goi(api, tinNganHang('+', '200.000', 'LR21 WNAT7M'));
   ok(kho.donhang['-Naaa'].trangThai === 'daGui', 'Chuyển dư thì vẫn là đã trả đủ', kho.donhang['-Naaa'].trangThai);
 }
 
 console.log('\n— Thiếu tiền thì KHÔNG gửi —');
 {
   const { api, kho, thu } = dungSanKhau(DON_MAU);
-  const ra = goi(api, tinNganHang('+', '1.000', 'LR WNAT7M'));
+  const ra = goi(api, tinNganHang('+', '1.000', 'LR21 WNAT7M'));
   ok(ra.vi === 'thieu-tien', 'Trả về thiếu tiền', JSON.stringify(ra));
   ok(kho.donhang['-Naaa'].trangThai === 'canXemTay', 'Đơn chuyển sang cần xem tay', kho.donhang['-Naaa'].trangThai);
   ok(!thu.some((t) => t.toi === 'khach@thu.test'), 'Khách KHÔNG nhận được hàng', JSON.stringify(thu.map((t) => t.toi)));
@@ -233,10 +236,10 @@ console.log('\n— Thiếu tiền thì KHÔNG gửi —');
 console.log('\n— Cổng gửi lại cùng một báo có —');
 {
   const { api, kho, thu } = dungSanKhau(DON_MAU);
-  goi(api, tinNganHang('+', '99.000', 'LR WNAT7M'));
+  goi(api, tinNganHang('+', '99.000', 'LR21 WNAT7M'));
   const soThuLan1 = thu.length;
   const maLan1 = kho.donhang['-Naaa'].maNhanHang;
-  const ra = goi(api, tinNganHang('+', '99.000', 'LR WNAT7M'));
+  const ra = goi(api, tinNganHang('+', '99.000', 'LR21 WNAT7M'));
   ok(ra.vi === 'da-gui-tu-truoc', 'Lần hai bị nhận ra là lặp', JSON.stringify(ra));
   ok(thu.length === soThuLan1, 'Không gửi thêm lá thư nào', thu.length + ' / ' + soThuLan1);
   ok(kho.donhang['-Naaa'].maNhanHang === maLan1, 'Và giữ nguyên mã nhận hàng cũ', 'mã bị đổi');
@@ -254,7 +257,7 @@ console.log('\n— Tiền của người khác chuyển vào —');
 console.log('\n— Mã đơn không có thật —');
 {
   const { api, thu } = dungSanKhau(DON_MAU);
-  const ra = goi(api, tinNganHang('+', '99.000', 'LR ZZZZZZ'));
+  const ra = goi(api, tinNganHang('+', '99.000', 'LR21 ZZZZZZ'));
   ok(ra.vi === 'khong-co-don', 'Báo không tìm thấy đơn', JSON.stringify(ra));
   ok(thu.length === 1 && thu[0].toi === 'shop@thu.test', 'Và báo cho shop', JSON.stringify(thu.map((t) => t.toi)));
 }
@@ -306,7 +309,7 @@ console.log('\n— Thư gửi shop —');
 {
   const { api } = dungSanKhau(DON_MAU);
   const don = Object.assign({ __ma: '-Naaa' }, DON_MAU['-Naaa'],
-    { maNhanHang: 'ABCDEFGH23456789', zalo: '0912345678', noiDungCK: 'LR WNAT7M' });
+    { maNhanHang: 'ABCDEFGH23456789', zalo: '0912345678', noiDungCK: 'LR21 WNAT7M' });
   const thu = api.soanThuBaoShop(don, 'Đã gửi hàng');
 
   ok(thu.indexOf('https://zalo.me/84912345678') !== -1,
@@ -326,6 +329,16 @@ console.log('\n— Thư gửi shop —');
 
   const thu3 = api.soanThuBaoShop(Object.assign({}, don, { zalo: '' }), 'Đã gửi hàng');
   ok(thu3.indexOf('zalo.me') === -1, 'Không có số thì cũng không có đường dẫn', 'vẫn dựng');
+
+  // Hai kênh mới cũng dựng đường dẫn bấm được, theo đúng cách của từng bên:
+  // wa.me nhận số quốc tế KHÔNG dấu cộng, t.me thì có.
+  const thu4 = api.soanThuBaoShop(
+    Object.assign({}, don, { whatsapp: '0912345678', telegram: '+84987654321' }), 'Đã gửi hàng');
+  ok(thu4.indexOf('https://wa.me/84912345678') !== -1, 'Dòng WhatsApp có đường dẫn wa.me', 'thiếu');
+  ok(thu4.indexOf('https://t.me/+84987654321') !== -1, 'Dòng Telegram có đường dẫn t.me', 'thiếu');
+  const thu5 = api.soanThuBaoShop(Object.assign({}, don, { whatsapp: '1234567' }), 'Đã gửi hàng');
+  ok(thu5.indexOf('wa.me') === -1, 'Số WhatsApp sai thì chỉ hiện số trần', 'vẫn dựng đường dẫn');
+  ok(thu5.indexOf('1234567') !== -1, 'Nhưng vẫn hiện số để chủ shop tự xử', 'mất số');
 }
 
 console.log('\n— Thư gửi khách —');
@@ -336,9 +349,43 @@ console.log('\n— Thư gửi khách —');
 
   ok(thu.indexOf('Liên hệ với shop') !== -1, 'Có khối liên hệ ở cuối thư', 'thiếu');
   ok(thu.indexOf('thanhdeptrai.vn') !== -1, 'Có website', 'thiếu');
-  ok(/mailto:/.test(thu), 'Có email của shop bấm được', 'thiếu');
+  ok(thu.indexOf('mailto:shop@vidu.com') !== -1,
+    'Email shop đọc từ Firebase, không viết chết trong mã', 'thiếu');
+  ok(!/219thanhdeptrai/.test(thu),
+    'Không có email nào viết chết trong mã script', 'còn viết chết');
   ok(thu.indexOf('https://zalo.me/84912345678') !== -1, 'Có số Zalo kèm đường dẫn', 'thiếu');
   ok(!/hoàn tiền 100%/i.test(thu), 'Đã bỏ dòng hoàn tiền 100% trong 15 ngày', 'còn dòng cũ');
+}
+
+console.log('\n— Khách tự bấm "đã thanh toán" KHÔNG được gửi hàng —');
+{
+  // Đây là lỗ nghiêm trọng nhất từng có trong hệ thống: cú bấm của khách từng
+  // đặt trạng thái 'daXacNhan' — đúng thứ bộ gửi hàng quét mỗi phút. Ai mở
+  // trang, chọn hàng, bấm "đã thanh toán" mà không chuyển đồng nào cũng nhận
+  // được sản phẩm. Mục thử này canh cho nó không mọc lại.
+  const { api, kho, thu } = dungSanKhau({
+    '-Nkkk': {
+      maDon: 'KHAJ23', trangThai: 'khachBao', daXacNhan: true, thanhTien: 99000,
+      sanPham: ['App Lightroom — 99.000₫'], maSanPham: ['sp1'],
+      email: 'khach@thu.test', zalo: '', dienThoai: '', taoLuc: 1757300000000
+    }
+  });
+  api.doGet({ parameter: { key: 'MAT-KHAU-DUNG' } });   // đánh thức, không có báo có nào
+  ok(kho.donhang['-Nkkk'].trangThai === 'khachBao', 'Đơn khách tự khai vẫn nằm yên', kho.donhang['-Nkkk'].trangThai);
+  ok(thu.length === 0, 'Và KHÔNG lá thư nào được gửi', JSON.stringify(thu.map((t) => t.toi)));
+
+  // Chỉ khi ngân hàng báo có đủ tiền thì hàng mới đi.
+  goi(api, tinNganHang('+', '99.000', 'LR21 KHAJ23'));
+  ok(kho.donhang['-Nkkk'].trangThai === 'daGui', 'Có báo có đủ tiền thì mới gửi', kho.donhang['-Nkkk'].trangThai);
+  ok(thu.some((t) => t.toi === 'khach@thu.test'), 'Lúc đó khách mới nhận được hàng', JSON.stringify(thu.map((t) => t.toi)));
+}
+
+console.log('\n— Thiếu thông tin liên hệ thì ẩn dòng, không in dòng trống —');
+{
+  const { api } = dungSanKhau(DON_MAU);
+  const don = Object.assign({ __ma: '-Naaa' }, DON_MAU['-Naaa'], { maNhanHang: 'ABCDEFGH23456789' });
+  const thu = api.soanThuGiaoHang(don).html;
+  ok(thu.indexOf('shop@vidu.com') !== -1, 'Có email khi Firebase có khai', 'thiếu');
 }
 
 console.log('\n===== ' + (hong.length ? 'CÓ ' + hong.length + ' MỤC HỎNG' : 'TẤT CẢ ' + dat + ' MỤC ĐỀU ĐẠT') + ' =====');
