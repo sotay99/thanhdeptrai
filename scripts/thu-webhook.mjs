@@ -262,6 +262,22 @@ console.log('\n— Mã đơn không có thật —');
   ok(thu.length === 1 && thu[0].toi === 'shop@thu.test', 'Và báo cho shop', JSON.stringify(thu.map((t) => t.toi)));
 }
 
+console.log('\n— Dấu phiên bản —');
+{
+  // Web App phục vụ theo PHIÊN BẢN ĐÃ TRIỂN KHAI, không phải mã mới nhất. Sửa
+  // mã rồi bấm Save là chưa đủ — /exec vẫn chạy bản đóng băng lúc Deploy, còn
+  // trigger theo giờ thì dùng bản mới. Đã có lần nửa hệ thống chạy bản mới,
+  // nửa kia bản cũ, và triệu chứng trông như một lỗi hoàn toàn khác. Dấu này
+  // đi kèm mọi câu trả lời để lần sau nhìn là biết, khỏi suy đoán.
+  const { api } = dungSanKhau(DON_MAU);
+  const ra = goi(api, tinNganHang('+', '99.000', 'LR21 WNAT7M'));
+  ok(typeof ra.ban === 'string' && ra.ban.length > 0,
+    'Mọi câu trả lời của /exec đều mang dấu phiên bản', JSON.stringify(ra));
+  const raSai = goi(api, 'gi do', 'MAT-KHAU-BAY');
+  ok(typeof raSai.ban === 'string' && raSai.ban.length > 0,
+    'Kể cả câu từ chối cũng mang dấu — để chẩn được khi bị chặn ở cửa', JSON.stringify(raSai));
+}
+
 console.log('\n— Gói dữ liệu méo —');
 {
   const { api } = dungSanKhau(DON_MAU);

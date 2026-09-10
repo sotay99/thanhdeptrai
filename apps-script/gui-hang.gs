@@ -46,6 +46,26 @@ var LINK_NHAN_HANG = 'https://thanhdeptrai.vn/sanpham';
 var TEN_SHOP = 'Shop Thànhđẹptrai.vn';
 var WEB_SHOP = 'thanhdeptrai.vn';
 
+/**
+ * DẤU PHIÊN BẢN — đọc kỹ, nó tồn tại vì một lỗi đã xảy ra thật.
+ *
+ * Web App của Apps Script phục vụ theo PHIÊN BẢN ĐÃ TRIỂN KHAI, không phải mã
+ * mới nhất. Sửa mã rồi bấm Save bao nhiêu lần cũng được — địa chỉ /exec vẫn
+ * chạy đúng đoạn mã bị đóng băng lúc bấm Deploy. Trong khi đó trigger chạy
+ * theo giờ LẠI dùng mã mới nhất. Kết quả: nửa hệ thống chạy bản mới, nửa kia
+ * chạy bản cũ, và triệu chứng bên ngoài trông như một lỗi hoàn toàn khác.
+ *
+ * Chuyện đã xảy ra: tiền về đúng, nội dung chuyển khoản đúng, mà script báo
+ * "không tìm thấy mã đơn" — vì bản đóng băng vẫn đang tìm tiền tố cũ.
+ *
+ * Dấu này đi kèm mọi câu trả lời của /exec và mọi lá thư báo, nên lần sau chỉ
+ * cần nhìn là biết bản nào đang chạy, không phải suy đoán.
+ *
+ * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
+ * Version: New version → Deploy.
+ */
+var PHIEN_BAN = '2026-09-10 · LR21';
+
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
 // trị sửa, nên đổi ở /admin là thư gửi khách đổi theo ngay, không phải dán lại
@@ -609,6 +629,7 @@ function kiemTraThietLap() {
             'M\u00e3 401: sai FIREBASE_SECRET. M\u00e3 404: sai FIREBASE_DB_URL (nh\u1edb k\u00e8m t\u00ean v\u00f9ng).' +
           '</div>') +
         '<h3>Kết quả kiểm tra</h3>' +
+        '<p style="color:#888;font-size:12px">Bản script: <b>' + thoatHtml(PHIEN_BAN) + '</b></p>' +
         '<ul>' +
           '<li>' + thoatHtml(noiDung) + '</li>' +
           '<li>Số email còn gửi được hôm nay: <b>' + conLai + '</b></li>' +
@@ -871,6 +892,7 @@ function xuLyBaoCo(e) {
 }
 
 function traLoiJSON(du) {
+  du.ban = PHIEN_BAN;   // nhìn là biết /exec đang chạy bản nào
   return ContentService.createTextOutput(JSON.stringify(du))
     .setMimeType(ContentService.MimeType.JSON);
 }
@@ -885,6 +907,8 @@ function baoShopBaoCoLa(noiDung, nguon, tien, vi) {
         '<li>Ngân hàng: <b>' + thoatHtml(nguon || '(không rõ)') + '</b></li>' +
         '<li>Số tiền script đọc được: <b>' + thoatHtml(tien ? dinhDangTien(tien) : 'không đọc được') + '</b></li>' +
       '</ul>' +
+      '<p style="color:#888;font-size:12px">Bản script đang chạy: ' +
+        thoatHtml(PHIEN_BAN) + '</p>' +
       '<p>Nguyên văn tin nhắn ngân hàng:</p>' +
       '<pre style="white-space:pre-wrap;word-break:break-word;padding:12px 14px;background:#f4f7fb;' +
         'border-left:3px solid #1473e6;border-radius:6px;font-size:13px;margin:0">' +
