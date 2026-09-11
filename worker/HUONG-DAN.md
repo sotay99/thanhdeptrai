@@ -42,12 +42,12 @@ Gõ đại khoảng 40–60 ký tự lẫn lộn chữ và số. Ví dụ kiểu
 Trong trình soạn mã, **xoá sạch** nội dung `worker.js` rồi dán toàn bộ nội dung
 tệp `worker/kho-worker.js` vào. Bấm **Deploy**.
 
-## Bước 5 — Khai bốn biến và một binding
+## Bước 5 — Khai năm biến và một binding
 
 Vào Worker vừa tạo → **Settings**.
 
-**Variables and Secrets** — thêm bốn mục. Ba mục đầu chọn kiểu **Secret** (che
-đi), mục cuối để **Text**:
+**Variables and Secrets** — thêm năm mục. Bốn mục đầu chọn kiểu **Secret** (che
+đi), mục `GOC_CHO_PHEP` để **Text**:
 
 | Tên | Kiểu | Giá trị |
 |---|---|---|
@@ -55,6 +55,7 @@ Vào Worker vừa tạo → **Settings**.
 | `FIREBASE_SECRET` | Secret | khoá lấy ở Bước 1 |
 | `KY_TOKEN` | Secret | chuỗi nghĩ ra ở Bước 2 |
 | `GOC_CHO_PHEP` | Text | xem bên dưới |
+| `DRIVE_API_KEY` | Secret | API key lấy ở mục "Đọc tên/mô tả video" bên dưới |
 
 `GOC_CHO_PHEP` là danh sách địa chỉ web được phép gọi vào, ngăn nhau bằng dấu
 phẩy. Khai cả trang thật lẫn bản xem trước:
@@ -123,6 +124,37 @@ Xong bước này là trang nhận hàng chạy thật.
 
 Vào `/admin` → **Tổng quan**. Dòng **Máy chủ kho (Worker)** phải chuyển sang
 **"Đã khai"** màu xanh.
+
+## Đọc tên/mô tả video — lấy DRIVE_API_KEY
+
+Nút "Xem trước link" ở /admin → Danh mục sản phẩm cần đọc tên và mô tả video
+từ Google Drive. Từng thử tự tải trang xem của Drive rồi bóc chữ ra đọc,
+nhưng Google chặn máy chủ tự động làm việc đó — nay đổi sang gọi đúng cổng
+chính thức của Google (Drive API), cần một API key.
+
+1. https://console.cloud.google.com → **chọn đúng dự án `thanhdeptraishop`**
+   ở góc trên (dự án này CHÍNH LÀ dự án Firebase, không phải dự án khác —
+   Google Cloud và Firebase dùng chung một danh sách dự án).
+2. Ô tìm kiếm trên cùng, gõ **"Google Drive API"** → bấm vào kết quả đầu tiên
+   → bấm **Enable** (nếu đã bật sẵn thì bỏ qua bước này).
+3. Menu bên trái: **APIs & Services → Credentials**.
+4. **+ Create Credentials → API key**. Một chuỗi ký tự hiện ra — chép nó lại.
+5. Bấm vào API key vừa tạo để đặt giới hạn cho nó (không bắt buộc nhưng nên
+   làm — khoá này chỉ được lộ trong biến môi trường của Worker, không lộ ra
+   web, song siết thêm vẫn hơn):
+   - Mục **API restrictions** → chọn **Restrict key** → tích đúng
+     **Google Drive API** → **Save**.
+   - Mục **Application restrictions**: để nguyên **None**. Kiểu giới hạn
+     "HTTP referrers" chỉ áp dụng cho lời gọi ĐI RA từ trình duyệt (kiểm tra
+     trang nào gọi tới) — Worker gọi từ máy chủ Cloudflare, không có "trang
+     web nào" để khai kiểu đó, khai vào là khoá luôn bị từ chối.
+6. Dán chuỗi API key vào biến `DRIVE_API_KEY` ở Bước 5 (Worker → Settings →
+   Variables and Secrets → kiểu **Secret**) → **Deploy** lại.
+
+**Video phải bật chia sẻ "Bất kỳ ai có đường liên kết"** thì Drive API mới
+đọc được tên/mô tả (đúng điều kiện đã ghi ở ô nhập link tại /admin) — tệp
+riêng tư thì API trả về "không tìm thấy tệp", đúng như dự tính, không phải
+lỗi cần sửa.
 
 ## Khi mã Worker được sửa (như đợt thêm "Xem trước link" ở /admin)
 

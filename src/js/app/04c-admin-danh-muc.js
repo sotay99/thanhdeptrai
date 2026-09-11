@@ -184,9 +184,8 @@
         .then(function(kq){
           if (!kq || !kq.duoc) {
             console.error('Không đọc được tên/mô tả video:', kq && kq.lyDo);
-            capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này' +
-              (kq && kq.lyDo ? ' (mã lỗi: ' + escapeHtml(kq.lyDo) + ')' : '') +
-              ' — video phía trên vẫn xem thử bình thường. Mở Console (F12) xem chi tiết nếu cần báo lại cho thợ.</span>');
+            capNhatDong('<span class="mo-ta-video-loi">' + escapeHtml(loiXemTruocVideo(kq && kq.lyDo)) +
+              ' Video phía trên vẫn xem thử bình thường.</span>');
             return;
           }
           const phan = [];
@@ -197,12 +196,33 @@
         })
         .catch(function(e){
           console.error('Lỗi khi gọi /video-xem-truoc:', e);
-          capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này (lỗi mạng hoặc CORS) ' +
-            '— video phía trên vẫn xem thử bình thường. Mở Console (F12) xem chi tiết nếu cần báo lại cho thợ.</span>');
+          capNhatDong('<span class="mo-ta-video-loi">' + escapeHtml(loiXemTruocVideo('loi-mang')) +
+            ' Video phía trên vẫn xem thử bình thường.</span>');
         });
     };
     if (state.mayChuKho) { chay(); return; }
     taiThongTinKho().then(chay);
+  }
+
+  // Đổi mã lỗi ngắn Worker trả về thành câu chỉ đúng việc cần làm, thay vì
+  // một mã lỗi khô khốc chủ shop không tự tra được.
+  function loiXemTruocVideo(lyDo){
+    if (lyDo === 'chua-khai-khoa-api') {
+      return 'Máy chủ kho chưa khai DRIVE_API_KEY (xem worker/HUONG-DAN.md).';
+    }
+    if (lyDo === 'khoa-api-khong-hop-le') {
+      return 'DRIVE_API_KEY sai hoặc dự án Google Cloud chưa bật "Google Drive API".';
+    }
+    if (lyDo === 'khong-tim-thay-tep') {
+      return 'Không tìm thấy tệp — kiểm tra lại link (phải là link TỆP video, không phải link thư mục) và đã bật chia sẻ "Bất kỳ ai có đường liên kết".';
+    }
+    if (lyDo === 'qua-han') {
+      return 'Google phản hồi quá chậm, đã bỏ qua sau 8 giây.';
+    }
+    if (lyDo === 'loi-mang') {
+      return 'Không gọi được tới máy chủ kho (lỗi mạng hoặc CORS).';
+    }
+    return 'Không đọc được tên/mô tả tự động lúc này.';
   }
 
   function veKhoiTep(sp, n){

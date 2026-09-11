@@ -41,20 +41,17 @@ function ghiDuong(duong, giaTri) {
   n[phan[phan.length - 1]] = giaTri;
 }
 
-// Trang xem của Drive, giả lập bốn ca: có đủ og:title/og:description, chỉ có
-// <title> (không og:description), thẻ meta viết content= TRƯỚC property=
-// (thứ tự thuộc tính khác — HTML thật của Google không cố định thứ tự này),
-// và một mã "chết" trả về lỗi.
-const TRANG_DRIVE_GIA = {
-  'coU1TieuDeVaMoTa000': '<html><head><meta property="og:title" content="Video hướng dẫn cài preset.mp4">' +
-    '<meta property="og:description" content="Video quay màn hình, 5 phút."></head><body></body></html>',
-  'chiCoTieuDeThoi00001': '<html><head><title>Bản ghi màn hình.mov - Google Drive</title></head><body></body></html>',
-  'thuTuThuocTinhNguoc01': '<html><head><meta content="Video quay tay.mp4" property="og:title"></head><body></body></html>'
+// Kết quả giả của Drive API v3 (files.get): một tệp có đủ tên + mô tả, một
+// tệp chỉ có tên (không mô tả), còn lại là các ca lỗi (403 khoá sai, tệp
+// không công khai → 404, máy chủ Google lỗi → 500).
+const TU_DRIVE_API = {
+  coU1TieuDeVaMoTa000: { name: 'Video hướng dẫn cài preset.mp4', description: 'Video quay màn hình, 5 phút.' },
+  chiCoTieuDeThoi00001: { name: 'Bản ghi màn hình.mov' }
 };
 
-// Đếm số lần Worker thật sự gọi ra drive.google.com — dùng để kiểm chứng
-// cache có tránh được lượt gọi thứ hai cho CÙNG một mã tệp hay không (đúng
-// ca sp6/sp7 dùng chung một link).
+// Đếm số lần Worker thật sự gọi ra Drive API — dùng để kiểm chứng cache có
+// tránh được lượt gọi thứ hai cho CÙNG một mã tệp hay không (đúng ca sp6/sp7
+// dùng chung một link).
 let SO_LAN_GOI_DRIVE = 0;
 
 // Giả lập Cache API của Cloudflare Worker (caches.default) — Node không có
@@ -74,13 +71,14 @@ globalThis.caches = {
 
 globalThis.fetch = async (url, tuyChon) => {
   const u = new URL(url);
-  if (u.hostname === 'drive.google.com') {
+  if (u.hostname === 'www.googleapis.com' && u.pathname.startsWith('/drive/v3/files/')) {
     SO_LAN_GOI_DRIVE++;
-    const id = (u.pathname.match(/\/file\/d\/([^/]+)\//) || [])[1];
+    if (u.searchParams.get('key') !== 'khoa-api-thu-nghiem') return new Response('{}', { status: 403 });
+    const id = decodeURIComponent(u.pathname.slice('/drive/v3/files/'.length));
     if (id === 'maChetMayChuLoi000000') return new Response('lỗi', { status: 500 });
-    const html = TRANG_DRIVE_GIA[id];
-    if (!html) return new Response('không có', { status: 404 });
-    return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html' } });
+    const dl = TU_DRIVE_API[id];
+    if (!dl) return new Response('{}', { status: 404 });
+    return new Response(JSON.stringify(dl), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
   const duong = u.pathname.replace(/^\//, '').replace(/\.json$/, '');
   if (!u.searchParams.get('auth')) return new Response('thiếu auth', { status: 401 });
@@ -106,6 +104,7 @@ const env = {
   FIREBASE_SECRET: 'bi-mat-thu',
   KY_TOKEN: 'chuoi-ky-that-dai-va-ngau-nhien-0123456789',
   GOC_CHO_PHEP: 'https://thanhdeptrai.vn, https://xemtruoc.web.app',
+  DRIVE_API_KEY: 'khoa-api-thu-nghiem',
   KHO: {
     async get(khoa) {
       if (!(khoa in NOI_DUNG_TEP)) return null;
@@ -282,25 +281,27 @@ const xemTruoc = (id) =>
 {
   const r = await xemTruoc('coU1TieuDeVaMoTa000');
   const j = await r.json();
-  ok(r.status === 200 && j.duoc === true, 'Có og:title/og:description thì đọc được', JSON.stringify(j));
-  ok(j.ten === 'Video hướng dẫn cài preset.mp4', 'Lấy đúng tên từ og:title', j.ten);
-  ok(j.moTa === 'Video quay màn hình, 5 phút.', 'Lấy đúng mô tả từ og:description', j.moTa);
+  ok(r.status === 200 && j.duoc === true, 'Có tên/mô tả thì đọc được qua Drive API', JSON.stringify(j));
+  ok(j.ten === 'Video hướng dẫn cài preset.mp4', 'Lấy đúng tên tệp', j.ten);
+  ok(j.moTa === 'Video quay màn hình, 5 phút.', 'Lấy đúng mô tả', j.moTa);
 }
 {
   const r = await xemTruoc('chiCoTieuDeThoi00001');
   const j = await r.json();
-  ok(j.duoc === true, 'Không có og:title thì lùi về thẻ <title>', JSON.stringify(j));
-  ok(j.ten === 'Bản ghi màn hình.mov', 'Bỏ đúng đuôi "- Google Drive" ở cuối tiêu đề', j.ten);
-  ok(j.moTa === '', 'Không có og:description thì để trống, không bịa', JSON.stringify(j.moTa));
+  ok(j.duoc === true, 'Tệp không có mô tả vẫn đọc được tên', JSON.stringify(j));
+  ok(j.ten === 'Bản ghi màn hình.mov', 'Lấy đúng tên tệp', j.ten);
+  ok(j.moTa === '', 'Không có mô tả thì để trống, không bịa', JSON.stringify(j.moTa));
 }
 {
-  const r = await xemTruoc('thuTuThuocTinhNguoc01');
+  const r = await xemTruoc('chuaBatChiaSeCongKhai01');
   const j = await r.json();
-  ok(j.ten === 'Video quay tay.mp4', 'Đọc được cả khi content= đứng TRƯỚC property= trong thẻ meta', JSON.stringify(j));
+  ok(j.duoc === false && j.lyDo === 'khong-tim-thay-tep',
+    'Tệp chưa bật chia sẻ công khai (hoặc mã sai) thì báo rõ, không vỡ', JSON.stringify(j));
 }
 {
   const r = await xemTruoc('maChetMayChuLoi000000');
-  ok(r.status === 502, 'Drive lỗi thì báo lỗi máy chủ, không vỡ', r.status);
+  const j = await r.json();
+  ok(r.status === 502 && j.lyDo === 'drive-tu-choi', 'Drive lỗi thì báo lỗi máy chủ, không vỡ', JSON.stringify(j));
 }
 {
   const r = await xemTruoc('../../../etc/passwd');
@@ -318,18 +319,28 @@ const xemTruoc = (id) =>
   ok(j.duoc === true, 'Tham số lạ bị bỏ qua, vẫn chỉ đọc đúng mã Drive', JSON.stringify(j));
 }
 {
+  // Thiếu DRIVE_API_KEY (chưa khai ở Cloudflare) thì báo rõ lý do, không thử
+  // gọi ra ngoài với khoá rỗng.
+  const truoc = SO_LAN_GOI_DRIVE;
+  const envThieuKhoa = Object.assign({}, env, { DRIVE_API_KEY: '' });
+  const r = await worker.fetch(new Request(GOC + '/video-xem-truoc?id=coU1TieuDeVaMoTa000',
+    { headers: { Origin: 'https://thanhdeptrai.vn' } }), envThieuKhoa);
+  const j = await r.json();
+  ok(j.duoc === false && j.lyDo === 'chua-khai-khoa-api', 'Chưa khai DRIVE_API_KEY thì báo rõ', JSON.stringify(j));
+  ok(SO_LAN_GOI_DRIVE === truoc, 'Và không gọi ra Google với khoá rỗng', SO_LAN_GOI_DRIVE - truoc);
+}
+{
   // sp6 và sp7 hay dán CHUNG một link — hỏi lần đầu xong phải nhớ, lần thứ
-  // hai đọc thẳng trong cache, không gọi ra Google lần nữa (đỡ bị Google coi
-  // là hỏi dồn dập cùng một tệp, và trả lời tức thì thay vì đợi Drive).
+  // hai đọc thẳng trong cache, không gọi Drive API lần nữa.
   const idRieng = 'capNhoCacheRieng0001';
-  TRANG_DRIVE_GIA[idRieng] = '<html><head><meta property="og:title" content="Video dùng chung.mp4"></head></html>';
+  TU_DRIVE_API[idRieng] = { name: 'Video dùng chung.mp4' };
   const truoc = SO_LAN_GOI_DRIVE;
   const j1 = await (await xemTruoc(idRieng)).json();
   ok(j1.ten === 'Video dùng chung.mp4', 'Lần đầu (sp6) đọc đúng tên', JSON.stringify(j1));
-  ok(SO_LAN_GOI_DRIVE === truoc + 1, 'Lần đầu có gọi ra Google đúng một lần', SO_LAN_GOI_DRIVE - truoc);
+  ok(SO_LAN_GOI_DRIVE === truoc + 1, 'Lần đầu có gọi Drive API đúng một lần', SO_LAN_GOI_DRIVE - truoc);
   const j2 = await (await xemTruoc(idRieng)).json();
   ok(j2.ten === 'Video dùng chung.mp4', 'Lần hai (sp7, CÙNG link) vẫn đọc đúng tên', JSON.stringify(j2));
-  ok(SO_LAN_GOI_DRIVE === truoc + 1, 'Lần hai đọc từ cache, KHÔNG gọi ra Google lần hai', SO_LAN_GOI_DRIVE - truoc);
+  ok(SO_LAN_GOI_DRIVE === truoc + 1, 'Lần hai đọc từ cache, KHÔNG gọi Drive API lần hai', SO_LAN_GOI_DRIVE - truoc);
 }
 
 if (hong) {
