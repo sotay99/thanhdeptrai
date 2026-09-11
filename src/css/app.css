@@ -1821,25 +1821,38 @@
 /* Mũi tên nhắc lướt xuống — bật giữa màn hình mỗi lần mở bảng hướng dẫn, để
    khách biết còn nội dung bên dưới. Đứng im rồi trượt xuống biến mất, lặp
    đúng hai vòng rồi tự dọn khỏi trang (xem hienMuiTenTruot() ở
-   03b-trang-san-pham.js). Không cản bấm gì cả. */
+   03b-trang-san-pham.js). Không cản bấm gì cả.
+   Nền tròn màu xanh đặc + viền trắng mờ + bóng đậm để LUÔN nổi rõ, bất kể
+   đang đứng trên nền video, ảnh hay chữ — không phụ thuộc màu nền bên dưới. */
 .mui-ten-truot {
   position: fixed;
-  top: 46%;
+  top: 44%;
   left: 50%;
-  width: 46px;
-  height: 46px;
-  margin: -23px 0 0 -23px;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  border-radius: 50%;
+  background: var(--xanh-dam);
+  border: 3px solid rgba(255, 255, 255, .9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .6), 0 0 0 6px rgba(20, 115, 230, .28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 490;
   pointer-events: none;
-  border-right: 5px solid #fff;
-  border-bottom: 5px solid #fff;
-  transform: translateY(0) rotate(45deg);
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .5));
   opacity: 0;
   animation: muiTenTruotXuong 1.3s ease-in 2 forwards;
 }
+.mui-ten-truot::after {
+  content: '↓';
+  color: #fff;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .4);
+}
 @keyframes muiTenTruotXuong {
-  0%   { opacity: 1; transform: translateY(0) rotate(45deg); }
-  38%  { opacity: 1; transform: translateY(0) rotate(45deg); }
-  100% { opacity: 0; transform: translateY(60px) rotate(45deg); }
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  38%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(70px) scale(.85); }
 }

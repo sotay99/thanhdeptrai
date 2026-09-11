@@ -36,6 +36,10 @@
  *   FIREBASE_SECRET   Database secret — Worker đọc/ghi vượt qua rules
  *   KY_TOKEN          Chuỗi ngẫu nhiên dài, dùng để ký token tải
  *   GOC_CHO_PHEP      Các địa chỉ web được gọi, ngăn cách bằng dấu phẩy
+ *   DRIVE_API_KEY     API key của Google Cloud, đã bật "Google Drive API" —
+ *                     dùng để đọc tên/mô tả video cho bảng "Xem trước link"
+ *                     ở /admin. Không có biến này thì bảng đó chỉ báo chưa
+ *                     đọc được, mọi thứ khác của web vẫn chạy bình thường.
  *
  * BINDING CẦN KHAI (Settings → Bindings → R2 bucket):
  *   KHO  →  thanhdeptrai-sanpham
@@ -69,14 +73,14 @@ function phutSong(maSanPham) {
 const CHU_MA_THIET_BI = /^[A-Za-z0-9_-]{8,64}$/;
 
 export default {
-  async fetch(yeuCau, env) {
+  async fetch(yeuCau, env, ctx) {
     const dia = new URL(yeuCau.url);
 
     if (yeuCau.method === 'OPTIONS') return traLoiOptions(yeuCau, env);
     if (dia.pathname === '/don' && yeuCau.method === 'POST') return donCuaToi(yeuCau, env);
     if (dia.pathname === '/cap-phat' && yeuCau.method === 'POST') return capPhat(yeuCau, env);
     if (dia.pathname === '/tai' && yeuCau.method === 'GET') return rotTep(dia, env);
-    if (dia.pathname === '/video-xem-truoc' && yeuCau.method === 'GET') return videoXemTruoc(dia, yeuCau, env);
+    if (dia.pathname === '/video-xem-truoc' && yeuCau.method === 'GET') return videoXemTruoc(dia, yeuCau, env, ctx);
     if (dia.pathname === '/' || dia.pathname === '/khoe') {
       return new Response('Máy chủ cấp phát đang chạy.', { status: 200 });
     }
@@ -360,81 +364,81 @@ async function rotTep(dia, env) {
 // Chủ shop dán link video hướng dẫn (Google Drive) ở /admin và bấm "Xem
 // trước link". Trang không tự fetch() được trang xem của Drive (Drive không
 // mở CORS cho việc đó), nên Worker này thay mặt hỏi hộ RỒI CHỈ MỘT MÌNH
-// Worker được đi ra ngoài — không phải một trạm trung chuyển đọc trang bất
-// kỳ: máy chủ (drive.google.com) và đường dẫn (/file/d/<mã>/view) đều đóng
-// cứng trong mã, KHÔNG nhận URL từ người gọi. Người gọi chỉ đưa được đúng
+// Worker được đi ra ngoài.
+//
+// TỪNG thử tự tải trang .../view rồi bóc thẻ <meta og:title> ra đọc — bỏ
+// rồi: Google chặn/giới hạn máy chủ tự động (như Cloudflare Worker) đọc
+// trang đó theo dải địa chỉ IP, đổi User-Agent giả làm trình duyệt cũng
+// không qua được, lúc được lúc không rất khó chịu. Giờ dùng đúng cổng chính
+// thức của Google — Drive API v3 (files.get) — đọc metadata một tệp ĐÃ bật
+// chia sẻ công khai, chỉ cần một API key (không cần đăng nhập/OAuth). Máy
+// chủ và đường dẫn API đều đóng cứng trong mã; người gọi chỉ đưa được đúng
 // một mã tệp Drive (chữ, số, gạch ngang/dưới, 10–64 ký tự) — không có chỗ
-// nào để nhét một địa chỉ khác vào. Chỉ đọc og:title/og:description rồi bỏ,
-// không lưu, không ghi Firebase.
+// nào để nhét một địa chỉ khác vào. Chỉ đọc tên/mô tả rồi bỏ, không lưu,
+// không ghi Firebase.
 const CHU_MA_DRIVE = /^[A-Za-z0-9_-]{10,64}$/;
 
-async function videoXemTruoc(dia, yeuCau, env) {
+// Khoá cache KHÔNG PHẢI địa chỉ gọi ra ngoài — chỉ là một chuỗi để Cache API
+// phân biệt kết quả của mã tệp nào. Việc này giải quyết đúng ca sp6/sp7 dùng
+// CHUNG một link: hỏi lần đầu (sp6) xong nhớ sáu tiếng, lần sau (sp7) đọc lại
+// ngay trong cache, không hỏi Google lần hai.
+function khoaCacheVideo(id) {
+  return new Request('https://cache-noi-bo.invalid/video-xem-truoc/' + id);
+}
+
+async function videoXemTruoc(dia, yeuCau, env, ctx) {
   const id = dia.searchParams.get('id') || '';
   if (!CHU_MA_DRIVE.test(id)) {
     return traJSON({ duoc: false, lyDo: 'ma-khong-hop-le' }, yeuCau, env, 400);
   }
+  if (!env.DRIVE_API_KEY) {
+    return traJSON({ duoc: false, lyDo: 'chua-khai-khoa-api' }, yeuCau, env, 500);
+  }
+
+  const cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
+  const khoa = khoaCacheVideo(id);
+  if (cache) {
+    const daCo = await cache.match(khoa);
+    if (daCo) return traJSON(await daCo.json(), yeuCau, env);
+  }
+
   try {
-    const tra = await fetch('https://drive.google.com/file/d/' + id + '/view', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (xem-truoc-video-worker)' }
-    });
-    if (!tra.ok) return traJSON({ duoc: false, lyDo: 'drive-tu-choi' }, yeuCau, env, 502);
-    // Chặn tải cả trang khổng lồ — trang xem của Drive bình thường chỉ vài
-    // chục KB, thẻ meta luôn nằm ở đầu tài liệu.
-    const trietRong = tra.body ? tra.body.getReader() : null;
-    let html = '';
-    if (trietRong) {
-      const giaiMa = new TextDecoder();
-      let daDoc = 0;
-      const GIOI_HAN = 300 * 1024;
-      while (daDoc < GIOI_HAN) {
-        const { value, done } = await trietRong.read();
-        if (done) break;
-        html += giaiMa.decode(value, { stream: true });
-        daDoc += value.length;
-      }
-      trietRong.cancel().catch(function () {});
-    } else {
-      html = await tra.text();
+    const url = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) +
+      '?fields=' + encodeURIComponent('name,description') +
+      '&supportsAllDrives=true&key=' + encodeURIComponent(env.DRIVE_API_KEY);
+    const dieuKhien = new AbortController();
+    const hetGio = setTimeout(function () { dieuKhien.abort(); }, 8000);
+    let tra;
+    try {
+      tra = await fetch(url, { signal: dieuKhien.signal });
+    } finally {
+      clearTimeout(hetGio);
     }
-    const ten = layMeta(html, 'og:title') || layTieuDe(html);
-    const moTa = layMeta(html, 'og:description');
-    return traJSON({
+    if (!tra.ok) {
+      // 404: tệp chưa bật "Bất kỳ ai có đường liên kết", hoặc mã tệp sai.
+      // 403: API key sai, hoặc chưa bật "Google Drive API" cho dự án đó.
+      const lyDo = tra.status === 404 ? 'khong-tim-thay-tep'
+        : (tra.status === 403 ? 'khoa-api-khong-hop-le' : 'drive-tu-choi');
+      return traJSON({ duoc: false, lyDo: lyDo }, yeuCau, env, 502);
+    }
+    const dl = await tra.json();
+    const ketQua = {
       duoc: true,
-      ten: donSachTenDrive(ten),
-      moTa: moTa || ''
-    }, yeuCau, env);
+      ten: String(dl.name || ''),
+      moTa: String(dl.description || '')
+    };
+    if (cache) {
+      const luuCache = cache.put(khoa, new Response(JSON.stringify(ketQua), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=21600' }
+      }));
+      if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(luuCache); else await luuCache;
+    }
+    return traJSON(ketQua, yeuCau, env);
   } catch (e) {
     console.error('Lỗi khi xem trước video:', e && e.message);
-    return traJSON({ duoc: false, lyDo: 'loi-may-chu' }, yeuCau, env, 502);
+    const lyDo = e && e.name === 'AbortError' ? 'qua-han' : 'loi-may-chu';
+    return traJSON({ duoc: false, lyDo: lyDo }, yeuCau, env, 502);
   }
-}
-
-// Tìm đúng thẻ <meta> có property/name khớp TEN trước, RỒI mới lấy content=
-// từ trong đúng thẻ đó — không giả định content= luôn đứng SAU property=
-// trong mã HTML thật của Google (có lúc content= đứng trước).
-function layMeta(html, ten) {
-  const reThe = new RegExp('<meta\\b[^>]*(?:property|name)=["\']' + ten + '["\'][^>]*>', 'i');
-  const the = html.match(reThe);
-  if (!the) return '';
-  const noiDung = the[0].match(/content=["\']([^"\']*)["\']/i);
-  return noiDung ? giaiMaHTML(noiDung[1]) : '';
-}
-
-function layTieuDe(html) {
-  const m = html.match(/<title>([^<]*)<\/title>/i);
-  return m ? giaiMaHTML(m[1]) : '';
-}
-
-function giaiMaHTML(chuoi) {
-  return String(chuoi)
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
-}
-
-// Trang Drive trả tiêu đề kiểu "Tên tệp.mp4 - Google Drive" — bỏ đuôi đó đi
-// cho gọn khi lấy từ <title> (og:title thường đã sạch sẵn).
-function donSachTenDrive(ten) {
-  return String(ten || '').replace(/\s*-\s*Google Drive\s*$/i, '').trim();
 }
 
 function tenTepGon(duong) {
