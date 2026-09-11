@@ -429,9 +429,18 @@
         '" data-khung-video="' + escapeHtml(id) + '">' +
         '<iframe src="' + escapeHtml(src) + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"' +
           ' title="Video hướng dẫn"></iframe>' +
+        veNutPlayTo() +
       '</div>' +
       '<button type="button" class="nut nut-nho nut-vien nut-video-to" data-hanh-dong="video-toan-man-hinh"' +
         ' data-khung="' + escapeHtml(id) + '">⛶ Xem toàn màn hình</button>';
+  }
+
+  // Chỉ để MẮT NHÌN THẤY đây là video bấm được — trình phát thật của Drive
+  // nằm ngay dưới, tự lo việc play/tạm dừng. Bấm vào nút này chỉ ẩn nó đi để
+  // lộ nút play thật của Drive bên dưới (không có cách nào bấm hộ được vào
+  // trong iframe khác gốc), nên khách bấm thêm một cái nữa là video chạy.
+  function veNutPlayTo(){
+    return '<div class="nut-play-to" data-nut-play aria-hidden="true"></div>';
   }
 
   function moModalHuongDan(maSP){
@@ -444,8 +453,25 @@
       tieuDe: 'Hướng dẫn sử dụng',
       than: '<div class="noi-dung-huong-dan">' + dung(dm) + '</div>',
       day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>',
-      khiVe: function(){ initKhungVideo(); }
+      khiVe: function(){ initKhungVideo(); hienMuiTenTruot(); }
     });
+  }
+
+  // ---------------------------------------- MŨI TÊN NHẮC LƯỚT XUỐNG
+  //
+  // Mở bảng hướng dẫn là hiện chữ dài, khách hay tưởng đã hết bài rồi đóng
+  // bảng luôn. Mũi tên bật ra giữa màn hình, đứng im rồi trượt xuống biến
+  // mất — lặp đúng hai lần rồi thôi hẳn, không làm phiền thêm.
+  function hienMuiTenTruot(){
+    const cu = document.querySelector('.mui-ten-truot');
+    if (cu) cu.remove();
+    const el = document.createElement('div');
+    el.className = 'mui-ten-truot';
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+    const don = function(){ if (el.parentNode) el.parentNode.removeChild(el); };
+    el.addEventListener('animationend', don);
+    window.setTimeout(don, 3500);
   }
 
   function videoToanManHinh(khung){
@@ -495,6 +521,10 @@
         new ResizeObserver(function(){ ganTyLeKhungVideo(khung); }).observe(khung);
       } else {
         window.addEventListener('resize', function(){ ganTyLeKhungVideo(khung); });
+      }
+      const nutPlay = khung.querySelector('[data-nut-play]');
+      if (nutPlay) {
+        nutPlay.addEventListener('click', function(){ nutPlay.classList.add('da-an'); }, { once: true });
       }
     }
   }

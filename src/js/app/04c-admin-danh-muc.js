@@ -157,7 +157,8 @@
     return '' +
       '<div class="xem-truoc-video">' +
         '<div class="khung-video video-ngang"><iframe src="' + escapeHtml(src) + '" allow="autoplay"' +
-          ' loading="lazy" title="Xem trước video"></iframe></div>' +
+          ' loading="lazy" title="Xem trước video"></iframe>' +
+          '<div class="nut-play-to" data-nut-play aria-hidden="true"></div></div>' +
         '<p class="mo-ta-video-xem-truoc" data-mo-ta-video="' + escapeHtml(id) + '">Đang tải tên và mô tả video…</p>' +
         '<p class="ghi-chu-xem-truoc">Đúng những gì khách sẽ thấy: ảnh đại diện, tên tệp và trình phát ' +
           'của Google Drive. Không phát được thì tệp chưa bật đúng quyền chia sẻ.</p>' +
@@ -182,8 +183,10 @@
         .then(function(r){ return r.json(); })
         .then(function(kq){
           if (!kq || !kq.duoc) {
-            capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này — video phía trên ' +
-              'vẫn xem thử bình thường.</span>');
+            console.error('Không đọc được tên/mô tả video:', kq && kq.lyDo);
+            capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này' +
+              (kq && kq.lyDo ? ' (mã lỗi: ' + escapeHtml(kq.lyDo) + ')' : '') +
+              ' — video phía trên vẫn xem thử bình thường. Mở Console (F12) xem chi tiết nếu cần báo lại cho thợ.</span>');
             return;
           }
           const phan = [];
@@ -192,9 +195,10 @@
           capNhatDong(phan.length ? phan.join('<br>') :
             '<span class="mo-ta-video-loi">Tệp này chưa đặt tên hay mô tả riêng trên Drive.</span>');
         })
-        .catch(function(){
-          capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này — video phía trên ' +
-            'vẫn xem thử bình thường.</span>');
+        .catch(function(e){
+          console.error('Lỗi khi gọi /video-xem-truoc:', e);
+          capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này (lỗi mạng hoặc CORS) ' +
+            '— video phía trên vẫn xem thử bình thường. Mở Console (F12) xem chi tiết nếu cần báo lại cho thợ.</span>');
         });
     };
     if (state.mayChuKho) { chay(); return; }

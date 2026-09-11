@@ -41,12 +41,15 @@ function ghiDuong(duong, giaTri) {
   n[phan[phan.length - 1]] = giaTri;
 }
 
-// Trang xem của Drive, giả lập ba ca: có đủ og:title/og:description, chỉ có
-// <title> (không og:description), và một mã "chết" trả về lỗi.
+// Trang xem của Drive, giả lập bốn ca: có đủ og:title/og:description, chỉ có
+// <title> (không og:description), thẻ meta viết content= TRƯỚC property=
+// (thứ tự thuộc tính khác — HTML thật của Google không cố định thứ tự này),
+// và một mã "chết" trả về lỗi.
 const TRANG_DRIVE_GIA = {
   'coU1TieuDeVaMoTa000': '<html><head><meta property="og:title" content="Video hướng dẫn cài preset.mp4">' +
     '<meta property="og:description" content="Video quay màn hình, 5 phút."></head><body></body></html>',
-  'chiCoTieuDeThoi00001': '<html><head><title>Bản ghi màn hình.mov - Google Drive</title></head><body></body></html>'
+  'chiCoTieuDeThoi00001': '<html><head><title>Bản ghi màn hình.mov - Google Drive</title></head><body></body></html>',
+  'thuTuThuocTinhNguoc01': '<html><head><meta content="Video quay tay.mp4" property="og:title"></head><body></body></html>'
 };
 
 globalThis.fetch = async (url, tuyChon) => {
@@ -268,6 +271,11 @@ const xemTruoc = (id) =>
   ok(j.duoc === true, 'Không có og:title thì lùi về thẻ <title>', JSON.stringify(j));
   ok(j.ten === 'Bản ghi màn hình.mov', 'Bỏ đúng đuôi "- Google Drive" ở cuối tiêu đề', j.ten);
   ok(j.moTa === '', 'Không có og:description thì để trống, không bịa', JSON.stringify(j.moTa));
+}
+{
+  const r = await xemTruoc('thuTuThuocTinhNguoc01');
+  const j = await r.json();
+  ok(j.ten === 'Video quay tay.mp4', 'Đọc được cả khi content= đứng TRƯỚC property= trong thẻ meta', JSON.stringify(j));
 }
 {
   const r = await xemTruoc('maChetMayChuLoi000000');

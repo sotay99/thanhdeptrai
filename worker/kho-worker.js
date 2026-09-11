@@ -409,11 +409,15 @@ async function videoXemTruoc(dia, yeuCau, env) {
   }
 }
 
+// Tìm đúng thẻ <meta> có property/name khớp TEN trước, RỒI mới lấy content=
+// từ trong đúng thẻ đó — không giả định content= luôn đứng SAU property=
+// trong mã HTML thật của Google (có lúc content= đứng trước).
 function layMeta(html, ten) {
-  const re = new RegExp(
-    '<meta[^>]+(?:property|name)=["\']' + ten + '["\'][^>]+content=["\']([^"\']*)["\']', 'i');
-  const m = html.match(re);
-  return m ? giaiMaHTML(m[1]) : '';
+  const reThe = new RegExp('<meta\\b[^>]*(?:property|name)=["\']' + ten + '["\'][^>]*>', 'i');
+  const the = html.match(reThe);
+  if (!the) return '';
+  const noiDung = the[0].match(/content=["\']([^"\']*)["\']/i);
+  return noiDung ? giaiMaHTML(noiDung[1]) : '';
 }
 
 function layTieuDe(html) {
