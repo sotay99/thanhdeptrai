@@ -1357,12 +1357,115 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 
   // Thẻ đơn phải hiện ĐỦ năm kênh liên lạc. Thiếu một dòng là chủ shop tưởng
   // khách không để lại gì và bỏ mặc họ.
-  ["'Email', don.email", "'Zalo', don.zalo", "'Điện thoại', don.dienThoai",
-   "'WhatsApp', don.whatsapp", "'Telegram', don.telegram"].forEach((d) => {
-    if (banNoi.indexOf("[" + d + "]") === -1) {
+  ["don.email", "don.zalo", "don.dienThoai", "don.whatsapp", "don.telegram"].forEach((d) => {
+    if (!new RegExp("'[^']+',\\s+" + d.replace(".", "\\.")).test(banNoi)) {
       fail(`Thẻ đơn ở trang quản trị thiếu dòng ${d}.`);
     }
   });
+
+  // Nút mở thẳng cuộc trò chuyện. Điện thoại KHÔNG có — một con số trần không
+  // dẫn tới ứng dụng nào cả, dựng nút ở đó chỉ tổ bấm vào rồi báo lỗi.
+  {
+    const than = banNoi.match(/const lienLac = \[[\s\S]*?khong-lien-lac/);
+    if (!than) fail("Không tìm thấy khối liên lạc trên thẻ đơn.");
+    else {
+      const dong = than[0].match(/\[[^\]]*don\.dienThoai[^\]]*\]/);
+      if (!dong || !/^\[\s*null\s*,/.test(dong[0])) {
+        fail("Dòng Điện thoại KHÔNG được có nút Truy cập Link.");
+      }
+      ["zalo", "whatsapp", "telegram", "email"].forEach((kieu) => {
+        if (!new RegExp("'" + kieu + "'\\s*,").test(than[0])) {
+          fail(`Dòng ${kieu} thiếu kiểu để dựng nút Truy cập Link.`);
+        }
+      });
+    }
+    [
+      [/function\s+so84\s*\(/, "hàm đổi số sang dạng 84…"],
+      [/function\s+duongDanKenh\s*\(/, "hàm dựng đường dẫn theo từng ứng dụng"],
+      [/'https:\/\/zalo\.me\/'\s*\+\s*s/, "đường dẫn Zalo"],
+      [/'https:\/\/wa\.me\/'\s*\+\s*s/, "đường dẫn WhatsApp"],
+      [/'https:\/\/t\.me\/\+'\s*\+\s*s/, "đường dẫn Telegram"],
+      [/'mailto:'\s*\+\s*e/, "đường dẫn email"],
+      [/>Link hỏng</, "chữ báo số gõ sai, thay cho nút bấm vào chỉ tổ báo lỗi"],
+      [/Truy cập Link</, "tên nút Truy cập Link"],
+    ].forEach(([mau, ten]) => {
+      if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+    });
+  }
+
+  // Đơn phải xếp mới nhất lên đầu Ở MỌI NHÓM, và xếp tường minh theo taoLuc
+  // chứ không phó mặc thứ tự Firebase trả về.
+  {
+    const than = banNoi.match(/function\s+taiDanhSachDon\s*\([\s\S]*?\n  \}/);
+    if (!than) fail("Thiếu hàm taiDanhSachDon.");
+    else if (!/ds\.sort\(/.test(than[0]) || !/Number\(a\.taoLuc\)/.test(than[0])) {
+      fail("Danh sách đơn phải được xếp tường minh theo taoLuc, mới nhất lên đầu.");
+    }
+  }
+
+  // ------------------------------------------------------ MẪU TIN NHẮN GỬI TAY
+  //
+  // Hai bản — một ở trình duyệt, một ở Apps Script — phải nói cùng một chuyện.
+  // Trình duyệt không gọi được Apps Script nên buộc phải viết lại; chỗ này canh
+  // những câu quan trọng có mặt ở CẢ HAI nơi, để chúng không trôi xa nhau.
+  {
+    const gsMau = doc("apps-script/gui-hang.gs");
+    [
+      'shop đã nhận được thanh toán đơn',
+      'Đây là đường dẫn nhận sản phẩm của riêng bạn',
+      'không phải nhập mã nào cả',
+      'Xin đừng chia sẻ đường dẫn này cho người khác',
+      'Cảm ơn bạn đã tin tưởng!',
+    ].forEach((cau) => {
+      const oWeb = banNoi.replace(/\s+/g, " ").indexOf(cau) !== -1;
+      const oGs = gsMau.replace(/\s+/g, " ").indexOf(cau) !== -1;
+      if (!oWeb || !oGs) {
+        fail(`Mẩu tin Zalo lệch nhau: câu “${cau}” ${oWeb ? "" : "thiếu ở trang quản trị"}` +
+          `${!oWeb && !oGs ? " và " : ""}${oGs ? "" : "thiếu ở Apps Script"}.`);
+      }
+    });
+    if (banNoi.indexOf('Thanhdeptrai.vn cam on ban! Link san pham rieng: ') === -1 ||
+        gsMau.indexOf('Thanhdeptrai.vn cam on ban! Link san pham rieng: ') === -1) {
+      fail("Mẩu tin SMS ở trang quản trị và ở Apps Script phải giống hệt nhau.");
+    }
+    [
+      [/function\s+mauTinZalo\s*\(/, "mẫu tin Zalo ở trang quản trị"],
+      [/function\s+mauTinSMS\s*\(/, "mẫu tin SMS ở trang quản trị"],
+      [/than\.replace\(\/\\n\/g, '\\n\\n'\)/, "mẫu Zalo nhân đôi dấu xuống dòng"],
+      [/CHƯA CÓ MÃ SẢN PHẨM/, "lời báo khi đơn chưa có mã, thay vì in ra một dòng cụt"],
+      [/data-hanh-dong="admin-don-mau-tin"/, "nút Xem mẫu tin nhắn trên thẻ đơn"],
+      [/Dùng được cho cả WhatsApp và Telegram/, "ghi chú mẩu Zalo dùng chung cho ba ứng dụng"],
+    ].forEach(([mau, ten]) => {
+      if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+    });
+  }
+
+  // ------------------------------- PHÊ DUYỆT ĐÃ GỬI BẰNG KÊNH KHÁC
+  {
+    const than = banNoi.match(/function\s+veNutPheDuyet\s*\([\s\S]*?\n  \}/);
+    if (!than) {
+      fail("Thiếu nút Phê duyệt là đã gửi link sản phẩm.");
+    } else {
+      if (!/!don\.maNhanHang/.test(than[0])) {
+        fail("Nút phê duyệt phải bị khoá khi đơn chưa có mã nhận hàng.");
+      }
+      if (!/dangGui\[don\.khoa\] === 'cho'/.test(than[0])) {
+        fail("Nút phê duyệt phải bị khoá khi đang trong lượt gửi email.");
+      }
+    }
+    const lam = banNoi.match(/function\s+adminDonPheDuyet\s*\([\s\S]*?\n  \}/);
+    if (!lam) fail("Thiếu hàm adminDonPheDuyet.");
+    else {
+      if (/emailGuiLuc/.test(lam[0])) {
+        fail("Phê duyệt tay KHÔNG được ghi emailGuiLuc — không lá thư nào bay đi cả.");
+      }
+      if (!/window\.confirm\(/.test(lam[0])) fail("Nút phê duyệt phải hỏi lại.");
+    }
+    // Nút "Đánh dấu đã gửi" chung chung phải biến mất — nó không có chốt gác nào.
+    if (/'daGui', 'Đánh dấu đã gửi'/.test(banNoi)) {
+      fail("Nút 'Đánh dấu đã gửi' cũ phải bị thay bằng nút phê duyệt có chốt gác.");
+    }
+  }
 
   // Xoá đơn không lùi được, nên phải hỏi lại và phải nói rõ mất những gì.
   {
@@ -1472,6 +1575,81 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
       fail(`Trang quản trị thiếu ô '${t}' trong mục Liên hệ và mạng xã hội.`);
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// 25) HƯỚNG DẪN SỬ DỤNG SẢN PHẨM — nút, nội dung, và video Google Drive.
+//
+//     Năm sản phẩm có tệp thật (sp1, sp2, sp3, sp6, sp7) phải có nút "Xem
+//     hướng dẫn sử dụng" NGAY TRÊN danh sách tệp. Bốn trong số đó (sp2, sp3,
+//     sp6, sp7) có video, và link video là DỮ LIỆU của chủ shop (khai ở
+//     /admin, đọc từ Firebase) — TUYỆT ĐỐI không phải một link Drive viết
+//     chết trong mã nguồn.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/const\s+SP_CO_HUONG_DAN\s*=\s*\{\s*sp1:\s*true,\s*sp2:\s*true,\s*sp3:\s*true,\s*sp6:\s*true,\s*sp7:\s*true\s*\}/,
+      "danh sách năm sản phẩm có bảng hướng dẫn sử dụng"],
+    [/function\s+veNutHuongDan\s*\(/, "hàm dựng nút Xem hướng dẫn sử dụng"],
+    [/data-hanh-dong="xem-huong-dan"/, "nút Xem hướng dẫn sử dụng trên bảng nhận hàng"],
+    [/function\s+moModalHuongDan\s*\(/, "hàm mở bảng hướng dẫn sử dụng"],
+    [/function\s+idDriveTuLink\s*\(/, "hàm rút mã tệp Google Drive từ đường dẫn"],
+    [/function\s+veKhungVideo\s*\(/, "hàm dựng khung video Google Drive cho khách"],
+    [/drive\.google\.com\/file\/d\/'\s*\+\s*id\s*\+\s*'\/preview'/, "nhúng đúng iframe /preview của Google Drive"],
+    [/const\s+HUONG_DAN_SU_DUNG\s*=\s*\{/, "bảng nội dung hướng dẫn theo từng sản phẩm"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Nút phải đứng TRÊN danh sách tệp — khách đọc hướng dẫn TRƯỚC khi tải, chứ
+  // không phải tải xong rồi mới biết cách cài.
+  {
+    const than = banNoi.match(/function\s+veThanNhanHang\s*\([\s\S]*?\n  \}/);
+    if (than && than[0].indexOf("veNutHuongDan(sp.ma)") > than[0].indexOf("danh-sach-tep")) {
+      fail("Nút Xem hướng dẫn sử dụng phải nằm TRÊN danh sách tệp, không phải dưới.");
+    }
+  }
+
+  // sp1 là hướng dẫn cài APK bằng ảnh chụp màn hình thật — ba tấm ảnh phải có
+  // mặt trong src/anh/ (không phải chỉ được gọi trong mã, vì đó là điều
+  // validate-static.js đã canh; ở đây canh việc mã THẬT SỰ gọi đủ ba tấm).
+  ["hd-sp1-b1.jpg", "hd-sp1-b2.jpg", "hd-sp1-b3.jpg"].forEach((ten) => {
+    if (banNoi.indexOf("/assets/anh/" + ten) === -1) {
+      fail(`Hướng dẫn sản phẩm 1 thiếu ảnh minh hoạ ${ten}.`);
+    }
+  });
+
+  // Bốn sản phẩm có video đọc link từ CHÍNH danh mục của sản phẩm đó
+  // (dm.linkHuongDan) — không phải một địa chỉ Drive nào viết chết trong mã.
+  {
+    const goiVideo = banNoi.match(/veKhungVideo\(dm && dm\.linkHuongDan,/g) || [];
+    if (goiVideo.length < 4) {
+      fail(`Phải có đủ 4 chỗ đọc dm.linkHuongDan cho sp2/sp3/sp6/sp7 (đang thấy ${goiVideo.length}).`);
+    }
+    if (/veKhungVideo\('https:\/\/drive\.google\.com/.test(banNoi)) {
+      fail("Link video KHÔNG được viết chết trong mã nguồn — phải đọc từ danh mục do /admin khai.");
+    }
+  }
+
+  // Trang quản trị: bốn sản phẩm có video phải có ô khai + nút xem trước, và
+  // giá trị đó phải được LƯU vào cùng gói dữ liệu danhmuc/<mã> khi bấm Lưu.
+  [
+    [/const\s+SP_CO_VIDEO\s*=\s*\{\s*sp2:\s*true,\s*sp3:\s*true,\s*sp6:\s*true,\s*sp7:\s*true\s*\}/,
+      "danh sách bốn sản phẩm có link video hướng dẫn ở trang quản trị"],
+    [/function\s+veKhoiVideoHuongDan\s*\(/, "khối nhập link video hướng dẫn ở trang quản trị"],
+    [/data-dm-video="/, "ô nhập link video hướng dẫn"],
+    [/data-hanh-dong="admin-xem-truoc-video"/, "nút Xem trước link video"],
+    [/function\s+adminXemTruocVideo\s*\(/, "hành động mở bảng xem trước video"],
+    [/function\s+veXemTruocVideo\s*\(/, "hàm dựng bảng xem trước video"],
+    [/duLieu\.linkHuongDan\s*=\s*video/, "link video được gộp vào gói dữ liệu trước khi lưu"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  if (!/\.khung-video\s*\{/.test(cssApp)) fail("Thiếu kiểu khung video ở src/css/app.css.");
+  if (!/\.khoi-video-hd\s*\{/.test(doc("src/css/admin.css"))) {
+    fail("Thiếu kiểu khối video hướng dẫn ở src/css/admin.css.");
+  }
 }
 
 // ---------------------------------------------------------------------------

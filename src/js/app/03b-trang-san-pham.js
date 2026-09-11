@@ -377,11 +377,208 @@
           'máy nào là hệ thống ghi nhớ máy đó gắn với sản phẩm riêng lẻ đó. Hãy chắc chắn đây là ' +
           'chiếc máy bạn sẽ dùng sản phẩm rồi mới bấm nút “Tải xuống” ở bên dưới.</span>' +
         '</div>' +
+        veNutHuongDan(sp.ma) +
         (tep.length
           ? '<div class="danh-sach-tep">' + tep.map(veDongTep).join('') + '</div>'
           : '<p class="loi-nhan-hang">' + escapeHtml(chuLyDo('chua-khai')) + '</p>') +
       '</div>';
   }
+
+  // ------------------------------------------------ HƯỚNG DẪN SỬ DỤNG
+
+  // Chỉ năm sản phẩm có tệp thật (không phải hai khoá học, không phải hai món
+  // để trên Drive) mới có bảng hướng dẫn — khách cần biết CÀI thế nào, không
+  // chỉ tải về.
+  const SP_CO_HUONG_DAN = { sp1: true, sp2: true, sp3: true, sp6: true, sp7: true };
+
+  // Nút đứng NGAY TRÊN danh sách tệp: khách đọc hướng dẫn trước khi tải, không
+  // phải tải xong rồi loay hoay không biết cài ra sao.
+  function veNutHuongDan(maSP){
+    if (!SP_CO_HUONG_DAN[maSP]) return '';
+    return '<button type="button" class="nut nut-vien nut-huong-dan" data-hanh-dong="xem-huong-dan"' +
+      ' data-ma="' + escapeHtml(maSP) + '">📖 Xem hướng dẫn sử dụng</button>';
+  }
+
+  // -------------------------------------------- KHUNG VIDEO GOOGLE DRIVE
+  //
+  // Không tự dựng trình phát: iframe /preview của chính Google Drive ĐÃ có đủ
+  // play/tạm dừng, kéo thanh tiến trình, âm lượng, bánh răng chọn tốc độ và
+  // chất lượng, và nút toàn màn hình riêng của nó — đúng những gì khách thấy
+  // khi mở video ngay trong app Drive. Việc của web chỉ là bọc nó đúng khung
+  // hình (dọc 9:16 hay ngang 16:9) và thêm một nút phóng to bọc ngoài cho dễ
+  // bấm trên điện thoại.
+  function idDriveTuLink(link){
+    const s = String(link || '');
+    let m = s.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (m) return m[1];
+    m = s.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+    if (m) return m[1];
+    m = s.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (m) return m[1];
+    return '';
+  }
+
+  function veKhungVideo(link, kieu){
+    const id = idDriveTuLink(link);
+    if (!id) {
+      return '<p class="loi-nhan-hang">Video hướng dẫn đang được cập nhật, xin quay lại bảng này sau nhé.</p>';
+    }
+    const src = 'https://drive.google.com/file/d/' + id + '/preview';
+    return '' +
+      '<div class="khung-video ' + (kieu === 'doc' ? 'video-doc' : 'video-ngang') +
+        '" data-khung-video="' + escapeHtml(id) + '">' +
+        '<iframe src="' + escapeHtml(src) + '" allow="autoplay; fullscreen" allowfullscreen loading="lazy"' +
+          ' title="Video hướng dẫn"></iframe>' +
+      '</div>' +
+      '<button type="button" class="nut nut-nho nut-vien nut-video-to" data-hanh-dong="video-toan-man-hinh"' +
+        ' data-khung="' + escapeHtml(id) + '">⛶ Xem toàn màn hình</button>';
+  }
+
+  function moModalHuongDan(maSP){
+    const sp = timSanPham(maSP);
+    const dung = HUONG_DAN_SU_DUNG[maSP];
+    if (!sp || !dung) return;
+    const dm = danhMucCua(maSP);
+    moModal({
+      ma: 'huong-dan-' + maSP,
+      tieuDe: 'Hướng dẫn sử dụng',
+      than: '<div class="noi-dung-huong-dan">' + dung(dm) + '</div>',
+      day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>'
+    });
+  }
+
+  function videoToanManHinh(khung){
+    const el = document.querySelector('[data-khung-video="' + khung + '"]');
+    if (!el) return;
+    const yeuCau = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (yeuCau) yeuCau.call(el);
+  }
+
+  // Mỗi hàm nhận nhánh danh mục của đúng sản phẩm đó (để lấy linkHuongDan nếu
+  // có) và trả về HTML thân bảng. Viết đủ chi tiết để khách làm theo được mà
+  // không cần hỏi lại shop.
+  const HUONG_DAN_SU_DUNG = {
+
+    // ---------------------------------------------------------------- SP1
+    sp1: function(){
+      return '' +
+        '<p class="hd-mo-dau">App Lightroom bản đầy đủ cài theo cách này chỉ mất khoảng ' +
+          '2–3 phút. Làm đúng theo thứ tự bên dưới là xong, không cần rành công nghệ.</p>' +
+
+        '<h4 class="hd-buoc">Bước 1 — Gỡ Lightroom cũ (nếu máy đã cài sẵn)</h4>' +
+        '<p>Nếu điện thoại bạn đã có sẵn Lightroom tải từ CH Play, hãy <strong>gỡ nó ra trước</strong> ' +
+          '(giữ icon app → Gỡ cài đặt / Uninstall). Đây là bước rất quan trọng: hai bản Lightroom ' +
+          'cùng tồn tại, hoặc bản CH Play tự động cập nhật đè lên, sẽ làm app báo lỗi hoặc mất bản quyền ' +
+          'vừa cài. Preset và ảnh bạn đã chỉnh trước đó không mất, vì chúng đồng bộ trên tài khoản Adobe.</p>' +
+
+        '<h4 class="hd-buoc">Bước 2 — Cho phép điện thoại cài app ngoài CH Play</h4>' +
+        '<p>Android mặc định chỉ cho cài app từ CH Play. Vì file bạn tải về có đuôi ' +
+          '<strong>.apk</strong> (cài trực tiếp, không qua CH Play) nên cần bật quyền một lần duy nhất:</p>' +
+        '<p>Vào <strong>Cài đặt → An toàn và bảo mật (Bảo mật)</strong>, tìm dòng ' +
+          '<strong>“Không rõ nguồn gốc” / “Cài đặt ứng dụng không rõ nguồn gốc”</strong> rồi bật lên, ' +
+          'như hình dưới:</p>' +
+        '<img class="hd-anh" src="/assets/anh/hd-sp1-b1.jpg" alt="Bật cho phép cài ứng dụng không rõ nguồn gốc trong Cài đặt">' +
+        '<p class="hd-ghi-chu">Một số dòng máy (Samsung, Xiaomi, Oppo…) đặt mục này ở tên hơi khác nhau, ' +
+          'hoặc chỉ hỏi đúng lúc bạn mở file cài ở Bước 3 — gặp vậy thì cứ bấm <strong>Cho phép / Allow</strong> ' +
+          'khi máy hỏi.</p>' +
+
+        '<h4 class="hd-buoc">Bước 3 — Mở file .apk vừa tải và cài đặt</h4>' +
+        '<p>Vào ứng dụng <strong>Quản lý tệp / Files / Trình tải xuống (Downloads)</strong>, tìm đúng file ' +
+          'vừa tải (đuôi .apk), bấm vào nó. Nếu máy hỏi “Mở bằng”, chọn <strong>Trình cài đặt</strong> ' +
+          '(Package Installer) như hình dưới, rồi bấm <strong>Cài đặt</strong>:</p>' +
+        '<img class="hd-anh" src="/assets/anh/hd-sp1-b2.jpg" alt="Mở file APK bằng Trình cài đặt">' +
+
+        '<h4 class="hd-buoc">Bước 4 — Nếu Google Play Protect chặn lại</h4>' +
+        '<p>App không tải từ CH Play nên đôi khi Google Play Protect sẽ hiện cảnh báo ' +
+          '<strong>“Đã chặn ứng dụng để bảo vệ thiết bị của bạn”</strong>. Đây là lời cảnh báo tự động cho ' +
+          'MỌI app cài ngoài, không riêng gì app này — app đã được shop kiểm tra kỹ, hoàn toàn sạch. ' +
+          'Bấm vào <strong>“Chi tiết khác”</strong> để mở rộng, sẽ hiện thêm nút cho cài tiếp, như hình dưới:</p>' +
+        '<img class="hd-anh" src="/assets/anh/hd-sp1-b3.jpg" alt="Bấm Chi tiết khác khi Play Protect cảnh báo">' +
+        '<p>Bấm <strong>“Chi tiết khác”</strong> rồi bấm nút <strong>“Vẫn cài đặt” / “Cài đặt bằng mọi cách”</strong> ' +
+          'vừa hiện ra là app cài xong ngay sau đó.</p>' +
+
+        '<h4 class="hd-buoc">Xong rồi!</h4>' +
+        '<p>Mở app Lightroom lên, đăng nhập (hoặc dùng luôn không cần đăng nhập) là dùng được bản đầy đủ, ' +
+          'không giới hạn tính năng. Có trục trặc gì cứ nhắn shop, shop hỗ trợ tận nơi.</p>';
+    },
+
+    // ---------------------------------------------------------------- SP2
+    sp2: function(dm){
+      return '' +
+        veKhungVideo(dm && dm.linkHuongDan, 'doc') +
+        '<h4 class="hd-buoc">Bộ preset này gồm những gì?</h4>' +
+        '<p>Đây là <strong>gói 9.500 preset Lightroom Mobile</strong> tổng hợp, nhưng để máy yếu vẫn nhập ' +
+          'được mượt mà, shop đã <strong>chia nhỏ thành nhiều gói con</strong> — mỗi gói đúng 1.000 preset ' +
+          '(gói 1: preset số 1–1.000, gói 2: preset số 1.001–2.000, gói 3: preset số 2.001–3.000, cứ thế ' +
+          'nối tiếp cho tới hết).</p>' +
+        '<h4 class="hd-buoc">Nên cài gói nào?</h4>' +
+        '<p>· Điện thoại <strong>cấu hình yếu hoặc đời cũ</strong>: cài <strong>từng gói nhỏ một</strong> ' +
+          '(1.000 preset/lần) để máy xử lý nhẹ nhàng, không bị đơ hay treo giữa chừng.</p>' +
+        '<p>· Điện thoại <strong>đời mới, cấu hình mạnh, hoặc iPhone</strong>: cứ mạnh dạn cài luôn ' +
+          '<strong>gói tổng hợp 9.500 preset</strong> — cài một lần là xong hết, khỏi lặp lại nhiều lần.</p>' +
+        '<h4 class="hd-buoc">Các bước cài đặt chi tiết</h4>' +
+        '<p>1. Tải (các) file <strong>.zip</strong> preset về máy điện thoại từ danh sách bên dưới.</p>' +
+        '<p>2. Mở app <strong>Lightroom</strong> → bấm vào <strong>Thiết đặt sẵn (Presets)</strong> ở thanh dưới.</p>' +
+        '<p>3. Chọn mục <strong>“Của bạn” (Yours)</strong>.</p>' +
+        '<p>4. Nhìn lên góc trên bên phải màn hình, bấm vào dấu ba chấm dọc <strong>“⋮”</strong>.</p>' +
+        '<p>5. Chọn <strong>“Nhập thiết đặt sẵn” (Import Presets)</strong>.</p>' +
+        '<p>6. Bấm <strong>“Tải file lên”</strong>, rồi chọn đúng file <strong>.zip</strong> preset vừa tải.</p>' +
+        '<p>7. Ngồi chờ vài chục giây để Lightroom tải preset lên và tự đồng bộ vào bộ nhớ đám mây Adobe ' +
+          'của bạn — xong là preset xuất hiện ngay trong mục “Của bạn”, dùng được cho mọi tấm ảnh.</p>' +
+        '<p class="hd-ghi-chu">Muốn cài thêm gói khác thì lặp lại đúng các bước 4–7 với file .zip của gói đó, ' +
+          'preset các gói không đè lên nhau.</p>';
+    },
+
+    // ---------------------------------------------------------------- SP3
+    sp3: function(dm){
+      return '' +
+        '<h4 class="hd-tieu-de-video">Hướng dẫn thêm preset vào Photoshop Camera Raw</h4>' +
+        veKhungVideo(dm && dm.linkHuongDan, 'ngang') +
+        '<h4 class="hd-buoc">Cài vào Lightroom Classic (máy tính)</h4>' +
+        '<p>1. Tải file <strong>.zip</strong> preset về máy tính rồi giải nén ra một thư mục.</p>' +
+        '<p>2. Mở <strong>Lightroom Classic</strong>, vào khu vực <strong>Develop (Chỉnh sửa)</strong>.</p>' +
+        '<p>3. Ở bảng bên trái, tìm mục <strong>Presets</strong>, bấm dấu <strong>“+”</strong> ở đầu mục ' +
+          '→ chọn <strong>“Import Presets…”</strong>.</p>' +
+        '<p>4. Trỏ tới thư mục vừa giải nén, chọn hết các file preset (đuôi <strong>.xmp</strong> hoặc ' +
+          '<strong>.lrtemplate</strong>) rồi bấm <strong>Import</strong>.</p>' +
+        '<p>5. Preset xuất hiện ngay trong bảng Presets, mở bất kỳ tấm ảnh RAW nào ra là áp dụng được.</p>' +
+        '<h4 class="hd-buoc">Cài vào Photoshop (bộ lọc Camera Raw)</h4>' +
+        '<p>1. Mở một tấm ảnh trong Photoshop, vào <strong>Filter → Camera Raw Filter</strong> ' +
+          '(hoặc mở trực tiếp file RAW để Camera Raw tự bật lên).</p>' +
+        '<p>2. Ở cột bên phải, chọn tab <strong>Presets</strong> (biểu tượng hai vòng tròn chồng nhau).</p>' +
+        '<p>3. Bấm dấu <strong>“…”</strong> hoặc icon <strong>“+”</strong> ở góc bảng Presets → chọn ' +
+          '<strong>“Import Presets…”</strong>.</p>' +
+        '<p>4. Trỏ tới thư mục đã giải nén, chọn các file preset rồi bấm <strong>Import</strong> — xong là ' +
+          'preset nằm sẵn trong danh sách, chỉ việc bấm chọn để áp màu cho ảnh.</p>' +
+        '<p class="hd-ghi-chu">Camera Raw dùng chung một kho preset cho cả Photoshop lẫn Bridge, nên nhập ' +
+          'một lần là dùng được ở cả hai nơi.</p>';
+    },
+
+    // ---------------------------------------------------------------- SP6
+    sp6: function(dm){
+      return '' +
+        '<h4 class="hd-buoc">Cài đặt phần mềm</h4>' +
+        '<p>Tải file cài đặt về máy tính Windows, bấm chạy rồi làm theo hướng dẫn trên màn hình như cài ' +
+          'bất kỳ phần mềm nào khác — bấm <strong>Next</strong> tới khi thấy <strong>Install</strong>, đợi ' +
+          'thanh chạy đầy là xong. Phần lớn máy cài trót lọt ngay lần đầu, không cần xử lý gì thêm.</p>' +
+        '<div class="hd-canh-bao">' +
+          '<span aria-hidden="true">🔥</span> ' +
+          '<span><strong>Video sẽ hướng dẫn bạn tắt Tường lửa của Windows trước khi cài Phần mềm</strong> — ' +
+          'chỉ xem khi quá trình cài đặt báo lỗi hoặc bị chặn giữa chừng.</span>' +
+        '</div>' +
+        veKhungVideo(dm && dm.linkHuongDan, 'ngang');
+    },
+
+    // ---------------------------------------------------------------- SP7
+    sp7: function(dm){
+      return '' +
+        '<div class="hd-canh-bao">' +
+          '<span aria-hidden="true">🔥</span> ' +
+          '<span><strong>Video sẽ hướng dẫn bạn tắt Tường lửa của Windows trước khi cài Phần mềm.</strong></span>' +
+        '</div>' +
+        veKhungVideo(dm && dm.linkHuongDan, 'ngang');
+    }
+  };
 
   // Mỗi dòng mang CHỈ SỐ chứ không mang tên tệp. Tên tệp trong kho nằm lại
   // trong bộ nhớ của trang, không in ra HTML — biết tên tệp thì cũng không tải

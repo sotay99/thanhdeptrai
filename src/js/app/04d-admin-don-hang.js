@@ -131,8 +131,21 @@
         v.khoa = con.key;
         ds.push(v);
       });
-      // Firebase trả theo thứ tự tăng dần; đơn mới nhất phải nằm trên đầu.
-      ds.reverse();
+      // XẾP TƯỜNG MINH THEO 'taoLuc', mới nhất lên đầu.
+      //
+      // Không dựa vào thứ tự Firebase trả về. Khi lọc bằng orderByChild thì thứ
+      // tự trong nhóm là thứ tự KHOÁ, mà khoá do push() sinh chỉ trùng với thời
+      // gian tạo trong điều kiện bình thường — đơn nào được ghi lại bằng tay,
+      // hay đồng hồ máy khách lệch, là thứ tự lệch theo mà không ai thấy.
+      // Sáu chục dòng thì xếp lại tốn không đáng kể.
+      ds.sort(function(a, b){
+        const ta = Number(a.taoLuc) || 0;
+        const tb = Number(b.taoLuc) || 0;
+        if (tb !== ta) return tb - ta;
+        // Cùng mốc thời gian (hoặc cùng thiếu mốc) thì lấy khoá làm trọng tài —
+        // khoá push() luôn tăng dần nên đơn sau vẫn đứng trên đơn trước.
+        return a.khoa < b.khoa ? 1 : (a.khoa > b.khoa ? -1 : 0);
+      });
       if (k.loc !== loc) return;   // người dùng đã đổi bộ lọc trong lúc chờ
       k.danhSach = ds;
       k.dangTai = false;
@@ -218,17 +231,22 @@
 
     // Đủ NĂM kênh, đúng thứ tự chúng hiện trong bảng khách điền. Thiếu một
     // dòng ở đây là chủ shop tưởng khách không để lại gì và bỏ mặc họ.
+    //
+    // Cột thứ ba là nút mở thẳng cuộc trò chuyện. Điện thoại KHÔNG có nút đó —
+    // một con số điện thoại trần không dẫn tới ứng dụng nào cả.
     const lienLac = [
-      ['Email', don.email],
-      ['Zalo', don.zalo],
-      ['Điện thoại', don.dienThoai],
-      ['WhatsApp', don.whatsapp],
-      ['Telegram', don.telegram]
-    ].filter(function(d){ return d[1]; }).map(function(d){
-      return '<div class="dong-lien-lac"><span class="nhan">' + escapeHtml(d[0]) + '</span>' +
-        '<span class="tri">' + escapeHtml(String(d[1])) + '</span>' +
+      ['email',    'Email',       don.email],
+      ['zalo',     'Zalo',        don.zalo],
+      [null,       'Điện thoại',  don.dienThoai],
+      ['whatsapp', 'WhatsApp',    don.whatsapp],
+      ['telegram', 'Telegram',    don.telegram]
+    ].filter(function(d){ return d[2]; }).map(function(d){
+      return '<div class="dong-lien-lac"><span class="nhan">' + escapeHtml(d[1]) + '</span>' +
+        '<span class="tri">' + escapeHtml(String(d[2])) + '</span>' +
         '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="sao-chep"' +
-        ' data-chuoi="' + escapeHtml(String(d[1])) + '">Sao chép</button></div>';
+        ' data-chuoi="' + escapeHtml(String(d[2])) + '">Sao chép</button>' +
+        (d[0] ? veNutTruyCap(d[0], String(d[2])) : '') +
+        '</div>';
     }).join('') || '<p class="khong-lien-lac">Khách không để lại thông tin liên lạc nào.</p>';
 
     return '' +
@@ -264,12 +282,60 @@
         veKhoiNhanHang(don, dangLam) +
         veKhoiGuiEmail(don) +
         veKhoiThietBi(don, moRong) +
-        '<footer class="day-don">' + veNutTrangThai(don, tt, dangLam) +
+        '<footer class="day-don">' +
+          '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="admin-don-mau-tin"' +
+            ' data-khoa="' + escapeHtml(don.khoa) + '">Xem mẫu tin nhắn</button>' +
+          veNutPheDuyet(don, tt, dangLam) +
+          veNutTrangThai(don, tt, dangLam) +
           '<button type="button" class="nut nut-nho nut-vien nut-xoa-don"' +
             ' data-hanh-dong="admin-don-xoa" data-khoa="' + escapeHtml(don.khoa) + '"' +
             (dangLam ? ' disabled' : '') + '>Xoá đơn</button>' +
         '</footer>' +
       '</article>';
+  }
+
+  /**
+   * Đổi một số điện thoại thành dạng quốc tế 84… mà các ứng dụng nhắn tin nhận.
+   *
+   *   0912345678   → 84912345678
+   *   84912345678  → giữ nguyên
+   *   +84912345678 → bỏ dấu cộng
+   *
+   * Số không thuộc ba dạng đó, hoặc dài ngắn bất thường, thì TRẢ VỀ RỖNG. Bên
+   * gọi sẽ hiện chữ "link hỏng" thay vì một cái nút bấm vào chỉ tổ báo lỗi —
+   * và người bấm sẽ tưởng khách đã chặn mình.
+   */
+  function so84(so){
+    let s = String(so || '').replace(/[^\d+]/g, '');
+    if (s.indexOf('+84') === 0) s = s.slice(1);
+    else if (s.indexOf('84') === 0) { /* đã đúng dạng */ }
+    else if (s.indexOf('0') === 0) s = '84' + s.slice(1);
+    else return '';
+    return /^84\d{8,10}$/.test(s) ? s : '';
+  }
+
+  // Mỗi ứng dụng một kiểu địa chỉ: wa.me không có dấu cộng, t.me thì có.
+  function duongDanKenh(kieu, giaTri){
+    if (kieu === 'email') {
+      const e = String(giaTri || '').trim();
+      return e.indexOf('@') > 0 ? 'mailto:' + e : '';
+    }
+    const s = so84(giaTri);
+    if (!s) return '';
+    if (kieu === 'zalo') return 'https://zalo.me/' + s;
+    if (kieu === 'whatsapp') return 'https://wa.me/' + s;
+    if (kieu === 'telegram') return 'https://t.me/+' + s;
+    return '';
+  }
+
+  function veNutTruyCap(kieu, giaTri){
+    const duong = duongDanKenh(kieu, giaTri);
+    if (!duong) {
+      return '<span class="link-hong" title="Số này không dựng được đường dẫn — ' +
+        'chỉ nhận số bắt đầu bằng 0, 84 hoặc +84">Link hỏng</span>';
+    }
+    return '<a class="nut nut-nho nut-vien nut-truy-cap" href="' + escapeHtml(duong) + '"' +
+      ' target="_blank" rel="noopener noreferrer">Truy cập Link</a>';
   }
 
   function veKhoiNhanHang(don, dangLam){
@@ -401,9 +467,9 @@
 
   function veNutTrangThai(don, tt, dangLam){
     const nut = [];
-    if (tt !== 'daGui') {
-      nut.push(['daGui', 'Đánh dấu đã gửi', 'nut-chinh']);
-    }
+    // KHÔNG còn nút "Đánh dấu đã gửi" chung chung ở đây. Việc đó nay là nút
+    // "Phê duyệt là đã gửi link sản phẩm", có hai chốt gác: phải có mã nhận
+    // hàng, và không được bấm giữa lượt gửi email.
     if (tt !== 'daXacNhan') {
       nut.push(['daXacNhan', 'Trả về chờ gửi', 'nut-vien']);
     }
@@ -415,6 +481,122 @@
         ' data-khoa="' + escapeHtml(don.khoa) + '" data-tri="' + n[0] + '"' +
         (dangLam ? ' disabled' : '') + '>' + escapeHtml(n[1]) + '</button>';
     }).join('');
+  }
+
+  /* --------------------------------------------- MẪU TIN NHẮN GỬI TAY
+
+     Hai mẩu này phải nói ĐÚNG những gì lá thư báo shop nói — chủ shop chép
+     mẩu ở đây hay chép mẩu trong thư đều phải ra cùng một nội dung, nếu không
+     khách nhận được hai câu chuyện khác nhau tuỳ chủ shop chép ở đâu.
+
+     Bản gốc nằm ở apps-script/gui-hang.gs (soanTinZalo, soanTinSMS). Ở đây
+     phải viết lại vì trình duyệt không gọi được Apps Script — hợp đồng regex
+     canh những câu quan trọng có mặt ở CẢ HAI nơi, để hai bản không trôi xa
+     nhau lúc nào không biết.
+
+     Đơn chưa có mã nhận hàng thì mẩu tin nói thẳng là chưa có đường dẫn, chứ
+     không in ra một dòng cụt — chép nhầm mẩu đó gửi khách là khách bấm vào
+     một đường dẫn hỏng. */
+
+  function tenMonCuaDon(don){
+    return (don.maSanPham || []).map(function(m){
+      const sp = timSanPham(m);
+      return '· ' + (sp ? sp.ten : m);
+    }).join('\n');
+  }
+
+  const CHUA_CO_MA = '(CHƯA CÓ MÃ SẢN PHẨM — chưa hiện được đường dẫn. Hãy bấm ' +
+    '“Cấp mã nhận hàng” ở đơn này trước.)';
+
+  function mauTinZalo(don){
+    const duong = don.maNhanHang ? linkNhanHang(don.maNhanHang) : CHUA_CO_MA;
+    const than =
+      'Chào bạn, shop đã nhận được thanh toán đơn ' + (don.maDon || don.khoa) + '.\n' +
+      'Sản phẩm bạn đã mua:\n' + tenMonCuaDon(don) + '\n' +
+      'Đây là đường dẫn nhận sản phẩm của riêng bạn:\n' +
+      duong + '\n' +
+      'Bấm vào đó, chọn đúng sản phẩm bạn đã mua là tải về được ngay, không phải nhập mã nào cả.\n' +
+      'Xin đừng chia sẻ đường dẫn này cho người khác — mỗi sản phẩm chỉ tải được ' +
+      'trên MỘT thiết bị (một trình duyệt), nên hãy mở nó trên đúng chiếc máy bạn sẽ dùng.\n' +
+      'Cần hỗ trợ cài đặt cứ nhắn cho shop nhé. Cảm ơn bạn đã tin tưởng!';
+    // Nhân đôi mọi dấu xuống dòng: dán một đoạn nhiều dòng vào ô soạn tin,
+    // nhiều thiết bị nuốt mất dấu xuống dòng đơn và biến nó thành dấu cách.
+    return than.replace(/\n/g, '\n\n');
+  }
+
+  function mauTinSMS(don){
+    const duong = don.maNhanHang ? linkNhanHang(don.maNhanHang) : '(CHUA CO MA SAN PHAM)';
+    return 'Thanhdeptrai.vn cam on ban! Link san pham rieng: ' + duong +
+      ' Xin dung chia se cho ai.';
+  }
+
+  function adminDonXemMauTin(khoa){
+    const don = donTheoKhoa(khoa);
+    if (!don) return;
+    const zalo = mauTinZalo(don);
+    const sms = mauTinSMS(don);
+    const thieuMa = !don.maNhanHang;
+
+    function khoiMau(tieuDe, mo, noiDung){
+      return '<div class="khoi-mau-tin">' +
+        '<div class="dau-mau-tin">' +
+          '<div><strong>' + escapeHtml(tieuDe) + '</strong>' +
+            '<span class="mo-mau-tin">' + escapeHtml(mo) + '</span></div>' +
+          '<button type="button" class="nut nut-nho nut-chinh" data-hanh-dong="sao-chep"' +
+            ' data-chuoi="' + escapeHtml(noiDung) + '">Sao chép</button>' +
+        '</div>' +
+        '<pre class="than-mau-tin">' + escapeHtml(noiDung) + '</pre>' +
+      '</div>';
+    }
+
+    moModal({
+      ma: 'mau-tin-don',
+      tieuDe: 'Mẫu tin nhắn — đơn ' + (don.maDon || don.khoa),
+      than: '' +
+        (thieuMa
+          ? '<div class="canh-bao-mau-tin"><span aria-hidden="true">⚠️</span> ' +
+            'Đơn này <strong>chưa có mã nhận hàng</strong> nên hai mẩu dưới đây chưa có ' +
+            'đường dẫn sản phẩm. Bấm “Cấp mã nhận hàng” ở thẻ đơn rồi mở lại bảng này.</div>'
+          : '') +
+        khoiMau('Mẩu tin Zalo', 'Dùng được cho cả WhatsApp và Telegram — cùng một nội dung.', zalo) +
+        khoiMau('Mẩu tin SMS', 'Viết không dấu cho gọn trong một tin nhắn.', sms),
+      day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>'
+    });
+  }
+
+  /* ------------------------------------- PHÊ DUYỆT ĐÃ GỬI BẰNG KÊNH KHÁC
+
+     Dùng khi chủ shop đã tự gửi đường dẫn qua Zalo, WhatsApp hay Telegram.
+     Nó KHÔNG ghi 'emailGuiLuc' — không lá thư nào bay đi cả, và dấu "đã gửi
+     email" trên thẻ phải nói đúng sự thật đó.
+
+     Khoá lại trong hai trường hợp, cả hai đều là lúc bấm vào chỉ tổ hỏng việc:
+       · chưa có mã nhận hàng — nghĩa là chưa có gì để gửi cho khách;
+       · đang trong lượt gửi email — đánh dấu "đã gửi" giữa chừng thì đơn rời
+         khỏi nhóm đang xem trong khi lá thư còn chưa đi. */
+
+  function veNutPheDuyet(don, tt, dangLam){
+    if (tt === 'daGui') return '';
+    const dangGui = khoDon().dangGui[don.khoa] === 'cho';
+    const thieuMa = !don.maNhanHang;
+    const khoa = dangLam || dangGui || thieuMa;
+    const vi = thieuMa
+      ? 'Chưa cấp mã nhận hàng nên chưa có đường dẫn nào để gửi cho khách.'
+      : (dangGui ? 'Đang trong lượt gửi email, chờ gửi xong đã.' : '');
+    return '<button type="button" class="nut nut-nho nut-la nut-phe-duyet"' +
+      ' data-hanh-dong="admin-don-phe-duyet" data-khoa="' + escapeHtml(don.khoa) + '"' +
+      (khoa ? ' disabled' : '') + (vi ? ' title="' + escapeHtml(vi) + '"' : '') + '>' +
+      'Phê duyệt là đã gửi link sản phẩm</button>';
+  }
+
+  function adminDonPheDuyet(khoa){
+    const don = donTheoKhoa(khoa);
+    if (!don || !don.maNhanHang) return;
+    if (khoDon().dangGui[khoa] === 'cho') return;
+    if (!window.confirm('Phê duyệt đơn ' + (don.maDon || khoa) + ' là ĐÃ GỬI?\n\n' +
+      'Dùng khi bạn đã tự gửi đường dẫn cho khách qua Zalo, WhatsApp hay Telegram. ' +
+      'Đơn sẽ chuyển sang nhóm “Đã gửi”.')) return;
+    ghiDon(khoa, { trangThai: 'daGui', guiLuc: Date.now(), ghiChuGui: 'Chủ shop phê duyệt đã gửi tay.' });
   }
 
   // Ngày giờ theo kiểu người Việt đọc: 14:05 · 09/09/2026

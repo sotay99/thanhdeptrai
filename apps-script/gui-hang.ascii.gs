@@ -364,8 +364,7 @@ function soanTinZalo(don) {
     'S\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua:\n' + ten + '\n' +
     '\u0110\u00e2y l\u00e0 \u0111\u01b0\u1eddng d\u1eabn nh\u1eadn s\u1ea3n ph\u1ea9m c\u1ee7a ri\u00eang b\u1ea1n:\n' +
     linkNhanHangCuaDon(don) + '\n' +
-    'B\u1ea5m v\u00e0o \u0111\u00f3, ch\u1ecdn \u0111\u00fang s\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua l\u00e0 t\u1ea3i v\u1ec1 \u0111\u01b0\u1ee3c ngay, kh\u00f4ng ph\u1ea3i ' +
-    'nh\u1eadp m\u00e3 n\u00e0o c\u1ea3.\n' +
+    'B\u1ea5m v\u00e0o \u0111\u00f3, ch\u1ecdn \u0111\u00fang s\u1ea3n ph\u1ea9m b\u1ea1n \u0111\u00e3 mua l\u00e0 t\u1ea3i v\u1ec1 \u0111\u01b0\u1ee3c ngay, kh\u00f4ng ph\u1ea3i nh\u1eadp m\u00e3 n\u00e0o c\u1ea3.\n' +
     'Xin \u0111\u1eebng chia s\u1ebb \u0111\u01b0\u1eddng d\u1eabn n\u00e0y cho ng\u01b0\u1eddi kh\u00e1c \u2014 m\u1ed7i s\u1ea3n ph\u1ea9m ch\u1ec9 t\u1ea3i \u0111\u01b0\u1ee3c ' +
     'tr\u00ean M\u1ed8T thi\u1ebft b\u1ecb (m\u1ed9t tr\u00ecnh duy\u1ec7t), n\u00ean h\u00e3y m\u1edf n\u00f3 tr\u00ean \u0111\u00fang chi\u1ebfc m\u00e1y b\u1ea1n s\u1ebd d\u00f9ng.\n' +
     'C\u1ea7n h\u1ed7 tr\u1ee3 c\u00e0i \u0111\u1eb7t c\u1ee9 nh\u1eafn cho shop nh\u00e9. C\u1ea3m \u01a1n b\u1ea1n \u0111\u00e3 tin t\u01b0\u1edfng!';
@@ -536,9 +535,15 @@ function guiHangChoDonDaXacNhan() {
         var thu = soanThuGiaoHang(don);
         guiThu(don.email, thu.tieuDe, thu.html, { name: TEN_SHOP, replyTo: emailShop });
 
+        // 'emailGuiLuc' và 'soLanGuiEmail' chỉ được ghi ở ĐÚNG chỗ này — ngay sau
+        // khi lá thư thật sự bay đi. Trạng thái 'daGui' một mình nói dối được:
+        // nút "Đánh dấu đã gửi" ở trang quản trị cũng đặt nó mà chẳng gửi thư
+        // nào. Hai trường này là bằng chứng, còn trạng thái chỉ là nhãn.
         capNhatDon(don.__ma, {
           trangThai: 'daGui',
           guiLuc: Date.now(),
+          emailGuiLuc: Date.now(),
+          soLanGuiEmail: (Number(don.soLanGuiEmail) || 0) + 1,
           ghiChuGui: thu.thieu.length
             ? '\u0110\u00e3 g\u1eedi email, nh\u01b0ng thi\u1ebfu \u0111\u01b0\u1eddng t\u1ea3i cho: ' + thu.thieu.join(', ')
             : '\u0110\u00e3 g\u1eedi email \u0111\u1ea7y \u0111\u1ee7.'
