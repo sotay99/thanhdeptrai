@@ -1,0 +1,3017 @@
+
+        // ===== GLOBAL STATE =====
+        let canvas = null;
+        let layers = [];
+        let layerGroups = []; // Array of group objects
+        let activeLayerIndex = 0;
+        let activeGroupIndex = -1; // -1 means no group selected
+        let selectedLayerIndices = new Set(); // For multi-select within group
+        let multiSelectedIndices = new Set(); // NEW: For Ctrl+Click multi-select
+        let currentZoom = 1;
+        let currentGroupRenameId = null; // For group rename modal
+        const API_BASE_URL = 'http://localhost:8000/api';
+
+        // Layer color palette
+        const LAYER_COLORS = [
+            '#000000', // Black
+            '#FF6B6B', // Red
+            '#4ECDC4', // Teal
+            '#FFD93D', // Yellow
+            '#6BCB77', // Green
+            '#4D96FF', // Blue
+            '#9D84B7', // Purple
+            '#FF9F43'  // Orange
+        ];
+
+        // ===== KHỞI TẠO =====
+        // Module này được gắn/gỡ khỏi trang nhiều lần trong CÙNG một phiên (mỗi
+        // lần khách chuyển sang module khác rồi quay lại "Trang chủ", render()
+        // của shop xoá sạch #root — kể cả thẻ <canvas> — rồi chèn HTML module
+        // mới tinh). Vì vậy KHÔNG dùng DOMContentLoaded (chỉ chạy một lần khi
+        // tệp này được nạp) mà tách thành initTrangChuEditor() — shop gọi hàm
+        // này mỗi lần mở module. Biến trạng thái (layers, layerGroups...) ở
+        // trên vẫn giữ nguyên qua các lần gọi (chỉ được gán MỘT lần lúc tệp
+        // nạp), nên việc khách đang làm dở không mất khi họ ghé module khác
+        // rồi quay lại — chỉ cần dựng lại canvas mới rồi vẽ lại đúng state cũ.
+        let __trangChuResizeBound = false;
+
+        function initTrangChuEditor() {
+            const workspace = document.querySelector('.trang-chu-editor .canvas-workspace');
+            if (!workspace) return; // HTML của module chưa có trong trang
+
+            const canvasElement = document.createElement('canvas');
+            canvasElement.id = 'canvas';
+            canvasElement.width = 800;
+            canvasElement.height = 600;
+            workspace.innerHTML = '';
+            workspace.appendChild(canvasElement);
+
+            canvas = new fabric.Canvas('canvas', {
+                backgroundColor: '#ffffff',
+                fireRightClick: true,
+                stopContextMenu: true,
+            });
+
+            setupDragAndDrop();
+            bindCanvasEvents();
+            fitCanvasToWorkspace();
+            if (!__trangChuResizeBound) {
+                window.addEventListener('resize', fitCanvasToWorkspace);
+                __trangChuResizeBound = true;
+            }
+
+            if (layers.length === 0) {
+                // Lần đầu mở module trong phiên này.
+                createBackgroundLayer();
+                showToast('Sẵn sàng! Tải ảnh để bắt đầu', 'success');
+            } else {
+                // Quay lại module — canvas cũ vừa bị shop xoá, dựng canvas mới
+                // rồi vẽ lại đúng state cũ, không mất việc khách đang làm dở.
+                updateLayersUI();
+                renderAllLayers();
+                updateCurrentLayerColor();
+                showToast('Đã quay lại — tiếp tục chỉnh sửa', 'success');
+            }
+        }
+
+        // Shop gọi hàm này (qua window) sau khi HTML module đã nằm trong
+        // trang và tệp này đã nạp xong — xem 06-trang-chu.js.
+        window.initTrangChuEditor = initTrangChuEditor;
+
+        // Lỗi cũ: canvas luôn có kích thước PIXEL NỘI BỘ cố định 800x600 —
+        // fabric.js bọc nó (cùng canvas phụ upper-canvas) trong 1 <div
+        // class="canvas-container"> với width/height CSS đặt cứng 800px/
+        // 600px (không phải max-width:100%), nên trên màn hình hẹp hơn
+        // 800px, khối đó luôn tràn ra khỏi khung — đẩy cả trang cuộn
+        // ngang. Không thể sửa bằng CSS thường (max-width không thắng nổi
+        // width cố định của các canvas con bên trong); phải tự co khối đó
+        // lại bằng transform: scale(), rồi bù lại layout box bằng margin
+        // âm để phần thu nhỏ không để lại khoảng trống thừa.
+        function fitCanvasToWorkspace() {
+            if (!canvas || !canvas.wrapperEl) return;
+            const workspace = document.querySelector('.canvas-workspace');
+            if (!workspace) return;
+
+            const padding = 20;
+            const availableWidth = Math.max(50, workspace.clientWidth - padding);
+            const availableHeight = Math.max(50, workspace.clientHeight - padding);
+            const nativeWidth = canvas.getWidth();
+            const nativeHeight = canvas.getHeight();
+            const scale = Math.min(1, availableWidth / nativeWidth, availableHeight / nativeHeight);
+
+            canvas.wrapperEl.style.transform = `scale(${scale})`;
+            canvas.wrapperEl.style.transformOrigin = 'top left';
+            // transform không thay đổi kích thước box bố cục thật (vẫn
+            // chiếm 800x600), nên dùng margin âm kéo phần hụt do thu nhỏ
+            // lại để .canvas-workspace không phải cuộn/tràn theo kích
+            // thước GỐC chưa thu nhỏ.
+            canvas.wrapperEl.style.marginRight = (nativeWidth * (scale - 1)) + 'px';
+            canvas.wrapperEl.style.marginBottom = (nativeHeight * (scale - 1)) + 'px';
+
+            updateLayerBorder();
+        }
+
+        // ===== LAYER MANAGEMENT =====
+        function createBackgroundLayer() {
+            const layer = {
+                id: Date.now(),
+                name: 'Background',
+                color: LAYER_COLORS[0],
+                visible: true,
+                objects: [],
+                opacity: 1
+            };
+            layers.push(layer);
+            activeLayerIndex = 0;
+            updateLayersUI();
+            updateCurrentLayerColor();
+        }
+
+        function createNewLayer(fromInpaint = false) {
+            const layerNumber = layers.length;
+            const colorIndex = layerNumber % LAYER_COLORS.length;
+            
+            const layer = {
+                id: Date.now(),
+                name: `Lớp ${layerNumber}`,
+                color: LAYER_COLORS[colorIndex],
+                visible: true,
+                objects: [],
+                opacity: 1,
+                blendMode: 'normal',  // NEW: Blend mode
+                fromInpaint: fromInpaint
+            };
+            layers.push(layer);
+            activeLayerIndex = layers.length - 1;
+            updateLayersUI();
+            updateCurrentLayerColor();
+            showToast(`Tạo layer mới: ${layer.name}`, 'success');
+        }
+
+        function selectLayer(index, ctrlKey = false, shiftKey = false) {
+            if (index >= 0 && index < layers.length) {
+                const layer = layers[index];
+                
+                // Handle range select (Shift+Click)
+                if (shiftKey && multiSelectedIndices.size > 0) {
+                    const selectedArray = Array.from(multiSelectedIndices).sort((a, b) => a - b);
+                    const minIndex = Math.min(...selectedArray, index);
+                    const maxIndex = Math.max(...selectedArray, index);
+                    
+                    // Clear and select range
+                    multiSelectedIndices.clear();
+                    for (let i = minIndex; i <= maxIndex; i++) {
+                        multiSelectedIndices.add(i);
+                    }
+                    
+                    activeLayerIndex = index;
+                    updateLayersUI();
+                    updateCurrentLayerColor();
+                    showToast(`✓ Đã chọn từ lớp ${minIndex} đến ${maxIndex} (${multiSelectedIndices.size} lớp)`, 'info');
+                    return;
+                }
+                
+                // Handle multi-select (Ctrl+Click)
+                if (ctrlKey) {
+                    if (multiSelectedIndices.has(index)) {
+                        // Deselect
+                        multiSelectedIndices.delete(index);
+                        showToast(`⊘ Bỏ chọn: ${layer.name}`, 'info');
+                    } else {
+                        // Add to selection
+                        multiSelectedIndices.add(index);
+                        showToast(`✓ Thêm chọn: ${layer.name}`, 'info');
+                    }
+                    
+                    // Keep track of primary selection
+                    activeLayerIndex = index;
+                    updateLayersUI();
+                    updateCurrentLayerColor();
+                    return;
+                }
+                
+                // Normal single selection (no Ctrl, no Shift)
+                multiSelectedIndices.clear(); // Clear multi-select
+                activeLayerIndex = index;
+                
+                // If selecting a group, mark it as active group
+                if (layer.isGroup) {
+                    const group = layerGroups.find(g => g.id === layer.groupId);
+                    if (group) {
+                        activeGroupIndex = layerGroups.indexOf(group);
+                        selectedLayerIndices.clear(); // Clear multi-select
+                        updateLayersUI();
+                        updateCurrentLayerColor();
+                        showToast(`📁 Chọn Nhóm: ${layer.name}`, 'success');
+                    }
+                } else {
+                    // Regular layer selection
+                    activeGroupIndex = -1; // No group selected
+                    selectedLayerIndices.clear(); // Clear multi-select
+                    updateLayersUI();
+                    updateCurrentLayerColor();
+                    showToast(`Chọn: ${layer.name}`, 'success');
+                }
+            }
+        }
+
+        function deleteLayer(index) {
+            if (layers.length <= 1) {
+                showToast('Không thể xoá layer cuối cùng!', 'error');
+                return;
+            }
+            const layer = layers[index];
+            // Xoá 1 nhóm (kể cả nhóm lồng bên trong nó) phải dọn luôn khỏi
+            // layerGroups, không thì nhóm "hồn ma" vẫn hiện trong "Di Chuyển
+            // Sang Nhóm..." — xem removeGroupAndDescendantsFromRegistry().
+            const confirmMsg = layer.isGroup ? `Xoá cả nhóm "${layer.name}" và mọi lớp bên trong?` : `Xoá layer "${layer.name}"?`;
+            if (confirm(confirmMsg)) {
+                if (layer.isGroup) {
+                    removeGroupAndDescendantsFromRegistry(layer.groupId);
+                }
+                layers.splice(index, 1);
+                if (activeLayerIndex >= layers.length) {
+                    activeLayerIndex = layers.length - 1;
+                }
+                updateLayersUI();
+                updateCurrentLayerColor();
+                renderAllLayers();
+                showToast('Đã xoá layer', 'success');
+            }
+        }
+
+        function duplicateLayer(index) {
+            const original = layers[index];
+            const duplicate = {
+                ...original,
+                id: Date.now(),
+                name: `${original.name} (Bản Sao)`,
+                objects: [...original.objects]
+            };
+            layers.splice(index + 1, 0, duplicate);
+            activeLayerIndex = index + 1;
+            updateLayersUI();
+            updateCurrentLayerColor();
+            showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+        }
+
+        function renameLayer(index, newName) {
+            if (newName.trim()) {
+                layers[index].name = newName;
+                updateLayersUI();
+                updateCurrentLayerColor();
+            }
+        }
+
+        // ===== MERGE LAYERS FUNCTIONALITY =====
+        let layersToMerge = new Set();
+        let currentRenameIndex = -1;
+
+        function startMergeLayers() {
+            layersToMerge.clear();
+            document.getElementById('mergeStatusMessage').style.display = 'block';
+            document.getElementById('mergeLayersList').innerHTML = '';
+            
+            layers.forEach((layer, index) => {
+                const item = document.createElement('div');
+                item.className = 'merge-layer-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="merge-${index}" value="${index}" 
+                           onchange="toggleMergeLayer(${index})">
+                    <div class="merge-layer-indicator" style="background: ${layer.color};"></div>
+                    <label for="merge-${index}" class="merge-layer-name">${layer.name}</label>
+                `;
+                document.getElementById('mergeLayersList').appendChild(item);
+            });
+            
+            document.getElementById('mergeModal').classList.add('active');
+        }
+
+        function hideMergeModal() {
+            document.getElementById('mergeModal').classList.remove('active');
+            layersToMerge.clear();
+        }
+
+        function toggleMergeLayer(index) {
+            const checkbox = document.getElementById(`merge-${index}`);
+            if (checkbox.checked) {
+                layersToMerge.add(index);
+                document.getElementById('mergeStatusMessage').style.display = 'none';
+            } else {
+                layersToMerge.delete(index);
+                if (layersToMerge.size === 0) {
+                    document.getElementById('mergeStatusMessage').style.display = 'block';
+                }
+            }
+        }
+
+        function selectAllLayersForMerge() {
+            const checkboxes = document.querySelectorAll('#mergeLayersList input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach((checkbox, index) => {
+                checkbox.checked = !allChecked;
+                if (!allChecked) {
+                    layersToMerge.add(index);
+                } else {
+                    layersToMerge.delete(index);
+                }
+            });
+            
+            if (layersToMerge.size === 0) {
+                document.getElementById('mergeStatusMessage').style.display = 'block';
+            } else {
+                document.getElementById('mergeStatusMessage').style.display = 'none';
+            }
+        }
+
+        function executeMergeLayers() {
+            if (layersToMerge.size < 2) {
+                showToast('❌ Vui lòng chọn ít nhất 2 lớp để gộp!', 'error');
+                return;
+            }
+
+            if (Array.from(layersToMerge).some(index => layers[index] && layers[index].isGroup)) {
+                showToast('❌ Không thể gộp một nhóm lớp! Hãy bỏ nhóm hoặc chỉ chọn các lớp thường.', 'error');
+                return;
+            }
+
+            const indicesToMerge = Array.from(layersToMerge).sort((a, b) => b - a);
+            const mergedObjects = [];
+            const mergedNames = [];
+            const baseIndex = Math.min(...indicesToMerge);
+            
+            // Collect all objects from selected layers
+            indicesToMerge.forEach(index => {
+                mergedObjects.push(...layers[index].objects);
+                mergedNames.push(layers[index].name);
+            });
+            
+            // Remove layers (from highest index first to avoid index shift)
+            indicesToMerge.forEach(index => {
+                if (index !== baseIndex) {
+                    layers.splice(index, 1);
+                }
+            });
+            
+            // Create merged layer name
+            const mergedLayerName = 'Layer gộp ' + mergedNames.join(', ');
+            
+            // Auto assign color to merged layer (cycle through palette)
+            const mergedColorIndex = layers.length % LAYER_COLORS.length;
+            const mergedColor = LAYER_COLORS[mergedColorIndex];
+            
+            // Add merged objects to base layer
+            layers[baseIndex].objects = mergedObjects;
+            layers[baseIndex].name = mergedLayerName;
+            layers[baseIndex].color = mergedColor; // Set new color
+            
+            layersToMerge.clear();
+            updateLayersUI();
+            updateCurrentLayerColor();
+            renderAllLayers();
+            hideMergeModal();
+            
+            showToast(`✅ Gộp thành công! Layer mới: "${mergedLayerName}" (${mergedColor})`, 'success');
+        }
+
+        // ===== RENAME LAYER MODAL =====
+        let currentRenameLayerId = null; // Đổi tên lớp nằm trong 1 nhóm (theo id)
+
+        function openRenameModal(index) {
+            currentRenameIndex = index;
+            currentRenameLayerId = null;
+            document.getElementById('renameInput').value = layers[index].name;
+            document.getElementById('renameModal').classList.add('active');
+            setTimeout(() => document.getElementById('renameInput').focus(), 100);
+        }
+
+        // Đổi tên 1 lớp/nhóm con nằm bên trong 1 nhóm — không thể dùng
+        // openRenameModal(index) vì lớp con không có vị trí trong mảng layers.
+        function openRenameModalById(id) {
+            const ref = resolveLayerRef(id);
+            if (!ref) return;
+            currentRenameIndex = -1;
+            currentRenameLayerId = id;
+            window.currentGroupRenameId = null;
+            document.getElementById('renameInput').value = ref.container[ref.index].name;
+            document.getElementById('renameModal').classList.add('active');
+            setTimeout(() => document.getElementById('renameInput').focus(), 100);
+        }
+
+        function hideRenameModal() {
+            document.getElementById('renameModal').classList.remove('active');
+            currentRenameIndex = -1;
+            currentRenameLayerId = null;
+        }
+
+        function confirmRenameLayer() {
+            if (window.currentGroupRenameId) {
+                // Rename group
+                const newName = document.getElementById('renameInput').value.trim();
+                if (newName) {
+                    renameGroup(window.currentGroupRenameId, newName);
+                    hideRenameModal();
+                    showToast(`✏️ Đổi tên nhóm thành: "${newName}"`, 'success');
+                } else {
+                    showToast('❌ Vui lòng nhập tên!', 'error');
+                }
+                window.currentGroupRenameId = null;
+            } else if (currentRenameLayerId != null) {
+                // Rename lớp/nhóm con nằm trong 1 nhóm
+                const newName = document.getElementById('renameInput').value.trim();
+                if (newName) {
+                    renameLayerById(currentRenameLayerId, newName);
+                    hideRenameModal();
+                    showToast(`✏️ Đổi tên thành: "${newName}"`, 'success');
+                } else {
+                    showToast('❌ Vui lòng nhập tên lớp!', 'error');
+                }
+            } else if (currentRenameIndex >= 0) {
+                // Rename regular layer
+                const newName = document.getElementById('renameInput').value.trim();
+                if (newName) {
+                    renameLayer(currentRenameIndex, newName);
+                    hideRenameModal();
+                    showToast(`✏️ Đổi tên thành: "${newName}"`, 'success');
+                } else {
+                    showToast('❌ Vui lòng nhập tên lớp!', 'error');
+                }
+            }
+        }
+
+        function openGroupMenu(layerIndex, groupId) {
+            alert(`Tùy chọn nhóm:\n1. Đổi tên\n2. Bỏ nhóm\n(Tính năng menu thả xuống sắp ra mắt)\n\nBỏ nhóm ngay: ${confirm('Bỏ nhóm này?') ? ungroupLayers(groupId) : 'Hủy'}`);
+        }
+
+        // Support Enter key in rename modal
+        // ===== KEYBOARD SHORTCUTS =====
+        document.addEventListener('keydown', function(e) {
+            // Lỗi cũ khi ghép vào trang shop: các lệnh document.addEventListener
+            // này chạy MỘT LẦN lúc tệp nạp và KHÔNG BAO GIỜ gỡ, nên nếu không
+            // chặn lại thì phím tắt (và các nghe-sự-kiện khác bên dưới) vẫn
+            // hoạt động ở MỌI module khác của shop sau khi khách đã ghé qua
+            // "Trang chủ" một lần — ví dụ khách gõ Ctrl+Z ở ô nhập email lại bị
+            // trình chỉnh sửa nuốt mất. Chỉ chạy khi module này đang thật sự
+            // hiện trên trang.
+            if (!document.querySelector('.trang-chu-editor')) return;
+
+            // Don't trigger shortcuts while typing in input fields
+            const isInputActive = document.activeElement.tagName === 'INPUT' ||
+                                 document.activeElement.tagName === 'TEXTAREA';
+
+            // Modal checks
+            const renameModalActive = document.getElementById('renameModal')?.classList.contains('active');
+            const mergeModalActive = document.getElementById('mergeModal')?.classList.contains('active');
+            const groupModalActive = document.getElementById('groupModal')?.classList.contains('active');
+            const inpaintModalActive = document.getElementById('inpaintModal')?.classList.contains('active');
+            
+            // Handle modal shortcuts
+            if (renameModalActive) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    confirmRenameLayer();
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideRenameModal();
+                    return;
+                }
+            }
+            
+            if (mergeModalActive) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideMergeModal();
+                    return;
+                }
+            }
+            
+            if (groupModalActive) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideGroupModal();
+                    return;
+                }
+            }
+            
+            if (inpaintModalActive) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideInpaintModal();
+                    return;
+                }
+            }
+            
+            // Global shortcuts (no modal active, not typing in input)
+            if (!isInputActive && !renameModalActive && !mergeModalActive && !groupModalActive && !inpaintModalActive) {
+                // Ctrl/Cmd + Z: Undo
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    e.preventDefault();
+                    showToast('↶ Undo chưa được hỗ trợ đầy đủ', 'info');
+                    return;
+                }
+                
+                // Ctrl/Cmd + Y: Redo
+                if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                    e.preventDefault();
+                    showToast('↷ Redo chưa được hỗ trợ đầy đủ', 'info');
+                    return;
+                }
+                
+                // Ctrl/Cmd + S: Download/Save
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    downloadImage();
+                    return;
+                }
+                
+                // Ctrl/Cmd + N: New Layer
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    createNewLayer();
+                    return;
+                }
+                
+                // Ctrl/Cmd + G: Group Layers
+                if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+                    e.preventDefault();
+                    startGroupLayers();
+                    return;
+                }
+                
+                // Ctrl/Cmd + M: Merge Layers
+                if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+                    e.preventDefault();
+                    startMergeLayers();
+                    return;
+                }
+                
+                // Ctrl/Cmd + Shift + Up: Move Layer Up
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    moveLayerUp(activeLayerIndex);
+                    return;
+                }
+                
+                // Ctrl/Cmd + Shift + Down: Move Layer Down
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    moveLayerDown(activeLayerIndex);
+                    return;
+                }
+                
+                // Delete: Remove selected layer
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    deleteLayer(activeLayerIndex);
+                    return;
+                }
+                
+                // D: Duplicate layer
+                if (e.key === 'd' || e.key === 'D') {
+                    e.preventDefault();
+                    duplicateLayer(activeLayerIndex);
+                    return;
+                }
+                
+                // R: Rename layer (open rename modal)
+                if (e.key === 'r' || e.key === 'R') {
+                    e.preventDefault();
+                    openRenameModal(activeLayerIndex);
+                    return;
+                }
+                
+                // H: Toggle visibility/Hide
+                if (e.key === 'h' || e.key === 'H') {
+                    e.preventDefault();
+                    toggleLayerVisibility(activeLayerIndex);
+                    return;
+                }
+                
+                // Up Arrow: Select layer above
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (activeLayerIndex < layers.length - 1) {
+                        selectLayer(activeLayerIndex + 1);
+                    }
+                    return;
+                }
+                
+                // Down Arrow: Select layer below
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (activeLayerIndex > 0) {
+                        selectLayer(activeLayerIndex - 1);
+                    }
+                    return;
+                }
+                
+                // Right Arrow: Expand group
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const layer = layers[activeLayerIndex];
+                    if (layer.isGroup) {
+                        const group = layerGroups.find(g => g.id === layer.groupId);
+                        if (group && group.collapsed) {
+                            toggleGroupExpanded(layer.groupId);
+                        }
+                    }
+                    return;
+                }
+                
+                // Left Arrow: Collapse group
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const layer = layers[activeLayerIndex];
+                    if (layer.isGroup) {
+                        const group = layerGroups.find(g => g.id === layer.groupId);
+                        if (group && !group.collapsed) {
+                            toggleGroupExpanded(layer.groupId);
+                        }
+                    }
+                    return;
+                }
+                
+                // Ctrl/Cmd + D: Deselect (select background/first layer)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+                    e.preventDefault();
+                    selectLayer(layers.length - 1); // Background
+                    return;
+                }
+                
+                // ?: Show help/shortcuts
+                if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+                    e.preventDefault();
+                    showKeyboardShortcuts();
+                    return;
+                }
+                
+                // Ctrl+A: Select all visible layers
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                    e.preventDefault();
+                    layers.forEach((_, index) => {
+                        multiSelectedIndices.add(index);
+                    });
+                    updateLayersUI();
+                    showToast(`✓ Đã chọn tất cả ${layers.length} lớp!`, 'success');
+                    return;
+                }
+                
+                // Escape: Clear multi-selection
+                if (e.key === 'Escape' && multiSelectedIndices.size > 0) {
+                    e.preventDefault();
+                    multiSelectedIndices.clear();
+                    updateLayersUI();
+                    showToast('🔄 Bỏ chọn tất cả', 'info');
+                    return;
+                }
+            }
+        });
+
+        // ===== LAYER GROUPS FUNCTIONALITY =====
+        let layersToGroup = new Set();
+
+        function startGroupLayers() {
+            layersToGroup.clear();
+            document.getElementById('groupStatusMessage').style.display = 'block';
+            document.getElementById('groupLayersList').innerHTML = '';
+            document.getElementById('groupNameInput').value = '';
+            
+            layers.forEach((layer, index) => {
+                const item = document.createElement('div');
+                item.className = 'merge-layer-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="group-${index}" value="${index}" 
+                           onchange="toggleGroupLayer(${index})">
+                    <div class="merge-layer-indicator" style="background: ${layer.color};"></div>
+                    <label for="group-${index}" class="merge-layer-name">${layer.name}</label>
+                `;
+                document.getElementById('groupLayersList').appendChild(item);
+            });
+            
+            document.getElementById('groupModal').classList.add('active');
+        }
+
+        function hideGroupModal() {
+            document.getElementById('groupModal').classList.remove('active');
+            layersToGroup.clear();
+        }
+
+        function toggleGroupLayer(index) {
+            const checkbox = document.getElementById(`group-${index}`);
+            if (checkbox.checked) {
+                layersToGroup.add(index);
+                document.getElementById('groupStatusMessage').style.display = 'none';
+            } else {
+                layersToGroup.delete(index);
+                if (layersToGroup.size === 0) {
+                    document.getElementById('groupStatusMessage').style.display = 'block';
+                }
+            }
+        }
+
+        function selectAllLayersForGroup() {
+            const checkboxes = document.querySelectorAll('#groupLayersList input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach((checkbox, index) => {
+                checkbox.checked = !allChecked;
+                if (!allChecked) {
+                    layersToGroup.add(index);
+                } else {
+                    layersToGroup.delete(index);
+                }
+            });
+            
+            if (layersToGroup.size === 0) {
+                document.getElementById('groupStatusMessage').style.display = 'block';
+            } else {
+                document.getElementById('groupStatusMessage').style.display = 'none';
+            }
+        }
+
+        function executeGroupLayers() {
+            if (layersToGroup.size < 1) {
+                showToast('❌ Vui lòng chọn ít nhất 1 lớp để nhóm!', 'error');
+                return;
+            }
+
+            const groupName = document.getElementById('groupNameInput').value.trim() || 'Nhóm mới';
+            const indicesToGroup = Array.from(layersToGroup).sort((a, b) => a - b);
+            const groupedLayers = [];
+            
+            // Collect layers to group
+            indicesToGroup.forEach(index => {
+                groupedLayers.push(layers[index]);
+            });
+            
+            // Create group object
+            const newGroup = {
+                id: Date.now(),
+                name: groupName,
+                color: '#000000', // Group name is always black
+                visible: true,
+                children: groupedLayers,
+                isGroup: true,
+                collapsed: false
+            };
+            
+            // Add group to layerGroups array
+            layerGroups.push(newGroup);
+            
+            // Remove original layers (from highest index first)
+            indicesToGroup.reverse().forEach(index => {
+                layers.splice(index, 1);
+            });
+            
+            // Add group reference to layers (as a special layer)
+            layers.push({
+                id: newGroup.id,
+                name: groupName,
+                color: '#000000',
+                visible: true,
+                isGroup: true,
+                groupId: newGroup.id
+            });
+            
+            layersToGroup.clear();
+            updateLayersUI();
+            updateCurrentLayerColor();
+            renderAllLayers();
+            hideGroupModal();
+            
+            showToast(`✅ Nhóm lớp thành công! Nhóm: "${groupName}"`, 'success');
+        }
+
+        function ungroupLayers(groupId) {
+            const groupIndex = layerGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return;
+            
+            const group = layerGroups[groupIndex];
+            const groupLayerIndex = layers.findIndex(l => l.isGroup && l.groupId === groupId);
+            
+            // Remove group from layers array
+            if (groupLayerIndex !== -1) {
+                layers.splice(groupLayerIndex, 1);
+            }
+            
+            // Add group children back to layers array at the same position
+            group.children.forEach((child, i) => {
+                layers.splice(groupLayerIndex + i, 0, child);
+            });
+            
+            // Remove from groups array
+            layerGroups.splice(groupIndex, 1);
+            
+            updateLayersUI();
+            updateCurrentLayerColor();
+            renderAllLayers();
+            showToast(`✅ Bỏ nhóm thành công! "${group.name}" đã được mở ra`, 'success');
+        }
+
+        function renameGroup(groupId, newName) {
+            const group = layerGroups.find(g => g.id === groupId);
+            if (group && newName.trim()) {
+                group.name = newName.trim();
+                const groupLayer = layers.find(l => l.isGroup && l.groupId === groupId);
+                if (groupLayer) {
+                    groupLayer.name = newName.trim();
+                }
+                updateLayersUI();
+            }
+        }
+
+        // ===== DROPDOWN MENU FUNCTIONS =====
+        // Lỗi cũ: menu được appendChild ngay vào .layer-item (position:
+        // relative), mà .layer-item nằm trong .layers-list/.sidebar-right
+        // (overflow-y: auto) — menu bị khung panel cắt mất, chỉ thấy vài
+        // nút đầu. Nay MỌI menu/submenu được đưa thẳng ra <body> với
+        // position: fixed, tính toạ độ theo đúng vị trí hàng đã bấm, nên
+        // không nằm trong bất kỳ khung nào có overflow để bị đè/cắt nữa.
+        let currentOpenMenu = null;
+        let openMenuElements = [];
+
+        function closeAllMenus() {
+            openMenuElements.forEach(el => el.remove());
+            openMenuElements = [];
+            currentOpenMenu = null;
+        }
+
+        // Gắn 1 menu/submenu vào body, đặt vị trí ngay cạnh anchorEl (hàng
+        // lớp hoặc nút "..." vừa bấm) — tự lật lên trên nếu không đủ chỗ ở
+        // dưới, và không bao giờ tràn ra ngoài màn hình theo chiều ngang.
+        function attachDropdownMenu(menu, anchorEl, options = {}) {
+            document.body.appendChild(menu);
+            openMenuElements.push(menu);
+
+            const rect = anchorEl.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.margin = '0';
+            menu.style.right = 'auto';
+
+            const menuHeight = menu.offsetHeight;
+            const menuWidth = menu.offsetWidth;
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+
+            let top;
+            if (options.preferSide === 'right') {
+                // Submenu "Chọn Nhóm": mở sang phải cạnh nút vừa bấm, không
+                // đẩy lên trên như menu chính.
+                top = Math.min(window.innerHeight - menuHeight - 8, Math.max(8, rect.top));
+                let left = rect.right + 4;
+                if (left + menuWidth > window.innerWidth - 8) left = rect.left - menuWidth - 4;
+                if (left < 8) left = 8;
+                menu.style.left = left + 'px';
+            } else {
+                top = (menuHeight <= spaceAbove || spaceAbove >= spaceBelow)
+                    ? Math.max(8, rect.top - menuHeight)
+                    : Math.min(window.innerHeight - menuHeight - 8, rect.bottom);
+                let left = rect.left;
+                if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+                if (left < 8) left = 8;
+                menu.style.left = left + 'px';
+            }
+            menu.style.top = top + 'px';
+            menu.style.bottom = 'auto';
+
+            return menu;
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.layer-item') && !e.target.closest('.layer-dropdown-menu')) {
+                closeAllMenus();
+            }
+        });
+
+        function showLayerMenu(layerIndex, event) {
+            closeAllMenus();
+            event.stopPropagation();
+            
+            const layer = layers[layerIndex];
+            const layerItem = event.currentTarget.closest('.layer-item');
+
+            const menu = document.createElement('div');
+            menu.className = 'layer-dropdown-menu';
+
+            let menuHTML = `
+                <div class="dropdown-menu-header">
+                    <span class="dropdown-menu-header-name">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${layer.color}; flex-shrink: 0;"></span>
+                        <span>${escapeHtmlText(layer.name)}</span>
+                    </span>
+                    <button class="dropdown-close-btn" onclick="event.stopPropagation(); closeAllMenus()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="dropdown-menu-subtitle">
+                    🎨 ${layer.blendMode || 'normal'} • 👁️ ${Math.round((layer.opacity || 1) * 100)}%
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); openRenameModal(${layerIndex})">
+                    <i class="fas fa-edit"></i> Đổi Tên
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); toggleLayerVisibility(${layerIndex})">
+                    <i class="fas ${layer.visible ? 'fa-eye-slash' : 'fa-eye'}"></i> ${layer.visible ? 'Ẩn Lớp' : 'Hiện Lớp'}
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); duplicateLayer(${layerIndex})">
+                    <i class="fas fa-copy"></i> Nhân Đôi
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerUp(${layerIndex})">
+                    <i class="fas fa-chevron-up"></i> Lên Trên
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerDown(${layerIndex})">
+                    <i class="fas fa-chevron-down"></i> Xuống Dưới
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); revealDragHandle(${layerIndex})">
+                    <i class="fas fa-arrows-up-down"></i> Kéo Để Sắp Xếp
+                </div>
+            `;
+
+            // Add "Move to Group" if there are groups
+            if (layerGroups.length > 0) {
+                menuHTML += `
+                    <div class="dropdown-menu-item" onclick="event.stopPropagation(); showMoveToGroupSubmenu(${layerIndex}, event)">
+                        <i class="fas fa-arrow-right"></i> Di Chuyển Sang Nhóm...
+                        <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 0.75rem;"></i>
+                    </div>
+                `;
+            }
+
+            menuHTML += `
+                <div class="dropdown-menu-item danger" onclick="event.stopPropagation(); closeAllMenus(); deleteLayer(${layerIndex})">
+                    <i class="fas fa-trash"></i> Xoá Lớp
+                </div>
+            `;
+
+            menu.innerHTML = menuHTML;
+            attachDropdownMenu(menu, layerItem);
+            currentOpenMenu = menu;
+        }
+
+        // Menu cho 1 lớp thường nằm bên trong 1 nhóm — bản rút gọn của
+        // showLayerMenu ("Di chuyển sang nhóm..." của lớp con cần chọn cả
+        // nhóm đang chứa nó lẫn nhóm đích, để lại cho lần sau).
+        function showNestedLayerMenu(id, event) {
+            closeAllMenus();
+            event.stopPropagation();
+
+            const layer = resolveLayerRef(id)?.container[resolveLayerRef(id).index];
+            if (!layer) return;
+            const layerItem = event.currentTarget.closest('.layer-item');
+
+            const menu = document.createElement('div');
+            menu.className = 'layer-dropdown-menu';
+
+            menu.innerHTML = `
+                <div class="dropdown-menu-header">
+                    <span class="dropdown-menu-header-name">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${layer.color}; flex-shrink: 0;"></span>
+                        <span>${escapeHtmlText(layer.name)}</span>
+                    </span>
+                    <button class="dropdown-close-btn" onclick="event.stopPropagation(); closeAllMenus()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="dropdown-menu-subtitle">
+                    🎨 ${layer.blendMode || 'normal'} • 👁️ ${Math.round((layer.opacity || 1) * 100)}%
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); openRenameModalById(${id})">
+                    <i class="fas fa-edit"></i> Đổi Tên
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); toggleLayerVisibilityById(${id})">
+                    <i class="fas ${layer.visible ? 'fa-eye-slash' : 'fa-eye'}"></i> ${layer.visible ? 'Ẩn Lớp' : 'Hiện Lớp'}
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); duplicateLayerById(${id})">
+                    <i class="fas fa-copy"></i> Nhân Đôi
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerUpById(${id})">
+                    <i class="fas fa-chevron-up"></i> Lên Trên
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerDownById(${id})">
+                    <i class="fas fa-chevron-down"></i> Xuống Dưới
+                </div>
+                <div class="dropdown-menu-item danger" onclick="event.stopPropagation(); closeAllMenus(); deleteLayerById(${id})">
+                    <i class="fas fa-trash"></i> Xoá Lớp
+                </div>
+            `;
+
+            attachDropdownMenu(menu, layerItem);
+            currentOpenMenu = menu;
+        }
+
+        // Menu cho 1 nhóm con nằm lồng bên trong 1 nhóm khác — bản rút gọn
+        // của showGroupMenu, vẫn có cây thư mục + nút rút gọn.
+        // Ghi chú: nhóm lồng bên trong 1 nhóm khác dùng thẳng showGroupMenu()
+        // ở trên (gọi với layerIndex = -1) — layerIndex không được dùng để
+        // đánh chỉ số thật ở bất kỳ đâu trong showGroupMenu/openGroupRenameModal/
+        // showMoveGroupSubmenu, nên tái dùng an toàn cho cả nhóm lồng nhau.
+
+        // Thoát chuỗi trước khi chèn vào innerHTML (tên lớp/nhóm là do người
+        // dùng gõ tự do).
+        function escapeHtmlText(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        // Vẽ cây thư mục thật cho nội dung 1 nhóm — đi sâu vào nhóm lồng
+        // nhóm, mỗi cấp thụt vào để người dùng thấy rõ cha/con.
+        function buildGroupContentsTree(group, depth = 0) {
+            if (!group || group.children.length === 0) {
+                return `<div style="padding: 8px 12px; padding-left: ${12 + depth * 16}px; font-size: 0.82rem; color: #999;">(Trống)</div>`;
+            }
+            return group.children.map(child => {
+                const indent = 12 + depth * 16;
+                if (child.isGroup) {
+                    const childGroup = layerGroups.find(g => g.id === child.groupId);
+                    return `
+                        <div style="padding: 6px 12px; padding-left: ${indent}px; font-size: 0.85rem; font-weight: 600; color: #000;">
+                            📁 ${escapeHtmlText(child.name)} <span style="font-weight: 400; color: #999;">(${childGroup ? childGroup.children.length : 0})</span>
+                        </div>
+                        ${childGroup ? buildGroupContentsTree(childGroup, depth + 1) : ''}
+                    `;
+                }
+                return `
+                    <div style="padding: 6px 12px; padding-left: ${indent}px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${child.color}; flex-shrink: 0;"></span>
+                        <span style="color: ${child.color}; overflow-wrap: anywhere;">${escapeHtmlText(child.name)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showGroupMenu(layerIndex, groupId, event) {
+            closeAllMenus();
+            event.stopPropagation();
+
+            const group = layerGroups.find(g => g.id === groupId);
+            const layerItem = event.currentTarget.closest('.layer-item');
+
+            const menu = document.createElement('div');
+            menu.className = 'layer-dropdown-menu';
+            menu.dataset.groupId = groupId;
+
+            const contentsLabel = group && group.contentsShown ? 'Xem Ở Chế Độ Rút Gọn' : 'Xem Thành Phần Bên Trong';
+            const contentsIcon = group && group.contentsShown ? 'fa-compress' : 'fa-eye';
+            // layer.id === layer.groupId cho mọi lớp nhóm (xem executeGroupLayers)
+            // nên groupId dùng được luôn cho các hàm *ById(), dù nhóm ở cấp cao
+            // nhất hay lồng trong nhóm khác.
+            const groupRef = resolveLayerRef(groupId);
+            const groupLayer = groupRef ? groupRef.container[groupRef.index] : null;
+
+            const isExpanded = group ? !group.collapsed : true;
+            const expandIcon = isExpanded ? 'fa-angle-up' : 'fa-angle-down';
+            const expandLabel = isExpanded ? 'Ẩn Danh Sách Lớp Con' : 'Hiện Danh Sách Lớp Con';
+            const childCount = group ? group.children.length : 0;
+
+            let menuHTML = `
+                <div class="dropdown-menu-header">
+                    <span class="dropdown-menu-header-name">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #000000; flex-shrink: 0;"></span>
+                        <span>${escapeHtmlText(groupLayer ? groupLayer.name : '')}</span>
+                    </span>
+                    <button class="dropdown-close-btn" onclick="event.stopPropagation(); closeAllMenus()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="dropdown-menu-subtitle">
+                    🎨 ${groupLayer ? (groupLayer.blendMode || 'normal') : 'normal'} • 👁️ ${Math.round(((groupLayer && groupLayer.opacity) || 1) * 100)}%
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); openGroupRenameModal(${layerIndex}, ${groupId})">
+                    <i class="fas fa-edit"></i> Đổi Tên
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); toggleLayerVisibilityById(${groupId})">
+                    <i class="fas ${groupLayer && groupLayer.visible ? 'fa-eye-slash' : 'fa-eye'}"></i> ${groupLayer && groupLayer.visible ? 'Ẩn Nhóm' : 'Hiện Nhóm'}
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerUpById(${groupId})">
+                    <i class="fas fa-chevron-up"></i> Lên Trên
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerDownById(${groupId})">
+                    <i class="fas fa-chevron-down"></i> Xuống Dưới
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); toggleGroupExpanded(${groupId})">
+                    <i class="fas ${expandIcon}"></i> ${expandLabel} (${childCount})
+                </div>
+                <div class="dropdown-menu-item" onclick="event.stopPropagation(); toggleGroupContentsShown(${groupId}, ${layerIndex}, event)">
+                    <i class="fas ${contentsIcon}"></i> ${contentsLabel}
+                </div>
+            `;
+
+            // Nhóm lồng bên trong 1 nhóm khác (layerIndex === -1) không thể
+            // kéo-thả (không có drag listener) — chỉ hiện cho nhóm cấp cao nhất.
+            if (layerIndex !== -1) {
+                menuHTML += `
+                    <div class="dropdown-menu-item" onclick="event.stopPropagation(); closeAllMenus(); revealDragHandle(${layerIndex})">
+                        <i class="fas fa-arrows-up-down"></i> Kéo Để Sắp Xếp
+                    </div>
+                `;
+            }
+
+            // Add "Move to Group" if there are other groups
+            const otherGroups = layerGroups.filter(g => g.id !== groupId);
+            if (otherGroups.length > 0) {
+                menuHTML += `
+                    <div class="dropdown-menu-item" onclick="event.stopPropagation(); showMoveGroupSubmenu(${layerIndex}, ${groupId}, event)">
+                        <i class="fas fa-arrow-right"></i> Di Chuyển Sang Nhóm...
+                        <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 0.75rem;"></i>
+                    </div>
+                `;
+            }
+
+            menuHTML += `
+                <div class="dropdown-menu-item danger" onclick="event.stopPropagation(); closeAllMenus(); ungroupLayers(${groupId})">
+                    <i class="fas fa-unlink"></i> Bỏ Nhóm
+                </div>
+                <div class="dropdown-menu-item danger" onclick="event.stopPropagation(); closeAllMenus(); deleteLayerById(${groupId})">
+                    <i class="fas fa-trash"></i> Xoá Cả Nhóm
+                </div>
+            `;
+
+            if (group && group.contentsShown) {
+                menuHTML += buildGroupContentsTree(group, 0);
+            }
+
+            menu.innerHTML = menuHTML;
+            attachDropdownMenu(menu, layerItem);
+            currentOpenMenu = menu;
+        }
+
+        // Bấm "Xem Thành Phần" lần đầu -> mở cây thư mục ngay trong menu.
+        // Bấm lại tên nhóm trong khi cây đang mở (xem showGroupMenu) hoặc
+        // bấm "Xem Ở Chế Độ Rút Gọn" -> đóng cây lại.
+        function toggleGroupContentsShown(groupId, layerIndex, event) {
+            const group = layerGroups.find(g => g.id === groupId);
+            if (!group) return;
+            group.contentsShown = !group.contentsShown;
+            // Lấy .layer-item TRƯỚC khi showGroupMenu tự đóng (xoá) menu hiện
+            // tại — closeAllMenus() gỡ menu (chứa chính nút vừa bấm) khỏi DOM,
+            // nên event.currentTarget.closest(...) sau đó sẽ luôn ra null.
+            const layerItem = event.currentTarget.closest('.layer-item');
+            showGroupMenu(layerIndex, groupId, { stopPropagation(){}, preventDefault(){}, currentTarget: layerItem });
+        }
+
+        function showMoveToGroupSubmenu(layerIndex, event) {
+            const anchor = event.currentTarget;
+            const submenu = document.createElement('div');
+            submenu.className = 'layer-dropdown-menu';
+
+            let html = `
+                <div class="dropdown-menu-header">
+                    Chọn Nhóm
+                    <button class="dropdown-close-btn" onclick="event.stopPropagation(); closeAllMenus()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="dropdown-submenu">
+            `;
+
+            layerGroups.forEach((group, i) => {
+                html += `
+                    <div class="dropdown-submenu-item" onclick="event.stopPropagation(); closeAllMenus(); moveLayerToGroup(${layerIndex}, ${i})">
+                        <i class="fas fa-folder"></i> ${group.name}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            submenu.innerHTML = html;
+            attachDropdownMenu(submenu, anchor, { preferSide: 'right' });
+        }
+
+        function showMoveGroupSubmenu(layerIndex, groupId, event) {
+            const anchor = event.currentTarget;
+            const submenu = document.createElement('div');
+            submenu.className = 'layer-dropdown-menu';
+
+            let html = `
+                <div class="dropdown-menu-header">
+                    Chọn Nhóm
+                    <button class="dropdown-close-btn" onclick="event.stopPropagation(); closeAllMenus()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="dropdown-submenu">
+            `;
+
+            layerGroups.forEach((group) => {
+                if (group.id !== groupId) {
+                    html += `
+                        <div class="dropdown-submenu-item" onclick="event.stopPropagation(); closeAllMenus(); moveGroupToGroup(${groupId}, ${group.id})">
+                            <i class="fas fa-folder"></i> ${group.name}
+                        </div>
+                    `;
+                }
+            });
+
+            html += '</div>';
+            submenu.innerHTML = html;
+            attachDropdownMenu(submenu, anchor, { preferSide: 'right' });
+        }
+
+        function moveLayerToGroup(layerIndex, groupIndex) {
+            const layer = layers[layerIndex];
+            const group = layerGroups[groupIndex];
+            
+            if (!layer || !group) return;
+            
+            // Remove layer from main array
+            layers.splice(layerIndex, 1);
+            
+            // Add to group's children
+            group.children.push(layer);
+            
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`✅ Di chuyển "${layer.name}" vào nhóm "${group.name}"`, 'success');
+        }
+
+        function moveGroupToGroup(groupId, targetGroupId) {
+            const sourceGroup = layerGroups.find(g => g.id === groupId);
+            const targetGroup = layerGroups.find(g => g.id === targetGroupId);
+            
+            if (!sourceGroup || !targetGroup) return;
+            
+            // Prevent moving group to itself
+            if (groupId === targetGroupId) {
+                showToast('❌ Không thể di chuyển nhóm vào chính nó!', 'error');
+                return;
+            }
+            
+            // Remove source group from main layers array
+            const sourceLayerIndex = layers.findIndex(l => l.isGroup && l.groupId === groupId);
+            if (sourceLayerIndex !== -1) {
+                layers.splice(sourceLayerIndex, 1);
+            }
+            
+            // Remove from layerGroups array
+            const sourceGroupIndex = layerGroups.findIndex(g => g.id === groupId);
+            layerGroups.splice(sourceGroupIndex, 1);
+            
+            // Add to target group's children as a nested group
+            targetGroup.children.push(sourceGroup);
+            
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`✅ Di chuyển nhóm "${sourceGroup.name}" vào "${targetGroup.name}"`, 'success');
+        }
+
+        function openGroupRenameModal(layerIndex, groupId) {
+            const group = layerGroups.find(g => g.id === groupId);
+            if (group) {
+                currentRenameIndex = -1; // Mark as group rename
+                currentRenameLayerId = null;
+                document.getElementById('renameInput').value = group.name;
+                document.getElementById('renameModal').classList.add('active');
+
+                // Override confirmRenameLayer behavior for groups
+                window.currentGroupRenameId = groupId;
+            }
+        }
+
+        function toggleLayerVisibility(index) {
+            layers[index].visible = !layers[index].visible;
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`Layer "${layers[index].name}" ${layers[index].visible ? 'hiển thị' : 'ẩn'}`, 'success');
+        }
+
+        // Trả về danh sách "lớp thật" (có objects) nằm trong một danh sách lớp,
+        // đi sâu vào bên trong các nhóm (kể cả nhóm lồng nhóm), cộng dồn
+        // opacity/ẩn-hiện của nhóm cha vào từng lớp con.
+        function flattenLayersForRender(layerList, inheritedOpacity = 1, inheritedVisible = true) {
+            let result = [];
+            layerList.forEach(layer => {
+                const visible = inheritedVisible && layer.visible;
+                const opacity = inheritedOpacity * (layer.opacity != null ? layer.opacity : 1);
+
+                if (layer.isGroup) {
+                    const group = layerGroups.find(g => g.id === layer.groupId);
+                    if (group) {
+                        result = result.concat(flattenLayersForRender(group.children, opacity, visible));
+                    }
+                } else {
+                    result.push({ layer, visible, opacity });
+                }
+            });
+            return result;
+        }
+
+        // canvas.clear() phát ra sự kiện 'object:removed' cho từng đối tượng,
+        // mà sự kiện đó lại gọi renderAllLayers() (xem bindCanvasEvents) — nếu
+        // không chặn, mỗi lần render sẽ tự gọi lại chính nó và tràn stack.
+        let isRenderingLayers = false;
+
+        function renderAllLayers() {
+            if (isRenderingLayers) return;
+            isRenderingLayers = true;
+
+            canvas.clear();
+
+            // Render tất cả lớp (kể cả lớp nằm trong nhóm) từ dưới lên trên
+            flattenLayersForRender(layers).forEach(({ layer, visible, opacity }) => {
+                if (visible && layer.objects && layer.objects.length > 0) {
+                    layer.objects.forEach(obj => {
+                        // Áp opacity và blend mode (đã cộng dồn cả opacity của nhóm cha)
+                        obj.opacity = opacity;
+
+                        if (layer.blendMode && layer.blendMode !== 'normal') {
+                            obj.globalCompositeOperation = layer.blendMode;
+                        }
+
+                        canvas.add(obj);
+                    });
+                }
+            });
+
+            canvas.renderAll();
+            isRenderingLayers = false;
+            updateLayerBorder();
+        }
+
+        function moveLayerUp(index) {
+            if (index < layers.length - 1) {
+                [layers[index], layers[index + 1]] = [layers[index + 1], layers[index]];
+                activeLayerIndex = index + 1;
+                updateLayersUI();
+                updateCurrentLayerColor();
+            }
+        }
+
+        function moveLayerDown(index) {
+            if (index > 0) {
+                [layers[index], layers[index - 1]] = [layers[index - 1], layers[index]];
+                activeLayerIndex = index - 1;
+                updateLayersUI();
+                updateCurrentLayerColor();
+            }
+        }
+
+        // ===== THAO TÁC VỚI LỚP/NHÓM NẰM BÊN TRONG 1 NHÓM (định danh theo id) =====
+        // Lỗi cũ: bảng lớp tính globalIndex = layers.indexOf(layer), luôn ra -1
+        // với lớp nằm trong group.children (không có trong mảng layers cấp cao
+        // nhất) — nên nút xoá/di chuyển/ẩn-hiện/đổi tên của các dòng lớp con
+        // không trỏ đúng lớp nào cả. Các hàm dưới đây tìm lớp theo id, dù nó ở
+        // đâu (cấp cao nhất hay lồng trong nhóm nào), rồi thao tác lên đúng
+        // mảng đang thực sự chứa nó.
+        function resolveLayerRef(id) {
+            function search(container, parentGroup) {
+                for (let i = 0; i < container.length; i++) {
+                    if (container[i].id === id) {
+                        return { container, index: i, parentGroup };
+                    }
+                    if (container[i].isGroup) {
+                        const g = layerGroups.find(gr => gr.id === container[i].groupId);
+                        if (g) {
+                            const found = search(g.children, g);
+                            if (found) return found;
+                        }
+                    }
+                }
+                return null;
+            }
+            return search(layers, null);
+        }
+
+        // Xoá 1 nhóm phải dọn luôn mục của nó (và mọi nhóm lồng bên trong)
+        // khỏi layerGroups — nếu không, nhóm "hồn ma" đó vẫn còn được liệt
+        // kê ở "Di Chuyển Sang Nhóm...", và di chuyển 1 lớp vào đó coi như
+        // làm mất lớp vĩnh viễn (không placeholder nào trỏ tới nó để vẽ ra).
+        function removeGroupAndDescendantsFromRegistry(groupId) {
+            const idx = layerGroups.findIndex(g => g.id === groupId);
+            if (idx === -1) return;
+            layerGroups[idx].children.forEach(child => {
+                if (child.isGroup) removeGroupAndDescendantsFromRegistry(child.groupId);
+            });
+            layerGroups.splice(idx, 1);
+        }
+
+        function deleteLayerById(id) {
+            const ref = resolveLayerRef(id);
+            if (!ref) return;
+            if (ref.container === layers && layers.length <= 1) {
+                showToast('Không thể xoá layer cuối cùng!', 'error');
+                return;
+            }
+            const layer = ref.container[ref.index];
+            const confirmMsg = layer.isGroup ? `Xoá cả nhóm "${layer.name}" và mọi lớp bên trong?` : `Xoá layer "${layer.name}"?`;
+            if (confirm(confirmMsg)) {
+                if (layer.isGroup) {
+                    removeGroupAndDescendantsFromRegistry(layer.groupId);
+                }
+                ref.container.splice(ref.index, 1);
+                if (activeLayerIndex >= layers.length) {
+                    activeLayerIndex = Math.max(0, layers.length - 1);
+                }
+                updateLayersUI();
+                updateCurrentLayerColor();
+                renderAllLayers();
+                showToast('Đã xoá layer', 'success');
+            }
+        }
+
+        function duplicateLayerById(id) {
+            const ref = resolveLayerRef(id);
+            if (!ref) return;
+            const original = ref.container[ref.index];
+            const duplicate = {
+                ...original,
+                id: Date.now(),
+                name: `${original.name} (Bản Sao)`,
+                objects: original.objects ? [...original.objects] : undefined
+            };
+            ref.container.splice(ref.index + 1, 0, duplicate);
+            updateLayersUI();
+            updateCurrentLayerColor();
+            renderAllLayers();
+            showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+        }
+
+        function toggleLayerVisibilityById(id) {
+            const ref = resolveLayerRef(id);
+            if (!ref) return;
+            const layer = ref.container[ref.index];
+            layer.visible = !layer.visible;
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`Layer "${layer.name}" ${layer.visible ? 'hiển thị' : 'ẩn'}`, 'success');
+        }
+
+        function renameLayerById(id, newName) {
+            const ref = resolveLayerRef(id);
+            if (!ref || !newName.trim()) return;
+            ref.container[ref.index].name = newName;
+            updateLayersUI();
+            updateCurrentLayerColor();
+        }
+
+        function moveLayerUpById(id) {
+            const ref = resolveLayerRef(id);
+            if (!ref || ref.index >= ref.container.length - 1) return;
+            [ref.container[ref.index], ref.container[ref.index + 1]] = [ref.container[ref.index + 1], ref.container[ref.index]];
+            updateLayersUI();
+            renderAllLayers();
+        }
+
+        function moveLayerDownById(id) {
+            const ref = resolveLayerRef(id);
+            if (!ref || ref.index <= 0) return;
+            [ref.container[ref.index], ref.container[ref.index - 1]] = [ref.container[ref.index - 1], ref.container[ref.index]];
+            updateLayersUI();
+            renderAllLayers();
+        }
+
+        // Bấm vào 1 lớp/nhóm con nằm bên trong 1 nhóm: mô hình sửa ảnh hiện tại
+        // (xoay/lật/lọc/AI...) chỉ thao tác trên lớp cấp cao nhất đang chọn —
+        // muốn chỉnh riêng lớp con thì phải bỏ nhóm trước. Vì vậy bấm vào tên
+        // lớp con sẽ chọn nhóm cha ngoài cùng làm lớp đang thao tác (đúng như
+        // khi bấm nút bất kỳ trong khi đang ở nhóm), kèm lời nhắc rõ ràng thay
+        // vì im lặng không làm gì hoặc trỏ sai lớp.
+        function selectNestedLayer(id) {
+            const ref = resolveLayerRef(id);
+            const layer = ref ? ref.container[ref.index] : null;
+            // Tìm nhóm cấp cao nhất (top-level) đang chứa lớp này
+            const topIndex = layers.findIndex(l => {
+                if (!l.isGroup) return false;
+                const g = layerGroups.find(gr => gr.id === l.groupId);
+                return g && resolveLayerRefWithin(g, id);
+            });
+            if (topIndex !== -1) {
+                selectLayer(topIndex, false, false);
+                showToast(`📁 Lớp "${layer ? layer.name : ''}" nằm trong nhóm "${layers[topIndex].name}" — bỏ nhóm để chỉnh riêng lớp này`, 'info');
+            }
+        }
+
+        function resolveLayerRefWithin(group, id) {
+            for (const child of group.children) {
+                if (child.id === id) return true;
+                if (child.isGroup) {
+                    const g = layerGroups.find(gr => gr.id === child.groupId);
+                    if (g && resolveLayerRefWithin(g, id)) return true;
+                }
+            }
+            return false;
+        }
+
+        function updateLayersUI() {
+            const layersList = document.getElementById('layersList');
+            layersList.innerHTML = '';
+
+            // Helper function to render layers with tree structure
+            function renderLayerTree(parentElement, layersArray, depth = 0) {
+                // renderAllLayers() vẽ mảng layers/group.children theo ĐÚNG
+                // thứ tự của nó — phần tử đứng SAU được vẽ SAU nên đè lên
+                // phần tử đứng trước (giống fabric/canvas: add() sau = nổi
+                // lên trên). Bảng lớp vì vậy phải hiện NGƯỢC lại (phần tử
+                // cuối mảng — nổi trên cùng — lên ĐẦU danh sách), để "lớp ở
+                // trên trong danh sách" khớp với "lớp đè lên trên màn hình".
+                [...layersArray].reverse().forEach((layer, index) => {
+                    // globalIndex chỉ có nghĩa (khớp vị trí thật trong mảng
+                    // layers) khi depth === 0. Với depth > 0 (lớp/nhóm nằm
+                    // trong 1 nhóm), layers.indexOf luôn ra -1 vì phần tử đó
+                    // không nằm ở mảng cấp cao nhất — mọi nút bấm của dòng
+                    // này vì vậy dùng các hàm *ById() thao tác theo layer.id.
+                    const globalIndex = layers.indexOf(layer);
+                    const isNested = depth > 0;
+                    const isActive = !isNested && globalIndex === activeLayerIndex;
+
+                    // Create layer item wrapper
+                    const layerWrapper = document.createElement('div');
+                    layerWrapper.style.marginLeft = (depth * 20) + 'px';
+
+                    if (layer.isGroup) {
+                        // GROUP LAYER
+                        const group = layerGroups.find(g => g.id === layer.groupId);
+                        if (!group) return;
+
+                        const isMultiSelected = !isNested && multiSelectedIndices.has(globalIndex);
+                        const groupEl = document.createElement('div');
+                        groupEl.className = `layer-item ${isActive ? 'active' : ''} ${isNested ? 'layer-item-nested' : ''} ${isMultiSelected ? 'multi-selected' : ''}`;
+                        groupEl.style.borderColor = '#000000';
+                        groupEl.style.position = 'relative';
+                        groupEl.draggable = !isNested;
+                        groupEl.dataset.layerIndex = globalIndex;
+
+                        const isExpanded = !group.collapsed;
+                        // layer.id === layer.groupId cho mọi lớp nhóm (xem
+                        // executeGroupLayers) — dùng luôn *ById() cho ẩn/hiện
+                        // dù nhóm nằm ở cấp cao nhất hay lồng trong nhóm khác.
+                        const visibilityAction = `toggleLayerVisibilityById(${layer.id})`;
+                        const menuAction = isNested ? `showGroupMenu(-1, ${layer.groupId}, event)` : `showGroupMenu(${globalIndex}, ${layer.groupId}, event)`;
+                        const showDragHandle = !isNested && globalIndex === dragRevealIndex;
+
+                        // Thẻ tối giản hết mức: chỉ mắt ẩn/hiện (sát trái),
+                        // tên (📁 + số lớp con), và nút mở menu (sát phải).
+                        // Mọi thao tác khác (đổi tên, lên/xuống, xoá, xem
+                        // thành phần, mở/thu gọn danh sách con, bỏ nhóm...)
+                        // đều nằm trong menu đó — xem showGroupMenu().
+                        groupEl.innerHTML = `
+                            <div class="layer-visibility" onclick="event.stopPropagation(); ${visibilityAction}">
+                                <i class="fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                            </div>
+                            ${showDragHandle ? `<div class="drag-handle drag-handle-visible" title="Kéo để sắp xếp lại">⋮⋮</div>` : ''}
+                            <span class="layer-name-text" style="color: #000000;">📁 ${escapeHtmlText(layer.name)} <span class="layer-count-badge">(${group.children.length})</span></span>
+                            <button class="layer-menu-trigger" onclick="event.stopPropagation(); ${menuAction}" title="Tuỳ chọn">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </button>
+                            <div class="group-mode-indicator">👥</div>
+                            <div class="multi-select-badge">${multiSelectedIndices.size}</div>
+                        `;
+
+                        if (isNested) {
+                            groupEl.onclick = () => selectNestedLayer(layer.id);
+                        } else {
+                            groupEl.onclick = (e) => selectLayer(globalIndex, e.ctrlKey || e.metaKey, e.shiftKey);
+                            groupEl.oncontextmenu = (e) => showMultiSelectMenu(e, globalIndex);
+                            // Add drag event listeners (chỉ áp dụng cho hàng cấp cao nhất)
+                            groupEl.addEventListener('dragstart', (e) => handleLayerDragStart(e, globalIndex));
+                            groupEl.addEventListener('dragover', (e) => handleLayerDragOver(e));
+                            groupEl.addEventListener('drop', (e) => handleLayerDrop(e, globalIndex));
+                            groupEl.addEventListener('dragleave', (e) => handleLayerDragLeave(e));
+                            groupEl.addEventListener('dragend', (e) => handleLayerDragEnd(e));
+                        }
+                        groupEl.classList.add('group-selected'); // Add group-selected class
+
+                        layerWrapper.appendChild(groupEl);
+
+                        // Add children container
+                        if (group.children.length > 0 && isExpanded) {
+                            const childrenContainer = document.createElement('div');
+                            childrenContainer.style.borderLeft = '2px solid #e0e0e0';
+                            renderLayerTree(childrenContainer, group.children, depth + 1);
+                            layerWrapper.appendChild(childrenContainer);
+                        }
+
+                    } else {
+                        // REGULAR LAYER
+                        const isMultiSelected = !isNested && multiSelectedIndices.has(globalIndex);
+                        const layerEl = document.createElement('div');
+                        layerEl.className = `layer-item ${isActive ? 'active' : ''} ${isNested ? 'layer-item-nested' : ''} ${isMultiSelected ? 'multi-selected' : ''}`;
+                        layerEl.style.borderColor = layer.color;
+                        layerEl.style.position = 'relative';
+                        layerEl.draggable = !isNested;
+                        layerEl.dataset.layerIndex = globalIndex;
+
+                        const visibilityAction = isNested ? `toggleLayerVisibilityById(${layer.id})` : `toggleLayerVisibility(${globalIndex})`;
+                        const menuAction = isNested ? `showNestedLayerMenu(${layer.id}, event)` : `showLayerMenu(${globalIndex}, event)`;
+                        const showDragHandle = !isNested && globalIndex === dragRevealIndex;
+
+                        // Thẻ tối giản hết mức: chỉ mắt ẩn/hiện (sát trái),
+                        // tên, và nút mở menu (sát phải) — không còn bấm vào
+                        // tên để đổi tên trực tiếp nữa, phải qua menu ("Đổi
+                        // Tên"). Nhân đôi/lên/xuống/xoá/di chuyển sang nhóm...
+                        // đều nằm trong menu đó — xem showLayerMenu().
+                        layerEl.innerHTML = `
+                            <div class="layer-visibility" onclick="event.stopPropagation(); ${visibilityAction}">
+                                <i class="fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                            </div>
+                            ${showDragHandle ? `<div class="drag-handle drag-handle-visible" title="Kéo để sắp xếp lại">⋮⋮</div>` : ''}
+                            <span class="layer-name-text">${escapeHtmlText(layer.name)}</span>
+                            <button class="layer-menu-trigger" onclick="event.stopPropagation(); ${menuAction}" title="Tuỳ chọn">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </button>
+                            <div class="multi-select-badge">${multiSelectedIndices.size}</div>
+                        `;
+
+                        if (isNested) {
+                            layerEl.onclick = () => selectNestedLayer(layer.id);
+                        } else {
+                            // Add drag event listeners (chỉ áp dụng cho hàng cấp cao nhất)
+                            layerEl.addEventListener('dragstart', (e) => handleLayerDragStart(e, globalIndex));
+                            layerEl.addEventListener('dragover', (e) => handleLayerDragOver(e));
+                            layerEl.addEventListener('drop', (e) => handleLayerDrop(e, globalIndex));
+                            layerEl.addEventListener('dragleave', (e) => handleLayerDragLeave(e));
+                            layerEl.addEventListener('dragend', (e) => handleLayerDragEnd(e));
+
+                            layerEl.onclick = (e) => selectLayer(globalIndex, e.ctrlKey || e.metaKey, e.shiftKey);
+                            layerEl.oncontextmenu = (e) => showMultiSelectMenu(e, globalIndex);
+                        }
+                        layerWrapper.appendChild(layerEl);
+                    }
+
+                    parentElement.appendChild(layerWrapper);
+                });
+            }
+            
+            // Render tree structure
+            renderLayerTree(layersList, layers, 0);
+
+            document.getElementById('layerCount').textContent = layers.length;
+            document.getElementById('currentLayerInfo').textContent = layers[activeLayerIndex]?.name || 'Không có';
+        }
+
+        function updateCurrentLayerColor() {
+            const currentLayer = layers[activeLayerIndex];
+            if (currentLayer) {
+                // For groups, always use BLACK
+                if (currentLayer.isGroup) {
+                    document.documentElement.style.setProperty('--current-layer-color', '#000000');
+                    
+                    // Add visual indicator in header
+                    const header = document.querySelector('.left-sidebar h3');
+                    if (header) {
+                        header.textContent = `🖤 Nhóm: ${currentLayer.name}`;
+                    }
+                } else {
+                    const color = currentLayer.color;
+                    document.documentElement.style.setProperty('--current-layer-color', color);
+                    
+                    // Show normal layer info
+                    const header = document.querySelector('.left-sidebar h3');
+                    if (header) {
+                        header.textContent = `Layer: ${currentLayer.name}`;
+                    }
+                }
+            }
+        }
+
+        function toggleGroupExpanded(groupId) {
+            const group = layerGroups.find(g => g.id === groupId);
+            if (group) {
+                group.collapsed = !group.collapsed;
+                updateLayersUI();
+                showToast(`${group.collapsed ? '▶' : '▼'} Nhóm "${group.name}"`, 'info');
+            }
+        }
+
+        // ===== KEYBOARD SHORTCUTS FUNCTIONS =====
+        function showKeyboardShortcuts() {
+            document.getElementById('shortcutsModal').classList.add('active');
+            showToast('⌨️ Xem danh sách phím tắt', 'info');
+        }
+
+        function hideKeyboardShortcuts() {
+            document.getElementById('shortcutsModal').classList.remove('active');
+        }
+
+        // Close shortcuts modal when clicking outside
+        document.getElementById('shortcutsModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideKeyboardShortcuts();
+            }
+        });
+
+        // ===== DRAG-AND-DROP FUNCTIONS =====
+        let draggedLayerIndex = -1;
+        let draggedOverIndex = -1;
+        // Tay cầm kéo-thả (⋮⋮) mặc định ẩn, chỉ hiện lại cho ĐÚNG 1 hàng sau
+        // khi bấm "Kéo Để Sắp Xếp" trong menu của hàng đó — xem revealDragHandle()
+        // và handleLayerDragEnd() (nơi nó tự ẩn lại khi thao tác kéo kết thúc).
+        let dragRevealIndex = -1;
+
+        function revealDragHandle(index) {
+            dragRevealIndex = index;
+            updateLayersUI();
+            showToast('🔀 Kéo biểu tượng ⋮⋮ để sắp xếp lại — bỏ tay ra là xong', 'info');
+        }
+
+        function handleLayerDragStart(e, layerIndex) {
+            draggedLayerIndex = layerIndex;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
+            showToast(`🎯 Đang kéo: ${layers[layerIndex].name}`, 'info');
+        }
+
+        function handleLayerDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            if (e.target.closest('.layer-item')) {
+                const layerItem = e.target.closest('.layer-item');
+                const rect = layerItem.getBoundingClientRect();
+                const midpoint = rect.height / 2;
+                const offsetY = e.clientY - rect.top;
+                
+                // Remove previous drag-over classes
+                document.querySelectorAll('.layer-item').forEach(el => {
+                    el.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-inside');
+                });
+                
+                // Add drag-over visual feedback
+                if (offsetY < midpoint) {
+                    layerItem.classList.add('drag-over-before');
+                } else {
+                    layerItem.classList.add('drag-over-after');
+                }
+            }
+        }
+
+        function handleLayerDrop(e, targetIndex) {
+            e.preventDefault();
+            
+            // Remove drag-over classes
+            document.querySelectorAll('.layer-item').forEach(el => {
+                el.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-inside');
+            });
+            
+            if (draggedLayerIndex !== -1 && draggedLayerIndex !== targetIndex) {
+                const draggedLayer = layers[draggedLayerIndex];
+                const targetLayer = layers[targetIndex];
+                
+                // Determine insert position
+                const rect = e.target.closest('.layer-item').getBoundingClientRect();
+                const midpoint = rect.height / 2;
+                const offsetY = e.clientY - rect.top;
+                
+                // Remove dragged layer
+                layers.splice(draggedLayerIndex, 1);
+                
+                // Recalculate target index after removal
+                let newTargetIndex = layers.indexOf(targetLayer);
+                
+                // Insert at new position
+                if (offsetY < midpoint && draggedLayerIndex < targetIndex) {
+                    // Dragging up
+                    layers.splice(newTargetIndex, 0, draggedLayer);
+                } else if (offsetY >= midpoint && draggedLayerIndex > targetIndex) {
+                    // Dragging down
+                    layers.splice(newTargetIndex + 1, 0, draggedLayer);
+                } else if (draggedLayerIndex < targetIndex) {
+                    // Dragging down
+                    layers.splice(newTargetIndex + 1, 0, draggedLayer);
+                } else {
+                    // Dragging up
+                    layers.splice(newTargetIndex, 0, draggedLayer);
+                }
+                
+                // Update active layer index if needed
+                if (activeLayerIndex === draggedLayerIndex) {
+                    activeLayerIndex = layers.indexOf(draggedLayer);
+                }
+                
+                updateLayersUI();
+                renderAllLayers();
+                
+                showToast(`✅ "${draggedLayer.name}" được di chuyển thành công!`, 'success');
+            }
+            
+            draggedLayerIndex = -1;
+        }
+
+        function handleLayerDragLeave(e) {
+            if (!e.target.closest('.layer-item').contains(e.relatedTarget)) {
+                document.querySelectorAll('.layer-item').forEach(el => {
+                    el.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-inside');
+                });
+            }
+        }
+
+        function handleLayerDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.layer-item').forEach(el => {
+                el.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-inside', 'dragging');
+            });
+            draggedLayerIndex = -1;
+            // Kéo xong (thả thành công hay huỷ đều bắn dragend) — ẩn lại tay
+            // cầm kéo-thả, không hiện thường trực nữa.
+            if (dragRevealIndex !== -1) {
+                dragRevealIndex = -1;
+                updateLayersUI();
+            }
+        }
+
+        // ===== MULTI-SELECT BATCH OPERATIONS =====
+        function clearMultiSelection() {
+            multiSelectedIndices.clear();
+            updateLayersUI();
+            showToast('🔄 Bỏ chọn tất cả', 'info');
+        }
+
+        function deleteMultiSelected() {
+            if (multiSelectedIndices.size === 0) {
+                showToast('❌ Không có lớp nào được chọn!', 'error');
+                return;
+            }
+
+            const names = Array.from(multiSelectedIndices).map(i => layers[i].name).join(', ');
+            if (confirm(`Xoá ${multiSelectedIndices.size} lớp: ${names}?`)) {
+                // Delete in reverse order to avoid index shifting
+                const indicesToDelete = Array.from(multiSelectedIndices).sort((a, b) => b - a);
+                indicesToDelete.forEach(index => {
+                    if (layers.length > 1) {
+                        layers.splice(index, 1);
+                    }
+                });
+                
+                multiSelectedIndices.clear();
+                activeLayerIndex = Math.min(activeLayerIndex, layers.length - 1);
+                updateLayersUI();
+                renderAllLayers();
+                showToast(`✅ Đã xoá ${indicesToDelete.length} lớp!`, 'success');
+            }
+        }
+
+        function hideMultiSelected() {
+            if (multiSelectedIndices.size === 0) {
+                showToast('❌ Không có lớp nào được chọn!', 'error');
+                return;
+            }
+
+            multiSelectedIndices.forEach(index => {
+                layers[index].visible = false;
+            });
+            
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`👁️ Ẩn ${multiSelectedIndices.size} lớp`, 'success');
+        }
+
+        function showMultiSelected() {
+            if (multiSelectedIndices.size === 0) {
+                showToast('❌ Không có lớp nào được chọn!', 'error');
+                return;
+            }
+
+            multiSelectedIndices.forEach(index => {
+                layers[index].visible = true;
+            });
+            
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`👁️ Hiển thị ${multiSelectedIndices.size} lớp`, 'success');
+        }
+
+        function groupMultiSelected() {
+            if (multiSelectedIndices.size < 1) {
+                showToast('❌ Chọn ít nhất 1 lớp để tạo nhóm!', 'error');
+                return;
+            }
+
+            // Open group modal with pre-selected layers
+            const selectedLayersArray = Array.from(multiSelectedIndices);
+            layersToGroup = new Set(selectedLayersArray);
+            startGroupLayers();
+        }
+
+        function duplicateMultiSelected() {
+            if (multiSelectedIndices.size === 0) {
+                showToast('❌ Không có lớp nào được chọn!', 'error');
+                return;
+            }
+
+            const indicesToDuplicate = Array.from(multiSelectedIndices).sort((a, b) => b - a);
+            let newIndices = new Set();
+
+            indicesToDuplicate.forEach(index => {
+                const layer = layers[index];
+                const duplicatedLayer = JSON.parse(JSON.stringify(layer));
+                duplicatedLayer.id = Date.now() + Math.random();
+                duplicatedLayer.objects = layer.objects.map(obj => JSON.parse(JSON.stringify(obj)));
+                
+                layers.splice(index + 1, 0, duplicatedLayer);
+                newIndices.add(index + 1);
+            });
+
+            multiSelectedIndices = newIndices;
+            updateLayersUI();
+            renderAllLayers();
+            showToast(`📋 Nhân đôi ${indicesToDuplicate.length} lớp!`, 'success');
+        }
+
+        // ===== MULTI-SELECT CONTEXT MENU HANDLERS =====
+        function showMultiSelectMenu(e, layerIndex) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (multiSelectedIndices.size === 0) {
+                showToast('💡 Ctrl+Click để chọn nhiều lớp', 'info');
+                return;
+            }
+
+            const menu = document.getElementById('multiSelectMenu');
+            menu.classList.add('active');
+            
+            // Position menu at cursor
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+
+            showToast(`🎯 Đã chọn ${multiSelectedIndices.size} lớp - Click chuột phải để xem tùy chọn`, 'info');
+        }
+
+        function closeMultiSelectMenu() {
+            // Lắng nghe click/contextmenu ở document nên vẫn chạy khi khách
+            // đã rời module "Trang chủ" (không gỡ được listener một khi đã
+            // gắn) — lúc đó #multiSelectMenu không còn trong trang nữa.
+            const menu = document.getElementById('multiSelectMenu');
+            if (!menu) return;
+            menu.classList.remove('active');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function() {
+            closeMultiSelectMenu();
+        });
+
+        document.addEventListener('contextmenu', function() {
+            closeMultiSelectMenu();
+        });
+
+        // ===== BLEND MODE & OPACITY MANAGEMENT =====
+        
+        // Tất cả các blend modes Photoshop
+        const BLEND_MODES = [
+            { name: 'normal', label: 'Bình Thường', css: 'normal' },
+            { name: 'multiply', label: 'Nhân', css: 'multiply' },
+            { name: 'screen', label: 'Màn Hình', css: 'screen' },
+            { name: 'overlay', label: 'Phủ', css: 'overlay' },
+            { name: 'darken', label: 'Làm Tối', css: 'darken' },
+            { name: 'lighten', label: 'Làm Sáng', css: 'lighten' },
+            { name: 'color-dodge', label: 'Color Dodge', css: 'color-dodge' },
+            { name: 'color-burn', label: 'Color Burn', css: 'color-burn' },
+            { name: 'hard-light', label: 'Hard Light', css: 'hard-light' },
+            { name: 'soft-light', label: 'Soft Light', css: 'soft-light' },
+            { name: 'difference', label: 'Chênh Lệch', css: 'difference' },
+            { name: 'exclusion', label: 'Loại Trừ', css: 'exclusion' },
+            { name: 'hue', label: 'Sắc Thái', css: 'hue' },
+            { name: 'saturation', label: 'Độ Bão Hòa', css: 'saturation' },
+            { name: 'color', label: 'Màu', css: 'color' },
+            { name: 'luminosity', label: 'Độ Sáng', css: 'luminosity' },
+            { name: 'add', label: 'Cộng', css: 'lighten' },
+            { name: 'subtract', label: 'Trừ', css: 'darken' },
+            { name: 'divide', label: 'Chia', css: 'screen' }
+        ];
+
+        let tempBlendMode = 'normal';
+        let tempOpacity = 1;
+
+        // Initialize blend mode panel
+        function initBlendModePanel() {
+            const grid = document.getElementById('blendModeGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            BLEND_MODES.forEach(mode => {
+                const btn = document.createElement('button');
+                btn.className = 'blend-mode-btn';
+                btn.textContent = mode.label;
+                btn.onclick = () => selectBlendMode(mode.name, mode.css);
+                grid.appendChild(btn);
+            });
+        }
+
+        function toggleBlendOpacityPanel() {
+            const panel = document.getElementById('blendOpacityPanel');
+            panel.classList.toggle('active');
+            
+            if (panel.classList.contains('active')) {
+                updateBlendOpacityPanel();
+                initBlendModePanel();
+                showToast('🎨 Mở bảng điều chỉnh Blend & Opacity', 'info');
+            } else {
+                showToast('🎨 Đóng bảng điều chỉnh', 'info');
+            }
+        }
+
+        function updateBlendOpacityPanel() {
+            if (multiSelectedIndices.size > 0) {
+                // Get values from first selected layer
+                const firstIndex = Array.from(multiSelectedIndices)[0];
+                const layer = layers[firstIndex];
+                tempBlendMode = layer.blendMode || 'normal';
+                tempOpacity = (layer.opacity || 1) * 100;
+            } else if (activeLayerIndex >= 0 && layers[activeLayerIndex]) {
+                // Get values from active layer
+                const layer = layers[activeLayerIndex];
+                tempBlendMode = layer.blendMode || 'normal';
+                tempOpacity = (layer.opacity || 1) * 100;
+            }
+
+            // Update slider and value display
+            document.getElementById('opacitySlider').value = Math.round(tempOpacity);
+            document.getElementById('opacityValue').textContent = Math.round(tempOpacity) + '%';
+
+            // Update active blend mode button
+            document.querySelectorAll('.blend-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(tempBlendMode.toLowerCase()) || 
+                    (tempBlendMode === 'normal' && btn.textContent === 'Bình Thường')) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function selectBlendMode(modeName, cssMode) {
+            tempBlendMode = modeName;
+            
+            // Update visual feedback
+            document.querySelectorAll('.blend-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            showToast(`🎨 Chế độ hòa trộn: ${event.target.textContent}`, 'info');
+        }
+
+        function updateOpacity(value) {
+            tempOpacity = parseInt(value);
+            document.getElementById('opacityValue').textContent = tempOpacity + '%';
+        }
+
+        function applyBlendOpacity() {
+            if (multiSelectedIndices.size > 0) {
+                // Apply to all multi-selected layers
+                let count = 0;
+                multiSelectedIndices.forEach(index => {
+                    if (layers[index]) {
+                        layers[index].blendMode = tempBlendMode;
+                        layers[index].opacity = tempOpacity / 100;
+                        count++;
+                    }
+                });
+                showToast(`✅ Áp dụng cho ${count} lớp!`, 'success');
+            } else if (activeLayerIndex >= 0 && layers[activeLayerIndex]) {
+                // Apply to single active layer
+                layers[activeLayerIndex].blendMode = tempBlendMode;
+                layers[activeLayerIndex].opacity = tempOpacity / 100;
+                showToast('✅ Áp dụng thành công!', 'success');
+            }
+
+            updateLayersUI();
+            renderAllLayers();
+        }
+
+        function resetBlendOpacity() {
+            tempBlendMode = 'normal';
+            tempOpacity = 100;
+            document.getElementById('opacitySlider').value = 100;
+            document.getElementById('opacityValue').textContent = '100%';
+            updateBlendOpacityPanel();
+            showToast('🔄 Đặt lại thành mặc định', 'info');
+        }
+
+        // ===== UPLOAD & CANVAS FUNCTIONS =====
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function hideUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                fabric.Image.fromURL(e.target.result, function(img) {
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+                    const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+                    
+                    img.scale(scale);
+                    img.set({
+                        left: (canvas.width - img.width * scale) / 2,
+                        top: (canvas.height - img.height * scale) / 2,
+                    });
+
+                    // Add to current layer
+                    const currentLayer = layers[activeLayerIndex];
+                    currentLayer.objects.push(img);
+                    
+                    canvas.clear();
+                    
+                    // Render all visible layers
+                    layers.forEach(layer => {
+                        if (layer.visible) {
+                            layer.objects.forEach(obj => canvas.add(obj));
+                        }
+                    });
+                    
+                    canvas.renderAll();
+                    hideUploadModal();
+                    showToast('Ảnh đã được tải lên layer: ' + currentLayer.name, 'success');
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // initTrangChuEditor() gọi lại hàm này mỗi lần khách quay lại module —
+        // gắn cờ để không cộng dồn thêm nghe-sự-kiện mỗi lần, và cả hai nghe-
+        // sự-kiện đều tự bỏ qua khi module không còn hiện trên trang (khách
+        // đã sang module khác — không được cướp việc kéo-thả file ở đó).
+        let __trangChuDragDropBound = false;
+        function setupDragAndDrop() {
+            if (__trangChuDragDropBound) return;
+            __trangChuDragDropBound = true;
+
+            document.addEventListener('dragover', (e) => {
+                if (!document.querySelector('.trang-chu-editor')) return;
+                e.preventDefault();
+            });
+
+            document.addEventListener('drop', (e) => {
+                if (!document.querySelector('.trang-chu-editor')) return;
+                e.preventDefault();
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const event = { target: { files: files } };
+                    handleImageUpload(event);
+                }
+            });
+        }
+
+        // ===== TOOLS =====
+        function addText() {
+            createNewLayer();
+            const layer = layers[activeLayerIndex];
+            
+            const text = new fabric.Text('Nhập text', {
+                left: canvas.width / 2,
+                top: canvas.height / 2,
+                fontSize: 24,
+                fill: layer.color,
+                originX: 'center',
+                originY: 'center',
+            });
+            layer.objects.push(text);
+            canvas.add(text);
+            canvas.setActiveObject(text);
+            canvas.renderAll();
+            updateLayerBorder();
+            showToast(`✏️ Thêm text vào layer mới: "${layer.name}"`, 'success');
+        }
+
+        // Trả về danh sách "lớp thật" (có objects) bên trong 1 lớp — nếu là
+        // lớp thường thì trả về chính nó, nếu là nhóm thì đi sâu vào mọi lớp
+        // con (kể cả nhóm lồng nhóm) để thao tác tác động cho cả nhóm.
+        function getLeafLayers(layer) {
+            if (!layer) return [];
+            if (!layer.isGroup) return [layer];
+            const group = layerGroups.find(g => g.id === layer.groupId);
+            if (!group) return [];
+            let result = [];
+            group.children.forEach(child => {
+                result = result.concat(getLeafLayers(child));
+            });
+            return result;
+        }
+
+        function addShape() {
+            createNewLayer();
+            const layer = layers[activeLayerIndex];
+
+            const shape = new fabric.Circle({
+                left: canvas.width / 2 - 50,
+                top: canvas.height / 2 - 50,
+                radius: 50,
+                fill: layer.color,
+                stroke: layer.color,
+                strokeWidth: 2,
+            });
+            layer.objects.push(shape);
+            canvas.add(shape);
+            canvas.setActiveObject(shape);
+            canvas.renderAll();
+            updateLayerBorder();
+            showToast(`✨ Thêm hình vào layer mới: "${layer.name}"`, 'success');
+        }
+
+        function rotateImage() {
+            const layer = layers[activeLayerIndex];
+            const targetLayers = getLeafLayers(layer);
+            const hasObjects = targetLayers.some(l => l.objects.length > 0);
+            if (!hasObjects) {
+                showToast('Layer trống! Thêm ảnh trước', 'error');
+                return;
+            }
+
+            const obj = !layer.isGroup ? canvas.getActiveObject() : null;
+            if (!obj) {
+                // Xoay mọi đối tượng của lớp (hoặc mọi lớp trong nhóm)
+                targetLayers.forEach(l => {
+                    l.objects.forEach(o => o.rotate((o.angle || 0) + 15));
+                });
+            } else {
+                obj.rotate((obj.angle || 0) + 15);
+            }
+
+            canvas.renderAll();
+            updateLayerBorder();
+            showToast(`🔄 Xoay trên ${layer.name}`, 'success');
+        }
+
+        function flipImageHorizontal() {
+            const layer = layers[activeLayerIndex];
+            const targetLayers = getLeafLayers(layer);
+            const hasObjects = targetLayers.some(l => l.objects.length > 0);
+            if (!hasObjects) {
+                showToast('Layer trống! Thêm ảnh trước', 'error');
+                return;
+            }
+
+            const obj = !layer.isGroup ? canvas.getActiveObject() : null;
+            if (!obj) {
+                // Lật mọi đối tượng của lớp (hoặc mọi lớp trong nhóm)
+                targetLayers.forEach(l => {
+                    l.objects.forEach(o => { o.flipX = !o.flipX; });
+                });
+            } else {
+                obj.flipX = !obj.flipX;
+            }
+
+            canvas.renderAll();
+            updateLayerBorder();
+            showToast(`↔️ Lật ngang trên ${layer.name}`, 'success');
+        }
+
+        // ===== CẮT ẢNH (CROP) =====
+        // Cắt trên đúng lớp đang chọn: kéo khung để chọn vùng giữ lại rồi
+        // bấm "Xác nhận cắt". Chỉ áp dụng cho ảnh chưa xoay (angle = 0) để
+        // tránh sai lệch toạ độ khi tính khung cắt.
+        let cropOverlayRect = null;
+        let cropTargetImage = null;
+
+        function cropImage() {
+            const layer = layers[activeLayerIndex];
+            if (!layer || layer.isGroup) {
+                showToast('❌ Không thể cắt cả nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                return;
+            }
+            if (cropOverlayRect) {
+                showToast('Đang cắt dở, hãy Xác nhận hoặc Huỷ trước', 'info');
+                return;
+            }
+
+            const obj = layer.objects.find(o => o.isType && o.isType('image'));
+            if (!obj) {
+                showToast('Không tìm thấy ảnh trong layer', 'error');
+                return;
+            }
+            if (obj.angle) {
+                showToast('Vui lòng đưa ảnh về góc xoay 0° trước khi cắt', 'error');
+                return;
+            }
+
+            cropTargetImage = obj;
+            const bounds = obj.getBoundingRect();
+
+            cropOverlayRect = new fabric.Rect({
+                left: bounds.left + bounds.width * 0.1,
+                top: bounds.top + bounds.height * 0.1,
+                width: bounds.width * 0.8,
+                height: bounds.height * 0.8,
+                fill: 'rgba(0,0,0,0.15)',
+                stroke: layer.color,
+                strokeWidth: 2,
+                strokeDashArray: [6, 4],
+                cornerColor: layer.color,
+                transparentCorners: false,
+                lockRotation: true,
+            });
+            cropOverlayRect.setControlsVisibility({ mtr: false });
+            canvas.add(cropOverlayRect);
+            canvas.setActiveObject(cropOverlayRect);
+            canvas.renderAll();
+
+            showCropConfirmBar(layer.color);
+            showToast('🖼️ Kéo khung để chọn vùng cắt, rồi bấm Xác nhận cắt', 'info');
+        }
+
+        function showCropConfirmBar(color) {
+            hideCropConfirmBar();
+            const bar = document.createElement('div');
+            bar.id = 'cropConfirmBar';
+            bar.style.cssText = `
+                position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+                background: #fff; border: 2px solid ${color}; border-radius: 8px;
+                padding: 10px 16px; display: flex; gap: 10px; z-index: 5000;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            `;
+            bar.innerHTML = `
+                <button class="btn-modal-secondary" style="color:${color}; border-color:${color};" onclick="confirmCrop()">
+                    <i class="fas fa-check"></i> Xác nhận cắt
+                </button>
+                <button class="btn-modal-secondary" onclick="cancelCrop()">
+                    <i class="fas fa-times"></i> Huỷ cắt
+                </button>
+            `;
+            document.body.appendChild(bar);
+        }
+
+        function hideCropConfirmBar() {
+            const bar = document.getElementById('cropConfirmBar');
+            if (bar) bar.remove();
+        }
+
+        function cancelCrop() {
+            if (cropOverlayRect) {
+                canvas.remove(cropOverlayRect);
+                cropOverlayRect = null;
+                cropTargetImage = null;
+                canvas.renderAll();
+            }
+            hideCropConfirmBar();
+        }
+
+        function confirmCrop() {
+            if (!cropOverlayRect || !cropTargetImage) return;
+
+            const rectBounds = cropOverlayRect.getBoundingRect();
+            const imgBounds = cropTargetImage.getBoundingRect();
+
+            // Giao của khung cắt với ảnh, quy về hệ toạ độ chưa scale của ảnh
+            const scaleX = cropTargetImage.scaleX || 1;
+            const scaleY = cropTargetImage.scaleY || 1;
+
+            const left = Math.max(rectBounds.left, imgBounds.left);
+            const top = Math.max(rectBounds.top, imgBounds.top);
+            const right = Math.min(rectBounds.left + rectBounds.width, imgBounds.left + imgBounds.width);
+            const bottom = Math.min(rectBounds.top + rectBounds.height, imgBounds.top + imgBounds.height);
+
+            if (right <= left || bottom <= top) {
+                showToast('❌ Khung cắt nằm ngoài ảnh', 'error');
+                return;
+            }
+
+            cropTargetImage.set({
+                cropX: (left - imgBounds.left) / scaleX,
+                cropY: (top - imgBounds.top) / scaleY,
+                width: (right - left) / scaleX,
+                height: (bottom - top) / scaleY,
+                left: left,
+                top: top,
+            });
+            cropTargetImage.setCoords();
+
+            canvas.remove(cropOverlayRect);
+            cropOverlayRect = null;
+            cropTargetImage = null;
+            hideCropConfirmBar();
+            canvas.renderAll();
+            updateLayerBorder();
+            showToast('✅ Đã cắt ảnh', 'success');
+        }
+
+        // ===== FILTERS =====
+        function applyFilter(filterType) {
+            const layer = layers[activeLayerIndex];
+            if (layer.isGroup) {
+                showToast('❌ Không thể lọc cả nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                return;
+            }
+            if (layer.objects.length === 0) {
+                showToast('Layer trống! Thêm ảnh trước', 'error');
+                return;
+            }
+
+            const obj = layer.objects.find(o => o.isType && o.isType('image'));
+            if (!obj) {
+                showToast('Không tìm thấy ảnh trong layer', 'error');
+                return;
+            }
+
+            switch(filterType) {
+                case 'grayscale':
+                    obj.filters = [new fabric.Image.filters.Grayscale()];
+                    break;
+                case 'sepia':
+                    obj.filters = [new fabric.Image.filters.Sepia()];
+                    break;
+                case 'blur':
+                    obj.filters = [new fabric.Image.filters.Blur()];
+                    break;
+            }
+
+            obj.applyFilters();
+            canvas.renderAll();
+            showToast(`Áp dụng ${filterType} trên ${layer.name}`, 'success');
+        }
+
+        // ===== ADJUSTMENTS =====
+        function updateBrightness(value) {
+            document.getElementById('brightnessValue').textContent = value + '%';
+            const layer = layers[activeLayerIndex];
+            if (!layer || layer.isGroup) return;
+            const obj = layer.objects.find(o => o.isType && o.isType('image'));
+            if (obj) {
+                obj.filters = [new fabric.Image.filters.Brightness({ brightness: value / 100 })];
+                obj.applyFilters();
+                canvas.renderAll();
+            }
+        }
+
+        function updateContrast(value) {
+            document.getElementById('contrastValue').textContent = value + '%';
+            const layer = layers[activeLayerIndex];
+            if (!layer || layer.isGroup) return;
+            const obj = layer.objects.find(o => o.isType && o.isType('image'));
+            if (obj) {
+                obj.filters = [new fabric.Image.filters.Contrast({ contrast: value / 100 })];
+                obj.applyFilters();
+                canvas.renderAll();
+            }
+        }
+
+        function updateSaturation(value) {
+            document.getElementById('saturationValue').textContent = value + '%';
+            const layer = layers[activeLayerIndex];
+            if (!layer || layer.isGroup) return;
+            const obj = layer.objects.find(o => o.isType && o.isType('image'));
+            if (obj) {
+                obj.filters = [new fabric.Image.filters.Saturation({ saturation: value / 100 })];
+                obj.applyFilters();
+                canvas.renderAll();
+            }
+        }
+
+        // ===== AI FEATURES =====
+        function removeBackground() {
+            const layer = layers[activeLayerIndex];
+            
+            // Check if group is selected
+            if (layer.isGroup) {
+                showToast('❌ Không thể sử dụng tính năng này cho nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                return;
+            }
+            
+            showLoading('Đang xoá nền trên ' + layer.name + '...');
+            setTimeout(() => {
+                hideLoading();
+                showToast('API chưa kết nối. Thêm bước sửa trong vùng chọn...', 'info');
+            }, 1500);
+        }
+
+        function showInpaintModal() {
+            const layer = layers[activeLayerIndex];
+            
+            // Check if group is selected
+            if (layer.isGroup) {
+                showToast('❌ Không thể sử dụng tính năng này cho nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                return;
+            }
+            
+            document.getElementById('inpaintModal').classList.add('active');
+        }
+
+        function hideInpaintModal() {
+            document.getElementById('inpaintModal').classList.remove('active');
+        }
+
+        function executeInpaint() {
+            const layer = layers[activeLayerIndex];
+            
+            // Check if group is selected
+            if (layer.isGroup) {
+                showToast('❌ Không thể sử dụng tính năng này cho nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                hideInpaintModal();
+                return;
+            }
+            
+            const prompt = document.getElementById('inpaintPrompt').value;
+            if (!prompt) {
+                showToast('Nhập mô tả vùng cần sửa', 'error');
+                return;
+            }
+
+            const currentLayerIndex = activeLayerIndex;
+            const currentLayerName = layers[currentLayerIndex].name;
+            showLoading(`Đang sửa vùng trên ${currentLayerName}...`);
+            hideInpaintModal();
+
+            // Simulate inpainting API call
+            setTimeout(() => {
+                hideLoading();
+                
+                // Create new layer for inpaint result (but don't select it)
+                const newLayer = {
+                    id: Date.now(),
+                    name: `Sửa từ ${currentLayerName}`,
+                    color: LAYER_COLORS[(layers.length) % LAYER_COLORS.length],
+                    visible: true,
+                    objects: [],
+                    opacity: 1,
+                    fromInpaint: true
+                };
+                layers.push(newLayer);
+                
+                // Keep current layer selected
+                activeLayerIndex = currentLayerIndex;
+                updateLayersUI();
+                updateCurrentLayerColor();
+                
+                showToast(`✅ Sửa xong! Layer mới: "${newLayer.name}"\n💡 Layer hiện tại vẫn là: ${currentLayerName}\n📝 Có thể bấm "Sửa Vùng" lại để thêm nhiều lần!`, 'success');
+            }, 2000);
+        }
+
+        function upscaleImage() {
+            const layer = layers[activeLayerIndex];
+            
+            // Check if group is selected
+            if (layer.isGroup) {
+                showToast('❌ Không thể sử dụng tính năng này cho nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                return;
+            }
+            
+            showLoading('Đang nâng cấp độ phân giải trên ' + layer.name + '...');
+            setTimeout(() => {
+                hideLoading();
+                showToast('API chưa kết nối', 'info');
+            }, 1500);
+        }
+
+        // ===== LAYER SELECTION BORDER & CONTROLS =====
+        // Lỗi cũ: khung viền lệch khỏi ảnh của layer, càng lệch rõ khi
+        // phóng to/thu nhỏ. Có 2 nguyên nhân cộng lại:
+        // 1) obj.getBoundingRect() (không truyền absolute=true) đã TỰ áp
+        //    dụng viewportTransform của canvas — tức đã NHÂN sẵn currentZoom
+        //    rồi. Nhân thêm currentZoom lần nữa ở đây là nhân đúp.
+        // 2) Thẻ #layerBorder định vị absolute theo .canvas-container, còn
+        //    canvas thật lại nằm lệch bên trong đó (có thanh công cụ phía
+        //    trên + canh giữa flexbox), và kích thước canvas HIỂN THỊ (CSS,
+        //    do max-width/max-height: 100%) khác kích thước PIXEL NỘI BỘ
+        //    của nó (thuộc tính width/height, 800x600) — toạ độ fabric trả
+        //    về tính theo pixel nội bộ, phải quy đổi sang đúng tỉ lệ đang
+        //    hiển thị mới khớp ảnh thật trên màn hình.
+        function updateLayerBorder() {
+            const border = document.getElementById('layerBorder');
+            const layer = layers[activeLayerIndex];
+
+            if (!layer || layer.isGroup || !layer.objects || layer.objects.length === 0) {
+                border.classList.remove('visible');
+                return;
+            }
+
+            // Get bounding box of layer objects (đã gồm zoom hiện tại)
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            layer.objects.forEach(obj => {
+                const bounds = obj.getBoundingRect();
+                minX = Math.min(minX, bounds.left);
+                minY = Math.min(minY, bounds.top);
+                maxX = Math.max(maxX, bounds.left + bounds.width);
+                maxY = Math.max(maxY, bounds.top + bounds.height);
+            });
+
+            if (isFinite(minX)) {
+                const canvasEl = canvas.getElement();
+                const canvasRect = canvasEl.getBoundingClientRect();
+                // offsetParent (không phải parentElement) trả về null khi
+                // border đang display:none (đúng lúc hàm này chạy, trước khi
+                // .visible được gắn) — dùng parentElement, ổn định bất kể
+                // trạng thái hiển thị. #layerBorder luôn là con trực tiếp
+                // của .canvas-container (position: relative).
+                const containerRect = border.parentElement.getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+                const offsetX = canvasRect.left - containerRect.left;
+                const offsetY = canvasRect.top - containerRect.top;
+
+                border.style.left = (offsetX + minX * cssScaleX) + 'px';
+                border.style.top = (offsetY + minY * cssScaleY) + 'px';
+                border.style.width = ((maxX - minX) * cssScaleX) + 'px';
+                border.style.height = ((maxY - minY) * cssScaleY) + 'px';
+                border.style.borderColor = layer.color;
+                border.classList.add('visible');
+
+                // Add corner control buttons
+                addLayerControlButtons(border, layer.color);
+            } else {
+                border.classList.remove('visible');
+            }
+        }
+
+        function addLayerControlButtons(border, color) {
+            // Remove old buttons
+            const oldButtons = document.querySelectorAll('.layer-control-btn');
+            oldButtons.forEach(btn => btn.remove());
+
+            const positions = {
+                'delete': { top: '-16px', left: '-16px', icon: 'fa-trash' },
+                'duplicate': { top: '-16px', right: '-16px', icon: 'fa-copy' },
+                'rotate': { bottom: '-16px', left: '-16px', icon: 'fa-rotate-right' },
+                'scale': { bottom: '-16px', right: '-16px', icon: 'fa-expand' }
+            };
+
+            Object.entries(positions).forEach(([action, pos]) => {
+                const btn = document.createElement('button');
+                btn.className = 'layer-control-btn layer-corner-btn';
+                btn.style.borderColor = color;
+                btn.style.color = color;
+                btn.innerHTML = `<i class="fas ${pos.icon}"></i>`;
+                
+                if (pos.top) btn.style.top = pos.top;
+                if (pos.bottom) btn.style.bottom = pos.bottom;
+                if (pos.left) btn.style.left = pos.left;
+                if (pos.right) btn.style.right = pos.right;
+
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    handleLayerControlAction(action);
+                };
+
+                border.appendChild(btn);
+            });
+
+            // Add resize handles on edges
+            const handlePositions = [
+                { name: 'n', top: '-5px', left: '50%', cursor: 'n-resize' },      // Top
+                { name: 's', bottom: '-5px', left: '50%', cursor: 's-resize' },    // Bottom
+                { name: 'w', top: '50%', left: '-5px', cursor: 'w-resize' },       // Left
+                { name: 'e', top: '50%', right: '-5px', cursor: 'e-resize' }       // Right
+            ];
+
+            handlePositions.forEach(pos => {
+                const handle = document.createElement('div');
+                handle.className = 'resize-handle';
+                handle.style.borderColor = color;
+                handle.style.background = color;
+                
+                if (pos.top) handle.style.top = pos.top;
+                if (pos.bottom) handle.style.bottom = pos.bottom;
+                if (pos.left) handle.style.left = pos.left;
+                if (pos.right) handle.style.right = pos.right;
+                
+                handle.style.cursor = pos.cursor;
+                handle.style.transform = 'translate(-50%, -50%)';
+
+                handle.onmousedown = (e) => {
+                    e.stopPropagation();
+                    handleLayerResize(e, pos.name);
+                };
+
+                border.appendChild(handle);
+            });
+        }
+
+        function handleLayerControlAction(action) {
+            const layerIndex = activeLayerIndex;
+            
+            switch(action) {
+                case 'delete':
+                    deleteLayer(layerIndex);
+                    break;
+                case 'duplicate':
+                    duplicateLayer(layerIndex);
+                    break;
+                case 'rotate':
+                    rotateLayerContent();
+                    break;
+                case 'scale':
+                    showToast('Scale layer - Kéo các điểm neo ở cạnh', 'info');
+                    break;
+            }
+        }
+
+        function rotateLayerContent() {
+            const layer = layers[activeLayerIndex];
+            if (layer.objects.length === 0) {
+                showToast('Layer trống!', 'error');
+                return;
+            }
+            
+            layer.objects.forEach(obj => {
+                obj.rotate((obj.angle || 0) + 15);
+            });
+            canvas.renderAll();
+            updateLayerBorder();
+            showToast('Xoay layer ' + layer.name, 'success');
+        }
+
+        function handleLayerResize(e, direction) {
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const layer = layers[activeLayerIndex];
+
+            const onMouseMove = (moveEvent) => {
+                const deltaX = moveEvent.clientX - startX;
+                const deltaY = moveEvent.clientY - startY;
+
+                layer.objects.forEach(obj => {
+                    if (direction === 'e' || direction === 'w') {
+                        obj.scaleX = Math.max(0.1, obj.scaleX + (deltaX * 0.01));
+                    }
+                    if (direction === 'n' || direction === 's') {
+                        obj.scaleY = Math.max(0.1, obj.scaleY + (deltaY * 0.01));
+                    }
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                showToast('Đã điều chỉnh kích thước layer', 'success');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // ===== ZOOM =====
+        function zoomIn() {
+            currentZoom += 0.1;
+            canvas.setZoom(currentZoom);
+            updateZoomLevel();
+            updateLayerBorder();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(0.1, currentZoom - 0.1);
+            canvas.setZoom(currentZoom);
+            updateZoomLevel();
+            updateLayerBorder();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            canvas.setZoom(currentZoom);
+            updateZoomLevel();
+            updateLayerBorder();
+        }
+
+        function updateZoomLevel() {
+            document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        // ===== CANVAS EVENT LISTENERS =====
+        // Lỗi cũ: khối này từng nằm ở cấp cao nhất của <script>, chạy trước
+        // khi DOMContentLoaded gán biến `canvas`, nên canvas luôn là null và
+        // toàn bộ trang báo lỗi ngay khi tải — không có sự kiện nào được gắn.
+        // Nay gọi trong bindCanvasEvents() ngay sau khi canvas được tạo.
+        function bindCanvasEvents() {
+            canvas.on('selection:created', () => {
+                updateLayerBorder();
+                const obj = canvas.getActiveObject();
+                if (obj) {
+                    showToast(`Chọn: ${obj.name || 'Đối tượng'}`, 'info');
+                }
+            });
+
+            canvas.on('selection:updated', updateLayerBorder);
+
+            canvas.on('selection:cleared', () => {
+                updateLayerBorder();
+            });
+
+            canvas.on('object:modified', () => {
+                updateLayerBorder();
+                renderAllLayers();
+            });
+
+            canvas.on('object:added', updateLayerBorder);
+
+            canvas.on('object:removed', () => {
+                updateLayerBorder();
+                renderAllLayers();
+            });
+        }
+
+        // ===== UNDO/REDO =====
+        function undo() {
+            showToast('Undo chưa implement', 'info');
+        }
+
+        function redo() {
+            showToast('Redo chưa implement', 'info');
+        }
+
+        // ===== DOWNLOAD =====
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'edited-image.png';
+            link.click();
+            showToast('Ảnh đã được tải xuống', 'success');
+        }
+
+        // ===== IMAGE INFO =====
+        function showImageInfo() {
+            document.getElementById('imageInfoModal').classList.add('active');
+            updateImageInfoModal();
+        }
+
+        function hideImageInfo() {
+            document.getElementById('imageInfoModal').classList.remove('active');
+        }
+
+        function updateImageInfoModal() {
+            const layer = layers[activeLayerIndex];
+            document.getElementById('modalImageSize').textContent = canvas.width + ' × ' + canvas.height + ' px';
+            document.getElementById('modalImageFormat').textContent = 'PNG/JPEG';
+            document.getElementById('currentLayerInfo').textContent = layer.name + ' (' + layer.color + ')';
+        }
+
+        // ===== LOADING & TOAST =====
+        function showLoading(text = 'Đang xử lý...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingSpinner').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.remove('active');
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // ===== KHUNG CÔNG CỤ / LỚP TRƯỢT RA-VÀO (MÀN HÌNH HẸP) =====
+        // Trên máy tính, sidebar-left/sidebar-right luôn hiện cố định hai
+        // bên. Dưới 992px chúng biến thành khung trượt (CSS ở trên) — chỉ
+        // hiện khi bấm nút tương ứng trên thanh tiêu đề, đóng lại khi bấm
+        // lần nữa, bấm nút X, hay bấm ra ngoài (lớp phủ mờ).
+        function toggleToolsPanel() {
+            const opening = !document.body.classList.contains('tools-panel-open');
+            document.body.classList.remove('layers-panel-open');
+            document.body.classList.toggle('tools-panel-open', opening);
+        }
+
+        function toggleLayersPanel() {
+            const opening = !document.body.classList.contains('layers-panel-open');
+            document.body.classList.remove('tools-panel-open');
+            document.body.classList.toggle('layers-panel-open', opening);
+        }
+
+        function closeSidePanels() {
+            document.body.classList.remove('tools-panel-open', 'layers-panel-open');
+        }
+
+        // ===== KEYBOARD SHORTCUTS =====
+        document.addEventListener('keydown', (e) => {
+            // Chỉ hoạt động khi module "Trang chủ" đang thật sự hiện trên
+            // trang — xem chú thích ở khối addEventListener('keydown') phía
+            // trên (dòng ~449).
+            if (!document.querySelector('.trang-chu-editor')) return;
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key.toLowerCase()) {
+                    case 'z':
+                        e.preventDefault();
+                        undo();
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        redo();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        downloadImage();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        createNewLayer();
+                        break;
+                }
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                const obj = canvas.getActiveObject();
+                if (obj) {
+                    const layer = layers[activeLayerIndex];
+                    const index = layer.objects.indexOf(obj);
+                    if (index > -1) {
+                        layer.objects.splice(index, 1);
+                        canvas.remove(obj);
+                        canvas.renderAll();
+                        renderAllLayers();
+                        updateLayerBorder();
+                        showToast('🗑️ Đã xoá đối tượng', 'success');
+                    }
+                }
+            } else if (e.key === 'ArrowUp' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                moveLayerUp(activeLayerIndex);
+            } else if (e.key === 'ArrowDown' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                moveLayerDown(activeLayerIndex);
+            }
+        });
+
+        // ===== LAYER OPACITY CONTROL =====
+        function setLayerOpacity(index, opacity) {
+            layers[index].opacity = opacity;
+            const layer = layers[index];
+            layer.objects.forEach(obj => {
+                obj.opacity = opacity;
+            });
+            renderAllLayers();
+        }
+
+        // ===== MERGE LAYERS =====
+        function mergeLayers(index1, index2) {
+            if (index1 === index2) {
+                showToast('Chọn 2 layer khác nhau để merge', 'error');
+                return;
+            }
+
+            const layer1 = layers[Math.min(index1, index2)];
+            const layer2 = layers[Math.max(index1, index2)];
+
+            layer1.objects = layer1.objects.concat(layer2.objects);
+            layer1.name = layer1.name + ' + ' + layer2.name;
+
+            layers.splice(Math.max(index1, index2), 1);
+            activeLayerIndex = Math.min(index1, index2);
+            updateLayersUI();
+            updateCurrentLayerColor();
+            renderAllLayers();
+            showToast('✅ Merge layers thành công!', 'success');
+        }
+
+        // ===== FLATTEN IMAGE (Merge all visible layers) =====
+        function flattenImage() {
+            if (confirm('Flatten sẽ gộp tất cả các layer hiển thị. Tiếp tục?')) {
+                const flatLayer = {
+                    id: Date.now(),
+                    name: 'Flattened',
+                    color: '#000000',
+                    visible: true,
+                    objects: [],
+                    opacity: 1
+                };
+
+                layers.forEach(layer => {
+                    if (layer.visible) {
+                        flatLayer.objects = flatLayer.objects.concat(layer.objects);
+                    }
+                });
+
+                layers = [flatLayer];
+                activeLayerIndex = 0;
+                updateLayersUI();
+                updateCurrentLayerColor();
+                renderAllLayers();
+                showToast('✅ Flatten thành công!', 'success');
+            }
+        }
+
+        // ===== SELECT LAYER BY KEYBOARD =====
+        function selectLayerByNumber(num) {
+            if (num > 0 && num <= layers.length) {
+                selectLayer(num - 1);
+            }
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                to {
+                    transform: translateX(110%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    

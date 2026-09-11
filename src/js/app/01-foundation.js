@@ -44,7 +44,7 @@
   //   kieu 'trang'  — mở ra một trang nội dung, đổi địa chỉ #hash
   //   kieu 'modal'  — không đổi trang, chỉ bật một bảng phụ lên
   const MODULE = [
-    { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: false },
+    { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: true  },
     { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
     { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: false },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },

@@ -8,5 +8,6 @@
   "04b-admin.js",
   "04c-admin-danh-muc.js",
   "04d-admin-don-hang.js",
-  "05-thanh-toan.js"
+  "05-thanh-toan.js",
+  "06-trang-chu.js"
 ]

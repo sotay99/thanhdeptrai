@@ -1,0 +1,1333 @@
+
+        .trang-chu-editor, .trang-chu-editor * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --layer-1-color: #000000;      /* Background - Black */
+            --layer-2-color: #FF6B6B;      /* Red */
+            --layer-3-color: #4ECDC4;      /* Teal */
+            --layer-4-color: #FFD93D;      /* Yellow */
+            --layer-5-color: #6BCB77;      /* Green */
+            --layer-6-color: #4D96FF;      /* Blue */
+            --layer-7-color: #9D84B7;      /* Purple */
+            --layer-8-color: #FF9F43;      /* Orange */
+            --current-layer-color: var(--layer-1-color);
+        }
+
+        /* .trang-chu-editor thay cho body — CSS này nạp chung trang shop,
+           không được phép chỉnh body/*, sẽ vỡ toàn bộ giao diện shop. */
+        .trang-chu-editor {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--nen);
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--xanh-dam) 0%, var(--xanh) 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            row-gap: 8px;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--bong);
+            z-index: 1000;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Trước đây .header không cho wrap và tiêu đề cỡ chữ cố định —
+           trên màn hình hẹp (điện thoại) dãy nút bên phải bị đẩy tràn ra
+           ngoài, kéo cả trang cuộn ngang. */
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.1rem;
+            }
+        }
+
+        .btn-header {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-header:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* .btn-header (chữ trắng, nền trắng mờ) chỉ đọc được trên thanh tiêu
+           đề nền gradient tím — dùng lại y hệt bên trong modal/khung nền
+           trắng (Thông Tin Ảnh, các nút Huỷ/Xác Nhận...) làm chữ trắng trên
+           nền trắng, gần như vô hình. Hai lớp dưới đây dành riêng cho nút
+           trên nền trắng: .btn-modal-primary (hành động chính, nền màu đặc)
+           và .btn-modal-secondary (huỷ/đóng, nền xám nhạt chữ đậm). */
+        .btn-modal-primary {
+            background: var(--xanh-dam);
+            color: white;
+            border: 1px solid var(--xanh-dam);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-modal-primary:hover {
+            filter: brightness(0.92);
+        }
+
+        .btn-modal-secondary {
+            background: var(--the-2);
+            color: var(--chu);
+            border: 1px solid var(--vien-sang);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-modal-secondary:hover {
+            background: var(--the-3);
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .main-container {
+            display: flex;
+            height: min(80vh, 760px);
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* ===== SIDEBAR LEFT ===== */
+        .sidebar-left {
+            width: 260px;
+            background: var(--the);
+            border: 1px solid var(--vien);
+            border-radius: var(--bo-the);
+            box-shadow: var(--bong);
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 20px;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--chu);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+
+        .tool-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: var(--the-2);
+            border: 1px solid var(--vien-sang);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--current-layer-color);
+            font-weight: 500;
+        }
+
+        .tool-btn:hover {
+            background: var(--the-3);
+            border-color: var(--current-layer-color);
+        }
+
+        .tool-btn.ai-feature {
+            background: linear-gradient(135deg, var(--xanh-nen) 0%, var(--xanh-mo) 100%);
+            border-color: var(--current-layer-color);
+            color: var(--current-layer-color);
+        }
+
+        .tool-btn i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* ===== CANVAS AREA ===== */
+        .canvas-container {
+            flex: 1;
+            /* Mặc định min-width của flex item là auto (không co lại dưới
+               kích thước nội dung) — canvas bên trong có thuộc tính
+               width="800" nên .canvas-container không chịu co nhỏ hơn
+               800px, đẩy cả trang tràn ngang trên màn hình hẹp dù #canvas
+               đã có max-width:100%. min-width:0 cho phép nó co bình
+               thường, lúc đó max-width:100% của #canvas mới có tác dụng. */
+            min-width: 0;
+            background: var(--the);
+            border: 1px solid var(--vien);
+            border-radius: var(--bo-the);
+            box-shadow: var(--bong);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-toolbar {
+            background: var(--the-2);
+            padding: 12px;
+            border-bottom: 1px solid var(--vien-sang);
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .canvas-toolbar-item {
+            background: var(--the);
+            border: 1px solid var(--vien-sang);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--current-layer-color);
+        }
+
+        .canvas-toolbar-item:hover {
+            border-color: var(--current-layer-color);
+        }
+
+        .canvas-workspace {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--nen);
+            position: relative;
+        }
+
+        #canvas {
+            max-width: 100%;
+            max-height: 100%;
+            border: 2px solid var(--vien);
+            border-radius: 4px;
+            box-shadow: var(--bong);
+        }
+
+        .canvas-empty {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: var(--chu-mo);
+            gap: 15px;
+        }
+
+        /* ===== SIDEBAR RIGHT ===== */
+        .sidebar-right {
+            width: 260px;
+            background: var(--the);
+            border: 1px solid var(--vien);
+            border-radius: var(--bo-the);
+            box-shadow: var(--bong);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .property-group {
+            margin-bottom: 15px;
+        }
+
+        .property-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--chu);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* ===== LAYERS PANEL ===== */
+        .layers-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            border-top: 1px solid var(--vien-sang);
+            padding-top: 15px;
+        }
+
+        .layers-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .layers-panel-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--chu);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+
+        .layers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-height: 120px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Thẻ lớp/nhóm — tối giản hết mức: chỉ mắt ẩn/hiện (sát mép trái),
+           tên (sát mắt), và nút mở menu (sát mép phải). Mọi thao tác khác
+           (đổi tên, nhân đôi, lên/xuống, xoá, xem thành phần, mở/thu gọn
+           danh sách con, bỏ nhóm, kéo để sắp xếp...) đều nằm trong menu thả
+           xuống — xem showLayerMenu()/showGroupMenu(). Cao đúng 1 dòng chữ. */
+        .layer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: var(--the-2);
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-width: 0;
+            line-height: 1.3;
+        }
+
+        .layer-item.active {
+            background: var(--the-3);
+            border-color: var(--current-layer-color);
+        }
+
+        .layer-item:hover {
+            background: var(--the-3);
+        }
+
+        .layer-visibility {
+            width: 20px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--current-layer-color);
+            flex-shrink: 0;
+        }
+
+        .layer-name-text {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .layer-count-badge {
+            font-size: 0.75rem;
+            color: var(--chu-mo);
+            flex-shrink: 0;
+        }
+
+        .layer-menu-trigger {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--chu-mo);
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .layer-menu-trigger:hover {
+            background: var(--the-3);
+            color: var(--chu);
+        }
+
+        .layer-controls {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .layer-btn {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--the);
+            border: 1px solid var(--vien-sang);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s;
+            color: var(--chu-diu);
+        }
+
+        .layer-btn:hover {
+            background: var(--current-layer-color);
+            color: white;
+            border-color: var(--current-layer-color);
+        }
+
+        /* ===== GROUP MODE BUTTON STYLES ===== */
+        .group-mode-btn {
+            color: #000000 !important;
+            border-color: #000000 !important;
+        }
+
+        .group-mode-btn:hover {
+            background: #000000 !important;
+            color: white !important;
+            border-color: #000000 !important;
+        }
+
+        /* ===== GROUP MODE INDICATOR ===== */
+        .group-mode-indicator {
+            display: none;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #000000;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .layer-item.active.group-selected .group-mode-indicator {
+            display: flex;
+        }
+
+        /* ===== MERGE LAYERS STYLES ===== */
+        .merge-layer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--the);
+            border: 1px solid var(--vien-sang);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .merge-layer-item:hover {
+            border-color: var(--xanh-dam);
+            background: var(--xanh-nen);
+        }
+
+        .merge-layer-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--xanh-dam);
+        }
+
+        .merge-layer-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .merge-layer-name {
+            flex: 1;
+            font-weight: 500;
+            color: var(--chu);
+        }
+
+        /* ===== RENAME STYLES ===== */
+        .rename-btn {
+            background: var(--xanh-dam);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s;
+            margin-left: 5px;
+        }
+
+        .rename-btn:hover {
+            background: var(--xanh);
+        }
+
+        /* ===== DROPDOWN MENU STYLES ===== */
+        .layer-dropdown-menu {
+            position: fixed;
+            background: var(--the);
+            border: 1px solid var(--vien-sang);
+            border-radius: 6px;
+            box-shadow: var(--bong-noi);
+            z-index: 2000;
+            min-width: 200px;
+            max-width: min(90vw, 280px);
+            max-height: min(70vh, 480px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .dropdown-menu-header {
+            background: var(--the-2);
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--vien-sang);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--chu);
+            font-size: 0.9rem;
+        }
+
+        .dropdown-menu-header-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .dropdown-menu-header-name span:last-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Thông tin blend mode/opacity của lớp — trước đây hiện ngay trên
+           thẻ lớp, nay dời vào đây để thẻ lớp tối giản chỉ còn mắt/tên/nút
+           menu. */
+        .dropdown-menu-subtitle {
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--vien);
+            font-size: 0.78rem;
+            color: var(--chu-mo);
+        }
+
+        .dropdown-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--chu-mo);
+            font-size: 1.2rem;
+        }
+
+        .dropdown-close-btn:hover {
+            color: var(--chu);
+        }
+
+        .dropdown-menu-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--vien);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--chu);
+        }
+
+        .dropdown-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-menu-item:hover {
+            background: var(--the-3);
+        }
+
+        .dropdown-menu-item.danger {
+            color: var(--do);
+        }
+
+        .dropdown-menu-item.danger:hover {
+            background: rgba(229, 83, 75, .12);
+        }
+
+        .dropdown-menu-item i {
+            width: 16px;
+            text-align: center;
+            color: var(--current-layer-color);
+        }
+
+        .dropdown-submenu {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--the-2);
+        }
+
+        .dropdown-submenu-item {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--vien);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--chu);
+        }
+
+        .dropdown-submenu-item:hover {
+            background: var(--the-3);
+            padding-left: 20px;
+        }
+
+        /* ===== TREE VIEW STYLES ===== */
+        .layer-item-with-group {
+            padding-left: 0 !important;
+        }
+
+        .layer-tree-wrapper {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+        }
+
+        .layer-tree-content {
+            flex: 1;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .layer-item-indented {
+            margin-left: 0;
+            border-left: 2px solid var(--vien);
+            margin-bottom: 0;
+        }
+
+        .layer-item-nested {
+            background: var(--the-2);
+        }
+
+        .group-children-container {
+            display: none;
+        }
+
+        .group-children-container.expanded {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .group-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ===== DRAG-AND-DROP STYLES ===== */
+        .layer-item.dragging {
+            opacity: 0.6;
+            background: var(--the-3) !important;
+            border-style: dashed !important;
+        }
+
+        .layer-item.drag-over-before {
+            border-top: 3px solid var(--xanh-dam);
+            padding-top: 5px;
+        }
+
+        .layer-item.drag-over-after {
+            border-bottom: 3px solid var(--xanh-dam);
+            padding-bottom: 5px;
+        }
+
+        .layer-item.drag-over-inside {
+            background: var(--xanh-nen) !important;
+            border: 2px solid var(--xanh-dam) !important;
+        }
+
+        /* Ẩn mặc định — chỉ hiện lại cho đúng 1 hàng khi bấm "Kéo Để Sắp
+           Xếp" trong menu của hàng đó (revealDragHandle()), và tự ẩn lại
+           ngay khi thao tác kéo kết thúc (handleLayerDragEnd()). */
+        .drag-handle {
+            display: none;
+            cursor: grab;
+            color: var(--chu-mo);
+            transition: all 0.2s;
+            padding: 4px 6px;
+            user-select: none;
+        }
+
+        .drag-handle.drag-handle-visible {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .drag-handle:hover {
+            color: var(--xanh-dam);
+            transform: scale(1.2);
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        /* ===== MULTI-SELECT STYLES ===== */
+        .layer-item.multi-selected {
+            background: var(--xanh-nen) !important;
+            border-left: 4px solid var(--xanh-dam) !important;
+            padding-left: 8px !important;
+        }
+
+        .layer-item.multi-selected::before {
+            content: '✓';
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--xanh-dam);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .layer-item.active.multi-selected {
+            background: var(--xanh-mo) !important;
+            border-left: 4px solid var(--xanh) !important;
+        }
+
+        .multi-select-badge {
+            display: none;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--xanh-dam);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .layer-item.multi-selected .multi-select-badge {
+            display: flex;
+        }
+
+        /* ===== MULTI-SELECT CONTEXT MENU ===== */
+        .multi-select-menu {
+            display: none;
+            position: fixed;
+            background: var(--the);
+            border: 1px solid var(--vien);
+            border-radius: 6px;
+            box-shadow: var(--bong-noi);
+            z-index: 1001;
+            min-width: 180px;
+            overflow: hidden;
+        }
+
+        .multi-select-menu.active {
+            display: block;
+        }
+
+        .multi-select-menu-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--chu);
+            border-bottom: 1px solid var(--the-3);
+            transition: all 0.2s;
+        }
+
+        .multi-select-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .multi-select-menu-item:hover {
+            background: var(--nen);
+            color: var(--xanh-dam);
+        }
+
+        .multi-select-menu-item.danger:hover {
+            background: rgba(229, 83, 75, .12);
+            color: var(--do);
+        }
+
+        .multi-select-menu-separator {
+            height: 1px;
+            background: var(--vien);
+            margin: 5px 0;
+        }
+
+        /* ===== BLEND MODE & OPACITY PANEL ===== */
+        .blend-opacity-panel {
+            display: none;
+            background: var(--the);
+            border: 1px solid var(--vien);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            box-shadow: var(--bong);
+            min-width: 280px;
+        }
+
+        .blend-opacity-panel.active {
+            display: block;
+        }
+
+        .panel-section {
+            margin-bottom: 15px;
+        }
+
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--xanh-dam);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .blend-mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .blend-mode-btn {
+            padding: 8px 12px;
+            border: 1px solid var(--vien);
+            background: var(--the);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .blend-mode-btn:hover {
+            background: var(--nen);
+            border-color: var(--xanh-dam);
+            color: var(--xanh-dam);
+        }
+
+        .blend-mode-btn.active {
+            background: var(--xanh-dam);
+            color: white;
+            border-color: var(--xanh-dam);
+            font-weight: 600;
+        }
+
+        .opacity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .opacity-slider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, var(--vien-sang), var(--xanh-dam));
+            outline: none;
+            border-radius: 3px;
+        }
+
+        .opacity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--xanh-dam);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .opacity-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--xanh-dam);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .opacity-value {
+            min-width: 45px;
+            padding: 6px 10px;
+            background: var(--nen);
+            border: 1px solid var(--vien);
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--chu);
+        }
+
+        .blend-opacity-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .blend-opacity-buttons button {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--vien);
+            background: var(--the);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .blend-opacity-buttons button:hover {
+            background: var(--nen);
+            border-color: var(--xanh-dam);
+        }
+
+        .blend-opacity-buttons button.success {
+            background: var(--xanh-dam);
+            color: white;
+            border-color: var(--xanh-dam);
+        }
+
+        /* ===== IMAGE INFO MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(6, 8, 11, .72);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--the);
+            border: 1px solid var(--vien);
+            border-radius: var(--bo-modal);
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--bong-modal);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--chu-mo);
+        }
+
+        .modal-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--chu);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--vien);
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--chu-diu);
+        }
+
+        .info-value {
+            color: var(--chu);
+        }
+
+        /* ===== ADJUSTMENTS ===== */
+        .adjustments-section {
+            border-top: 1px solid var(--vien-sang);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .slider-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--current-layer-color);
+            font-weight: 500;
+        }
+
+        /* ===== ADD LAYER BTN ===== */
+        .add-layer-btn {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            background: var(--current-layer-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .add-layer-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* ===== LAYER SELECTION BORDER ===== */
+        .canvas-layer-border {
+            position: absolute;
+            border: 2px solid var(--current-layer-color);
+            box-shadow: inset 0 0 0 4px white;
+            display: none;
+            pointer-events: none;
+        }
+
+        .canvas-layer-border.visible {
+            display: block;
+        }
+
+        .layer-control-btn {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: var(--the);
+            border: 2px solid var(--current-layer-color);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: var(--current-layer-color);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+
+        .layer-control-btn:hover {
+            background: var(--current-layer-color);
+            color: white;
+        }
+
+        .layer-corner-btn {
+            width: 32px;
+            height: 32px;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--current-layer-color);
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* ===== LOADING & NOTIFICATIONS ===== */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2100;
+        }
+
+        .loading.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .spinner {
+            border: 4px solid var(--the-2);
+            border-top: 4px solid var(--current-layer-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--the);
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: var(--bong-noi);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--current-layer-color);
+            color: var(--current-layer-color);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--do);
+            color: var(--do);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== COLOR PICKER ===== */
+        .color-picker-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-input {
+            width: 50px;
+            height: 40px;
+            border: 1px solid var(--vien-sang);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .sidebar-left,
+            .sidebar-right {
+                width: 200px;
+            }
+        }
+
+        /* Nút mở/đóng 2 khung bên (Công Cụ, Lớp) — chỉ hiện trên màn hẹp,
+           nơi 2 khung trở thành khung trượt ra/vào thay vì luôn cố định. */
+        .sidebar-toggle-btn {
+            display: none;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-toggle-btn {
+                display: inline-flex;
+            }
+
+            .main-container {
+                position: relative;
+            }
+
+            .sidebar-left,
+            .sidebar-right {
+                position: fixed;
+                top: 56px;
+                bottom: 0;
+                width: min(85vw, 300px);
+                margin: 0;
+                border-radius: 0;
+                z-index: 300;
+                transition: transform 0.25s ease;
+            }
+
+            .sidebar-left {
+                left: 0;
+                transform: translateX(-100%);
+                box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+            }
+
+            .sidebar-right {
+                right: 0;
+                transform: translateX(100%);
+                box-shadow: -4px 0 20px rgba(0,0,0,0.25);
+            }
+
+            body.tools-panel-open .sidebar-left {
+                transform: translateX(0);
+            }
+
+            body.layers-panel-open .sidebar-right {
+                transform: translateX(0);
+            }
+
+            body.tools-panel-open .sidebar-backdrop,
+            body.layers-panel-open .sidebar-backdrop {
+                display: block;
+                position: fixed;
+                top: 56px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.4);
+                z-index: 250;
+            }
+
+            /* Kéo-thả sắp xếp lớp không ổn định trên cảm ứng — trên màn hẹp
+               dùng "Lên trên/Xuống dưới" trong menu thả xuống thay thế. */
+            .drag-handle {
+                display: none;
+            }
+        }
+
+        .sidebar-panel-close {
+            display: none;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-panel-close {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                margin-left: auto;
+                border: none;
+                background: var(--the-2);
+                border-radius: 50%;
+                cursor: pointer;
+                color: var(--chu-diu);
+                font-size: 0.9rem;
+            }
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--vien-sang);
+            margin: 10px 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--the-2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--chu-mo);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--chu-diu);
+        }
+    
