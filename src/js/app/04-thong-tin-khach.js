@@ -187,7 +187,7 @@
         // nổi bật, nhún nhảy để khách chắc chắn đọc trước khi gõ.
         '<div class="khung-cam-ket-giao">' +
           '<p>Vui lòng nhập <strong>ít nhất 1 trong 5 trường</strong> (khung nhập liệu) dưới đây để shop liên hệ giao sản phẩm.</p>' +
-          '<p>Shop <strong>cam kết giao sản phẩm ngay lập tức</strong> khi vừa nhận được tiền thanh toán của bạn: ưu tiên giao qua <strong>email</strong> (thông qua hệ thống tự động), hoặc giao qua <strong>tin nhắn Zalo</strong> (nếu bạn chưa nhập email), hoặc <strong>tin nhắn SMS</strong> (nếu không thể liên hệ qua Zalo).</p>' +
+          '<p>Shop <strong>cam kết giao sản phẩm ngay lập tức</strong> khi vừa nhận được tiền thanh toán của bạn: ưu tiên giao qua <strong>email</strong> (thông qua hệ thống tự động), hoặc giao qua tin nhắn <strong>Zalo, WhatsApp, Telegram</strong> (nếu bạn chưa nhập email), hoặc <strong>tin nhắn SMS</strong> (nếu không thể liên hệ qua các cách trên).</p>' +
         '</div>' +
         veOTruong('email', 'Email', kh.email,
           'Tối đa ' + GIOI_HAN_EMAIL + ' ký tự, phải có “@” và dấu chấm, không có dấu cách.', 'email',

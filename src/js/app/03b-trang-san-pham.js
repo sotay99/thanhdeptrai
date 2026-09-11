@@ -550,6 +550,8 @@
           'vừa cài. Preset và ảnh bạn đã chỉnh trước đó không mất, vì chúng đồng bộ trên tài khoản Adobe.</p>' +
 
         '<h4 class="hd-buoc">Bước 2 — Cho phép điện thoại cài app ngoài CH Play</h4>' +
+        '<p class="hd-co-the-bo-qua">Có thể bỏ qua bước 2 này và đi đến bước 3, nếu bước 3 bị trục trặc ' +
+          'thì mới quay lại bước 2 này.</p>' +
         '<p>Android mặc định chỉ cho cài app từ CH Play. Vì file bạn tải về có đuôi ' +
           '<strong>.apk</strong> (cài trực tiếp, không qua CH Play) nên cần bật quyền một lần duy nhất:</p>' +
         '<p>Vào <strong>Cài đặt → An toàn và bảo mật (Bảo mật)</strong>, tìm dòng ' +
@@ -617,8 +619,8 @@
         '<p>2. Mở <strong>Lightroom Classic</strong>, vào khu vực <strong>Develop (Chỉnh sửa)</strong>.</p>' +
         '<p>3. Ở bảng bên trái, tìm mục <strong>Presets</strong>, bấm dấu <strong>“+”</strong> ở đầu mục ' +
           '→ chọn <strong>“Import Presets…”</strong>.</p>' +
-        '<p>4. Trỏ tới thư mục vừa giải nén, chọn hết các file preset (đuôi <strong>.xmp</strong> hoặc ' +
-          '<strong>.lrtemplate</strong>) rồi bấm <strong>Import</strong>.</p>' +
+        '<p>4. Trỏ tới thư mục vừa giải nén, chọn hết các file preset (đuôi <strong>.zip</strong> hoặc ' +
+          '<strong>.xmp</strong> hoặc <strong>.lrtemplate</strong>) rồi bấm <strong>Import</strong>.</p>' +
         '<p>5. Preset xuất hiện ngay trong bảng Presets, mở bất kỳ tấm ảnh RAW nào ra là áp dụng được.</p>' +
         '<h4 class="hd-buoc">Cài vào Photoshop (bộ lọc Camera Raw)</h4>' +
         '<p>1. Mở một tấm ảnh trong Photoshop, vào <strong>Filter → Camera Raw Filter</strong> ' +

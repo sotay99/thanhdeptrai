@@ -1748,6 +1748,19 @@
 }
 .noi-dung-huong-dan .hd-canh-bao strong { color: var(--cam); }
 
+/* Ghi chú "có thể bỏ qua bước này" — viền đỏ nhạt, đứng ngay dưới tiêu đề
+   bước, để mắt bắt được ngay mà không cần đọc hết đoạn văn. */
+.noi-dung-huong-dan .hd-co-the-bo-qua {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(229, 83, 75, .45);
+  border-radius: 10px;
+  background: rgba(229, 83, 75, .1);
+  color: var(--chu-diu);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .noi-dung-huong-dan .hd-anh {
   display: block;
   width: 100%;

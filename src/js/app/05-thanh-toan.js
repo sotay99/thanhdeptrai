@@ -500,6 +500,10 @@
                   ' để giao sản phẩm, xin chờ ít phút.</p>'
                 : '<p class="ghi-chu-gui canh-bao">⚠️ Shop chưa có cách nào liên hệ với bạn. ' +
                   'Hãy nhắn cho shop kèm nội dung chuyển khoản ở trên để nhận sản phẩm.</p>')) +
+          // Câu này LUÔN LUÔN xuất hiện, bất kể khách để lại kênh nào — trấn
+          // an rằng dù mọi cách khác trục trặc, vẫn còn một cửa cuối cùng.
+          '<p class="ghi-chu-gui">☎️ Nếu vẫn chưa liên lạc được, shop sẽ nhắn tin SMS qua số điện thoại ' +
+            '(cách liên hệ cuối cùng).</p>' +
           '<p class="nhac-nho">Nếu chuyển tiền rồi mà quá lâu chưa thấy hồi âm, nhắn cho shop kèm ' +
             'nội dung chuyển khoản ở trên — shop tra ra đơn ngay.</p>' +
           // Đường thoát cho khách đang sốt ruột. Mở đúng bảng "Liên hệ và

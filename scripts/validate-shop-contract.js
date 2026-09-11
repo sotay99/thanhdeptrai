@@ -396,7 +396,8 @@ if (banNoi.indexOf('nut-dac-quyen') > banNoi.indexOf('veKhuQuaTang();')) {
   [/cam kết giao sản phẩm ngay lập tức/, "lời cam kết giao ngay khi nhận được tiền"],
   [/ưu tiên giao qua <strong>email<\/strong> \(thông qua hệ thống tự động\)/, "ưu tiên giao qua email tự động"],
   [/nếu bạn chưa nhập email/, "giao qua Zalo khi khách chưa nhập email"],
-  [/nếu không thể liên hệ qua Zalo/, "giao qua SMS khi không liên hệ được Zalo"],
+  [/nếu không thể liên hệ qua các cách trên/, "giao qua SMS khi không liên hệ được qua các cách trên"],
+  [/tin nhắn <strong>Zalo, WhatsApp, Telegram<\/strong>/, "giao qua Zalo, WhatsApp, Telegram khi khách chưa nhập email"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
