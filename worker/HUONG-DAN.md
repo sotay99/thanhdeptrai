@@ -124,6 +124,18 @@ Xong bước này là trang nhận hàng chạy thật.
 Vào `/admin` → **Tổng quan**. Dòng **Máy chủ kho (Worker)** phải chuyển sang
 **"Đã khai"** màu xanh.
 
+## Khi mã Worker được sửa (như đợt thêm "Xem trước link" ở /admin)
+
+Mỗi lần tệp `worker/kho-worker.js` trong kho đổi, phải dán lại tay — nhánh
+`main` trên GitHub deploy web tự động, nhưng KHÔNG đụng gì tới Worker cả.
+
+1. Cloudflare → **Workers & Pages** → Worker `kho-thanhdeptrai` → **Edit code**
+2. Xoá sạch nội dung cũ, dán nguyên nội dung MỚI của `worker/kho-worker.js`
+3. **Deploy**
+
+Không cần đụng lại bốn biến và binding ở Bước 5 — chúng vẫn giữ nguyên qua
+mỗi lần dán mã mới.
+
 ## Khi khách đổi máy
 
 Khách xoá dữ liệu duyệt web hoặc đổi điện thoại là hệ thống coi họ như máy mới

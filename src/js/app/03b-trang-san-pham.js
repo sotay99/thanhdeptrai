@@ -443,7 +443,8 @@
       ma: 'huong-dan-' + maSP,
       tieuDe: 'Hướng dẫn sử dụng',
       than: '<div class="noi-dung-huong-dan">' + dung(dm) + '</div>',
-      day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>'
+      day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>',
+      khiVe: function(){ initKhungVideo(); }
     });
   }
 
@@ -452,6 +453,50 @@
     if (!el) return;
     const yeuCau = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
     if (yeuCau) yeuCau.call(el);
+  }
+
+  // ------------------------------------------ BỘ CÔNG CỤ CỦA TRÌNH PHÁT DRIVE
+  //
+  // Bộ nút play/tua/âm lượng/chất lượng của Google Drive tự xếp lại theo bề
+  // ngang thật của khung chứa nó — dưới một ngưỡng nào đó (khung dọc 9:16 hẹp
+  // ngang, hoặc màn điện thoại nhỏ) nó dồn cục, chữ đè lên nút, nhìn vỡ. Mẹo:
+  // luôn bảo iframe rằng nó đang rộng ÍT NHẤT NGUONG_RONG_VIDEO (đủ để Drive
+  // tự xếp bộ nút đầy đủ như trên máy tính), rồi dùng transform: scale() thu
+  // nhỏ lại cho vừa khung thật — y hệt cách trình duyệt zoom out một trang
+  // web mà chữ không vỡ dòng. Lúc khung đã đủ rộng sẵn (ví dụ khi bấm xem
+  // toàn màn hình) thì hệ số co = 1, ảnh nét nguyên gốc, không phóng to giả.
+  const NGUONG_RONG_VIDEO = 640;
+
+  function ganTyLeKhungVideo(khung){
+    const iframe = khung.querySelector('iframe');
+    const rongThuc = khung.clientWidth;
+    if (!iframe || !rongThuc) return;
+    const doc = khung.classList.contains('video-doc');
+    const rongThietKe = Math.max(rongThuc, NGUONG_RONG_VIDEO);
+    const caoThietKe = Math.round(doc ? rongThietKe * 16 / 9 : rongThietKe * 9 / 16);
+    const tiLe = rongThuc / rongThietKe;
+    iframe.style.width = rongThietKe + 'px';
+    iframe.style.height = caoThietKe + 'px';
+    iframe.style.transform = 'scale(' + tiLe + ')';
+  }
+
+  // Gọi sau khi bảng chứa .khung-video vừa được chèn vào trang (modal hướng
+  // dẫn của khách, hoặc khối "Xem trước link" ở /admin). Theo dõi luôn bằng
+  // ResizeObserver để khi xoay máy, đổi bề ngang trình duyệt, hay bấm toàn
+  // màn hình thì tính lại ngay, không cần tải lại trang.
+  function initKhungVideo(goc){
+    const ds = (goc || document).querySelectorAll('.khung-video');
+    for (let i = 0; i < ds.length; i++) {
+      const khung = ds[i];
+      if (khung.__daCanhChinh) continue;
+      khung.__daCanhChinh = true;
+      ganTyLeKhungVideo(khung);
+      if (typeof ResizeObserver === 'function') {
+        new ResizeObserver(function(){ ganTyLeKhungVideo(khung); }).observe(khung);
+      } else {
+        window.addEventListener('resize', function(){ ganTyLeKhungVideo(khung); });
+      }
+    }
   }
 
   // Mỗi hàm nhận nhánh danh mục của đúng sản phẩm đó (để lấy linkHuongDan nếu
