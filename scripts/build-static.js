@@ -109,23 +109,35 @@ function dungAnh() {
   return bang;
 }
 
-// --- CSS NẠP ĐỘNG -----------------------------------------------------------
-// Ghi admin.css ra public/ kèm vân tay và trả về bảng thay chuỗi, y như ảnh.
-function dungCssNapDong() {
+// --- TÀI SẢN NẠP ĐỘNG (CSS/JS chỉ tải khi mở đúng module cần nó) -----------
+// Ghi từng tệp ra public/ kèm vân tay và trả về bảng thay chuỗi, y như ảnh.
+// admin.css: chỉ nạp ở "/admin". trang-chu.css/trang-chu-editor.js: chỉ nạp
+// khi mở module "Trang chủ" (trình chỉnh sửa ảnh mang từ kho thu-nghiem-01).
+const TAI_SAN_NAP_DONG = [
+  { nguon: "src/css/admin.css", tenTran: "admin", duoi: "css", moTa: "Admin CSS" },
+  { nguon: "src/css/trang-chu.css", tenTran: "trang-chu", duoi: "css", moTa: "CSS Trang chủ" },
+  { nguon: "src/js/trang-chu-editor.js", tenTran: "trang-chu-editor", duoi: "js", moTa: "JS Trang chủ" },
+];
+
+function dungTaiSanNapDong() {
   const bang = new Map();
-  const nguon = path.join(root, "src/css/admin.css");
-  if (!fs.existsSync(nguon)) return bang;
-  const noiDung = readFile(nguon, "Admin CSS");
-  const tenMoi = `admin.${fingerprint(noiDung)}.css`;
-  cleanGenerated(publicCssRoot, /^admin\.[a-f0-9]{12}\.css$/);
-  fs.writeFileSync(path.join(publicCssRoot, tenMoi), noiDung);
-  bang.set("/assets/css/admin.css", `/assets/css/${tenMoi}`);
+  cleanGenerated(publicCssRoot, /^(?:admin|trang-chu)\.[a-f0-9]{12}\.css$/);
+  cleanGenerated(publicJsRoot, /^trang-chu-editor\.[a-f0-9]{12}\.js$/);
+  for (const muc of TAI_SAN_NAP_DONG) {
+    const nguon = path.join(root, muc.nguon);
+    if (!fs.existsSync(nguon)) continue;
+    const noiDung = readFile(nguon, muc.moTa);
+    const tenMoi = `${muc.tenTran}.${fingerprint(noiDung)}.${muc.duoi}`;
+    const thuMuc = muc.duoi === "css" ? publicCssRoot : publicJsRoot;
+    fs.writeFileSync(path.join(thuMuc, tenMoi), noiDung);
+    bang.set(`/assets/${muc.duoi}/${muc.tenTran}.${muc.duoi}`, `/assets/${muc.duoi}/${tenMoi}`);
+  }
   return bang;
 }
 
 const manifest = loadManifest();
 const bangAnh = dungAnh();
-const bangCssDong = dungCssNapDong();
+const bangCssDong = dungTaiSanNapDong();
 let banNoi = Buffer.concat(manifest.map((name) => readFile(path.join(appSourceRoot, name), `Phần ${name}`))).toString("utf8");
 for (const [tran, coVanTay] of bangAnh) {
   banNoi = banNoi.split(tran).join(coVanTay);
@@ -133,10 +145,13 @@ for (const [tran, coVanTay] of bangAnh) {
 for (const [tran, coVanTay] of bangCssDong) {
   banNoi = banNoi.split(tran).join(coVanTay);
 }
-// Đường dẫn CSS nạp động còn ở dạng trần nghĩa là tệp nguồn không tồn tại —
-// để lọt thì trang quản trị mở ra không có kiểu dáng nào.
-if (/\/assets\/css\/admin\.css/.test(banNoi)) {
-  die("Mã gọi /assets/css/admin.css nhưng không có src/css/admin.css");
+// Đường dẫn tài sản nạp động còn ở dạng trần nghĩa là tệp nguồn không tồn
+// tại — để lọt thì module đó mở ra không có kiểu dáng/không chạy được.
+for (const muc of TAI_SAN_NAP_DONG) {
+  const tran = `/assets/${muc.duoi}/${muc.tenTran}.${muc.duoi}`;
+  if (banNoi.includes(tran)) {
+    die(`Mã gọi ${tran} nhưng không có ${muc.nguon}`);
+  }
 }
 // Đường dẫn ảnh trần nào còn sót lại nghĩa là JS gọi một ảnh KHÔNG có trong
 // src/anh/ — để lọt thì trang thật hiện ô ảnh vỡ, nên chặn ngay tại đây.

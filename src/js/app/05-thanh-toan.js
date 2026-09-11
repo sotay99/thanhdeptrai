@@ -671,5 +671,3 @@
     if (state.trang === 'admin') chuanBiAdmin();
   }
 
-  boot();
-})();

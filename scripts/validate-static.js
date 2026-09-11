@@ -62,19 +62,24 @@ if (fs.existsSync(anhSourceRoot)) {
   }
 }
 
-// Bảng CSS nạp động, dựng lại y hệt cách build dựng. Cũng cần TRƯỚC phần so
-// bản nối, vì bản nối trong public/ đã thay tên tệp này rồi.
+// Bảng tài sản nạp động (CSS/JS chỉ tải khi mở đúng module cần nó), dựng lại
+// y hệt cách build dựng. Cũng cần TRƯỚC phần so bản nối, vì bản nối trong
+// public/ đã thay tên các tệp này rồi.
+const TAI_SAN_NAP_DONG = [
+  { nguon: "src/css/admin.css", tenTran: "admin", duoi: "css" },
+  { nguon: "src/css/trang-chu.css", tenTran: "trang-chu", duoi: "css" },
+  { nguon: "src/js/trang-chu-editor.js", tenTran: "trang-chu-editor", duoi: "js" },
+];
 const bangCssDong = new Map();
-{
-  const nguonAdmin = path.join(root, "src/css/admin.css");
-  if (fs.existsSync(nguonAdmin)) {
-    const noiDung = fs.readFileSync(nguonAdmin);
-    bangCssDong.set("/assets/css/admin.css", {
-      url: `/assets/css/admin.${hash(noiDung).slice(0, 12)}.css`,
-      nguon: noiDung,
-      ten: "admin.css",
-    });
-  }
+for (const muc of TAI_SAN_NAP_DONG) {
+  const nguonPath = path.join(root, muc.nguon);
+  if (!fs.existsSync(nguonPath)) continue;
+  const noiDung = fs.readFileSync(nguonPath);
+  bangCssDong.set(`/assets/${muc.duoi}/${muc.tenTran}.${muc.duoi}`, {
+    url: `/assets/${muc.duoi}/${muc.tenTran}.${hash(noiDung).slice(0, 12)}.${muc.duoi}`,
+    nguon: noiDung,
+    ten: `${muc.tenTran}.${muc.duoi}`,
+  });
 }
 
 // --- 1) Tham chiếu trong index.html -----------------------------------------
@@ -183,21 +188,21 @@ const cssDongHopLe = new Set();
     fail("public/assets/anh còn ảnh nhưng src/anh/ đã trống");
   }
 
-  // CSS nạp động: cùng ba phép kiểm như ảnh.
+  // Tài sản nạp động (CSS/JS): cùng ba phép kiểm như ảnh.
   for (const [tran, css] of bangCssDong) {
     cssDongHopLe.add(css.url);
     const daBuild = readIfExists(path.join(hostingRoot, css.url.replace(/^\//, "")));
     if (!daBuild) {
       fail(`Thiếu bản có vân tay của ${css.ten} trong public/ — chạy lại node scripts/build-static.js`);
     } else if (hash(daBuild) !== hash(css.nguon)) {
-      fail(`${css.url} trong public/ KHÔNG khớp src/css/${css.ten}`);
+      fail(`${css.url} trong public/ KHÔNG khớp nguồn của ${css.ten}`);
     }
     if (chuBanNoi.includes(tran)) {
       fail(`Bản nối app còn gọi ${tran} bằng đường dẫn trần — chạy lại node scripts/build-static.js`);
     }
     // Nạp động mà không ai gọi thì tệp nằm chết trong public/ — bắt luôn.
     if (!chuBanNoi.includes(css.url)) {
-      fail(`Không mã nào nạp ${css.url} — CSS nạp động phải được gọi từ bản nối app.`);
+      fail(`Không mã nào nạp ${css.url} — tài sản nạp động phải được gọi từ bản nối app.`);
     }
   }
 }
@@ -225,7 +230,7 @@ if (failures.length) {
 }
 console.log(
   `Kiểm tra bản tĩnh ĐẠT: index.html, public/index.html, 4 tài sản có vân tay` +
-    (cssDongHopLe.size ? `, ${cssDongHopLe.size} CSS nạp động` : "") +
+    (cssDongHopLe.size ? `, ${cssDongHopLe.size} tài sản nạp động` : "") +
     (anhHopLe.size ? ` và ${anhHopLe.size} ảnh sản phẩm` : "") +
     " đều khớp nguồn.",
 );
