@@ -76,6 +76,7 @@ export default {
     if (dia.pathname === '/don' && yeuCau.method === 'POST') return donCuaToi(yeuCau, env);
     if (dia.pathname === '/cap-phat' && yeuCau.method === 'POST') return capPhat(yeuCau, env);
     if (dia.pathname === '/tai' && yeuCau.method === 'GET') return rotTep(dia, env);
+    if (dia.pathname === '/video-xem-truoc' && yeuCau.method === 'GET') return videoXemTruoc(dia, yeuCau, env);
     if (dia.pathname === '/' || dia.pathname === '/khoe') {
       return new Response('Máy chủ cấp phát đang chạy.', { status: 200 });
     }
@@ -100,7 +101,7 @@ function muCORS(yeuCau, env) {
   if (!goc) return {};
   return {
     'Access-Control-Allow-Origin': goc,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
@@ -352,6 +353,88 @@ async function rotTep(dia, env) {
   // Đường dẫn có hạn nên không được để proxy nào cache lại.
   mu.set('Cache-Control', 'private, no-store');
   return new Response(doiTuong.body, { headers: mu });
+}
+
+/* ------------------------------------------------------ XEM TRƯỚC VIDEO */
+//
+// Chủ shop dán link video hướng dẫn (Google Drive) ở /admin và bấm "Xem
+// trước link". Trang không tự fetch() được trang xem của Drive (Drive không
+// mở CORS cho việc đó), nên Worker này thay mặt hỏi hộ RỒI CHỈ MỘT MÌNH
+// Worker được đi ra ngoài — không phải một trạm trung chuyển đọc trang bất
+// kỳ: máy chủ (drive.google.com) và đường dẫn (/file/d/<mã>/view) đều đóng
+// cứng trong mã, KHÔNG nhận URL từ người gọi. Người gọi chỉ đưa được đúng
+// một mã tệp Drive (chữ, số, gạch ngang/dưới, 10–64 ký tự) — không có chỗ
+// nào để nhét một địa chỉ khác vào. Chỉ đọc og:title/og:description rồi bỏ,
+// không lưu, không ghi Firebase.
+const CHU_MA_DRIVE = /^[A-Za-z0-9_-]{10,64}$/;
+
+async function videoXemTruoc(dia, yeuCau, env) {
+  const id = dia.searchParams.get('id') || '';
+  if (!CHU_MA_DRIVE.test(id)) {
+    return traJSON({ duoc: false, lyDo: 'ma-khong-hop-le' }, yeuCau, env, 400);
+  }
+  try {
+    const tra = await fetch('https://drive.google.com/file/d/' + id + '/view', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (xem-truoc-video-worker)' }
+    });
+    if (!tra.ok) return traJSON({ duoc: false, lyDo: 'drive-tu-choi' }, yeuCau, env, 502);
+    // Chặn tải cả trang khổng lồ — trang xem của Drive bình thường chỉ vài
+    // chục KB, thẻ meta luôn nằm ở đầu tài liệu.
+    const trietRong = tra.body ? tra.body.getReader() : null;
+    let html = '';
+    if (trietRong) {
+      const giaiMa = new TextDecoder();
+      let daDoc = 0;
+      const GIOI_HAN = 300 * 1024;
+      while (daDoc < GIOI_HAN) {
+        const { value, done } = await trietRong.read();
+        if (done) break;
+        html += giaiMa.decode(value, { stream: true });
+        daDoc += value.length;
+      }
+      trietRong.cancel().catch(function () {});
+    } else {
+      html = await tra.text();
+    }
+    const ten = layMeta(html, 'og:title') || layTieuDe(html);
+    const moTa = layMeta(html, 'og:description');
+    return traJSON({
+      duoc: true,
+      ten: donSachTenDrive(ten),
+      moTa: moTa || ''
+    }, yeuCau, env);
+  } catch (e) {
+    console.error('Lỗi khi xem trước video:', e && e.message);
+    return traJSON({ duoc: false, lyDo: 'loi-may-chu' }, yeuCau, env, 502);
+  }
+}
+
+// Tìm đúng thẻ <meta> có property/name khớp TEN trước, RỒI mới lấy content=
+// từ trong đúng thẻ đó — không giả định content= luôn đứng SAU property=
+// trong mã HTML thật của Google (có lúc content= đứng trước).
+function layMeta(html, ten) {
+  const reThe = new RegExp('<meta\\b[^>]*(?:property|name)=["\']' + ten + '["\'][^>]*>', 'i');
+  const the = html.match(reThe);
+  if (!the) return '';
+  const noiDung = the[0].match(/content=["\']([^"\']*)["\']/i);
+  return noiDung ? giaiMaHTML(noiDung[1]) : '';
+}
+
+function layTieuDe(html) {
+  const m = html.match(/<title>([^<]*)<\/title>/i);
+  return m ? giaiMaHTML(m[1]) : '';
+}
+
+function giaiMaHTML(chuoi) {
+  return String(chuoi)
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+}
+
+// Trang Drive trả tiêu đề kiểu "Tên tệp.mp4 - Google Drive" — bỏ đuôi đó đi
+// cho gọn khi lấy từ <title> (og:title thường đã sạch sẵn).
+function donSachTenDrive(ten) {
+  return String(ten || '').replace(/\s*-\s*Google Drive\s*$/i, '').trim();
 }
 
 function tenTepGon(duong) {

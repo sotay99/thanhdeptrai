@@ -136,11 +136,13 @@
       '</div>';
   }
 
-  // Không đọc og:title/og:description qua fetch() — Google Drive không mở CORS
-  // cho việc đó, và một Worker giả làm trạm trung chuyển đọc trang bất kỳ là tự
-  // mở một cửa SSRF không đáng mở chỉ để lấy vài dòng chữ. Nhúng thẳng iframe
-  // /preview của Drive cho kết quả THẬT hơn: chủ shop thấy ĐÚNG trình phát,
-  // ĐÚNG ảnh đại diện, phát thử được luôn — không phải chỉ đọc chữ mô tả.
+  // Nhúng thẳng iframe /preview của Drive cho kết quả THẬT: chủ shop thấy ĐÚNG
+  // trình phát, ĐÚNG ảnh đại diện, phát thử được luôn. Riêng tên tệp và mô tả
+  // thì trình phát không lộ ra ngoài iframe được (nội dung khác máy chủ, trang
+  // không tự fetch() đọc được), nên nhờ máy chủ cấp phát (Worker) đọc hộ qua
+  // đường /video-xem-truoc — CHỈ đọc og:title/og:description của ĐÚNG một
+  // trang Drive tương ứng mã tệp đã dán, không phải trạm trung chuyển đọc
+  // trang bất kỳ (xem chú thích ở videoXemTruoc() trong worker/kho-worker.js).
   function veXemTruocVideo(link){
     const id = idDriveTuLink(link);
     if (!link) {
@@ -155,10 +157,52 @@
     return '' +
       '<div class="xem-truoc-video">' +
         '<div class="khung-video video-ngang"><iframe src="' + escapeHtml(src) + '" allow="autoplay"' +
-          ' loading="lazy" title="Xem trước video"></iframe></div>' +
+          ' loading="lazy" title="Xem trước video"></iframe>' +
+          '<div class="nut-play-to" data-nut-play aria-hidden="true"></div></div>' +
+        '<p class="mo-ta-video-xem-truoc" data-mo-ta-video="' + escapeHtml(id) + '">Đang tải tên và mô tả video…</p>' +
         '<p class="ghi-chu-xem-truoc">Đúng những gì khách sẽ thấy: ảnh đại diện, tên tệp và trình phát ' +
           'của Google Drive. Không phát được thì tệp chưa bật đúng quyền chia sẻ.</p>' +
       '</div>';
+  }
+
+  // Gọi Worker để lấy tên + mô tả rồi ghi thẳng vào đúng dòng chữ đang chờ —
+  // KHÔNG vẽ lại cả thẻ sản phẩm, vì làm vậy sẽ dựng lại iframe từ đầu, video
+  // đang phát thử dở sẽ bị tải lại từ đầu.
+  function adminTaiMoTaVideo(id){
+    const capNhatDong = function(html){
+      const dong = document.querySelector('[data-mo-ta-video="' + id + '"]');
+      if (dong) dong.innerHTML = html;
+    };
+    const chay = function(){
+      if (!state.mayChuKho) {
+        capNhatDong('<span class="mo-ta-video-loi">Chưa dựng được máy chủ kho nên chưa đọc được tên/mô tả tự động ' +
+          '— video phía trên vẫn xem thử bình thường.</span>');
+        return;
+      }
+      fetch(state.mayChuKho + '/video-xem-truoc?id=' + encodeURIComponent(id))
+        .then(function(r){ return r.json(); })
+        .then(function(kq){
+          if (!kq || !kq.duoc) {
+            console.error('Không đọc được tên/mô tả video:', kq && kq.lyDo);
+            capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này' +
+              (kq && kq.lyDo ? ' (mã lỗi: ' + escapeHtml(kq.lyDo) + ')' : '') +
+              ' — video phía trên vẫn xem thử bình thường. Mở Console (F12) xem chi tiết nếu cần báo lại cho thợ.</span>');
+            return;
+          }
+          const phan = [];
+          if (kq.ten) phan.push('<strong>Tên tệp:</strong> ' + escapeHtml(kq.ten));
+          if (kq.moTa) phan.push('<strong>Mô tả:</strong> ' + escapeHtml(kq.moTa));
+          capNhatDong(phan.length ? phan.join('<br>') :
+            '<span class="mo-ta-video-loi">Tệp này chưa đặt tên hay mô tả riêng trên Drive.</span>');
+        })
+        .catch(function(e){
+          console.error('Lỗi khi gọi /video-xem-truoc:', e);
+          capNhatDong('<span class="mo-ta-video-loi">Không đọc được tên/mô tả tự động lúc này (lỗi mạng hoặc CORS) ' +
+            '— video phía trên vẫn xem thử bình thường. Mở Console (F12) xem chi tiết nếu cần báo lại cho thợ.</span>');
+        });
+    };
+    if (state.mayChuKho) { chay(); return; }
+    taiThongTinKho().then(chay);
   }
 
   function veKhoiTep(sp, n){
@@ -305,4 +349,8 @@
   function adminXemTruocVideo(maSP){
     state.admin.xemTruocVideo = maSP;
     capNhatTheDanhMuc(maSP);
+    const the = document.querySelector('[data-the-dm="' + maSP + '"]');
+    if (the) initKhungVideo(the);
+    const id = idDriveTuLink(nhapDanhMuc(maSP).linkHuongDan);
+    if (id) adminTaiMoTaVideo(id);
   }

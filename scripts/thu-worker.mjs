@@ -41,8 +41,26 @@ function ghiDuong(duong, giaTri) {
   n[phan[phan.length - 1]] = giaTri;
 }
 
+// Trang xem của Drive, giả lập bốn ca: có đủ og:title/og:description, chỉ có
+// <title> (không og:description), thẻ meta viết content= TRƯỚC property=
+// (thứ tự thuộc tính khác — HTML thật của Google không cố định thứ tự này),
+// và một mã "chết" trả về lỗi.
+const TRANG_DRIVE_GIA = {
+  'coU1TieuDeVaMoTa000': '<html><head><meta property="og:title" content="Video hướng dẫn cài preset.mp4">' +
+    '<meta property="og:description" content="Video quay màn hình, 5 phút."></head><body></body></html>',
+  'chiCoTieuDeThoi00001': '<html><head><title>Bản ghi màn hình.mov - Google Drive</title></head><body></body></html>',
+  'thuTuThuocTinhNguoc01': '<html><head><meta content="Video quay tay.mp4" property="og:title"></head><body></body></html>'
+};
+
 globalThis.fetch = async (url, tuyChon) => {
   const u = new URL(url);
+  if (u.hostname === 'drive.google.com') {
+    const id = (u.pathname.match(/\/file\/d\/([^/]+)\//) || [])[1];
+    if (id === 'maChetMayChuLoi000000') return new Response('lỗi', { status: 500 });
+    const html = TRANG_DRIVE_GIA[id];
+    if (!html) return new Response('không có', { status: 404 });
+    return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html' } });
+  }
   const duong = u.pathname.replace(/^\//, '').replace(/\.json$/, '');
   if (!u.searchParams.get('auth')) return new Response('thiếu auth', { status: 401 });
   if (tuyChon && tuyChon.method === 'PUT') {
@@ -233,6 +251,50 @@ console.log('\n— Rót tệp —');
   ok(r.status === 200, 'Đường / báo máy chủ đang sống', r.status);
   const r2 = await worker.fetch(new Request(GOC + '/duong-la'), env);
   ok(r2.status === 404, 'Đường lạ trả 404', r2.status);
+}
+
+console.log('\n— Xem trước video ở /admin —');
+const xemTruoc = (id) =>
+  worker.fetch(new Request(GOC + '/video-xem-truoc?id=' + encodeURIComponent(id), {
+    headers: { Origin: 'https://thanhdeptrai.vn' }
+  }), env);
+{
+  const r = await xemTruoc('coU1TieuDeVaMoTa000');
+  const j = await r.json();
+  ok(r.status === 200 && j.duoc === true, 'Có og:title/og:description thì đọc được', JSON.stringify(j));
+  ok(j.ten === 'Video hướng dẫn cài preset.mp4', 'Lấy đúng tên từ og:title', j.ten);
+  ok(j.moTa === 'Video quay màn hình, 5 phút.', 'Lấy đúng mô tả từ og:description', j.moTa);
+}
+{
+  const r = await xemTruoc('chiCoTieuDeThoi00001');
+  const j = await r.json();
+  ok(j.duoc === true, 'Không có og:title thì lùi về thẻ <title>', JSON.stringify(j));
+  ok(j.ten === 'Bản ghi màn hình.mov', 'Bỏ đúng đuôi "- Google Drive" ở cuối tiêu đề', j.ten);
+  ok(j.moTa === '', 'Không có og:description thì để trống, không bịa', JSON.stringify(j.moTa));
+}
+{
+  const r = await xemTruoc('thuTuThuocTinhNguoc01');
+  const j = await r.json();
+  ok(j.ten === 'Video quay tay.mp4', 'Đọc được cả khi content= đứng TRƯỚC property= trong thẻ meta', JSON.stringify(j));
+}
+{
+  const r = await xemTruoc('maChetMayChuLoi000000');
+  ok(r.status === 502, 'Drive lỗi thì báo lỗi máy chủ, không vỡ', r.status);
+}
+{
+  const r = await xemTruoc('../../../etc/passwd');
+  ok(r.status === 400, 'Mã tệp méo (có ký tự lạ) thì chặn ngay, không gọi ra ngoài', r.status);
+}
+{
+  const r = await xemTruoc('ngan-qua');
+  ok(r.status === 400, 'Mã tệp quá ngắn thì chặn', r.status);
+}
+{
+  // Không cách nào nhét được một máy chủ khác vào — chỉ có tham số ?id=.
+  const r = await worker.fetch(new Request(GOC + '/video-xem-truoc?id=coU1TieuDeVaMoTa000&goc=https://ke-trom.com',
+    { headers: { Origin: 'https://thanhdeptrai.vn' } }), env);
+  const j = await r.json();
+  ok(j.duoc === true, 'Tham số lạ bị bỏ qua, vẫn chỉ đọc đúng mã Drive', JSON.stringify(j));
 }
 
 if (hong) {

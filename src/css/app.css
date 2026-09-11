@@ -1763,6 +1763,7 @@
    hình. 9:16 cho video dọc (quay bằng điện thoại), 16:9 cho video ngang
    (quay màn hình máy tính). */
 .khung-video {
+  position: relative;
   width: 100%;
   margin: 4px 0 10px;
   border-radius: 12px;
@@ -1772,7 +1773,39 @@
 }
 .khung-video.video-doc { max-width: 320px; margin-left: auto; margin-right: auto; aspect-ratio: 9 / 16; }
 .khung-video.video-ngang { aspect-ratio: 16 / 9; }
-.khung-video iframe { width: 100%; height: 100%; border: 0; display: block; }
+/* Bề rộng/cao và độ thu nhỏ (transform: scale) do initKhungVideo() ở
+   03b-trang-san-pham.js tính và gán trực tiếp bằng JS — xem chú thích ở đó.
+   Ở đây chỉ neo góc trên-trái để phép scale co đúng chỗ. */
+.khung-video iframe { position: absolute; top: 0; left: 0; transform-origin: top left; border: 0; display: block; }
+
+/* Nút play to giữa khung — CHỈ để mắt thấy ngay đây là video bấm được, không
+   điều khiển được trình phát thật (khác gốc, JS không với vào trong iframe
+   được). Bấm vào là tự ẩn, lộ nút play thật của Drive ngay dưới nó. */
+.nut-play-to {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  border: 2px solid rgba(255, 255, 255, .85);
+  cursor: pointer;
+  z-index: 2;
+  transition: opacity .25s ease;
+}
+.nut-play-to::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-42%, -50%);
+  border-style: solid;
+  border-width: 12px 0 12px 19px;
+  border-color: transparent transparent transparent #fff;
+}
+.nut-play-to.da-an { opacity: 0; pointer-events: none; }
 
 .nut-video-to {
   display: flex;
@@ -1783,4 +1816,30 @@
 
 @media (min-width: 640px) {
   .khung-video.video-doc { max-width: 260px; }
+}
+
+/* Mũi tên nhắc lướt xuống — bật giữa màn hình mỗi lần mở bảng hướng dẫn, để
+   khách biết còn nội dung bên dưới. Đứng im rồi trượt xuống biến mất, lặp
+   đúng hai vòng rồi tự dọn khỏi trang (xem hienMuiTenTruot() ở
+   03b-trang-san-pham.js). Không cản bấm gì cả. */
+.mui-ten-truot {
+  position: fixed;
+  top: 46%;
+  left: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  z-index: 490;
+  pointer-events: none;
+  border-right: 5px solid #fff;
+  border-bottom: 5px solid #fff;
+  transform: translateY(0) rotate(45deg);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .5));
+  opacity: 0;
+  animation: muiTenTruotXuong 1.3s ease-in 2 forwards;
+}
+@keyframes muiTenTruotXuong {
+  0%   { opacity: 1; transform: translateY(0) rotate(45deg); }
+  38%  { opacity: 1; transform: translateY(0) rotate(45deg); }
+  100% { opacity: 0; transform: translateY(60px) rotate(45deg); }
 }

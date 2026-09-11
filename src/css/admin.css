@@ -797,6 +797,17 @@
   line-height: 1.6;
   color: var(--chu-mo);
 }
+.mo-ta-video-xem-truoc {
+  max-width: 420px;
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.mo-ta-video-loi { color: var(--chu-mo); font-style: italic; }
 .xem-truoc-video.loi {
   padding: 11px 13px;
   border: 1px solid rgba(229, 83, 75, .5);
