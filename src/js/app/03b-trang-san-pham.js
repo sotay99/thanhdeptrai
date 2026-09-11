@@ -471,7 +471,10 @@
     document.body.appendChild(el);
     const don = function(){ if (el.parentNode) el.parentNode.removeChild(el); };
     el.addEventListener('animationend', don);
-    window.setTimeout(don, 3500);
+    // Lưới an toàn phòng khi animationend không bắn (tab chạy nền…) — phải
+    // dài hơn TOÀN BỘ animation thật (2 vòng × 2,4 giây = 4,8 giây, xem
+    // muiTenTruotXuong trong app.css), không thì mũi tên bị xoá giữa chừng.
+    window.setTimeout(don, 5200);
   }
 
   function videoToanManHinh(khung){

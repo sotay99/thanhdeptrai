@@ -1841,7 +1841,7 @@
   z-index: 490;
   pointer-events: none;
   opacity: 0;
-  animation: muiTenTruotXuong 1.3s ease-in 2 forwards;
+  animation: muiTenTruotXuong 2.4s ease-in 2 forwards;
 }
 .mui-ten-truot::after {
   content: '↓';
@@ -1851,8 +1851,12 @@
   line-height: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, .4);
 }
+/* Trôi hẳn xuống tận đáy màn hình rồi mới biến mất, không phải trượt một
+   đoạn ngắn rồi tắt giữa chừng — 56vh là khoảng cách từ chỗ đứng (44% từ
+   trên) xuống đáy khung nhìn, trừ đi bán kính khung tròn cho khớp mép. */
 @keyframes muiTenTruotXuong {
   0%   { opacity: 1; transform: translateY(0) scale(1); }
-  38%  { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(70px) scale(.85); }
+  21%  { opacity: 1; transform: translateY(0) scale(1); }
+  85%  { opacity: 1; transform: translateY(calc(56vh - 38px)) scale(.9); }
+  100% { opacity: 0; transform: translateY(calc(56vh - 38px)) scale(.85); }
 }
