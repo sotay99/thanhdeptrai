@@ -822,3 +822,36 @@
   font-size: 12.5px;
   color: var(--chu-mo);
 }
+
+/* ---------------------------------------- MODULE "KHOÁ HỌC LIGHTROOM MOBILE" */
+
+.hang-luu-kh { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+
+.quan-ly-khoa-hoc { display: flex; flex-direction: column; gap: 10px; }
+
+.dong-khoa-hoc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--vien);
+  border-radius: 10px;
+  background: var(--the-2);
+}
+.dong-chuong-kh { background: var(--the-3); border-color: var(--vien-sang); }
+.dong-khoa-hoc .nhan-dong-kh {
+  flex: 0 0 62px;
+  padding-top: 11px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--chu-diu);
+}
+.dong-khoa-hoc > input.admin-nhap { flex: 1 1 200px; }
+.dong-khoa-hoc .hang-video-hd,
+.dong-khoa-hoc .xem-truoc-video,
+.dong-khoa-hoc .xem-truoc-video-trong { flex: 1 1 100%; }
+.dong-khoa-hoc .cot-nut-kh { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; }
+.dong-khoa-hoc .nut-xoa-dong { flex: 0 0 auto; align-self: flex-start; }
+
+.hang-them-kh { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }

@@ -41,7 +41,8 @@
     { ma: 'lien-he',     ten: 'Liên hệ và mạng xã hội', bieuTuong: '💬' },
     { ma: 'nhan-tien',   ten: 'Thông tin nhận tiền',    bieuTuong: '🏦' },
     { ma: 'danh-muc',    ten: 'Danh mục sản phẩm',      bieuTuong: '📦' },
-    { ma: 'don-hang',    ten: 'Đơn hàng',               bieuTuong: '🧾' }
+    { ma: 'don-hang',    ten: 'Đơn hàng',               bieuTuong: '🧾' },
+    { ma: 'khoa-hoc',    ten: 'Khoá học Lightroom mobile', bieuTuong: '🎬' }
   ];
 
   // --------------------------------------------------------- KHAI BÁO CÁC Ô
@@ -178,7 +179,8 @@
     'nhan-tien': 'thongtinthanhtoan',
     'khoa-ai':   'admin/khoaAI',
     'kho':       'thongtinkho',
-    'danh-muc':  'danhmuc'
+    'danh-muc':  'danhmuc',
+    'khoa-hoc':  'khoahoc/lrMobile'
   };
 
   function taiCaiDatAdmin(){
@@ -304,6 +306,7 @@
     if (ma === 'khoa-ai')   return veAdminKhoaAI();
     if (ma === 'danh-muc')  return veAdminDanhMuc();
     if (ma === 'don-hang')  return veAdminDonHang();
+    if (ma === 'khoa-hoc')  return veAdminKhoaHoc();
     return veAdminChuaLam(ma);
   }
 

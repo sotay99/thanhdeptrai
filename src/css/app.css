@@ -1873,3 +1873,91 @@
   85%  { opacity: 1; transform: translateY(calc(56vh - 38px)) scale(.9); }
   100% { opacity: 0; transform: translateY(calc(56vh - 38px)) scale(.85); }
 }
+
+/* ============================================================================
+   MODULE "KHOÁ HỌC CHỈNH MÀU LIGHTROOM ĐIỆN THOẠI" (miễn phí)
+   ============================================================================ */
+
+.khoa-hoc-mobile { max-width: 720px; margin: 0 auto; }
+.khoa-hoc-dau h2 { font-size: 19px; line-height: 1.35; margin-bottom: 10px; }
+.khoa-hoc-dan-nhap { color: var(--chu-diu); font-size: 14px; line-height: 1.75; margin-bottom: 16px; }
+.khoa-hoc-dau > .nut { margin-bottom: 22px; }
+
+.danh-sach-chuong { display: flex; flex-direction: column; gap: 10px; }
+
+.khoi-chuong {
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  background: var(--the);
+  overflow: hidden;
+}
+.the-chuong {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--the-2);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--chu);
+}
+.the-chuong .mui-ten-xo { flex: 0 0 auto; color: var(--chu-mo); font-size: 11px; }
+.danh-sach-bai-trong-chuong {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+.khoi-chuong.mo .danh-sach-bai-trong-chuong { display: flex; }
+.khoi-chuong .chua-co-bai { color: var(--chu-mo); font-size: 12.5px; padding: 4px; margin: 0; }
+
+.the-bai-hoc {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  background: var(--the-3);
+  border: 1px solid var(--vien);
+  border-radius: var(--bo);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--chu);
+  transition: border-color .15s, background .15s;
+}
+.the-bai-hoc:hover { border-color: var(--xanh); background: var(--xanh-nen); }
+.the-bai-hoc .so-bai { flex: 0 0 auto; color: var(--xanh); font-size: 11px; }
+/* Bài đứng trước chương đầu tiên (không thuộc chương nào) hiện thẳng ra
+   ngoài khối sổ — vẫn cần khoảng cách với thẻ phía trên/dưới. */
+.danh-sach-chuong > .the-bai-hoc { margin-bottom: 0; }
+
+/* Modal xem video bài học — BAO TRỌN màn hình, khác hẳn mọi modal khác của
+   web (vốn có viền và chừa lề). Chọn theo tiền tố mã modal thay vì thêm một
+   tham số riêng cho moModal() — không đụng gì tới hệ thống modal dùng chung. */
+.modal-lop[data-ma-modal^="bai-hoc-"] { padding: 0; align-items: stretch; }
+.modal-lop[data-ma-modal^="bai-hoc-"] .modal {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+.modal-lop[data-ma-modal^="bai-hoc-"] .modal-than {
+  flex: 1;
+  max-height: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.noi-dung-bai-hoc { width: 100%; }
+.noi-dung-bai-hoc .khung-video.video-doc { margin-left: auto; margin-right: auto; }

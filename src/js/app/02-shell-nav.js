@@ -433,6 +433,7 @@
     if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
+    if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
     return veManNangCap(m ? m.ten : '');
   }
 
