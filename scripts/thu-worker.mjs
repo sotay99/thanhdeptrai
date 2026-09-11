@@ -52,9 +52,30 @@ const TRANG_DRIVE_GIA = {
   'thuTuThuocTinhNguoc01': '<html><head><meta content="Video quay tay.mp4" property="og:title"></head><body></body></html>'
 };
 
+// Đếm số lần Worker thật sự gọi ra drive.google.com — dùng để kiểm chứng
+// cache có tránh được lượt gọi thứ hai cho CÙNG một mã tệp hay không (đúng
+// ca sp6/sp7 dùng chung một link).
+let SO_LAN_GOI_DRIVE = 0;
+
+// Giả lập Cache API của Cloudflare Worker (caches.default) — Node không có
+// sẵn nên tự dựng một kho trong bộ nhớ, đủ để thử put()/match().
+const KHO_CACHE = new Map();
+globalThis.caches = {
+  default: {
+    async match(req) {
+      const v = KHO_CACHE.get(req.url);
+      return v ? v.clone() : undefined;
+    },
+    async put(req, res) {
+      KHO_CACHE.set(req.url, res.clone());
+    }
+  }
+};
+
 globalThis.fetch = async (url, tuyChon) => {
   const u = new URL(url);
   if (u.hostname === 'drive.google.com') {
+    SO_LAN_GOI_DRIVE++;
     const id = (u.pathname.match(/\/file\/d\/([^/]+)\//) || [])[1];
     if (id === 'maChetMayChuLoi000000') return new Response('lỗi', { status: 500 });
     const html = TRANG_DRIVE_GIA[id];
@@ -295,6 +316,20 @@ const xemTruoc = (id) =>
     { headers: { Origin: 'https://thanhdeptrai.vn' } }), env);
   const j = await r.json();
   ok(j.duoc === true, 'Tham số lạ bị bỏ qua, vẫn chỉ đọc đúng mã Drive', JSON.stringify(j));
+}
+{
+  // sp6 và sp7 hay dán CHUNG một link — hỏi lần đầu xong phải nhớ, lần thứ
+  // hai đọc thẳng trong cache, không gọi ra Google lần nữa (đỡ bị Google coi
+  // là hỏi dồn dập cùng một tệp, và trả lời tức thì thay vì đợi Drive).
+  const idRieng = 'capNhoCacheRieng0001';
+  TRANG_DRIVE_GIA[idRieng] = '<html><head><meta property="og:title" content="Video dùng chung.mp4"></head></html>';
+  const truoc = SO_LAN_GOI_DRIVE;
+  const j1 = await (await xemTruoc(idRieng)).json();
+  ok(j1.ten === 'Video dùng chung.mp4', 'Lần đầu (sp6) đọc đúng tên', JSON.stringify(j1));
+  ok(SO_LAN_GOI_DRIVE === truoc + 1, 'Lần đầu có gọi ra Google đúng một lần', SO_LAN_GOI_DRIVE - truoc);
+  const j2 = await (await xemTruoc(idRieng)).json();
+  ok(j2.ten === 'Video dùng chung.mp4', 'Lần hai (sp7, CÙNG link) vẫn đọc đúng tên', JSON.stringify(j2));
+  ok(SO_LAN_GOI_DRIVE === truoc + 1, 'Lần hai đọc từ cache, KHÔNG gọi ra Google lần hai', SO_LAN_GOI_DRIVE - truoc);
 }
 
 if (hong) {

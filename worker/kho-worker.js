@@ -69,14 +69,14 @@ function phutSong(maSanPham) {
 const CHU_MA_THIET_BI = /^[A-Za-z0-9_-]{8,64}$/;
 
 export default {
-  async fetch(yeuCau, env) {
+  async fetch(yeuCau, env, ctx) {
     const dia = new URL(yeuCau.url);
 
     if (yeuCau.method === 'OPTIONS') return traLoiOptions(yeuCau, env);
     if (dia.pathname === '/don' && yeuCau.method === 'POST') return donCuaToi(yeuCau, env);
     if (dia.pathname === '/cap-phat' && yeuCau.method === 'POST') return capPhat(yeuCau, env);
     if (dia.pathname === '/tai' && yeuCau.method === 'GET') return rotTep(dia, env);
-    if (dia.pathname === '/video-xem-truoc' && yeuCau.method === 'GET') return videoXemTruoc(dia, yeuCau, env);
+    if (dia.pathname === '/video-xem-truoc' && yeuCau.method === 'GET') return videoXemTruoc(dia, yeuCau, env, ctx);
     if (dia.pathname === '/' || dia.pathname === '/khoe') {
       return new Response('Máy chủ cấp phát đang chạy.', { status: 200 });
     }
@@ -368,15 +368,49 @@ async function rotTep(dia, env) {
 // không lưu, không ghi Firebase.
 const CHU_MA_DRIVE = /^[A-Za-z0-9_-]{10,64}$/;
 
-async function videoXemTruoc(dia, yeuCau, env) {
+// Khoá cache KHÔNG PHẢI địa chỉ gọi ra ngoài — chỉ là một chuỗi để Cache API
+// phân biệt kết quả của mã tệp nào. Việc này giải quyết đúng ca sp6/sp7 dùng
+// CHUNG một link: hỏi lần đầu (sp6) xong nhớ sáu tiếng, lần sau (sp7) đọc lại
+// ngay trong cache, không hỏi Google lần hai — vừa nhanh, vừa bớt khả năng bị
+// Google chặn vì hỏi liên tục cùng một tệp trong thời gian ngắn.
+function khoaCacheVideo(id) {
+  return new Request('https://cache-noi-bo.invalid/video-xem-truoc/' + id);
+}
+
+async function videoXemTruoc(dia, yeuCau, env, ctx) {
   const id = dia.searchParams.get('id') || '';
   if (!CHU_MA_DRIVE.test(id)) {
     return traJSON({ duoc: false, lyDo: 'ma-khong-hop-le' }, yeuCau, env, 400);
   }
+
+  const cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
+  const khoa = khoaCacheVideo(id);
+  if (cache) {
+    const daCo = await cache.match(khoa);
+    if (daCo) return traJSON(await daCo.json(), yeuCau, env);
+  }
+
   try {
-    const tra = await fetch('https://drive.google.com/file/d/' + id + '/view', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (xem-truoc-video-worker)' }
-    });
+    // Trước đây dùng User-Agent tự bịa (kiểu "...-worker") — Google coi đó là
+    // dấu hiệu máy tự động và có lúc chặn thẳng. Giả làm trình duyệt thật để
+    // được đối xử như một lượt xem bình thường. Kèm hạn 8 giây: Drive có lúc
+    // treo lâu, không muốn khách ở /admin ngồi chờ "Đang tải..." mãi không hết.
+    const dieuKhien = new AbortController();
+    const hetGio = setTimeout(function () { dieuKhien.abort(); }, 8000);
+    let tra;
+    try {
+      tra = await fetch('https://drive.google.com/file/d/' + id + '/view', {
+        signal: dieuKhien.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+            '(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'vi,en;q=0.9'
+        }
+      });
+    } finally {
+      clearTimeout(hetGio);
+    }
     if (!tra.ok) return traJSON({ duoc: false, lyDo: 'drive-tu-choi' }, yeuCau, env, 502);
     // Chặn tải cả trang khổng lồ — trang xem của Drive bình thường chỉ vài
     // chục KB, thẻ meta luôn nằm ở đầu tài liệu.
@@ -398,14 +432,22 @@ async function videoXemTruoc(dia, yeuCau, env) {
     }
     const ten = layMeta(html, 'og:title') || layTieuDe(html);
     const moTa = layMeta(html, 'og:description');
-    return traJSON({
+    const ketQua = {
       duoc: true,
       ten: donSachTenDrive(ten),
       moTa: moTa || ''
-    }, yeuCau, env);
+    };
+    if (cache) {
+      const luuCache = cache.put(khoa, new Response(JSON.stringify(ketQua), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=21600' }
+      }));
+      if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(luuCache); else await luuCache;
+    }
+    return traJSON(ketQua, yeuCau, env);
   } catch (e) {
     console.error('Lỗi khi xem trước video:', e && e.message);
-    return traJSON({ duoc: false, lyDo: 'loi-may-chu' }, yeuCau, env, 502);
+    const lyDo = e && e.name === 'AbortError' ? 'qua-han' : 'loi-may-chu';
+    return traJSON({ duoc: false, lyDo: lyDo }, yeuCau, env, 502);
   }
 }
 
