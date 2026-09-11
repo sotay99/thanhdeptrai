@@ -558,6 +558,9 @@
     if (hanhDong === 'xac-nhan-thanh-toan') { xacNhanThanhToan(); return; }
     if (hanhDong === 'chot-don') { chotDon(); return; }
     if (hanhDong === 'su-dung-san-pham') { moModalNhanHang(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'xem-huong-dan') { moModalHuongDan(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'video-toan-man-hinh') { videoToanManHinh(nutHanhDong.getAttribute('data-khung')); return; }
+    if (hanhDong === 'admin-xem-truoc-video') { adminXemTruocVideo(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'xac-nhan-tai') { xacNhanTai(nutHanhDong.getAttribute('data-dong')); return; }
     if (hanhDong === 've-trang-mua-hang') { veTrangChinh(); render(); return; }
     if (hanhDong === 'admin-dang-nhap') { dangNhapGoogle(); return; }

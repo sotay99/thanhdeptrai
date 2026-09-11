@@ -761,3 +761,53 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ------------------------------------------------- LINK VIDEO HƯỚNG DẪN */
+
+.khoi-video-hd {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--vien);
+}
+.khoi-video-hd .admin-ghi-chu {
+  margin: 0 0 9px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--chu-mo);
+}
+.hang-video-hd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hang-video-hd .admin-nhap { flex: 1 1 260px; min-width: 0; }
+.hang-video-hd .nut { flex: 0 0 auto; }
+
+.xem-truoc-video { margin-top: 12px; }
+.xem-truoc-video .khung-video {
+  max-width: 420px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--vien);
+}
+.xem-truoc-video .ghi-chu-xem-truoc {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--chu-mo);
+}
+.xem-truoc-video.loi {
+  padding: 11px 13px;
+  border: 1px solid rgba(229, 83, 75, .5);
+  border-radius: 10px;
+  background: rgba(229, 83, 75, .1);
+  color: var(--do);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+.xem-truoc-video-trong {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--chu-mo);
+}

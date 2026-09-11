@@ -144,7 +144,8 @@
       loi: '',
       duLieu: {},            // các nhánh cài đặt đã đọc về
       dangLuu: '',           // tên ô đang lưu, để nút hiện "Đang lưu…"
-      vuaLuu: ''             // tên ô vừa lưu xong, để hiện "Đã lưu" 3 giây
+      vuaLuu: '',            // tên ô vừa lưu xong, để hiện "Đã lưu" 3 giây
+      xemTruocVideo: ''      // mã sản phẩm đang mở bảng "Xem trước link" video
       // donHang — kho tạm của mục Đơn hàng, phần 04D tự dựng khi cần tới
     },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau

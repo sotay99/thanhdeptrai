@@ -1689,3 +1689,98 @@
   border-color: var(--xanh);
   background: var(--xanh-nen);
 }
+
+/* =============================================== HƯỚNG DẪN SỬ DỤNG SẢN PHẨM
+   Nút "Xem hướng dẫn sử dụng" đứng trên danh sách tệp. Viền xanh đặc trưng
+   của web, để khách nhận ra nó là lối dẫn tới thông tin bổ ích, khác nút
+   "Tải xuống" (viền cam/đỏ theo trạng thái) và khác nút "Đóng bảng" (viền
+   trung tính). */
+.nut-huong-dan {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin: 12px 0 14px;
+  border: 1.5px solid var(--xanh);
+  color: var(--xanh);
+  font-weight: 600;
+}
+.nut-huong-dan:hover { background: var(--xanh-nen); }
+
+.noi-dung-huong-dan {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--chu-diu);
+}
+.noi-dung-huong-dan p { margin: 0 0 12px; }
+.noi-dung-huong-dan .hd-mo-dau { color: var(--chu); font-size: 14px; }
+.noi-dung-huong-dan h4.hd-buoc {
+  margin: 20px 0 8px;
+  font-size: 14.5px;
+  color: var(--chu);
+  border-left: 3px solid var(--xanh);
+  padding-left: 10px;
+}
+.noi-dung-huong-dan h4.hd-buoc:first-child { margin-top: 0; }
+.noi-dung-huong-dan h4.hd-tieu-de-video {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  color: var(--chu);
+  text-align: center;
+}
+.noi-dung-huong-dan .hd-ghi-chu {
+  padding: 10px 12px;
+  border-radius: var(--bo);
+  background: var(--xanh-nen);
+  color: var(--chu-diu);
+  font-size: 12.5px;
+}
+.noi-dung-huong-dan .hd-canh-bao {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 167, 46, .45);
+  border-radius: 10px;
+  background: rgba(255, 167, 46, .1);
+  color: var(--chu-diu);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.noi-dung-huong-dan .hd-canh-bao strong { color: var(--cam); }
+
+.noi-dung-huong-dan .hd-anh {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 4px auto 16px;
+  border-radius: 12px;
+  border: 1px solid var(--vien);
+  box-shadow: var(--bong);
+}
+
+/* Khung video: tỉ lệ giữ cố định bằng aspect-ratio nên iframe của Google
+   Drive luôn lấp đầy đúng khung, không co giãn lệch khi đổi bề ngang màn
+   hình. 9:16 cho video dọc (quay bằng điện thoại), 16:9 cho video ngang
+   (quay màn hình máy tính). */
+.khung-video {
+  width: 100%;
+  margin: 4px 0 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--vien);
+}
+.khung-video.video-doc { max-width: 320px; margin-left: auto; margin-right: auto; aspect-ratio: 9 / 16; }
+.khung-video.video-ngang { aspect-ratio: 16 / 9; }
+.khung-video iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+.nut-video-to {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin: 0 0 18px;
+}
+
+@media (min-width: 640px) {
+  .khung-video.video-doc { max-width: 260px; }
+}

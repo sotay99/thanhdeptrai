@@ -1578,6 +1578,81 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
+// 25) HƯỚNG DẪN SỬ DỤNG SẢN PHẨM — nút, nội dung, và video Google Drive.
+//
+//     Năm sản phẩm có tệp thật (sp1, sp2, sp3, sp6, sp7) phải có nút "Xem
+//     hướng dẫn sử dụng" NGAY TRÊN danh sách tệp. Bốn trong số đó (sp2, sp3,
+//     sp6, sp7) có video, và link video là DỮ LIỆU của chủ shop (khai ở
+//     /admin, đọc từ Firebase) — TUYỆT ĐỐI không phải một link Drive viết
+//     chết trong mã nguồn.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/const\s+SP_CO_HUONG_DAN\s*=\s*\{\s*sp1:\s*true,\s*sp2:\s*true,\s*sp3:\s*true,\s*sp6:\s*true,\s*sp7:\s*true\s*\}/,
+      "danh sách năm sản phẩm có bảng hướng dẫn sử dụng"],
+    [/function\s+veNutHuongDan\s*\(/, "hàm dựng nút Xem hướng dẫn sử dụng"],
+    [/data-hanh-dong="xem-huong-dan"/, "nút Xem hướng dẫn sử dụng trên bảng nhận hàng"],
+    [/function\s+moModalHuongDan\s*\(/, "hàm mở bảng hướng dẫn sử dụng"],
+    [/function\s+idDriveTuLink\s*\(/, "hàm rút mã tệp Google Drive từ đường dẫn"],
+    [/function\s+veKhungVideo\s*\(/, "hàm dựng khung video Google Drive cho khách"],
+    [/drive\.google\.com\/file\/d\/'\s*\+\s*id\s*\+\s*'\/preview'/, "nhúng đúng iframe /preview của Google Drive"],
+    [/const\s+HUONG_DAN_SU_DUNG\s*=\s*\{/, "bảng nội dung hướng dẫn theo từng sản phẩm"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Nút phải đứng TRÊN danh sách tệp — khách đọc hướng dẫn TRƯỚC khi tải, chứ
+  // không phải tải xong rồi mới biết cách cài.
+  {
+    const than = banNoi.match(/function\s+veThanNhanHang\s*\([\s\S]*?\n  \}/);
+    if (than && than[0].indexOf("veNutHuongDan(sp.ma)") > than[0].indexOf("danh-sach-tep")) {
+      fail("Nút Xem hướng dẫn sử dụng phải nằm TRÊN danh sách tệp, không phải dưới.");
+    }
+  }
+
+  // sp1 là hướng dẫn cài APK bằng ảnh chụp màn hình thật — ba tấm ảnh phải có
+  // mặt trong src/anh/ (không phải chỉ được gọi trong mã, vì đó là điều
+  // validate-static.js đã canh; ở đây canh việc mã THẬT SỰ gọi đủ ba tấm).
+  ["hd-sp1-b1.jpg", "hd-sp1-b2.jpg", "hd-sp1-b3.jpg"].forEach((ten) => {
+    if (banNoi.indexOf("/assets/anh/" + ten) === -1) {
+      fail(`Hướng dẫn sản phẩm 1 thiếu ảnh minh hoạ ${ten}.`);
+    }
+  });
+
+  // Bốn sản phẩm có video đọc link từ CHÍNH danh mục của sản phẩm đó
+  // (dm.linkHuongDan) — không phải một địa chỉ Drive nào viết chết trong mã.
+  {
+    const goiVideo = banNoi.match(/veKhungVideo\(dm && dm\.linkHuongDan,/g) || [];
+    if (goiVideo.length < 4) {
+      fail(`Phải có đủ 4 chỗ đọc dm.linkHuongDan cho sp2/sp3/sp6/sp7 (đang thấy ${goiVideo.length}).`);
+    }
+    if (/veKhungVideo\('https:\/\/drive\.google\.com/.test(banNoi)) {
+      fail("Link video KHÔNG được viết chết trong mã nguồn — phải đọc từ danh mục do /admin khai.");
+    }
+  }
+
+  // Trang quản trị: bốn sản phẩm có video phải có ô khai + nút xem trước, và
+  // giá trị đó phải được LƯU vào cùng gói dữ liệu danhmuc/<mã> khi bấm Lưu.
+  [
+    [/const\s+SP_CO_VIDEO\s*=\s*\{\s*sp2:\s*true,\s*sp3:\s*true,\s*sp6:\s*true,\s*sp7:\s*true\s*\}/,
+      "danh sách bốn sản phẩm có link video hướng dẫn ở trang quản trị"],
+    [/function\s+veKhoiVideoHuongDan\s*\(/, "khối nhập link video hướng dẫn ở trang quản trị"],
+    [/data-dm-video="/, "ô nhập link video hướng dẫn"],
+    [/data-hanh-dong="admin-xem-truoc-video"/, "nút Xem trước link video"],
+    [/function\s+adminXemTruocVideo\s*\(/, "hành động mở bảng xem trước video"],
+    [/function\s+veXemTruocVideo\s*\(/, "hàm dựng bảng xem trước video"],
+    [/duLieu\.linkHuongDan\s*=\s*video/, "link video được gộp vào gói dữ liệu trước khi lưu"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  if (!/\.khung-video\s*\{/.test(cssApp)) fail("Thiếu kiểu khung video ở src/css/app.css.");
+  if (!/\.khoi-video-hd\s*\{/.test(doc("src/css/admin.css"))) {
+    fail("Thiếu kiểu khối video hướng dẫn ở src/css/admin.css.");
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).

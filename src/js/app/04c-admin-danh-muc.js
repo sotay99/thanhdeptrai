@@ -26,6 +26,11 @@
     drive: { ten: 'Google Drive (link công khai)', mo: 'Ai có link cũng tải được — không khoá thiết bị, không thu hồi được.' }
   };
 
+  // Bốn sản phẩm có bảng "Hướng dẫn sử dụng" chứa video: khai link Google
+  // Drive của video ở đây, đọc công khai giống hệt tên tệp — video hướng dẫn
+  // không phải bí mật, chỉ đường tải sản phẩm mới cần giấu.
+  const SP_CO_VIDEO = { sp2: true, sp3: true, sp6: true, sp7: true };
+
   // Sản phẩm nào có hàng để giao. Hai khoá học đứng ngoài.
   function sanPhamCoHang(){
     return SAN_PHAM.filter(function(sp){ return !MODULE_KHOA_HOC[sp.ma]; });
@@ -41,6 +46,7 @@
       a.danhMucNhap[maSP] = {
         nguon: goc.nguon || 'r2',
         link: goc.link || '',
+        linkHuongDan: goc.linkHuongDan || '',
         file: (goc.file || []).map(function(f){
           return { tep: String(f && f.tep || ''), ten: String(f && f.ten || '') };
         })
@@ -83,6 +89,7 @@
         '</header>' +
         '<div class="hang-nguon">' + chonNguon + '</div>' +
         (laDrive ? veKhoiDrive(sp, n) : veKhoiTep(sp, n)) +
+        (SP_CO_VIDEO[sp.ma] ? veKhoiVideoHuongDan(sp, n) : '') +
         '<div class="day-dm">' +
           '<button type="button" class="nut nut-nho nut-chinh" data-hanh-dong="admin-luu-dm" data-ma="' +
             escapeHtml(sp.ma) + '"' + (dangLuu ? ' disabled' : '') + '>' +
@@ -104,6 +111,53 @@
           ' data-dm-link="' + escapeHtml(sp.ma) + '" autocomplete="off" spellcheck="false"' +
           ' placeholder="https://drive.google.com/drive/folders/..."' +
           ' value="' + escapeHtml(n.link) + '">' +
+      '</div>';
+  }
+
+  // Link video hướng dẫn: một ô nhập, một nút Lưu (nút chung ở đáy thẻ), và
+  // một nút "Xem trước link" tự đứng riêng — vì ĐÂY LÀ NƠI DUY NHẤT chủ shop
+  // thấy được đúng thứ khách sẽ thấy TRƯỚC KHI lưu, giống hệt cách Zalo hiện
+  // thẻ xem trước ngay khi dán link vào khung chat.
+  function veKhoiVideoHuongDan(sp, n){
+    const dangXemTruoc = state.admin.xemTruocVideo === sp.ma;
+    return '' +
+      '<div class="khoi-video-hd">' +
+        '<label class="admin-nhan" for="dm-video-' + escapeHtml(sp.ma) + '">Link video hướng dẫn sử dụng</label>' +
+        '<p class="admin-ghi-chu">Dán link Google Drive của video (đã bật chia sẻ "Bất kỳ ai có đường liên kết"). ' +
+          'Hiện ở bảng "Xem hướng dẫn sử dụng" của khách. Để trống nếu chưa có video.</p>' +
+        '<div class="hang-video-hd">' +
+          '<input type="text" id="dm-video-' + escapeHtml(sp.ma) + '" class="admin-nhap"' +
+            ' data-dm-video="' + escapeHtml(sp.ma) + '" autocomplete="off" spellcheck="false"' +
+            ' placeholder="https://drive.google.com/file/d/..." value="' + escapeHtml(n.linkHuongDan) + '">' +
+          '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="admin-xem-truoc-video"' +
+            ' data-ma="' + escapeHtml(sp.ma) + '">Xem trước link</button>' +
+        '</div>' +
+        (dangXemTruoc ? veXemTruocVideo(n.linkHuongDan) : '') +
+      '</div>';
+  }
+
+  // Không đọc og:title/og:description qua fetch() — Google Drive không mở CORS
+  // cho việc đó, và một Worker giả làm trạm trung chuyển đọc trang bất kỳ là tự
+  // mở một cửa SSRF không đáng mở chỉ để lấy vài dòng chữ. Nhúng thẳng iframe
+  // /preview của Drive cho kết quả THẬT hơn: chủ shop thấy ĐÚNG trình phát,
+  // ĐÚNG ảnh đại diện, phát thử được luôn — không phải chỉ đọc chữ mô tả.
+  function veXemTruocVideo(link){
+    const id = idDriveTuLink(link);
+    if (!link) {
+      return '<p class="xem-truoc-video-trong">Ô nhập đang trống, chưa có gì để xem trước.</p>';
+    }
+    if (!id) {
+      return '<div class="xem-truoc-video loi"><span aria-hidden="true">⚠️</span> Không đọc được đường dẫn này. ' +
+        'Kiểm tra lại: phải là link TỆP video (không phải link thư mục), và tệp đã bật chia sẻ ' +
+        '"Bất kỳ ai có đường liên kết".</div>';
+    }
+    const src = 'https://drive.google.com/file/d/' + id + '/preview';
+    return '' +
+      '<div class="xem-truoc-video">' +
+        '<div class="khung-video video-ngang"><iframe src="' + escapeHtml(src) + '" allow="autoplay"' +
+          ' loading="lazy" title="Xem trước video"></iframe></div>' +
+        '<p class="ghi-chu-xem-truoc">Đúng những gì khách sẽ thấy: ảnh đại diện, tên tệp và trình phát ' +
+          'của Google Drive. Không phát được thì tệp chưa bật đúng quyền chia sẻ.</p>' +
       '</div>';
   }
 
@@ -174,7 +228,9 @@
     const oTep = dich.getAttribute('data-dm-tep');
     const oTen = dich.getAttribute('data-dm-ten');
     const oLink = dich.getAttribute('data-dm-link');
+    const oVideo = dich.getAttribute('data-dm-video');
     if (oLink) { nhapDanhMuc(oLink).link = dich.value; return true; }
+    if (oVideo) { nhapDanhMuc(oVideo).linkHuongDan = dich.value; return true; }
     if (oTep || oTen) {
       const phan = String(oTep || oTen).split(':');
       const n = nhapDanhMuc(phan[0]);
@@ -213,6 +269,15 @@
       duLieu = { nguon: 'r2', file: file };
     }
 
+    // Link video hướng dẫn là một trường ĐỘC LẬP với nguồn hàng — sp2/3/6/7
+    // đều lấy hàng từ R2 nhưng video hướng dẫn nằm ở nhánh khác của cùng đối
+    // tượng danhmuc/<mã>, nên chỉ cần thêm vào duLieu trước khi .set() cả gói.
+    if (SP_CO_VIDEO[maSP]) {
+      let video = String(n.linkHuongDan || '').trim();
+      if (video && !/^https?:\/\//i.test(video)) video = 'https://' + video;
+      duLieu.linkHuongDan = video;
+    }
+
     state.admin.dangLuu = nut;
     capNhatTheDanhMuc(maSP);
     rtdb.ref('danhmuc/' + maSP).set(duLieu).then(function(){
@@ -232,4 +297,12 @@
       capNhatTheDanhMuc(maSP);
       alert('Không lưu được. Firebase từ chối hoặc mất mạng.');
     });
+  }
+
+  // Bấm "Xem trước link" luôn (RE)MỞ bảng xem trước với giá trị MỚI NHẤT đang
+  // gõ trong ô — không phải một công tắc ẩn/hiện. Sửa link rồi bấm lại là thấy
+  // ngay video mới, không cần đóng bảng cũ trước.
+  function adminXemTruocVideo(maSP){
+    state.admin.xemTruocVideo = maSP;
+    capNhatTheDanhMuc(maSP);
   }
