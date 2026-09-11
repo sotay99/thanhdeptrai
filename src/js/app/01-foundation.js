@@ -48,7 +48,7 @@
     { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
     { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: false },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
-    { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: false },
+    { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: false },
     { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
     { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
@@ -145,8 +145,19 @@
       duLieu: {},            // các nhánh cài đặt đã đọc về
       dangLuu: '',           // tên ô đang lưu, để nút hiện "Đang lưu…"
       vuaLuu: '',            // tên ô vừa lưu xong, để hiện "Đã lưu" 3 giây
-      xemTruocVideo: ''      // mã sản phẩm đang mở bảng "Xem trước link" video
+      xemTruocVideo: '',     // mã sản phẩm đang mở bảng "Xem trước link" video
+      xemTruocBaiHoc: '',    // id bài học đang mở bảng "Xem trước link" (module Khoá học)
+      khoaHocNhap: null      // bản nháp danh sách chương/bài đang sửa, phần 04E tự dựng khi cần tới
       // donHang — kho tạm của mục Đơn hàng, phần 04D tự dựng khi cần tới
+    },
+    // Module "Khoá học chỉnh màu Lightroom điện thoại" ở trang bán hàng — đọc
+    // công khai từ Realtime Database, không cần đăng nhập.
+    khoaHoc: {
+      muc: [],           // mảng chương/bài đã xếp thứ tự, đọc thẳng từ Firebase
+      daTai: false,
+      dangTai: false,
+      chuongMo: {},       // id chương -> true nếu đang sổ ra
+      baiDangMo: ''       // id bài học đang mở modal xem video (để chuyển bài trước/sau)
     },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)

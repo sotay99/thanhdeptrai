@@ -396,7 +396,8 @@ if (banNoi.indexOf('nut-dac-quyen') > banNoi.indexOf('veKhuQuaTang();')) {
   [/cam kết giao sản phẩm ngay lập tức/, "lời cam kết giao ngay khi nhận được tiền"],
   [/ưu tiên giao qua <strong>email<\/strong> \(thông qua hệ thống tự động\)/, "ưu tiên giao qua email tự động"],
   [/nếu bạn chưa nhập email/, "giao qua Zalo khi khách chưa nhập email"],
-  [/nếu không thể liên hệ qua Zalo/, "giao qua SMS khi không liên hệ được Zalo"],
+  [/nếu không thể liên hệ qua các cách trên/, "giao qua SMS khi không liên hệ được qua các cách trên"],
+  [/tin nhắn <strong>Zalo, WhatsApp, Telegram<\/strong>/, "giao qua Zalo, WhatsApp, Telegram khi khách chưa nhập email"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
@@ -1649,6 +1650,73 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   if (!/\.khung-video\s*\{/.test(cssApp)) fail("Thiếu kiểu khung video ở src/css/app.css.");
   if (!/\.khoi-video-hd\s*\{/.test(doc("src/css/admin.css"))) {
     fail("Thiếu kiểu khối video hướng dẫn ở src/css/admin.css.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 26) MODULE "KHOÁ HỌC CHỈNH MÀU LIGHTROOM ĐIỆN THOẠI" — chương/bài tự đánh
+//     số, modal video toàn màn hình, và quản lý ở /admin.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'khoa-hoc-mobile',[\s\S]{0,200}sanSang:\s*true/, "module khoá học mobile đã bật (sanSang: true)"],
+    [/function\s+veModuleKhoaHocMobile\s*\(/, "hàm vẽ module khoá học ở trang bán hàng"],
+    [/function\s+taiKhoaHoc\s*\(/, "hàm đọc dữ liệu khoá học từ Firebase"],
+    [/rtdb\.ref\('khoahoc\/lrMobile\/muc'\)/, "đọc đúng nhánh khoahoc/lrMobile/muc"],
+    [/function\s+soThuTuKhoaHoc\s*\(/, "hàm tính số thứ tự chương/bài theo vị trí thật"],
+    [/function\s+xepKhoaHoc\s*\(/, "hàm xếp bài vào đúng chương gần nhất phía trên"],
+    [/function\s+danhSachBaiPhang\s*\(/, "hàm liệt kê bài học xuyên suốt để chuyển bài trước/sau"],
+    [/function\s+moModalBaiHoc\s*\(/, "hàm mở modal xem video một bài học"],
+    [/function\s+chuyenBaiHoc\s*\(/, "hàm chuyển sang bài trước/sau"],
+    [/data-hanh-dong="xem-chi-tiet"\s+data-ma="sp4"/, "nút Xem chi tiết mở đúng sp4"],
+    [/data-hanh-dong="bai-hoc-chuyen"[\s\S]{0,100}data-huong="-1"/, "nút Bài trước"],
+    [/data-hanh-dong="bai-hoc-chuyen"[\s\S]{0,100}data-huong="1"/, "nút Bài tiếp theo"],
+    [/idx\s*<=\s*0\s*\?\s*'\s*disabled'/, "nút Bài trước bị liệt ở bài đầu tiên"],
+    [/idx\s*>=\s*flat\.length\s*-\s*1\s*\?\s*'\s*disabled'/, "nút Bài tiếp theo bị liệt ở bài cuối cùng"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Modal bài học phải TÁI DÙNG đúng khung video 9:16 của bảng hướng dẫn sử
+  // dụng ở /sanpham — không tự dựng một trình phát khác.
+  if (!/veKhungVideo\(bai\.linkVideo,\s*'doc'\)/.test(banNoi)) {
+    fail("Modal bài học phải gọi lại veKhungVideo(..., 'doc') — không tự dựng khung video riêng.");
+  }
+
+  // Modal phải bao TRỌN màn hình — canh bằng CSS theo tiền tố mã modal, không
+  // đụng vào hệ thống modal dùng chung cho mọi bảng khác.
+  if (!/\[data-ma-modal\^="bai-hoc-"\][\s\S]{0,400}width:\s*100%[\s\S]{0,200}height:\s*100%/.test(cssApp)) {
+    fail("Modal bài học phải có CSS bao trọn màn hình (100% chiều rộng lẫn chiều cao).");
+  }
+
+  // Module quản lý ở /admin: thêm/xoá/đổi chỗ, xem trước video, và một nút
+  // Lưu tất cả duy nhất — không phải mỗi dòng một nút lưu riêng.
+  [
+    [/ma:\s*'khoa-hoc',\s*ten:\s*'Khoá học Lightroom mobile'/, "mục Khoá học Lightroom mobile trong menu /admin"],
+    [/'khoa-hoc':\s*'khoahoc\/lrMobile'/, "nhánh Firebase khoá học được nạp cùng lúc với các cài đặt khác"],
+    [/function\s+veAdminKhoaHoc\s*\(/, "hàm vẽ module quản lý khoá học"],
+    [/function\s+adminKhThemBai\s*\(/, "hành động Thêm bài"],
+    [/function\s+adminKhThemChuong\s*\(/, "hành động Thêm chương"],
+    [/function\s+adminKhXoaDong\s*\(/, "hành động Xoá dòng"],
+    [/function\s+adminKhDoiCho\s*\(/, "hành động đổi chỗ (mũi tên lên/xuống)"],
+    [/function\s+adminKhXemTruocVideo\s*\(/, "hành động Xem trước link video của một bài học"],
+    [/function\s+adminKhLuuTatCa\s*\(/, "hành động Lưu tất cả"],
+    [/data-hanh-dong="kh-luu-tat-ca"/, "nút Lưu tất cả"],
+    [/rtdb\.ref\(NHANH_KHOA_HOC\)\.set\(/, "Lưu tất cả ghi ĐÈ nguyên mảng xuống Firebase"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Không có nút "Lưu" riêng cho từng dòng chương/bài — chỉ một nút Lưu tất cả.
+  if (/data-hanh-dong="kh-luu"[^-]/.test(banNoi)) {
+    fail("Không được có nút Lưu riêng cho từng dòng — module này chỉ có một nút Lưu tất cả.");
+  }
+
+  // Rules Firebase phải cho đọc công khai (khách xem khoá học không cần đăng
+  // nhập) và chỉ chủ shop mới ghi được.
+  const rules = doc("database.rules.json");
+  if (!/"khoahoc":\s*\{\s*"\.read":\s*true/.test(rules)) {
+    fail('Thiếu ".read": true cho nhánh "khoahoc" trong database.rules.json.');
   }
 }
 

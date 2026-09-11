@@ -434,6 +434,7 @@
     const m = timModule(state.module);
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
     if (m && m.ma === 'trang-chu') return veModuleTrangChu();
+    if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
     return veManNangCap(m ? m.ten : '');
   }
 

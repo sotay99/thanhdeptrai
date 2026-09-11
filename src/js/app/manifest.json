@@ -4,10 +4,12 @@
   "02-shell-nav.js",
   "03-goi-vip.js",
   "03b-trang-san-pham.js",
+  "03c-khoa-hoc-mobile.js",
   "04-thong-tin-khach.js",
   "04b-admin.js",
   "04c-admin-danh-muc.js",
   "04d-admin-don-hang.js",
+  "04e-admin-khoa-hoc.js",
   "05-thanh-toan.js",
   "06-trang-chu.js"
 ]

@@ -500,6 +500,10 @@
                   ' để giao sản phẩm, xin chờ ít phút.</p>'
                 : '<p class="ghi-chu-gui canh-bao">⚠️ Shop chưa có cách nào liên hệ với bạn. ' +
                   'Hãy nhắn cho shop kèm nội dung chuyển khoản ở trên để nhận sản phẩm.</p>')) +
+          // Câu này LUÔN LUÔN xuất hiện, bất kể khách để lại kênh nào — trấn
+          // an rằng dù mọi cách khác trục trặc, vẫn còn một cửa cuối cùng.
+          '<p class="ghi-chu-gui">☎️ Nếu vẫn chưa liên lạc được, shop sẽ nhắn tin SMS qua số điện thoại ' +
+            '(cách liên hệ cuối cùng).</p>' +
           '<p class="nhac-nho">Nếu chuyển tiền rồi mà quá lâu chưa thấy hồi âm, nhắn cho shop kèm ' +
             'nội dung chuyển khoản ở trên — shop tra ra đơn ngay.</p>' +
           // Đường thoát cho khách đang sốt ruột. Mở đúng bảng "Liên hệ và
@@ -578,6 +582,19 @@
       return;
     }
     if (hanhDong === 'admin-luu-dm') { adminLuuDanhMuc(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'chuong-doi') { doiChuongKhoaHoc(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'mo-bai-hoc') { moModalBaiHoc(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'bai-hoc-chuyen') {
+      chuyenBaiHoc(nutHanhDong.getAttribute('data-id'), nutHanhDong.getAttribute('data-huong'));
+      return;
+    }
+    if (hanhDong === 'kh-them-bai') { adminKhThemBai(); return; }
+    if (hanhDong === 'kh-them-chuong') { adminKhThemChuong(); return; }
+    if (hanhDong === 'kh-xoa') { adminKhXoaDong(nutHanhDong.getAttribute('data-dong')); return; }
+    if (hanhDong === 'kh-len') { adminKhDoiCho(nutHanhDong.getAttribute('data-dong'), -1); return; }
+    if (hanhDong === 'kh-xuong') { adminKhDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
+    if (hanhDong === 'kh-xem-truoc') { adminKhXemTruocVideo(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'kh-luu-tat-ca') { adminKhLuuTatCa(); return; }
     if (hanhDong === 'admin-don-loc') { adminDonDoiLoc(nutHanhDong.getAttribute('data-loc')); return; }
     if (hanhDong === 'admin-don-tai-lai') { adminDonTaiLai(); return; }
     if (hanhDong === 'admin-don-trang-thai') {
@@ -601,6 +618,7 @@
     const dich = su.target;
     if (!dich || !dich.getAttribute) return;
     if (adminGoDanhMuc(dich)) return;
+    if (adminGoKhoaHoc(dich)) return;
     if (adminDonGoTim(dich)) return;
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
