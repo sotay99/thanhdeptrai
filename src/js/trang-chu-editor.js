@@ -2626,21 +2626,28 @@
             const cungGoc = layer.objects.every(o => Math.abs((o.angle || 0) - theta) < 0.01);
             if (!cungGoc) return null;
 
-            // Đưa tâm từng object về hệ trục "đã xoay ngược -theta" — trong
-            // hệ này mọi object nằm thẳng trục (vì góc riêng của nó đã bị
-            // trừ hết), hộp bao của cả layer trong hệ này là 1 AABB bình
-            // thường quanh các tâm đã xoay.
+            // Lỗi cũ: dùng "obj.left + w/2, obj.top + h/2" làm tâm object —
+            // SAI khi object đã xoay. Fabric mặc định originX/Y='left'/'top'
+            // nghĩa là left/top neo một điểm CỐ ĐỊNH không đổi theo góc xoay,
+            // còn tâm hình học THẬT lại quay quanh điểm neo đó theo góc —
+            // "left + w/2" chỉ đúng khi angle=0. Phải dùng obj.getCenterPoint()
+            // (API chính thức của Fabric, tự xử lý đúng phép xoay quanh gốc
+            // originX/Y) để ra đúng tâm thật ở MỌI góc xoay.
+            //
+            // Đưa tâm THẬT của từng object về hệ trục "đã xoay ngược -theta"
+            // — trong hệ này mọi object nằm thẳng trục (vì góc riêng của nó
+            // đã bị trừ hết), hộp bao của cả layer trong hệ này là 1 AABB
+            // bình thường quanh các tâm đã xoay.
             const rad = -theta * Math.PI / 180;
             const cosT = Math.cos(rad), sinT = Math.sin(rad);
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
             layer.objects.forEach(obj => {
-                const w = obj.width * obj.scaleX;
-                const h = obj.height * obj.scaleY;
-                const cx = obj.left + w / 2;
-                const cy = obj.top + h / 2;
-                const localCx = cx * cosT - cy * sinT;
-                const localCy = cx * sinT + cy * cosT;
+                const center = obj.getCenterPoint();
+                const w = obj.getScaledWidth();
+                const h = obj.getScaledHeight();
+                const localCx = center.x * cosT - center.y * sinT;
+                const localCy = center.x * sinT + center.y * cosT;
                 minX = Math.min(minX, localCx - w / 2);
                 minY = Math.min(minY, localCy - h / 2);
                 maxX = Math.max(maxX, localCx + w / 2);
@@ -2895,20 +2902,35 @@
                 return;
             }
 
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            layer.objects.forEach(obj => {
-                const b = obj.getBoundingRect(false, true);
-                minX = Math.min(minX, b.left);
-                minY = Math.min(minY, b.top);
-                maxX = Math.max(maxX, b.left + b.width);
-                maxY = Math.max(maxY, b.top + b.height);
-            });
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
+            // Tâm xoay chung: ưu tiên tâm khung ĐÃ XOAY (tinhKhungXoayLayer,
+            // dùng getCenterPoint() thật của Fabric — xem chú thích ở đó vì
+            // sao "left+w/2" sai khi object đã xoay); không có góc chung thì
+            // quay lại AABB thẳng trục như trước.
+            const khungXoayGoc = tinhKhungXoayLayer(layer);
+            let centerX, centerY;
+            if (khungXoayGoc) {
+                centerX = khungXoayGoc.cx;
+                centerY = khungXoayGoc.cy;
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left);
+                    minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width);
+                    maxY = Math.max(maxY, b.top + b.height);
+                });
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+            }
 
-            const trangThaiGoc = layer.objects.map(obj => ({
-                obj, left: obj.left, top: obj.top, angle: obj.angle || 0,
-            }));
+            // Chụp lại TÂM THẬT (getCenterPoint(), không phải left/top) và
+            // góc gốc của từng object — mọi phép xoay bên dưới tính từ đây,
+            // không cộng dồn từng khung hình.
+            const trangThaiGoc = layer.objects.map(obj => {
+                const c = obj.getCenterPoint();
+                return { obj, centerX: c.x, centerY: c.y, angle: obj.angle || 0 };
+            });
 
             const canvasRectGoc = canvas.getElement().getBoundingClientRect();
             const cssScaleXGoc = canvasRectGoc.width / canvas.getWidth();
@@ -2932,21 +2954,20 @@
                 const rad = deltaDeg * Math.PI / 180;
                 const cosD = Math.cos(rad), sinD = Math.sin(rad);
 
-                trangThaiGoc.forEach(({ obj, left, top, angle }) => {
-                    // Xoay TÂM của object quanh tâm chung layer (quỹ đạo),
-                    // cộng với xoay CHÍNH object đó cùng 1 góc (spin tại
-                    // chỗ) — cả layer xoay như 1 khối cứng duy nhất.
-                    const w = obj.width * obj.scaleX;
-                    const h = obj.height * obj.scaleY;
-                    const objCenterX0 = left + w / 2;
-                    const objCenterY0 = top + h / 2;
-                    const relX = objCenterX0 - centerX;
-                    const relY = objCenterY0 - centerY;
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, angle }) => {
+                    // Xoay TÂM THẬT của object quanh tâm chung layer (quỹ
+                    // đạo), cộng với xoay CHÍNH object đó cùng 1 góc (spin
+                    // tại chỗ) — cả layer xoay như 1 khối cứng duy nhất.
+                    const relX = ocx - centerX;
+                    const relY = ocy - centerY;
                     const newCenterX = centerX + (relX * cosD - relY * sinD);
                     const newCenterY = centerY + (relX * sinD + relY * cosD);
+                    // Đặt góc TRƯỚC rồi mới setPositionByOrigin() — hàm đó
+                    // dùng chính obj.angle hiện tại để tính lại left/top cho
+                    // đúng tâm mong muốn (xem chú thích ở tinhKhungXoayLayer
+                    // về lý do không thể tự gán left/top bằng tay).
                     obj.angle = angle + deltaDeg;
-                    obj.left = newCenterX - w / 2;
-                    obj.top = newCenterY - h / 2;
+                    obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
                     obj.setCoords();
                 });
                 canvas.renderAll();
