@@ -207,6 +207,21 @@
                     return;
                 }
 
+                // Bấm lại ĐÚNG layer/nhóm đang active (không Ctrl/Shift, không
+                // đang có multi-select dở) — không có gì thay đổi, nên KHÔNG
+                // chạy lại bất kỳ logic nào (không toast, không vẽ lại panel/
+                // khung viền). Tránh việc bấm nhầm/bấm lại thẻ hoặc bấm vào
+                // vùng ảnh-khung viền-nút của chính layer đang chọn cứ liên
+                // tục kích hoạt lại y hệt một vòng chọn mới, dù không đổi gì.
+                if (!ctrlKey && !shiftKey && index === activeLayerIndex && multiSelectedIndices.size === 0) {
+                    const dangLaGroupActive = layer.isGroup && activeGroupIndex !== -1
+                        && layerGroups[activeGroupIndex] && layerGroups[activeGroupIndex].id === layer.groupId;
+                    const dangLaLayerThuongActive = !layer.isGroup && activeGroupIndex === -1;
+                    if (dangLaGroupActive || dangLaLayerThuongActive) {
+                        return;
+                    }
+                }
+
                 // Normal single selection (no Ctrl, no Shift)
                 multiSelectedIndices.clear(); // Clear multi-select
                 activeLayerIndex = index;
@@ -302,27 +317,10 @@
                 activeGroupIndex = -1;
                 multiSelectedIndices.clear();
 
-                // HIỆU ỨNG "ra đời": bản sao hiện ra ở NGAY GIỮA canvas trước
-                // (giữ nguyên kích cỡ/góc xoay/độ giãn nở — chỉ dịch chuyển vị
-                // trí, không đổi gì khác), đứng yên ở đó 0,25s cho người dùng
-                // kịp thấy, rồi tự bay về ĐÚNG vị trí của layer gốc — khớp
-                // khít 100% lên trên layer gốc (vì vốn dĩ nó là bản sao y hệt
-                // layer gốc, chỉ tạm dịch chuyển đi rồi dịch chuyển về).
-                // Chỉ dịch left/top (không đụng angle/scale) nên không cần lo
-                // vấn đề "left/top là điểm neo chứ không phải tâm" như ở nút
-                // xoay — dịch chuyển thuần tuý (translate) đúng với MỌI góc
-                // xoay, không cần quy đổi qua getCenterPoint().
-                const diemDich = clonedObjects.map((obj) => ({ obj, left: obj.left, top: obj.top }));
-                const tamGoc = tinhTamNhomObject(clonedObjects);
-                const tamCanvas = { x: canvas.getWidth() / 2, y: canvas.getHeight() / 2 };
-                const dx = tamCanvas.x - tamGoc.x;
-                const dy = tamCanvas.y - tamGoc.y;
-                clonedObjects.forEach((obj) => {
-                    obj.left += dx;
-                    obj.top += dy;
-                    obj.setCoords();
-                });
-
+                // HIỆU ỨNG "ra đời": bản sao hiện ra NGAY TẠI vị trí layer gốc
+                // (đè khít 100% lên layer gốc — không dịch chuyển gì cả lúc
+                // vừa tạo), rồi lập tức nảy ra chéo góc trên-phải một đoạn vừa
+                // phải, sau đó bay ngược lại đúng vị trí ban đầu và dừng ở đó.
                 // Đưa object mới lên canvas SAU KHI mô hình dữ liệu (layers,
                 // activeLayerIndex...) đã nhất quán — 'object:added' tự bắn
                 // updateLayerBorder(), tránh chạy giữa lúc dữ liệu còn dở.
@@ -333,18 +331,24 @@
                 updateLayerBorder();
                 showToast(`Nhân đôi: ${duplicate.name}`, 'success');
 
-                setTimeout(() => {
-                    baySangViTri(diemDich, 300);
-                }, 250);
+                nayRoiBayVe(clonedObjects, 400);
             });
         }
 
-        // Tâm hình học (hộp bao thẳng trục) của một nhóm object bất kỳ —
-        // dùng khi chỉ cần 1 điểm tâm để DỊCH CHUYỂN (translate) cả nhóm,
-        // không cần quan tâm góc xoay riêng của từng object (khác với
-        // tinhKhungXoayLayer(), vốn đòi các object phải CÙNG 1 góc mới vẽ
-        // được khung xoay khít).
-        function tinhTamNhomObject(danhSachObject) {
+        // Hoạt ảnh "nảy ra rồi bay về" dùng cho hiệu ứng nhân đôi layer: các
+        // object xuất phát ĐÚNG tại vị trí hiện tại (đang khớp khít lên layer
+        // gốc), lập tức lệch dần theo đường chéo hướng góc trên-phải (khoảng
+        // cách suy ra từ kích cỡ layer — không ngắn không dài), rồi bay
+        // ngược lại và kết thúc animation đúng tại vị trí xuất phát. Dùng
+        // sin(pi*t) làm hệ số lệch: bằng 0 ở t=0 và t=1 (đầu/cuối animation
+        // trùng khít vị trí gốc), đạt đỉnh ở t=0.5 (điểm xa nhất trên đường
+        // chéo) — vừa là đường đi lẫn đường về, không cần 2 đoạn tween riêng.
+        function nayRoiBayVe(danhSachObject, thoiGianMs) {
+            const goc = danhSachObject.map((obj) => ({ obj, left: obj.left, top: obj.top }));
+
+            // Khoảng cách nảy: tỉ lệ theo đường chéo hộp bao của layer, giữ
+            // trong một khoảng vừa phải để không quá ngắn (không thấy hiệu
+            // ứng) lẫn không quá dài (bay ra khỏi vùng nhìn thấy).
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             danhSachObject.forEach((obj) => {
                 const b = obj.getBoundingRect(false, true);
@@ -353,35 +357,37 @@
                 maxX = Math.max(maxX, b.left + b.width);
                 maxY = Math.max(maxY, b.top + b.height);
             });
-            return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
-        }
+            const duongCheoHop = Math.hypot(maxX - minX, maxY - minY);
+            const khoangCach = Math.min(160, Math.max(50, duongCheoHop * 0.35));
 
-        // Hoạt ảnh "bay về đúng vị trí" dùng cho hiệu ứng nhân đôi layer ở
-        // trên — tween tuyến tính left/top của từng object về đúng toạ độ
-        // đích ghi sẵn trong `diemDich` ({obj, left, top}[]), có làm mượt
-        // (ease-out) cho tự nhiên, vẽ lại canvas + khung viền mỗi khung hình.
-        function baySangViTri(diemDich, thoiGianMs) {
+            // Hướng chéo góc trên-phải: x dương (sang phải), y âm (lên trên).
+            const goRad = Math.PI / 4;
+            const dx = Math.cos(goRad) * khoangCach;
+            const dy = -Math.sin(goRad) * khoangCach;
+
             const batDau = performance.now();
-            const trangThaiBatDau = diemDich.map(({ obj, left, top }) => ({
-                obj, tuLeft: obj.left, tuTop: obj.top, denLeft: left, denTop: top,
-            }));
-
-            function easeOutCubic(t) {
-                return 1 - Math.pow(1 - t, 3);
-            }
-
             function buoc(now) {
                 const t = Math.min(1, (now - batDau) / thoiGianMs);
-                const e = easeOutCubic(t);
-                trangThaiBatDau.forEach(({ obj, tuLeft, tuTop, denLeft, denTop }) => {
-                    obj.left = tuLeft + (denLeft - tuLeft) * e;
-                    obj.top = tuTop + (denTop - tuTop) * e;
+                const heSo = Math.sin(Math.PI * t);
+                goc.forEach(({ obj, left, top }) => {
+                    obj.left = left + dx * heSo;
+                    obj.top = top + dy * heSo;
                     obj.setCoords();
                 });
                 canvas.renderAll();
                 updateLayerBorder();
                 if (t < 1) {
                     requestAnimationFrame(buoc);
+                } else {
+                    // Chốt lại đúng vị trí gốc, tránh sai số dấu phẩy động
+                    // tích luỹ qua nhiều khung hình.
+                    goc.forEach(({ obj, left, top }) => {
+                        obj.left = left;
+                        obj.top = top;
+                        obj.setCoords();
+                    });
+                    canvas.renderAll();
+                    updateLayerBorder();
                 }
             }
             requestAnimationFrame(buoc);
@@ -3441,7 +3447,12 @@
         // Nay gọi trong bindCanvasEvents() ngay sau khi canvas được tạo.
         function bindCanvasEvents() {
             canvas.on('selection:created', () => {
-                syncActiveLayerToObject(canvas.getActiveObject());
+                // Bấm vào chính khu vực ảnh/khung của layer ĐANG active không
+                // được coi là một lượt chọn mới — syncActiveLayerToObject trả
+                // về false khi không có gì đổi, lúc đó không vẽ lại khung,
+                // không hiện toast, không chạy logic nào thêm.
+                const doiChon = syncActiveLayerToObject(canvas.getActiveObject());
+                if (!doiChon) return;
                 updateLayerBorder();
                 const obj = canvas.getActiveObject();
                 if (obj) {
@@ -3450,7 +3461,8 @@
             });
 
             canvas.on('selection:updated', () => {
-                syncActiveLayerToObject(canvas.getActiveObject());
+                const doiChon = syncActiveLayerToObject(canvas.getActiveObject());
+                if (!doiChon) return;
                 updateLayerBorder();
             });
 
@@ -3489,13 +3501,17 @@
         // (luôn vẽ theo layers[activeLayerIndex]) tiếp tục bám lớp đang chọn
         // TRƯỚC ĐÓ trong khi người dùng đang thao tác trên một object khác —
         // trông y như "khung không theo ảnh".
+        // Trả về true nếu lượt chọn này THỰC SỰ đổi layer/nhóm active (nên
+        // vẽ lại khung/toast), false nếu layer/nhóm đó đã đang active từ
+        // trước (bấm lại chính nó — không có gì phải làm thêm).
         function syncActiveLayerToObject(obj) {
-            if (!obj) return;
+            if (!obj) return false;
 
             const topIndex = layers.findIndex(l => !l.isGroup && l.objects && l.objects.includes(obj));
             if (topIndex !== -1) {
-                if (activeLayerIndex !== topIndex) selectLayer(topIndex, false, false);
-                return;
+                if (activeLayerIndex === topIndex) return false;
+                selectLayer(topIndex, false, false);
+                return true;
             }
 
             // Object nằm trong 1 nhóm — chọn nhóm ngoài cùng, giống cách
@@ -3505,9 +3521,12 @@
                 const group = layerGroups.find(g => g.id === l.groupId);
                 return group && flattenLayersForRender(group.children).some(({ layer }) => layer.objects && layer.objects.includes(obj));
             });
-            if (groupTopIndex !== -1 && activeLayerIndex !== groupTopIndex) {
+            if (groupTopIndex !== -1) {
+                if (activeLayerIndex === groupTopIndex) return false;
                 selectLayer(groupTopIndex, false, false);
+                return true;
             }
+            return false;
         }
 
         // ===== UNDO/REDO =====
