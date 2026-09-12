@@ -1993,6 +1993,7 @@
 }
 .ten-khoa-hoc-con { margin: 0 0 10px; font-size: 15px; line-height: 1.4; color: var(--chu); }
 .khoi-playlist-yt > .nut { margin-bottom: 12px; }
+.khoi-playlist-yt > .nut-xem-yt { margin-top: 12px; }
 
 .khung-playlist-yt {
   position: relative;

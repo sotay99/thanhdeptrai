@@ -69,12 +69,17 @@
   }
 
   function veKhoiPlaylist(tieuDe, link, maModal){
+    const coPlaylist = !!idPlaylistTuLink(link);
     return '' +
       '<div class="khoi-playlist-yt">' +
         '<h3 class="ten-khoa-hoc-con">' + escapeHtml(tieuDe) + '</h3>' +
         '<button type="button" class="nut nut-vien nut-nho" data-hanh-dong="mo-mo-ta-kh-pc" data-ma-mo-ta="' +
           maModal + '">Xem mô tả khoá học</button>' +
         veKhungPlaylistYoutube(link) +
+        (coPlaylist
+          ? '<a class="nut nut-vien nut-rong nut-xem-yt" href="' + escapeHtml(link) + '"' +
+            ' target="_blank" rel="noopener noreferrer">XEM TOÀN BỘ KHOÁ HỌC NÀY TRÊN YOUTUBE</a>'
+          : '') +
       '</div>';
   }
 

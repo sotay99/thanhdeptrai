@@ -1798,6 +1798,7 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
     [/HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO/, "tên khoá học 3 (chương/bài)"],
     [/data-hanh-dong="mo-mo-ta-kh-pc"/, "nút Xem mô tả khoá học"],
     [/embed\/videoseries\?list=/, "nhúng playlist bằng embed/videoseries đúng chuẩn YouTube"],
+    [/XEM TOÀN BỘ KHOÁ HỌC NÀY TRÊN YOUTUBE/, "nút mở nguyên playlist trên YouTube ở tab mới"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
