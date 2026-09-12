@@ -2613,6 +2613,52 @@
             return layer.objects && layer.objects.length > 0 ? [layer] : [];
         }
 
+        // Trả về hình chữ nhật (đã xoay) khít bao quanh mọi object của layer,
+        // theo đúng góc xoay CHUNG của chúng — dùng để khung viền màu xoay
+        // đồng bộ y hệt ảnh thay vì luôn nằm ngang (trường hợp phổ biến nhất:
+        // layer chỉ có 1 object, luôn có "góc chung" = góc của chính nó).
+        // Trả về null nếu các object trong layer có góc xoay KHÁC nhau (không
+        // có 1 góc chung để xoay khung theo) — khi đó updateLayerBorder() tự
+        // quay lại cách tính hộp bao thẳng trục (AABB) như trước.
+        function tinhKhungXoayLayer(layer) {
+            if (!layer.objects || layer.objects.length === 0) return null;
+            const theta = layer.objects[0].angle || 0;
+            const cungGoc = layer.objects.every(o => Math.abs((o.angle || 0) - theta) < 0.01);
+            if (!cungGoc) return null;
+
+            // Đưa tâm từng object về hệ trục "đã xoay ngược -theta" — trong
+            // hệ này mọi object nằm thẳng trục (vì góc riêng của nó đã bị
+            // trừ hết), hộp bao của cả layer trong hệ này là 1 AABB bình
+            // thường quanh các tâm đã xoay.
+            const rad = -theta * Math.PI / 180;
+            const cosT = Math.cos(rad), sinT = Math.sin(rad);
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            layer.objects.forEach(obj => {
+                const w = obj.width * obj.scaleX;
+                const h = obj.height * obj.scaleY;
+                const cx = obj.left + w / 2;
+                const cy = obj.top + h / 2;
+                const localCx = cx * cosT - cy * sinT;
+                const localCy = cx * sinT + cy * cosT;
+                minX = Math.min(minX, localCx - w / 2);
+                minY = Math.min(minY, localCy - h / 2);
+                maxX = Math.max(maxX, localCx + w / 2);
+                maxY = Math.max(maxY, localCy + h / 2);
+            });
+            if (!isFinite(minX)) return null;
+
+            const localCenterX = (minX + maxX) / 2;
+            const localCenterY = (minY + maxY) / 2;
+            // Xoay tâm đã gộp NGƯỢC LẠI (+theta) để ra đúng toạ độ THẬT trên canvas.
+            const rad2 = theta * Math.PI / 180;
+            const cos2 = Math.cos(rad2), sin2 = Math.sin(rad2);
+            const cx = localCenterX * cos2 - localCenterY * sin2;
+            const cy = localCenterX * sin2 + localCenterY * cos2;
+
+            return { theta, cx, cy, width: maxX - minX, height: maxY - minY };
+        }
+
         function updateLayerBorder() {
             const container = document.querySelector('.trang-chu-editor .canvas-container');
             if (!container || !canvas) return;
@@ -2643,23 +2689,38 @@
             const layerDangChonThat = layers[activeLayerIndex];
 
             targets.forEach(layer => {
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                layer.objects.forEach(obj => {
-                    // getBoundingRect(absolute, calculate) — calculate=false
-                    // (mặc định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ
-                    // được Fabric tự cập nhật ở vài mốc nhất định (ví dụ lúc
-                    // thả chuột/'object:modified'), KHÔNG cập nhật liên tục
-                    // trong lúc đang kéo — dù obj.left/top đã đổi từng khung
-                    // hình. Truyền calculate=true để ép tính lại theo vị trí
-                    // THẬT ngay tại thời điểm gọi — khớp với updateLayerBorder()
-                    // giờ chạy liên tục trong object:moving/scaling/rotating.
-                    const bounds = obj.getBoundingRect(false, true);
-                    minX = Math.min(minX, bounds.left);
-                    minY = Math.min(minY, bounds.top);
-                    maxX = Math.max(maxX, bounds.left + bounds.width);
-                    maxY = Math.max(maxY, bounds.top + bounds.height);
-                });
-                if (!isFinite(minX)) return;
+                // Ưu tiên hộp bao ĐÃ XOAY theo góc chung của layer (nếu có)
+                // — khung viền màu xoay đồng bộ y hệt ảnh. Không có góc
+                // chung (các object trong layer xoay khác nhau — hiếm gặp)
+                // thì quay lại hộp bao thẳng trục (AABB) như trước, theta=0.
+                const khungXoay = tinhKhungXoayLayer(layer);
+                let cx, cy, boxWidth, boxHeight, theta;
+                if (khungXoay) {
+                    ({ cx, cy, width: boxWidth, height: boxHeight, theta } = khungXoay);
+                } else {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    layer.objects.forEach(obj => {
+                        // getBoundingRect(absolute, calculate) — calculate=false
+                        // (mặc định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ
+                        // được Fabric tự cập nhật ở vài mốc nhất định (ví dụ lúc
+                        // thả chuột/'object:modified'), KHÔNG cập nhật liên tục
+                        // trong lúc đang kéo — dù obj.left/top đã đổi từng khung
+                        // hình. Truyền calculate=true để ép tính lại theo vị trí
+                        // THẬT ngay tại thời điểm gọi — khớp với updateLayerBorder()
+                        // giờ chạy liên tục trong object:moving/scaling/rotating.
+                        const bounds = obj.getBoundingRect(false, true);
+                        minX = Math.min(minX, bounds.left);
+                        minY = Math.min(minY, bounds.top);
+                        maxX = Math.max(maxX, bounds.left + bounds.width);
+                        maxY = Math.max(maxY, bounds.top + bounds.height);
+                    });
+                    if (!isFinite(minX)) return;
+                    cx = (minX + maxX) / 2;
+                    cy = (minY + maxY) / 2;
+                    boxWidth = maxX - minX;
+                    boxHeight = maxY - minY;
+                    theta = 0;
+                }
 
                 const layerId = String(layer.id);
                 let border = container.querySelector(`.canvas-layer-border[data-layer-id="${layerId}"]`);
@@ -2670,10 +2731,17 @@
                     container.appendChild(border);
                 }
 
-                border.style.left = (offsetX + minX * cssScaleX) + 'px';
-                border.style.top = (offsetY + minY * cssScaleY) + 'px';
-                border.style.width = ((maxX - minX) * cssScaleX) + 'px';
-                border.style.height = ((maxY - minY) * cssScaleY) + 'px';
+                const screenWidth = boxWidth * cssScaleX;
+                const screenHeight = boxHeight * cssScaleY;
+                const screenCenterX = offsetX + cx * cssScaleX;
+                const screenCenterY = offsetY + cy * cssScaleY;
+                border.style.left = (screenCenterX - screenWidth / 2) + 'px';
+                border.style.top = (screenCenterY - screenHeight / 2) + 'px';
+                border.style.width = screenWidth + 'px';
+                border.style.height = screenHeight + 'px';
+                // transform-origin mặc định là tâm phần tử (50% 50%) — khớp
+                // đúng tâm layer vừa tính, nên chỉ cần rotate() quanh chính nó.
+                border.style.transform = theta ? `rotate(${theta}deg)` : '';
                 border.style.borderColor = layer.color;
                 border.classList.add('visible');
 
@@ -2689,6 +2757,16 @@
                         addLayerControlButtons(border, layer.color);
                         border.dataset.hasControls = '1';
                     }
+                    // Khung xoay theo layer, nhưng 4 nút góc phải LUÔN đứng
+                    // thẳng — xoay ngược lại đúng góc đó (quanh tâm CHÍNH nó,
+                    // transform-origin mặc định), để phần icon bên trong
+                    // không bị nghiêng theo dù vị trí của nút vẫn di chuyển
+                    // theo khung cha (do nằm trong phần tử border đã xoay).
+                    // Cập nhật mỗi lần gọi (kể cả lúc đang kéo xoay), không
+                    // chỉ lúc dựng nút — góc đổi liên tục trong khi kéo.
+                    border.querySelectorAll('.layer-control-btn').forEach(btn => {
+                        btn.style.transform = theta ? `rotate(${-theta}deg)` : '';
+                    });
                 } else if (border.dataset.hasControls === '1') {
                     // Khung "kéo theo" (thuộc nhóm đang chọn nhưng không phải
                     // lớp chính) không có nút — dọn nút cũ nếu lớp này VỪA
@@ -2741,6 +2819,14 @@
                         e.stopPropagation();
                         handleLayerScale(e);
                     };
+                } else if (action === 'rotate') {
+                    // Cũng là nút KÉO, không phải bấm: giữ chuột rồi xoay
+                    // quanh tâm layer, ảnh xoay đồng bộ theo chuột.
+                    btn.style.cursor = 'grab';
+                    btn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        handleLayerRotate(e);
+                    };
                 } else {
                     btn.onclick = (e) => {
                         e.stopPropagation();
@@ -2784,7 +2870,7 @@
 
         function handleLayerControlAction(action) {
             const layerIndex = activeLayerIndex;
-            
+
             switch(action) {
                 case 'delete':
                     deleteLayer(layerIndex);
@@ -2792,25 +2878,89 @@
                 case 'duplicate':
                     duplicateLayer(layerIndex);
                     break;
-                case 'rotate':
-                    rotateLayerContent();
-                    break;
             }
         }
 
-        function rotateLayerContent() {
+        // Nút xoay — kéo (không bấm): giữ chuột trên nút rồi rê quanh tâm
+        // layer, mọi object trong layer xoay đồng bộ theo góc con trỏ vừa
+        // quét được (CHỈ xoay, không đổi kích thước). Cùng cách tính tâm
+        // dùng chung như handleLayerScale() (tâm khung bao TOÀN BỘ layer),
+        // và cùng xoay các object quanh tâm đó như 1 khối cứng — vị trí
+        // tương đối giữa chúng không đổi, khớp với cách khung viền màu vẫn
+        // luôn bao quanh cả layer chứ không phải từng object riêng lẻ.
+        function handleLayerRotate(e) {
             const layer = layers[activeLayerIndex];
-            if (layer.objects.length === 0) {
+            if (!layer || !layer.objects || layer.objects.length === 0) {
                 showToast('Layer trống!', 'error');
                 return;
             }
-            
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             layer.objects.forEach(obj => {
-                obj.rotate((obj.angle || 0) + 15);
+                const b = obj.getBoundingRect(false, true);
+                minX = Math.min(minX, b.left);
+                minY = Math.min(minY, b.top);
+                maxX = Math.max(maxX, b.left + b.width);
+                maxY = Math.max(maxY, b.top + b.height);
             });
-            canvas.renderAll();
-            updateLayerBorder();
-            showToast('Xoay layer ' + layer.name, 'success');
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            const trangThaiGoc = layer.objects.map(obj => ({
+                obj, left: obj.left, top: obj.top, angle: obj.angle || 0,
+            }));
+
+            const canvasRectGoc = canvas.getElement().getBoundingClientRect();
+            const cssScaleXGoc = canvasRectGoc.width / canvas.getWidth();
+            const cssScaleYGoc = canvasRectGoc.height / canvas.getHeight();
+            const startCanvasX = (e.clientX - canvasRectGoc.left) / cssScaleXGoc;
+            const startCanvasY = (e.clientY - canvasRectGoc.top) / cssScaleYGoc;
+            // Góc BAN ĐẦU từ tâm tới con trỏ — mọi lần di chuyển sau đó chỉ
+            // cần trừ đi góc này để ra đúng phần góc đã xoay THÊM, rồi cộng
+            // thẳng vào góc GỐC của từng object (không cộng dồn từng khung
+            // hình, tránh lỗi delta cộng dồn đã từng gặp ở tay cầm cạnh).
+            const startAngle = Math.atan2(startCanvasY - centerY, startCanvasX - centerX) * 180 / Math.PI;
+
+            const onMouseMove = (moveEvent) => {
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
+                const curAngle = Math.atan2(curY - centerY, curX - centerX) * 180 / Math.PI;
+                const deltaDeg = curAngle - startAngle;
+                const rad = deltaDeg * Math.PI / 180;
+                const cosD = Math.cos(rad), sinD = Math.sin(rad);
+
+                trangThaiGoc.forEach(({ obj, left, top, angle }) => {
+                    // Xoay TÂM của object quanh tâm chung layer (quỹ đạo),
+                    // cộng với xoay CHÍNH object đó cùng 1 góc (spin tại
+                    // chỗ) — cả layer xoay như 1 khối cứng duy nhất.
+                    const w = obj.width * obj.scaleX;
+                    const h = obj.height * obj.scaleY;
+                    const objCenterX0 = left + w / 2;
+                    const objCenterY0 = top + h / 2;
+                    const relX = objCenterX0 - centerX;
+                    const relY = objCenterY0 - centerY;
+                    const newCenterX = centerX + (relX * cosD - relY * sinD);
+                    const newCenterY = centerY + (relX * sinD + relY * cosD);
+                    obj.angle = angle + deltaDeg;
+                    obj.left = newCenterX - w / 2;
+                    obj.top = newCenterY - h / 2;
+                    obj.setCoords();
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                showToast('Đã xoay layer', 'success');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         }
 
         function handleLayerResize(e, direction) {
@@ -2906,17 +3056,32 @@
             // Tâm co giãn = tâm khung bao TOÀN BỘ layer (không phải tâm
             // riêng từng object) — layer có nhiều object thì cả khối co
             // giãn quanh 1 tâm chung, giữ nguyên bố cục tương đối giữa
-            // chúng, giống hệt cách khung viền màu bao quanh cả layer.
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            layer.objects.forEach(obj => {
-                const b = obj.getBoundingRect(false, true);
-                minX = Math.min(minX, b.left);
-                minY = Math.min(minY, b.top);
-                maxX = Math.max(maxX, b.left + b.width);
-                maxY = Math.max(maxY, b.top + b.height);
-            });
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
+            // chúng, giống hệt cách khung viền màu bao quanh cả layer. Dùng
+            // lại CHÍNH khung đã xoay (tinhKhungXoayLayer) nếu có, để tâm và
+            // "nửa đường chéo" khớp đúng khung màu đang hiển thị (đã xoay);
+            // ảnh KHÔNG xoay thì hàm đó vẫn ra đúng kết quả như AABB cũ.
+            const khungXoay = tinhKhungXoayLayer(layer);
+            let centerX, centerY, startDist;
+            if (khungXoay) {
+                centerX = khungXoay.cx;
+                centerY = khungXoay.cy;
+                // Khoảng cách tâm→góc không đổi khi xoay (xoay không đổi
+                // khoảng cách tới tâm) — dùng nửa đường chéo của khung CHƯA
+                // xoay là chính xác cho MỌI góc theta, không cần biết góc.
+                startDist = Math.hypot(khungXoay.width / 2, khungXoay.height / 2) || 1;
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left);
+                    minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width);
+                    maxY = Math.max(maxY, b.top + b.height);
+                });
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+                startDist = Math.hypot(maxX - centerX, maxY - centerY) || 1;
+            }
 
             // Chụp lại trạng thái BAN ĐẦU của từng object — mọi phép tính
             // trong lúc kéo đều dựa trên trạng thái gốc này (nhân với TỈ LỆ
@@ -2934,14 +3099,15 @@
                 // Quy đổi vị trí con trỏ (px màn hình) sang px NỘI BỘ canvas
                 // — cùng cách updateLayerBorder()/handleLayerResize() đã làm
                 // — rồi so khoảng cách tới tâm NGAY LÚC NÀY với khoảng cách
-                // LÚC BẮT ĐẦU kéo (đo lại mỗi lần move, không lưu 1 lần, vì
-                // "lúc bắt đầu" ở đây chính là toạ độ nút tại vị trí góc
-                // dưới-phải khung — luôn cách tâm đúng bằng NỬA đường chéo
-                // khung ban đầu, tính trực tiếp từ minX/minY/maxX/maxY).
+                // LÚC BẮT ĐẦU kéo (startDist tính sẵn ở trên — độc lập với
+                // góc xoay, xem chú thích chỗ tính khungXoay). Nhờ dùng
+                // khoảng cách tới TÂM thay vì so trực tiếp toạ độ nút, việc
+                // xác định "đang phóng to hay thu nhỏ" đúng bất kể khung có
+                // đang xoay ở góc nào — kéo ra xa tâm luôn là phóng to, kéo
+                // vào gần tâm luôn là thu nhỏ.
                 const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
                 const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
                 const curDist = Math.hypot(curX - centerX, curY - centerY);
-                const startDist = Math.hypot(maxX - centerX, maxY - centerY) || 1;
                 const ratio = Math.max(0.05, curDist / startDist);
 
                 trangThaiGoc.forEach(({ obj, left, top, scaleX, scaleY }) => {
