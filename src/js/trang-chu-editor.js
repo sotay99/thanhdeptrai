@@ -2593,6 +2593,7 @@
 
             if (!layer || layer.isGroup || !layer.objects || layer.objects.length === 0) {
                 border.classList.remove('visible');
+                border.dataset.layerId = '';
                 return;
             }
 
@@ -2600,7 +2601,16 @@
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
             layer.objects.forEach(obj => {
-                const bounds = obj.getBoundingRect();
+                // getBoundingRect(absolute, calculate) — calculate=false (mặc
+                // định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ được Fabric
+                // tự cập nhật ở vài mốc nhất định (ví dụ lúc thả chuột/'object:
+                // modified'), KHÔNG cập nhật liên tục trong lúc đang kéo — dù
+                // obj.left/obj.top đã đổi từng khung hình. Đó là lý do khung
+                // màu đứng yên suốt lúc kéo rồi mới "nhảy" tới đúng chỗ khi
+                // thả chuột. Truyền calculate=true để ép tính lại theo vị trí
+                // THẬT ngay tại thời điểm gọi — khớp với việc updateLayerBorder()
+                // giờ chạy liên tục trong object:moving/scaling/rotating.
+                const bounds = obj.getBoundingRect(false, true);
                 minX = Math.min(minX, bounds.left);
                 minY = Math.min(minY, bounds.top);
                 maxX = Math.max(maxX, bounds.left + bounds.width);
@@ -2628,10 +2638,20 @@
                 border.style.borderColor = layer.color;
                 border.classList.add('visible');
 
-                // Add corner control buttons
-                addLayerControlButtons(border, layer.color);
+                // Chỉ dựng lại nút góc + tay cầm khi ĐỔI lớp (hoặc lần đầu
+                // hiện khung) — updateLayerBorder() giờ còn chạy liên tục lúc
+                // kéo/co giãn/xoay object (object:moving/scaling/rotating) để
+                // khung bám sát theo thời gian thực. Dựng lại DOM nút mỗi
+                // khung hình sẽ giật, và nếu người dùng đang giữ chuột ngay
+                // trên một tay cầm thì phần tử dưới con trỏ bị thay bằng phần
+                // tử MỚI giữa chừng — làm gãy luôn thao tác đang kéo.
+                if (border.dataset.layerId !== String(layer.id)) {
+                    addLayerControlButtons(border, layer.color);
+                    border.dataset.layerId = String(layer.id);
+                }
             } else {
                 border.classList.remove('visible');
+                border.dataset.layerId = '';
             }
         }
 
@@ -2738,13 +2758,24 @@
         }
 
         function handleLayerResize(e, direction) {
-            const startX = e.clientX;
-            const startY = e.clientY;
+            // Lỗi cũ: deltaX/deltaY tính từ điểm BẮT ĐẦU kéo (startX/startY cố
+            // định), nhưng lại cộng dồn vào obj.scaleX/scaleY vốn đã mang sẵn
+            // độ lệch của MỌI lần mousemove trước đó trong cùng thao tác kéo
+            // — mỗi khung hình chuột di chuyển lại cộng thêm nguyên khoảng
+            // cách-từ-lúc-bắt-đầu một lần nữa, khiến kích thước phình lên rất
+            // nhanh và không kiểm soát được (chỉ không lộ ra trước đây vì
+            // pointer-events: none chặn hẳn việc bấm được vào tay cầm). Nay
+            // tính delta GIỮA HAI KHUNG HÌNH LIÊN TIẾP (lastX/lastY cập nhật
+            // mỗi lần mousemove), khớp đúng khoảng chuột vừa di chuyển thêm.
+            let lastX = e.clientX;
+            let lastY = e.clientY;
             const layer = layers[activeLayerIndex];
 
             const onMouseMove = (moveEvent) => {
-                const deltaX = moveEvent.clientX - startX;
-                const deltaY = moveEvent.clientY - startY;
+                const deltaX = moveEvent.clientX - lastX;
+                const deltaY = moveEvent.clientY - lastY;
+                lastX = moveEvent.clientX;
+                lastY = moveEvent.clientY;
 
                 layer.objects.forEach(obj => {
                     if (direction === 'e' || direction === 'w') {
@@ -2753,6 +2784,7 @@
                     if (direction === 'n' || direction === 's') {
                         obj.scaleY = Math.max(0.1, obj.scaleY + (deltaY * 0.01));
                     }
+                    obj.setCoords();
                 });
                 canvas.renderAll();
                 updateLayerBorder();
@@ -2801,6 +2833,7 @@
         // Nay gọi trong bindCanvasEvents() ngay sau khi canvas được tạo.
         function bindCanvasEvents() {
             canvas.on('selection:created', () => {
+                syncActiveLayerToObject(canvas.getActiveObject());
                 updateLayerBorder();
                 const obj = canvas.getActiveObject();
                 if (obj) {
@@ -2808,11 +2841,25 @@
                 }
             });
 
-            canvas.on('selection:updated', updateLayerBorder);
+            canvas.on('selection:updated', () => {
+                syncActiveLayerToObject(canvas.getActiveObject());
+                updateLayerBorder();
+            });
 
             canvas.on('selection:cleared', () => {
                 updateLayerBorder();
             });
+
+            // Lỗi cũ: khung màu #layerBorder chỉ được vẽ lại lúc THẢ chuột
+            // (object:modified) — trong lúc đang kéo/co giãn/xoay, khung đứng
+            // yên tại chỗ cũ, tạo cảm giác "khung không chịu đi theo ảnh".
+            // 3 sự kiện dưới đây bắn liên tục trong suốt thao tác, không chỉ
+            // lúc thả chuột — nhờ vậy khung bám sát object theo thời gian
+            // thực, giống hệt cách nó đã bám đúng theo zoom (fitCanvasToWorkspace
+            // gọi updateLayerBorder() mỗi khi đổi tỉ lệ hiển thị).
+            canvas.on('object:moving', updateLayerBorder);
+            canvas.on('object:scaling', updateLayerBorder);
+            canvas.on('object:rotating', updateLayerBorder);
 
             canvas.on('object:modified', () => {
                 updateLayerBorder();
@@ -2825,6 +2872,34 @@
                 updateLayerBorder();
                 renderAllLayers();
             });
+        }
+
+        // Bấm/kéo THẲNG vào object trên canvas (không qua danh sách layer bên
+        // trái) là cách chọn tự nhiên nhất, nhưng Fabric chỉ biết object nào
+        // được chọn — không tự biết object đó thuộc layer nào trong mô hình
+        // của ứng dụng. Không đồng bộ lại activeLayerIndex thì #layerBorder
+        // (luôn vẽ theo layers[activeLayerIndex]) tiếp tục bám lớp đang chọn
+        // TRƯỚC ĐÓ trong khi người dùng đang thao tác trên một object khác —
+        // trông y như "khung không theo ảnh".
+        function syncActiveLayerToObject(obj) {
+            if (!obj) return;
+
+            const topIndex = layers.findIndex(l => !l.isGroup && l.objects && l.objects.includes(obj));
+            if (topIndex !== -1) {
+                if (activeLayerIndex !== topIndex) selectLayer(topIndex, false, false);
+                return;
+            }
+
+            // Object nằm trong 1 nhóm — chọn nhóm ngoài cùng, giống cách
+            // selectNestedLayer() xử lý khi bấm tên 1 lớp con trong panel.
+            const groupTopIndex = layers.findIndex(l => {
+                if (!l.isGroup) return false;
+                const group = layerGroups.find(g => g.id === l.groupId);
+                return group && flattenLayersForRender(group.children).some(({ layer }) => layer.objects && layer.objects.includes(obj));
+            });
+            if (groupTopIndex !== -1 && activeLayerIndex !== groupTopIndex) {
+                selectLayer(groupTopIndex, false, false);
+            }
         }
 
         // ===== UNDO/REDO =====

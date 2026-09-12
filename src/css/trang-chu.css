@@ -1076,6 +1076,11 @@
             border: 2px solid var(--current-layer-color);
             box-shadow: inset 0 0 0 4px white;
             display: none;
+            /* Bản thân khung để pointer-events: none — không chặn thao tác
+               kéo-thả trực tiếp vào ảnh nằm bên dưới nó. Nút góc và tay cầm
+               kéo cạnh (con của khung) phải tự bật lại pointer-events: auto,
+               nếu không chúng thừa hưởng "none" từ khung cha và không bao
+               giờ nhận được click/mousedown — nhìn như trang trí. */
             pointer-events: none;
         }
 
@@ -1098,6 +1103,7 @@
             color: var(--current-layer-color);
             transition: all 0.3s;
             z-index: 999;
+            pointer-events: auto;
         }
 
         .layer-control-btn:hover {
@@ -1118,6 +1124,7 @@
             border: 2px solid white;
             border-radius: 50%;
             cursor: pointer;
+            pointer-events: auto;
         }
 
         /* ===== LOADING & NOTIFICATIONS ===== */
