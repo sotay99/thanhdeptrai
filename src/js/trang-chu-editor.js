@@ -259,19 +259,59 @@
             }
         }
 
+        // Lỗi cũ: "objects: [...original.objects]" chỉ chép lại THAM CHIẾU
+        // tới đúng những object fabric đang có trên canvas — layer mới và
+        // layer cũ vì vậy cùng trỏ tới MỘT ảnh vật lý; kéo/xoay/co giãn bên
+        // này thì bên kia cũng đổi theo (không phải 2 layer độc lập), và
+        // renderAllLayers() sẽ add cùng 1 object 2 lần lên canvas. Phải NHÂN
+        // BẢN THẬT từng object (obj.clone(), callback-based trong Fabric vì
+        // ảnh cần tải lại) rồi mới gán cho layer mới.
         function duplicateLayer(index) {
             const original = layers[index];
-            const duplicate = {
-                ...original,
-                id: Date.now(),
-                name: `${original.name} (Bản Sao)`,
-                objects: [...original.objects]
-            };
-            layers.splice(index + 1, 0, duplicate);
-            activeLayerIndex = index + 1;
-            updateLayersUI();
-            updateCurrentLayerColor();
-            showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+            if (!original.objects || original.objects.length === 0) {
+                showToast('Layer trống, không có gì để nhân bản!', 'error');
+                return;
+            }
+
+            const layerId = Date.now();
+            const cloneOne = (obj) => new Promise((resolve) => obj.clone((cloned) => resolve(cloned)));
+
+            Promise.all(original.objects.map(cloneOne)).then((clonedObjects) => {
+                // Màu chủ đạo của layer mới: khác màu layer GỐC là bắt buộc;
+                // ưu tiên thêm một màu CHƯA ai dùng trong toàn bộ layer hiện
+                // có, nếu hết màu trống (đã tạo nhiều hơn LAYER_COLORS.length
+                // layer) thì đành chấp nhận trùng với MỘT layer nào đó khác,
+                // nhưng tuyệt đối không được trùng màu layer gốc.
+                const mauDaDung = new Set(layers.filter(l => !l.isGroup).map(l => l.color));
+                const mauMoi = LAYER_COLORS.find(c => c !== original.color && !mauDaDung.has(c))
+                    || LAYER_COLORS.find(c => c !== original.color)
+                    || original.color;
+
+                const duplicate = {
+                    ...original,
+                    id: layerId,
+                    name: `${original.name} (Bản Sao)`,
+                    color: mauMoi,
+                    objects: clonedObjects,
+                };
+                layers.splice(index + 1, 0, duplicate);
+
+                // Layer mới lập tức được chọn để thao tác — layer cũ (và
+                // khung viền/thẻ của nó) không còn active nữa.
+                activeLayerIndex = index + 1;
+                activeGroupIndex = -1;
+                multiSelectedIndices.clear();
+
+                // Đưa object mới lên canvas SAU KHI mô hình dữ liệu (layers,
+                // activeLayerIndex...) đã nhất quán — 'object:added' tự bắn
+                // updateLayerBorder(), tránh chạy giữa lúc dữ liệu còn dở.
+                clonedObjects.forEach((obj) => canvas.add(obj));
+
+                updateLayersUI();
+                updateCurrentLayerColor();
+                updateLayerBorder();
+                showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+            });
         }
 
         function renameLayer(index, newName) {
