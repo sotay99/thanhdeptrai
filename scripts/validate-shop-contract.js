@@ -1721,6 +1721,65 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
+// 27) MODULE "KHOÁ HỌC CHỈNH MÀU LIGHTROOM MÁY TÍNH" — Y CHANG mục 26, chỉ
+//     khác nhánh Firebase (lrPC) và video NGANG 16:9 thay vì dọc 9:16.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'khoa-hoc-may-tinh',[\s\S]{0,200}sanSang:\s*true/, "module khoá học máy tính đã bật (sanSang: true)"],
+    [/function\s+veModuleKhoaHocMayTinh\s*\(/, "hàm vẽ module khoá học máy tính ở trang bán hàng"],
+    [/function\s+taiKhoaHocMayTinh\s*\(/, "hàm đọc dữ liệu khoá học máy tính từ Firebase"],
+    [/rtdb\.ref\('khoahoc\/lrPC\/muc'\)/, "đọc đúng nhánh khoahoc/lrPC/muc"],
+    [/function\s+moModalBaiHocMayTinh\s*\(/, "hàm mở modal xem video một bài học (khoá máy tính)"],
+    [/function\s+chuyenBaiHocMayTinh\s*\(/, "hàm chuyển sang bài trước/sau (khoá máy tính)"],
+    [/data-hanh-dong="xem-chi-tiet"\s+data-ma="sp5"/, "nút Xem chi tiết mở đúng sp5"],
+    [/data-hanh-dong="bai-hoc-chuyen-pc"[\s\S]{0,100}data-huong="-1"/, "nút Bài trước (khoá máy tính)"],
+    [/data-hanh-dong="bai-hoc-chuyen-pc"[\s\S]{0,100}data-huong="1"/, "nút Bài tiếp theo (khoá máy tính)"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Khác biệt DUY NHẤT với khoá điện thoại: video NGANG 16:9, không phải dọc.
+  if (!/veKhungVideo\(bai\.linkVideo,\s*'ngang'\)/.test(banNoi)) {
+    fail("Modal bài học (khoá máy tính) phải gọi veKhungVideo(..., 'ngang') — video nằm ngang 16:9.");
+  }
+
+  // Modal phải bao TRỌN màn hình — dùng đúng tiền tố CSS chung "bai-hoc-".
+  if (!/\[data-ma-modal\^="bai-hoc-"\][\s\S]{0,400}width:\s*100%[\s\S]{0,200}height:\s*100%/.test(cssApp)) {
+    fail("Modal bài học (khoá máy tính) phải dùng chung CSS bao trọn màn hình [data-ma-modal^=\"bai-hoc-\"].");
+  }
+  if (!/ma:\s*'bai-hoc-pc-'/.test(banNoi)) {
+    fail('Mã modal bài học (khoá máy tính) phải bắt đầu bằng "bai-hoc-" để hưởng CSS toàn màn hình chung.');
+  }
+
+  // Module quản lý ở /admin: y chang mục 26 nhưng nhánh và tiền tố hành động
+  // riêng (khpc-…) để không đụng module khoá điện thoại.
+  [
+    [/ma:\s*'khoa-hoc-pc',\s*ten:\s*'Khoá học Lightroom máy tính'/, "mục Khoá học Lightroom máy tính trong menu /admin"],
+    [/'khoa-hoc-pc':\s*'khoahoc\/lrPC'/, "nhánh Firebase khoá học máy tính được nạp cùng lúc với các cài đặt khác"],
+    [/function\s+veAdminKhoaHocMayTinh\s*\(/, "hàm vẽ module quản lý khoá học máy tính"],
+    [/function\s+adminKhpcThemBai\s*\(/, "hành động Thêm bài (khoá máy tính)"],
+    [/function\s+adminKhpcThemChuong\s*\(/, "hành động Thêm chương (khoá máy tính)"],
+    [/function\s+adminKhpcXoaDong\s*\(/, "hành động Xoá dòng (khoá máy tính)"],
+    [/function\s+adminKhpcDoiCho\s*\(/, "hành động đổi chỗ (khoá máy tính)"],
+    [/function\s+adminKhpcXemTruocVideo\s*\(/, "hành động Xem trước link video (khoá máy tính)"],
+    [/function\s+adminKhpcLuuTatCa\s*\(/, "hành động Lưu tất cả (khoá máy tính)"],
+    [/data-hanh-dong="khpc-luu-tat-ca"/, "nút Lưu tất cả (khoá máy tính)"],
+    [/rtdb\.ref\(NHANH_KHOA_HOC_MAY_TINH\)\.set\(/, "Lưu tất cả (khoá máy tính) ghi ĐÈ nguyên mảng xuống Firebase"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Không có nút "Lưu" riêng cho từng dòng — chỉ một nút Lưu tất cả.
+  if (/data-hanh-dong="khpc-luu"[^-]/.test(banNoi)) {
+    fail("Không được có nút Lưu riêng cho từng dòng (khoá máy tính) — chỉ một nút Lưu tất cả.");
+  }
+
+  // Nhánh "khoahoc" ở Rules đã bao trọn cả lrMobile lẫn lrPC (kiểm ở mục 26),
+  // không cần thêm dòng Rules riêng cho khoá máy tính.
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).

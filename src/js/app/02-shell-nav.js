@@ -435,6 +435,7 @@
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
     if (m && m.ma === 'trang-chu') return veModuleTrangChu();
     if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
+    if (m && m.ma === 'khoa-hoc-may-tinh') return veModuleKhoaHocMayTinh();
     return veManNangCap(m ? m.ten : '');
   }
 

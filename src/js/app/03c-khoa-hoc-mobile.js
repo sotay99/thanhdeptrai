@@ -144,8 +144,12 @@
     return !!state.khoaHoc.chuongMo[id];
   }
 
-  function veTheBaiHoc(b){
-    return '<button type="button" class="the-bai-hoc" data-hanh-dong="mo-bai-hoc" data-id="' + escapeHtml(b.id) + '">' +
+  // hanhDong cho phép module "khoá học máy tính" (PHẦN 03D) tái dùng đúng thẻ
+  // này nhưng gắn hành động riêng ("mo-bai-hoc-pc") — mỗi khoá đọc dữ liệu từ
+  // một nhánh Firebase khác nhau nên không thể dùng chung MỘT hành động.
+  function veTheBaiHoc(b, hanhDong){
+    return '<button type="button" class="the-bai-hoc" data-hanh-dong="' + (hanhDong || 'mo-bai-hoc') +
+      '" data-id="' + escapeHtml(b.id) + '">' +
       '<span class="so-bai" aria-hidden="true">▶</span>' +
       '<span class="ten-bai">Bài ' + b.soThuTu + ': ' + escapeHtml(b.ten || '(chưa đặt tên)') + '</span>' +
     '</button>';
