@@ -2817,6 +2817,17 @@
                 let cx, cy, boxWidth, boxHeight, theta;
                 if (khungXoay) {
                     ({ cx, cy, width: boxWidth, height: boxHeight, theta } = khungXoay);
+                    // tinhKhungXoayLayer() dùng getCenterPoint()/getScaledWidth()
+                    // — toạ độ OBJECT-SPACE, không hề biết tới canvas.setZoom()
+                    // (khác obj.getBoundingRect() ở nhánh else bên dưới, tự
+                    // ÁP SẴN viewportTransform/zoom). Bấm nút phóng to/thu nhỏ
+                    // (canvas.setZoom()) chỉ đổi CÁCH VẼ, không đổi left/top/
+                    // scale thật của object — nên centerPoint vẫn nguyên như
+                    // cũ, phải tự nhân thêm zoom ở đây để khớp lại đúng pixel
+                    // đang hiển thị, nếu không khung sẽ lệch hẳn ngay khi zoom
+                    // khác 100%.
+                    const zoom = canvas.getZoom();
+                    cx *= zoom; cy *= zoom; boxWidth *= zoom; boxHeight *= zoom;
                 } else {
                     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                     layer.objects.forEach(obj => {
@@ -3083,8 +3094,15 @@
             const canvasRectGoc = canvas.getElement().getBoundingClientRect();
             const cssScaleXGoc = canvasRectGoc.width / canvas.getWidth();
             const cssScaleYGoc = canvasRectGoc.height / canvas.getHeight();
-            const startCanvasX = (e.clientX - canvasRectGoc.left) / cssScaleXGoc;
-            const startCanvasY = (e.clientY - canvasRectGoc.top) / cssScaleYGoc;
+            // Chia thêm cho canvas.getZoom(): (clientX-canvasRect.left)/cssScale
+            // ra toạ độ PIXEL đang hiển thị trên canvas (đã gồm zoom bấm nút +/-
+            // ở thanh công cụ trên cùng), còn centerX/centerY (từ getCenterPoint())
+            // lại là toạ độ OBJECT-SPACE — không hề đổi theo zoom đó. Thiếu bước
+            // quy đổi này thì mọi phép tính góc/khoảng cách sai lệch ngay khi
+            // zoom khác 100%.
+            const zoomGoc = canvas.getZoom();
+            const startCanvasX = (e.clientX - canvasRectGoc.left) / cssScaleXGoc / zoomGoc;
+            const startCanvasY = (e.clientY - canvasRectGoc.top) / cssScaleYGoc / zoomGoc;
             // Góc BAN ĐẦU từ tâm tới con trỏ — mọi lần di chuyển sau đó chỉ
             // cần trừ đi góc này để ra đúng phần góc đã xoay THÊM, rồi cộng
             // thẳng vào góc GỐC của từng object (không cộng dồn từng khung
@@ -3095,8 +3113,9 @@
                 const canvasRect = canvas.getElement().getBoundingClientRect();
                 const cssScaleX = canvasRect.width / canvas.getWidth();
                 const cssScaleY = canvasRect.height / canvas.getHeight();
-                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
-                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
+                const zoom = canvas.getZoom();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
                 const curAngle = Math.atan2(curY - centerY, curX - centerX) * 180 / Math.PI;
                 const deltaDeg = curAngle - startAngle;
                 const rad = deltaDeg * Math.PI / 180;
@@ -3215,8 +3234,13 @@
                 const canvasRect = canvas.getElement().getBoundingClientRect();
                 const cssScaleX = canvasRect.width / canvas.getWidth();
                 const cssScaleY = canvasRect.height / canvas.getHeight();
-                const mouseX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
-                const mouseY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
+                // Chia thêm cho canvas.getZoom() để quy đổi từ toạ độ PIXEL
+                // đang hiển thị (đã gồm zoom bấm nút +/-) về đúng OBJECT-SPACE
+                // — cùng hệ toạ độ với diemNeo/tamX/tamY (từ getCenterPoint()),
+                // vốn không đổi theo zoom.
+                const zoom = canvas.getZoom();
+                const mouseX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const mouseY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
 
                 // Chiếu vector (điểm neo -> con trỏ) lên trục cục bộ — đây
                 // chính là "độ dài mới dọc trục", CÓ DẤU: dương là con trỏ
@@ -3327,8 +3351,12 @@
                 // xác định "đang phóng to hay thu nhỏ" đúng bất kể khung có
                 // đang xoay ở góc nào — kéo ra xa tâm luôn là phóng to, kéo
                 // vào gần tâm luôn là thu nhỏ.
-                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
-                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
+                // Chia thêm cho canvas.getZoom() để về đúng OBJECT-SPACE —
+                // cùng hệ toạ độ với centerX/centerY (từ getCenterPoint()),
+                // không đổi theo zoom bấm nút +/- ở thanh công cụ trên cùng.
+                const zoom = canvas.getZoom();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
                 const curDist = Math.hypot(curX - centerX, curY - centerY);
                 const ratio = Math.max(0.05, curDist / startDist);
 
