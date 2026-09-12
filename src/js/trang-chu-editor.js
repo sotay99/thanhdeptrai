@@ -3452,13 +3452,25 @@
         // nền trong suốt (canvas mới tinh, không tô nền). Trả về Promise vì
         // clone() và fabric.Image.fromURL() đều là bất đồng bộ.
         function boGomLayerThanhAnhMoi(layer) {
+            // Lỗi cũ: obj.getBoundingRect(false, true) trả về toạ độ ĐÃ NHÂN
+            // SẴN canvas.getZoom() (tự áp viewportTransform — đã xác nhận lại
+            // bằng cách so trực tiếp trước/sau canvas.setZoom()), trong khi
+            // obj.left/obj.top là toạ độ OBJECT-SPACE THẬT, không đổi theo
+            // zoom. Trộn 2 hệ toạ độ này (dùng minX/minY từ getBoundingRect
+            // để trừ thẳng vào left/top) làm ảnh mới bị đặt sai vị trí VÀ co
+            // nhỏ lại đúng theo % zoom hiện tại lúc bấm — ví dụ zoom 30% thì
+            // ảnh "nướng" ra chỉ còn ~30% kích thước thật rồi bị đặt lệch hẳn
+            // (khung viền "nhảy đi chỗ khác" ngay khi thả chuột, đúng như báo
+            // cáo). Sửa bằng cách chia lại cho zoom để đưa mọi thứ về ĐÚNG
+            // MỘT hệ toạ độ (object-space, không phụ thuộc mức zoom đang xem).
+            const zoom = canvas.getZoom();
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             layer.objects.forEach((obj) => {
                 const b = obj.getBoundingRect(false, true);
-                minX = Math.min(minX, b.left);
-                minY = Math.min(minY, b.top);
-                maxX = Math.max(maxX, b.left + b.width);
-                maxY = Math.max(maxY, b.top + b.height);
+                minX = Math.min(minX, b.left / zoom);
+                minY = Math.min(minY, b.top / zoom);
+                maxX = Math.max(maxX, (b.left + b.width) / zoom);
+                maxY = Math.max(maxY, (b.top + b.height) / zoom);
             });
             const w = Math.ceil(maxX - minX);
             const h = Math.ceil(maxY - minY);
