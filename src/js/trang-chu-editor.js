@@ -182,10 +182,11 @@
                     activeLayerIndex = index;
                     updateLayersUI();
                     updateCurrentLayerColor();
+                    updateLayerBorder();
                     showToast(`✓ Đã chọn từ lớp ${minIndex} đến ${maxIndex} (${multiSelectedIndices.size} lớp)`, 'info');
                     return;
                 }
-                
+
                 // Handle multi-select (Ctrl+Click)
                 if (ctrlKey) {
                     if (multiSelectedIndices.has(index)) {
@@ -197,18 +198,19 @@
                         multiSelectedIndices.add(index);
                         showToast(`✓ Thêm chọn: ${layer.name}`, 'info');
                     }
-                    
+
                     // Keep track of primary selection
                     activeLayerIndex = index;
                     updateLayersUI();
                     updateCurrentLayerColor();
+                    updateLayerBorder();
                     return;
                 }
-                
+
                 // Normal single selection (no Ctrl, no Shift)
                 multiSelectedIndices.clear(); // Clear multi-select
                 activeLayerIndex = index;
-                
+
                 // If selecting a group, mark it as active group
                 if (layer.isGroup) {
                     const group = layerGroups.find(g => g.id === layer.groupId);
@@ -217,6 +219,7 @@
                         selectedLayerIndices.clear(); // Clear multi-select
                         updateLayersUI();
                         updateCurrentLayerColor();
+                        updateLayerBorder();
                         showToast(`📁 Chọn Nhóm: ${layer.name}`, 'success');
                     }
                 } else {
@@ -225,6 +228,7 @@
                     selectedLayerIndices.clear(); // Clear multi-select
                     updateLayersUI();
                     updateCurrentLayerColor();
+                    updateLayerBorder();
                     showToast(`Chọn: ${layer.name}`, 'success');
                 }
             }
@@ -1544,7 +1548,6 @@
                         const isMultiSelected = !isNested && multiSelectedIndices.has(globalIndex);
                         const groupEl = document.createElement('div');
                         groupEl.className = `layer-item ${isActive ? 'active' : ''} ${isNested ? 'layer-item-nested' : ''} ${isMultiSelected ? 'multi-selected' : ''}`;
-                        groupEl.style.borderColor = '#000000';
                         groupEl.style.position = 'relative';
                         groupEl.draggable = !isNested;
                         groupEl.dataset.layerIndex = globalIndex;
@@ -1604,7 +1607,6 @@
                         const isMultiSelected = !isNested && multiSelectedIndices.has(globalIndex);
                         const layerEl = document.createElement('div');
                         layerEl.className = `layer-item ${isActive ? 'active' : ''} ${isNested ? 'layer-item-nested' : ''} ${isMultiSelected ? 'multi-selected' : ''}`;
-                        layerEl.style.borderColor = layer.color;
                         layerEl.style.position = 'relative';
                         layerEl.draggable = !isNested;
                         layerEl.dataset.layerIndex = globalIndex;
@@ -1623,7 +1625,7 @@
                                 <i class="fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
                             </div>
                             ${showDragHandle ? `<div class="drag-handle drag-handle-visible" title="Kéo để sắp xếp lại">⋮⋮</div>` : ''}
-                            <span class="layer-name-text">${escapeHtmlText(layer.name)}</span>
+                            <span class="layer-name-text" style="color: ${layer.color};">${escapeHtmlText(layer.name)}</span>
                             <button class="layer-menu-trigger" onclick="event.stopPropagation(); ${menuAction}" title="Tuỳ chọn">
                                 <i class="fas fa-ellipsis-vertical"></i>
                             </button>
@@ -2587,49 +2589,86 @@
         //    của nó (thuộc tính width/height, 800x600) — toạ độ fabric trả
         //    về tính theo pixel nội bộ, phải quy đổi sang đúng tỉ lệ đang
         //    hiển thị mới khớp ảnh thật trên màn hình.
-        function updateLayerBorder() {
-            const border = document.getElementById('layerBorder');
+        // Trả về danh sách "lớp thật" (có objects) cần vẽ khung viền quanh
+        // ảnh của chúng trên canvas, ứng với lựa chọn hiện tại ở panel Layer:
+        // - Chọn 1 lớp thường: đúng lớp đó (1 khung, có đủ nút điều khiển).
+        // - Chọn 1 NHÓM: TẤT CẢ lớp con của nhóm (đệ quy, kể cả nhóm lồng
+        //   trong nhóm) — mỗi lớp một khung riêng theo đúng màu của nó, để
+        //   người dùng thấy ngay những ảnh nào thuộc nhóm và bấm chọn từng
+        //   ảnh trên canvas. Các khung này KHÔNG có nút điều khiển riêng —
+        //   mô hình thao tác hiện tại của toàn bộ ứng dụng coi "nhóm" là một
+        //   khối, muốn chỉnh riêng 1 lớp con vẫn phải bỏ nhóm trước (xem
+        //   selectNestedLayer()); khung ở đây chỉ để NHẬN DIỆN, không phải
+        //   để chỉnh.
+        function layTargetKhungVienLayer() {
             const layer = layers[activeLayerIndex];
-
-            if (!layer || layer.isGroup || !layer.objects || layer.objects.length === 0) {
-                border.classList.remove('visible');
-                border.dataset.layerId = '';
-                return;
+            if (!layer) return [];
+            if (layer.isGroup) {
+                const group = layerGroups.find(g => g.id === layer.groupId);
+                if (!group) return [];
+                return flattenLayersForRender(group.children)
+                    .map(({ layer: l }) => l)
+                    .filter(l => l.objects && l.objects.length > 0);
             }
+            return layer.objects && layer.objects.length > 0 ? [layer] : [];
+        }
 
-            // Get bounding box of layer objects (đã gồm zoom hiện tại)
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        function updateLayerBorder() {
+            const container = document.querySelector('.trang-chu-editor .canvas-container');
+            if (!container || !canvas) return;
 
-            layer.objects.forEach(obj => {
-                // getBoundingRect(absolute, calculate) — calculate=false (mặc
-                // định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ được Fabric
-                // tự cập nhật ở vài mốc nhất định (ví dụ lúc thả chuột/'object:
-                // modified'), KHÔNG cập nhật liên tục trong lúc đang kéo — dù
-                // obj.left/obj.top đã đổi từng khung hình. Đó là lý do khung
-                // màu đứng yên suốt lúc kéo rồi mới "nhảy" tới đúng chỗ khi
-                // thả chuột. Truyền calculate=true để ép tính lại theo vị trí
-                // THẬT ngay tại thời điểm gọi — khớp với việc updateLayerBorder()
-                // giờ chạy liên tục trong object:moving/scaling/rotating.
-                const bounds = obj.getBoundingRect(false, true);
-                minX = Math.min(minX, bounds.left);
-                minY = Math.min(minY, bounds.top);
-                maxX = Math.max(maxX, bounds.left + bounds.width);
-                maxY = Math.max(maxY, bounds.top + bounds.height);
+            const targets = layTargetKhungVienLayer();
+            const targetIds = new Set(targets.map(l => String(l.id)));
+
+            // Khung của lớp không còn liên quan (đổi lựa chọn, hoặc lớp/nhóm
+            // đó vừa bị xoá) — dọn khỏi DOM thay vì chỉ ẩn, vì số khung cần
+            // hiện thay đổi tuỳ theo đang chọn 1 lớp hay cả 1 nhóm.
+            container.querySelectorAll('.canvas-layer-border').forEach(el => {
+                if (!targetIds.has(el.dataset.layerId)) el.remove();
             });
 
-            if (isFinite(minX)) {
-                const canvasEl = canvas.getElement();
-                const canvasRect = canvasEl.getBoundingClientRect();
-                // offsetParent (không phải parentElement) trả về null khi
-                // border đang display:none (đúng lúc hàm này chạy, trước khi
-                // .visible được gắn) — dùng parentElement, ổn định bất kể
-                // trạng thái hiển thị. #layerBorder luôn là con trực tiếp
-                // của .canvas-container (position: relative).
-                const containerRect = border.parentElement.getBoundingClientRect();
-                const cssScaleX = canvasRect.width / canvas.getWidth();
-                const cssScaleY = canvasRect.height / canvas.getHeight();
-                const offsetX = canvasRect.left - containerRect.left;
-                const offsetY = canvasRect.top - containerRect.top;
+            if (targets.length === 0) return;
+
+            const canvasEl = canvas.getElement();
+            const canvasRect = canvasEl.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const cssScaleX = canvasRect.width / canvas.getWidth();
+            const cssScaleY = canvasRect.height / canvas.getHeight();
+            const offsetX = canvasRect.left - containerRect.left;
+            const offsetY = canvasRect.top - containerRect.top;
+
+            // Chỉ lớp ĐANG là activeLayerIndex thật sự (không phải một lớp
+            // con được "kéo theo" vì nằm trong nhóm đang chọn) mới là khung
+            // "chính" — được gắn đủ nút xoá/nhân đôi/xoay/tay cầm resize.
+            const layerDangChonThat = layers[activeLayerIndex];
+
+            targets.forEach(layer => {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    // getBoundingRect(absolute, calculate) — calculate=false
+                    // (mặc định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ
+                    // được Fabric tự cập nhật ở vài mốc nhất định (ví dụ lúc
+                    // thả chuột/'object:modified'), KHÔNG cập nhật liên tục
+                    // trong lúc đang kéo — dù obj.left/top đã đổi từng khung
+                    // hình. Truyền calculate=true để ép tính lại theo vị trí
+                    // THẬT ngay tại thời điểm gọi — khớp với updateLayerBorder()
+                    // giờ chạy liên tục trong object:moving/scaling/rotating.
+                    const bounds = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, bounds.left);
+                    minY = Math.min(minY, bounds.top);
+                    maxX = Math.max(maxX, bounds.left + bounds.width);
+                    maxY = Math.max(maxY, bounds.top + bounds.height);
+                });
+                if (!isFinite(minX)) return;
+
+                const layerId = String(layer.id);
+                let border = container.querySelector(`.canvas-layer-border[data-layer-id="${layerId}"]`);
+                if (!border) {
+                    border = document.createElement('div');
+                    border.className = 'canvas-layer-border';
+                    border.dataset.layerId = layerId;
+                    container.appendChild(border);
+                }
 
                 border.style.left = (offsetX + minX * cssScaleX) + 'px';
                 border.style.top = (offsetY + minY * cssScaleY) + 'px';
@@ -2638,21 +2677,27 @@
                 border.style.borderColor = layer.color;
                 border.classList.add('visible');
 
-                // Chỉ dựng lại nút góc + tay cầm khi ĐỔI lớp (hoặc lần đầu
-                // hiện khung) — updateLayerBorder() giờ còn chạy liên tục lúc
-                // kéo/co giãn/xoay object (object:moving/scaling/rotating) để
-                // khung bám sát theo thời gian thực. Dựng lại DOM nút mỗi
-                // khung hình sẽ giật, và nếu người dùng đang giữ chuột ngay
-                // trên một tay cầm thì phần tử dưới con trỏ bị thay bằng phần
-                // tử MỚI giữa chừng — làm gãy luôn thao tác đang kéo.
-                if (border.dataset.layerId !== String(layer.id)) {
-                    addLayerControlButtons(border, layer.color);
-                    border.dataset.layerId = String(layer.id);
+                const laKhungChinh = layer === layerDangChonThat;
+                border.classList.toggle('canvas-layer-border-chinh', laKhungChinh);
+
+                if (laKhungChinh) {
+                    // Chỉ dựng lại nút góc + tay cầm khi ĐỔI lớp (hoặc lần
+                    // đầu hiện khung) — updateLayerBorder() giờ còn chạy liên
+                    // tục lúc kéo/co giãn/xoay object, dựng lại DOM nút mỗi
+                    // khung hình sẽ giật và làm gãy thao tác đang kéo dở.
+                    if (border.dataset.hasControls !== '1') {
+                        addLayerControlButtons(border, layer.color);
+                        border.dataset.hasControls = '1';
+                    }
+                } else if (border.dataset.hasControls === '1') {
+                    // Khung "kéo theo" (thuộc nhóm đang chọn nhưng không phải
+                    // lớp chính) không có nút — dọn nút cũ nếu lớp này VỪA
+                    // TỪ khung chính chuyển thành khung phụ (đổi lựa chọn
+                    // trong cùng 1 nhóm).
+                    border.querySelectorAll('.layer-control-btn, .resize-handle').forEach(el => el.remove());
+                    border.dataset.hasControls = '0';
                 }
-            } else {
-                border.classList.remove('visible');
-                border.dataset.layerId = '';
-            }
+            });
         }
 
         function addLayerControlButtons(border, color) {
