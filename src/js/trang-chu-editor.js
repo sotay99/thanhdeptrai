@@ -2977,14 +2977,28 @@
             document.querySelectorAll('.layer-control-btn').forEach(btn => btn.remove());
             document.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
 
+            // Lỗi cũ: top/left/bottom/right của 1 phần tử position:absolute
+            // được đo từ mép PADDING của cha (khung .canvas-layer-border-chinh),
+            // KHÔNG phải mép NGOÀI của khung — mà khung chính có border-width
+            // 3px (DO_DAY_VIEN_CHINH), nên mép padding đã lùi vào trong 3px so
+            // với mép ngoài. Trước đây nút góc dùng -16px (= nửa cạnh 32px),
+            // tức là TÂM nút trùng đúng điểm góc của mép PADDING — do mép
+            // padding lùi vào trong, tâm nút cũng lùi vào trong theo, kéo cả
+            // nửa nút kia (nửa gần tâm ảnh) lấn hẳn vào bên trong khung.
+            // Nay đổi sang -(32 + DO_DAY_VIEN_CHINH) = -35px: mép trong cùng
+            // của nút (góc gần tâm ảnh nhất) chỉ vừa chạm đúng đỉnh góc của
+            // mép NGOÀI khung, cả nút nằm trọn bên ngoài, không lấn vào chút
+            // nào.
+            const DO_DAY_VIEN_CHINH = 3; // khớp .canvas-layer-border-chinh { border-width: 3px }
+            const OFFSET_NUT_GOC = -(32 + DO_DAY_VIEN_CHINH) + 'px';
             const positions = {
-                'delete': { top: '-16px', left: '-16px', icon: 'fa-trash' },
-                'duplicate': { top: '-16px', right: '-16px', icon: 'fa-copy' },
-                'rotate': { bottom: '-16px', left: '-16px', icon: 'fa-rotate-right' },
+                'delete': { top: OFFSET_NUT_GOC, left: OFFSET_NUT_GOC, icon: 'fa-trash' },
+                'duplicate': { top: OFFSET_NUT_GOC, right: OFFSET_NUT_GOC, icon: 'fa-copy' },
+                'rotate': { bottom: OFFSET_NUT_GOC, left: OFFSET_NUT_GOC, icon: 'fa-rotate-right' },
                 // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
                 // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
                 // vốn là 4 mũi tên rời góc, dễ hiểu lầm là "toàn màn hình").
-                'scale': { bottom: '-16px', right: '-16px', icon: 'fa-up-right-and-down-left-from-center' }
+                'scale': { bottom: OFFSET_NUT_GOC, right: OFFSET_NUT_GOC, icon: 'fa-up-right-and-down-left-from-center' }
             };
 
             Object.entries(positions).forEach(([action, pos]) => {
@@ -3032,11 +3046,20 @@
             // bộ của layer, 'e'/'w' cùng thao tác trên TRỤC NGANG cục bộ —
             // vì vậy cả 2 tay cầm cùng trục dùng CHUNG axis ('y' hoặc 'x'),
             // không còn phân biệt trái/phải/trên/dưới khi tính toán.
+            // Cùng lỗi mép-padding-vs-mép-ngoài như 4 nút góc ở trên: điểm
+            // neo (10px, tâm định vị bằng translate(-50%,-50%)) trước đây
+            // dùng -5px (= nửa cạnh 10px, tâm trùng đúng mép PADDING của
+            // khung) — do mép padding lùi vào trong DO_DAY_VIEN_CHINH so với
+            // mép ngoài, tâm điểm neo cũng lùi vào trong theo, khiến nửa
+            // điểm neo lấn vào bên trong khung. Nay đổi sang
+            // -(5 + DO_DAY_VIEN_CHINH) = -8px: tâm điểm neo trùng đúng mép
+            // NGOÀI của khung, cả điểm neo nằm sát bên ngoài, không lấn vào.
+            const OFFSET_DIEM_NEO = -(5 + DO_DAY_VIEN_CHINH) + 'px';
             const handlePositions = [
-                { name: 'n', top: '-5px', left: '50%', axis: 'y' },
-                { name: 's', bottom: '-5px', left: '50%', axis: 'y' },
-                { name: 'w', top: '50%', left: '-5px', axis: 'x' },
-                { name: 'e', top: '50%', right: '-5px', axis: 'x' },
+                { name: 'n', top: OFFSET_DIEM_NEO, left: '50%', axis: 'y' },
+                { name: 's', bottom: OFFSET_DIEM_NEO, left: '50%', axis: 'y' },
+                { name: 'w', top: '50%', left: OFFSET_DIEM_NEO, axis: 'x' },
+                { name: 'e', top: '50%', right: OFFSET_DIEM_NEO, axis: 'x' },
             ];
 
             handlePositions.forEach(pos => {
