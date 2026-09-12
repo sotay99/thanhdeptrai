@@ -52,6 +52,21 @@
                 stopContextMenu: true,
             });
 
+            // Fabric tự vẽ một khung chọn RIÊNG (viền mờ + 8 chấm bo góc) mỗi
+            // khi một object được click — khung này chồng lên #layerBorder
+            // (khung màu tự vẽ ở updateLayerBorder(), có đủ nút xoá/nhân
+            // đôi/xoay/điểm kéo cạnh riêng). Người dùng kéo object thì khung
+            // mờ của Fabric mới là khung thật sự bám theo con trỏ, còn khung
+            // màu chỉ đứng yên tới lần updateLayerBorder() kế tiếp — nhìn như
+            // hai khung lồng nhau. Tắt hẳn viền + tay cầm gốc của Fabric ở
+            // đây (mặc định cho MỌI object mới tạo): việc kéo-di-chuyển object
+            // không phụ thuộc hasControls/hasBorders — vẫn kéo được bình
+            // thường — chỉ mất đi khung/tay cầm hiển thị thừa. #layerBorder
+            // vẫn tự vẽ lại theo object khi object di chuyển (đã có sẵn qua
+            // canvas.on('object:moving', updateLayerBorder) ở bindCanvasEvents()).
+            fabric.Object.prototype.hasControls = false;
+            fabric.Object.prototype.hasBorders = false;
+
             setupDragAndDrop();
             bindCanvasEvents();
             fitCanvasToWorkspace();
@@ -2301,6 +2316,12 @@
                 cornerColor: layer.color,
                 transparentCorners: false,
                 lockRotation: true,
+                // Khung cắt là ngoại lệ DUY NHẤT còn cần tay cầm/viền thật
+                // của Fabric — nó không có khung màu + nút riêng như layer
+                // thường, người dùng phải kéo trực tiếp tay cầm bo góc để
+                // chỉnh vùng cắt.
+                hasControls: true,
+                hasBorders: true,
             });
             cropOverlayRect.setControlsVisibility({ mtr: false });
             canvas.add(cropOverlayRect);
@@ -2615,9 +2636,14 @@
         }
 
         function addLayerControlButtons(border, color) {
-            // Remove old buttons
-            const oldButtons = document.querySelectorAll('.layer-control-btn');
-            oldButtons.forEach(btn => btn.remove());
+            // Xoá nút góc VÀ điểm kéo cạnh cũ trước khi vẽ lại — updateLayerBorder()
+            // (gọi hàm này) chạy rất thường xuyên (mỗi lần object di chuyển/co
+            // giãn/đổi zoom...); trước đây chỉ xoá '.layer-control-btn' mà bỏ sót
+            // '.resize-handle', nên mỗi lần vẽ lại lại chồng thêm 4 điểm kéo mới —
+            // các điểm chồng lên nhau khiến một thao tác kéo cộng dồn delta của
+            // nhiều điểm cùng lúc (co giãn nhanh bất thường).
+            document.querySelectorAll('.layer-control-btn').forEach(btn => btn.remove());
+            document.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
 
             const positions = {
                 'delete': { top: '-16px', left: '-16px', icon: 'fa-trash' },
