@@ -2757,8 +2757,15 @@
 
             layer.objects.forEach(obj => {
                 const center = obj.getCenterPoint();
-                const w = obj.getScaledWidth();
-                const h = obj.getScaledHeight();
+                // getScaledWidth()/getScaledHeight() = width/height * scaleX/
+                // scaleY — ÂM khi object đang bị LẬT (scale âm, xem
+                // handleLayerResize). Đây là ĐỘ RỘNG/CAO hình học (khoảng
+                // cách 2 cạnh), luôn phải DƯƠNG — thiếu Math.abs() thì hộp
+                // bao gộp ra width/height ÂM khi có object bị lật, làm cả
+                // khung viền lẫn 4 nút góc (định vị theo CSS width/height âm,
+                // trình duyệt không hiểu) vỡ layout, 2 nút biến mất/chồng lấn.
+                const w = Math.abs(obj.getScaledWidth());
+                const h = Math.abs(obj.getScaledHeight());
                 const localCx = center.x * cosT - center.y * sinT;
                 const localCy = center.x * sinT + center.y * cosT;
                 minX = Math.min(minX, localCx - w / 2);
@@ -3027,7 +3034,7 @@
 
                 handle.onmousedown = (e) => {
                     e.stopPropagation();
-                    handleLayerResize(e, pos.axis);
+                    handleLayerResize(e, pos.name);
                 };
 
                 border.appendChild(handle);
@@ -3173,9 +3180,22 @@
         //   neo thì NGAY LẬP TỨC nhảy sang ngưỡng đối xứng bên kia (lật), rồi
         //   giãn tiếp bình thường — đúng ý muốn, không cần if/else riêng cho
         //   "lúc nào thì lật".
-        function handleLayerResize(e, axis) {
+        // handleName: tên tay cầm THẬT SỰ vừa bấm ('n'/'s'/'e'/'w') — dù 2
+        // tay cầm cùng trục dùng chung logic trục, điểm neo (đầu ĐỐI DIỆN)
+        // khác nhau tuỳ đang cầm đầu nào. Lỗi cũ: chỉ truyền axis ('x'/'y'),
+        // nên điểm neo luôn cố định ở đầu ÂM của trục bất kể đang kéo đầu
+        // nào — kéo tay cầm ở đầu ÂM (n/w) vô tình biến điểm neo trùng với
+        // CHÍNH tay cầm đang kéo, khiến cạnh đối diện (đầu dương) chạy thay
+        // vì đó mới là "đầu xa điểm neo" theo công thức, còn cạnh đang cầm
+        // đứng im.
+        function handleLayerResize(e, handleName) {
             const layer = layers[activeLayerIndex];
             if (!layer || !layer.objects || layer.objects.length === 0) return;
+
+            const axis = (handleName === 'n' || handleName === 's') ? 'y' : 'x';
+            // dauKeo = hướng của tay cầm ĐANG BẤM dọc trục cục bộ: +1 nếu là
+            // đầu DƯƠNG (e/s — cùng chiều ex/ey), -1 nếu là đầu ÂM (w/n).
+            const dauKeo = (handleName === 'e' || handleName === 's') ? 1 : -1;
 
             // Khung tham chiếu (tâm + kích thước THEO GÓC XOAY chung của cả
             // layer) — không có góc chung (hiếm) thì quay lại AABB thẳng
@@ -3205,12 +3225,12 @@
             const trucVuongGoc = axis === 'y' ? ex : ey; // trục còn lại, giữ nguyên
             const doDaiGoc = axis === 'y' ? caoGoc : rongGoc;
 
-            // Điểm neo = đầu kia của trục (phía ÂM), luôn đứng yên trong
-            // suốt thao tác — không phải "cạnh trái" hay "cạnh trên" cụ thể,
-            // mà là "đầu đối diện với hướng con trỏ đang kéo ra".
+            // Điểm neo = đầu ĐỐI DIỆN với tay cầm đang bấm (không phải luôn
+            // cố định ở đầu âm) — nếu đang cầm đầu dương (dauKeo=+1) thì neo
+            // ở đầu âm; nếu đang cầm đầu âm (dauKeo=-1) thì neo ở đầu dương.
             const diemNeo = {
-                x: tamX - truc.x * doDaiGoc / 2,
-                y: tamY - truc.y * doDaiGoc / 2,
+                x: tamX - dauKeo * truc.x * doDaiGoc / 2,
+                y: tamY - dauKeo * truc.y * doDaiGoc / 2,
             };
 
             // NGƯỠNG NÉN TỐI THIỂU: quy ra px NỘI BỘ canvas, càng nhỏ càng
@@ -3246,7 +3266,14 @@
                 // chính là "độ dài mới dọc trục", CÓ DẤU: dương là con trỏ
                 // còn ở đúng phía cũ (chưa lật), âm là đã vượt qua điểm neo
                 // sang phía đối diện (đã lật).
-                let doDaiMoi = (mouseX - diemNeo.x) * truc.x + (mouseY - diemNeo.y) * truc.y;
+                // Nhân thêm dauKeo: hình chiếu thô (mouse-diemNeo)·truc mang
+                // dấu theo TRỤC TOÁN HỌC cố định, không theo "phía tay cầm
+                // đang kéo" — nếu không nhân lại, kéo tay cầm đầu ÂM (n/w) ra
+                // xa điểm neo (đúng ý "phóng to") sẽ tính RA ÂM (vì nó lùi xa
+                // theo chiều ngược trục), bị hiểu nhầm thành "đã lật" ngay khi
+                // vừa bắt đầu kéo. Nhân dauKeo để "phóng to theo đúng hướng
+                // tay cầm đang cầm" luôn ra số DƯƠNG, bất kể cầm đầu nào.
+                let doDaiMoi = dauKeo * ((mouseX - diemNeo.x) * truc.x + (mouseY - diemNeo.y) * truc.y);
                 if (Math.abs(doDaiMoi) < NGUONG_NEN_PX) {
                     doDaiMoi = (doDaiMoi < 0 ? -1 : 1) * NGUONG_NEN_PX;
                 }
