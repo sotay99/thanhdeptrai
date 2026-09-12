@@ -10,6 +10,9 @@
         let currentZoom = 1;
         let currentGroupRenameId = null; // For group rename modal
         const API_BASE_URL = 'http://localhost:8000/api';
+        // true trong lúc đang kéo nút "xoay bên trong" (handleLayerRotateInner)
+        // — xem chú thích tại nơi dùng trong updateLayerBorder().
+        let dangKeoXoayBenTrong = false;
 
         // Layer color palette
         const LAYER_COLORS = [
@@ -2854,7 +2857,14 @@
                 // — khung viền màu xoay đồng bộ y hệt ảnh. Không có góc
                 // chung (các object trong layer xoay khác nhau — hiếm gặp)
                 // thì quay lại hộp bao thẳng trục (AABB) như trước, theta=0.
-                const khungXoay = tinhKhungXoayLayer(layer);
+                // NGOẠI LỆ: đang kéo nút "xoay bên trong" (dangKeoXoayBenTrong)
+                // trên ĐÚNG layer đang active — khi đó khung viền PHẢI đứng
+                // yên (không xoay theo ảnh bên trong), chỉ co giãn 4 cạnh cho
+                // luôn khít hộp bao thẳng trục của ảnh đang xoay dở — ép về
+                // nhánh AABB (theta=0) bằng cách coi như không có góc chung.
+                const khungXoay = (dangKeoXoayBenTrong && layer === layerDangChonThat)
+                    ? null
+                    : tinhKhungXoayLayer(layer);
                 let cx, cy, boxWidth, boxHeight, theta;
                 if (khungXoay) {
                     ({ cx, cy, width: boxWidth, height: boxHeight, theta } = khungXoay);
@@ -3022,15 +3032,15 @@
             // modal nhỏ (xem moModalNutGocLayer()) gom các hành động lại một
             // chỗ, để sau này thêm hành động mới không phải chen thêm góc.
             // Góc trên-phải: từng là nút Nhân đôi trực tiếp — nay nhường chỗ
-            // cho "xoay bên trong" (hình tròn, tạm thời BỊ LIỆT — logic thêm
-            // sau). Góc dưới-trái (kéo-xoay cả layer) và dưới-phải (kéo-
-            // zoom) giữ nguyên như cũ.
+            // cho "xoay bên trong" (hình tròn, kéo để xoay chỉ ảnh bên trong,
+            // khung viền đứng yên — xem handleLayerRotateInner()). Góc dưới-
+            // trái (kéo-xoay cả layer) và dưới-phải (kéo-zoom) giữ nguyên.
             const positions = {
                 'menu': { dx: -1, dy: -1, icon: 'fa-plus' },
                 // Icon khác hẳn nút xoay-kéo bên dưới (fa-rotate-right, 1 mũi
                 // tên) để không gây nhầm — fa-rotate là 2 mũi tên tạo vòng
                 // tròn, vẫn rõ nghĩa "xoay" nhưng là 1 hành động khác.
-                'rotate-inner': { dx: 1, dy: -1, icon: 'fa-rotate', tron: true, biLiet: true },
+                'rotate-inner': { dx: 1, dy: -1, icon: 'fa-rotate', tron: true },
                 'rotate': { dx: -1, dy: 1, icon: 'fa-rotate-right' },
                 // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
                 // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
@@ -3049,10 +3059,15 @@
                 btn.dataset.dx = pos.dx;
                 btn.dataset.dy = pos.dy;
 
-                if (pos.biLiet) {
-                    // Tạm thời chưa có logic — hiện ra cho đủ hình dạng
-                    // nhưng không phản hồi bấm, không đổi con trỏ.
-                    btn.disabled = true;
+                if (action === 'rotate-inner') {
+                    // Cũng là nút KÉO: giữ chuột rồi rê quanh tâm layer,
+                    // nhưng CHỈ ảnh bên trong xoay — khung viền đứng yên,
+                    // tự co giãn 4 cạnh theo ảnh (xem handleLayerRotateInner()).
+                    btn.style.cursor = 'grab';
+                    btn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        handleLayerRotateInner(e);
+                    };
                 } else if (action === 'scale') {
                     // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
                     // rồi rê ra xa tâm ảnh để phóng to, rê vào gần tâm để
@@ -3322,6 +3337,168 @@
 
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Nút "xoay bên trong" (hình tròn, góc trên-phải) — kéo để xoay CHỈ
+        // ảnh bên trong layer, khung viền đứng yên không xoay theo (khác
+        // hẳn nút xoay thường ở trên: khung + ảnh xoay cùng nhau). Toán xoay
+        // giống hệt handleLayerRotate() (xoay cả layer như 1 khối cứng quanh
+        // tâm chung, chỉ xoay không đổi kích thước) — khác duy nhất ở chỗ
+        // bật cờ dangKeoXoayBenTrong để updateLayerBorder() ép khung viền
+        // dùng hộp bao thẳng trục (AABB, theta=0) trong lúc kéo, khiến 4
+        // cạnh tự co giãn độc lập theo đúng điểm cực gần nhất của ảnh đang
+        // xoay dở (đúng là hộp bao thẳng trục của MỌI góc xoay, không cần
+        // thêm phép tính riêng). Khi thả chuột: "nướng" (bake) toàn bộ layer
+        // thành 1 ảnh MỚI duy nhất, góc = 0, đúng khít hộp bao vừa co giãn —
+        // chỗ trống (do ảnh xoay chéo không lấp đầy hết hộp bao vuông góc)
+        // trở thành nền trong suốt. Từ đó về sau, layer này là ảnh mới đó:
+        // nút xoay thường/zoom/nhân đôi/4 tay cầm cạnh đều thao tác trên ảnh
+        // mới, không còn dấu vết của phép xoay bên trong vừa làm.
+        function handleLayerRotateInner(e) {
+            const layer = layers[activeLayerIndex];
+            if (!layer || !layer.objects || layer.objects.length === 0) {
+                showToast('Layer trống!', 'error');
+                return;
+            }
+
+            const khungXoayGoc = tinhKhungXoayLayer(layer);
+            let centerX, centerY;
+            if (khungXoayGoc) {
+                centerX = khungXoayGoc.cx;
+                centerY = khungXoayGoc.cy;
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left);
+                    minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width);
+                    maxY = Math.max(maxY, b.top + b.height);
+                });
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+            }
+
+            const trangThaiGoc = layer.objects.map(obj => {
+                const c = obj.getCenterPoint();
+                return { obj, centerX: c.x, centerY: c.y, angle: obj.angle || 0 };
+            });
+
+            const canvasRectGoc = canvas.getElement().getBoundingClientRect();
+            const cssScaleXGoc = canvasRectGoc.width / canvas.getWidth();
+            const cssScaleYGoc = canvasRectGoc.height / canvas.getHeight();
+            const zoomGoc = canvas.getZoom();
+            const startCanvasX = (e.clientX - canvasRectGoc.left) / cssScaleXGoc / zoomGoc;
+            const startCanvasY = (e.clientY - canvasRectGoc.top) / cssScaleYGoc / zoomGoc;
+            const startAngle = Math.atan2(startCanvasY - centerY, startCanvasX - centerX) * 180 / Math.PI;
+
+            dangKeoXoayBenTrong = true;
+
+            const onMouseMove = (moveEvent) => {
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+                const zoom = canvas.getZoom();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
+                const curAngle = Math.atan2(curY - centerY, curX - centerX) * 180 / Math.PI;
+                const deltaDeg = curAngle - startAngle;
+                const rad = deltaDeg * Math.PI / 180;
+                const cosD = Math.cos(rad), sinD = Math.sin(rad);
+
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, angle }) => {
+                    const relX = ocx - centerX;
+                    const relY = ocy - centerY;
+                    const newCenterX = centerX + (relX * cosD - relY * sinD);
+                    const newCenterY = centerY + (relX * sinD + relY * cosD);
+                    obj.angle = angle + deltaDeg;
+                    obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
+                    obj.setCoords();
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                dangKeoXoayBenTrong = false;
+
+                boGomLayerThanhAnhMoi(layer).then((anhMoi) => {
+                    if (!anhMoi) {
+                        updateLayerBorder();
+                        return;
+                    }
+                    layer.objects.forEach((obj) => canvas.remove(obj));
+                    layer.objects = [anhMoi];
+                    canvas.add(anhMoi);
+                    canvas.setActiveObject(anhMoi);
+                    canvas.renderAll();
+                    updateLayerBorder();
+                    showToast('Đã xoay bên trong — layer giờ là ảnh mới', 'success');
+                });
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // "Nướng" (bake) toàn bộ object của 1 layer thành DUY NHẤT 1 ảnh mới,
+        // góc 0, đúng khít hộp bao thẳng trục HIỆN TẠI của layer — dùng ngay
+        // sau khi kéo "xoay bên trong" xong. Vẽ lại toàn bộ layer (giữ đúng
+        // góc xoay/tỉ lệ/vị trí tương đối của từng object) lên một canvas
+        // TĨNH (fabric.StaticCanvas) riêng, kích thước = đúng hộp bao đó —
+        // phần nào của hộp bao không có object nào phủ tới thì tự nhiên là
+        // nền trong suốt (canvas mới tinh, không tô nền). Trả về Promise vì
+        // clone() và fabric.Image.fromURL() đều là bất đồng bộ.
+        function boGomLayerThanhAnhMoi(layer) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            layer.objects.forEach((obj) => {
+                const b = obj.getBoundingRect(false, true);
+                minX = Math.min(minX, b.left);
+                minY = Math.min(minY, b.top);
+                maxX = Math.max(maxX, b.left + b.width);
+                maxY = Math.max(maxY, b.top + b.height);
+            });
+            const w = Math.ceil(maxX - minX);
+            const h = Math.ceil(maxY - minY);
+            if (!isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) {
+                return Promise.resolve(null);
+            }
+
+            const cloneOne = (obj) => new Promise((resolve) => obj.clone((cloned) => {
+                // Cùng lỗi Fabric.js đã gặp ở duplicateLayer(): constructor
+                // dựng lại object từ clone() tự chuẩn hoá scale ÂM (lật)
+                // thành DƯƠNG — ghi đè lại qua thuộc tính để giữ đúng lật.
+                cloned.scaleX = obj.scaleX;
+                cloned.scaleY = obj.scaleY;
+                cloned.setCoords();
+                resolve(cloned);
+            }));
+
+            return Promise.all(layer.objects.map(cloneOne)).then((clones) => {
+                const tempEl = document.createElement('canvas');
+                const tempCanvas = new fabric.StaticCanvas(tempEl, { width: w, height: h });
+                clones.forEach((c) => {
+                    // Dịch mọi object về hệ toạ độ riêng của ảnh mới (gốc
+                    // (0,0) = góc trên-trái hộp bao) — chỉ dịch left/top
+                    // thuần tuý, không đụng angle/scale, nên đúng với MỌI
+                    // góc xoay hiện tại của từng object.
+                    c.left -= minX;
+                    c.top -= minY;
+                    c.setCoords();
+                    tempCanvas.add(c);
+                });
+                tempCanvas.renderAll();
+                return new Promise((resolve) => {
+                    fabric.Image.fromURL(tempCanvas.toDataURL({ format: 'png' }), (img) => {
+                        img.set({ left: minX, top: minY, angle: 0 });
+                        img.setCoords();
+                        tempCanvas.dispose();
+                        resolve(img);
+                    });
+                });
+            });
         }
 
         // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
