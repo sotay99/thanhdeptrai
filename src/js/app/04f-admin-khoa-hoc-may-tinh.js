@@ -2,12 +2,28 @@
   /* ===========================================================================
      PHẦN 04F — MODULE "KHOÁ HỌC LIGHTROOM MÁY TÍNH" TRONG TRANG QUẢN TRỊ
 
-     Y CHANG PHẦN 04E (quản lý khoá điện thoại) — chỉ khác nhánh Firebase và
-     tiền tố hành động (khpc-…) để không đụng với module khoá điện thoại. Xem
-     chú thích đầy đủ về "bản nháp, một nút Lưu duy nhất" ở đầu 04E.
+     Trang bán hàng gộp BA khoá học vào một module (PHẦN 03D):
+       1. Khoá học nhúng danh sách phát YouTube — Tự học đồ hoạ
+       2. Khoá học nhúng danh sách phát YouTube — Tú Thanh Blog
+       3. "HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO" — chương/bài quản lý thủ
+          công, Y CHANG PHẦN 04E (quản lý khoá điện thoại), chỉ khác nhánh
+          Firebase và tiền tố hành động (khpc-…). Xem chú thích đầy đủ về
+          "bản nháp, một nút Lưu duy nhất" ở đầu 04E.
+
+     Hai đường dẫn danh sách phát của khoá 1 và 2 LƯU RIÊNG, độc lập với mảng
+     chương/bài của khoá 3 — cùng nằm trong nhánh khoahoc/lrPC nhưng khác
+     trường (playlist1/playlist2 so với muc), tái dùng NGUYÊN cơ chế "một ô,
+     một nút Lưu" của PHẦN 04B (veMotO/luuCaiDat) thay vì viết riêng.
      =========================================================================== */
 
   const NHANH_KHOA_HOC_MAY_TINH = 'khoahoc/lrPC/muc';
+
+  const O_KHOA_HOC_PC_YOUTUBE = [
+    { truong: 'playlist1', ten: 'Link danh sách phát YouTube — Khoá học 1 (Tự học đồ hoạ)', kieu: 'link',
+      goi: 'https://www.youtube.com/playlist?list=...' },
+    { truong: 'playlist2', ten: 'Link danh sách phát YouTube — Khoá học 2 (Tú Thanh Blog)', kieu: 'link',
+      goi: 'https://www.youtube.com/playlist?list=...' }
+  ];
 
   // Bản nháp lấy từ nhánh đã đọc sẵn lúc vào trang admin (xem NHANH_ADMIN ở
   // 04B). Chỉ dựng MỘT LẦN — gõ/thêm/xoá/đổi chỗ sau đó chỉ sửa mảng này.
@@ -30,12 +46,18 @@
     const n = khoaHocMayTinhNhap();
     const dangLuu = state.admin.dangLuu === 'khpc:tat-ca';
     const vuaLuu = state.admin.vuaLuu === 'khpc:tat-ca';
+    const oPlaylist = O_KHOA_HOC_PC_YOUTUBE.map(function(o){ return veMotO('khoa-hoc-pc', o); }).join('');
     return '' +
       '<header class="admin-dau">' +
         '<h2>Khoá học Lightroom máy tính</h2>' +
-        '<p>Quản lý chương và bài học của module "Khoá học chỉnh màu Lightroom máy tính" ở trang bán ' +
-          'hàng. Số thứ tự chương/bài do hệ thống tự tính theo vị trí — kéo lên/xuống là số đổi ngay. ' +
-          'Một bài học thuộc về CHƯƠNG GẦN NHẤT đứng phía trên nó.</p>' +
+        '<p>Trang bán hàng gộp BA khoá học vào module này: hai khoá đầu chỉ nhúng danh sách phát ' +
+          'YouTube (dán link ngay bên dưới), khoá thứ ba là chương/bài tự quản lý như trước giờ.</p>' +
+      '</header>' +
+      '<div class="admin-nhom-o">' + oPlaylist + '</div>' +
+      '<header class="admin-dau">' +
+        '<h2>Khoá 3 — "HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO"</h2>' +
+        '<p>Quản lý chương và bài học của khoá thứ ba. Số thứ tự chương/bài do hệ thống tự tính theo ' +
+          'vị trí — kéo lên/xuống là số đổi ngay. Một bài học thuộc về CHƯƠNG GẦN NHẤT đứng phía trên nó.</p>' +
         '<div class="hang-luu-kh">' +
           '<button type="button" class="nut nut-chinh" data-hanh-dong="khpc-luu-tat-ca"' + (dangLuu ? ' disabled' : '') + '>' +
             (dangLuu ? 'Đang lưu…' : 'Lưu tất cả') + '</button>' +

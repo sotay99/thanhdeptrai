@@ -610,6 +610,7 @@
     if (hanhDong === 'khpc-xuong') { adminKhpcDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'khpc-xem-truoc') { adminKhpcXemTruocVideo(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'khpc-luu-tat-ca') { adminKhpcLuuTatCa(); return; }
+    if (hanhDong === 'mo-mo-ta-kh-pc') { moModalMoTaKhoaHocPC(nutHanhDong.getAttribute('data-ma-mo-ta')); return; }
     if (hanhDong === 'admin-don-loc') { adminDonDoiLoc(nutHanhDong.getAttribute('data-loc')); return; }
     if (hanhDong === 'admin-don-tai-lai') { adminDonTaiLai(); return; }
     if (hanhDong === 'admin-don-trang-thai') {

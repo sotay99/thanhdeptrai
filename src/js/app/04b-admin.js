@@ -468,13 +468,23 @@
       '</div>';
   }
 
+  // Tra đúng danh sách khai báo ô theo "khoa" — O_KHOA_HOC_PC_YOUTUBE khai ở
+  // PHẦN 04F (khoá học Lightroom máy tính), tái dùng NGUYÊN cơ chế ô cài đặt
+  // đơn lẻ này thay vì viết riêng một cơ chế lưu khác.
+  function danhSachO(khoa){
+    if (khoa === 'lien-he') return O_LIEN_HE;
+    if (khoa === 'nhan-tien') return O_NHAN_TIEN;
+    if (khoa === 'khoa-hoc-pc') return O_KHOA_HOC_PC_YOUTUBE;
+    return O_KHOA_AI;
+  }
+
   // Vẽ lại đúng MỘT ô, không dựng lại cả trang — dựng lại cả trang thì con trỏ
   // nhập nhảy về đầu và chữ đang gõ dở bay mất.
   function capNhatMotO(khoa, truong){
     if (state.trang !== 'admin') return;
     const khung = document.querySelector('[data-o="' + khoa + ':' + truong + '"]');
     if (!khung) return;
-    const danhSach = khoa === 'lien-he' ? O_LIEN_HE : (khoa === 'nhan-tien' ? O_NHAN_TIEN : O_KHOA_AI);
+    const danhSach = danhSachO(khoa);
     const o = danhSach.filter(function(x){ return x.truong === truong; })[0];
     if (!o) return;
     const tam = document.createElement('div');
@@ -517,7 +527,7 @@
       return;
     }
     let gia = String(o.value == null ? '' : o.value).trim();
-    const danhSach = phan[0] === 'lien-he' ? O_LIEN_HE : (phan[0] === 'nhan-tien' ? O_NHAN_TIEN : O_KHOA_AI);
+    const danhSach = danhSachO(phan[0]);
     const khai = danhSach.filter(function(x){ return x.truong === phan[1]; })[0];
     if (khai && khai.kieu === 'so') gia = gia.replace(/[^\d+]/g, '');
     if (khai && khai.kieu === 'link' && gia && !/^https?:\/\//i.test(gia)) gia = 'https://' + gia;

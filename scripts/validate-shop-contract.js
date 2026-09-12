@@ -1721,15 +1721,17 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
-// 27) MODULE "KHOÁ HỌC CHỈNH MÀU LIGHTROOM MÁY TÍNH" — Y CHANG mục 26, chỉ
-//     khác nhánh Firebase (lrPC) và video NGANG 16:9 thay vì dọc 9:16.
+// 27) MODULE "KHOÁ HỌC LIGHTROOM MÁY TÍNH" — khoá thứ ba (chương/bài quản lý
+//     thủ công) Y CHANG mục 26, chỉ khác nhánh Firebase (lrPC) và video NGANG
+//     16:9 thay vì dọc 9:16. Hai khoá đầu (nhúng playlist YouTube) canh ở
+//     mục 28 riêng.
 // ---------------------------------------------------------------------------
 {
   [
     [/ma:\s*'khoa-hoc-may-tinh',[\s\S]{0,200}sanSang:\s*true/, "module khoá học máy tính đã bật (sanSang: true)"],
     [/function\s+veModuleKhoaHocMayTinh\s*\(/, "hàm vẽ module khoá học máy tính ở trang bán hàng"],
     [/function\s+taiKhoaHocMayTinh\s*\(/, "hàm đọc dữ liệu khoá học máy tính từ Firebase"],
-    [/rtdb\.ref\('khoahoc\/lrPC\/muc'\)/, "đọc đúng nhánh khoahoc/lrPC/muc"],
+    [/rtdb\.ref\('khoahoc\/lrPC'\)/, "đọc đúng nhánh khoahoc/lrPC (cả muc lẫn playlist1/playlist2)"],
     [/function\s+moModalBaiHocMayTinh\s*\(/, "hàm mở modal xem video một bài học (khoá máy tính)"],
     [/function\s+chuyenBaiHocMayTinh\s*\(/, "hàm chuyển sang bài trước/sau (khoá máy tính)"],
     [/data-hanh-dong="xem-chi-tiet"\s+data-ma="sp5"/, "nút Xem chi tiết mở đúng sp5"],
@@ -1777,6 +1779,44 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 
   // Nhánh "khoahoc" ở Rules đã bao trọn cả lrMobile lẫn lrPC (kiểm ở mục 26),
   // không cần thêm dòng Rules riêng cho khoá máy tính.
+}
+
+// ---------------------------------------------------------------------------
+// 28) HAI KHOÁ HỌC NHÚNG DANH SÁCH PHÁT YOUTUBE trong module "Khoá học
+//     Lightroom máy tính" — khoá 1 và 2, đứng TRƯỚC khoá chương/bài (mục 27).
+// ---------------------------------------------------------------------------
+{
+  [
+    [/function\s+idPlaylistTuLink\s*\(/, "hàm tách mã danh sách phát từ link YouTube"],
+    [/function\s+veKhungPlaylistYoutube\s*\(/, "hàm dựng khung nhúng danh sách phát"],
+    [/function\s+veKhoiPlaylist\s*\(/, "hàm dựng một khối khoá học nhúng playlist"],
+    [/function\s+moTaCoLinkAn\s*\(/, "hàm biến link trần trong mô tả thành link bấm được"],
+    [/function\s+moModalMoTaKhoaHocPC\s*\(/, "hàm mở modal Xem mô tả khoá học"],
+    [/KHOÁ HỌC TỰ HỌC LIGHTROOM CẤP TỐC TRÊN YOUTUBE \(KÊNH: TỰ HỌC ĐỒ HOẠ\)/, "tên khoá học 1 (nhúng playlist)"],
+    [/HỌC CHỈNH ẢNH VỚI ADOBE LIGHTROOM TRONG 60 PHÚT TRÊN YOUTUBE \(KÊNH: TÚ THANH BLOG\)/i,
+      "tên khoá học 2 (nhúng playlist)"],
+    [/HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO/, "tên khoá học 3 (chương/bài)"],
+    [/data-hanh-dong="mo-mo-ta-kh-pc"/, "nút Xem mô tả khoá học"],
+    [/embed\/videoseries\?list=/, "nhúng playlist bằng embed/videoseries đúng chuẩn YouTube"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Hai ô dán link playlist ở /admin, đứng đầu module quản lý (trước phần
+  // chương/bài) — tái dùng cơ chế "một ô, một nút Lưu" chung của PHẦN 04B.
+  [
+    [/truong:\s*'playlist1'/, "ô dán link playlist khoá học 1 trong /admin"],
+    [/truong:\s*'playlist2'/, "ô dán link playlist khoá học 2 trong /admin"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Modal mô tả không được để lộ link trần dài ngoằng chưa qua rút gọn hiển
+  // thị — chỉ cần bảo đảm hàm rút gọn CÓ áp dụng một ngưỡng cắt, không kiểm
+  // từng ký tự (đó là việc của bộ thử trình duyệt).
+  if (!/link\.length\s*>\s*60/.test(banNoi)) {
+    fail("Hàm rút gọn link trong modal mô tả phải có ngưỡng cắt cho link quá dài.");
+  }
 }
 
 // ---------------------------------------------------------------------------
