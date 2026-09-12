@@ -2887,6 +2887,17 @@
                     border.querySelectorAll('.layer-control-btn').forEach(btn => {
                         btn.style.transform = theta ? `rotate(${-theta}deg)` : '';
                     });
+                    // Con trỏ chuột của 4 tay cầm kéo cạnh: mũi tên 2 đầu
+                    // luôn chỉ đúng hướng về phía điểm neo ĐỐI DIỆN — trục
+                    // ngang cục bộ (tay cầm trái/phải) nằm dọc theo góc theta,
+                    // trục dọc cục bộ (tay cầm trên/dưới) lệch thêm 90°. Cập
+                    // nhật mỗi lần gọi (kể cả đang xoay dở) vì CSS cursor
+                    // không tự xoay theo transform của phần tử — phải tự vẽ
+                    // lại ảnh mũi tên đã xoay đúng góc.
+                    border.querySelectorAll('.resize-handle').forEach(handle => {
+                        const gocConTro = handle.dataset.axis === 'y' ? theta + 90 : theta;
+                        handle.style.cursor = taoConTroMuiTenXoay(gocConTro);
+                    });
                 } else if (border.dataset.hasControls === '1') {
                     // Khung "kéo theo" (thuộc nhóm đang chọn nhưng không phải
                     // lớp chính) không có nút — dọn nút cũ nếu lớp này VỪA
@@ -2896,6 +2907,25 @@
                     border.dataset.hasControls = '0';
                 }
             });
+        }
+
+        // CSS "cursor" KHÔNG tự xoay theo transform: rotate() của phần tử
+        // đang hiển thị nó — con trỏ n-resize/e-resize... của trình duyệt
+        // luôn đứng thẳng trên màn hình bất kể khung cha xoay bao nhiêu độ.
+        // Muốn con trỏ "mũi tên 2 đầu" luôn chỉ đúng hướng điểm neo đối diện
+        // (dù ảnh/khung xoay góc nào), phải TỰ VẼ một ảnh con trỏ đã xoay
+        // sẵn đúng góc đó (SVG, nhúng thẳng qua data URI) — trình duyệt
+        // không có cách nào "xoay hộ" một cursor tên có sẵn.
+        function taoConTroMuiTenXoay(gocDo) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">` +
+                `<g transform="rotate(${gocDo} 14 14)">` +
+                `<line x1="3" y1="14" x2="25" y2="14" stroke="white" stroke-width="4" stroke-linecap="round"/>` +
+                `<line x1="3" y1="14" x2="25" y2="14" stroke="black" stroke-width="1.6" stroke-linecap="round"/>` +
+                `<polygon points="3,14 9,9 9,19" fill="black" stroke="white" stroke-width="1"/>` +
+                `<polygon points="25,14 19,9 19,19" fill="black" stroke="white" stroke-width="1"/>` +
+                `</g></svg>`;
+            const daMaHoa = encodeURIComponent(svg).replace(/'/g, "%27").replace(/"/g, "%22");
+            return `url("data:image/svg+xml,${daMaHoa}") 14 14, pointer`;
         }
 
         function addLayerControlButtons(border, color) {
@@ -2957,31 +2987,36 @@
                 border.appendChild(btn);
             });
 
-            // Add resize handles on edges
+            // 4 tay cầm kéo cạnh — vị trí (n/s/e/w) chỉ còn quyết định NƠI
+            // đặt trên khung, không còn quyết định "hướng kéo" nữa (xem
+            // handleLayerResize()): 'n'/'s' cùng thao tác trên TRỤC DỌC cục
+            // bộ của layer, 'e'/'w' cùng thao tác trên TRỤC NGANG cục bộ —
+            // vì vậy cả 2 tay cầm cùng trục dùng CHUNG axis ('y' hoặc 'x'),
+            // không còn phân biệt trái/phải/trên/dưới khi tính toán.
             const handlePositions = [
-                { name: 'n', top: '-5px', left: '50%', cursor: 'n-resize' },      // Top
-                { name: 's', bottom: '-5px', left: '50%', cursor: 's-resize' },    // Bottom
-                { name: 'w', top: '50%', left: '-5px', cursor: 'w-resize' },       // Left
-                { name: 'e', top: '50%', right: '-5px', cursor: 'e-resize' }       // Right
+                { name: 'n', top: '-5px', left: '50%', axis: 'y' },
+                { name: 's', bottom: '-5px', left: '50%', axis: 'y' },
+                { name: 'w', top: '50%', left: '-5px', axis: 'x' },
+                { name: 'e', top: '50%', right: '-5px', axis: 'x' },
             ];
 
             handlePositions.forEach(pos => {
                 const handle = document.createElement('div');
                 handle.className = 'resize-handle';
+                handle.dataset.axis = pos.axis;
                 handle.style.borderColor = color;
                 handle.style.background = color;
-                
+
                 if (pos.top) handle.style.top = pos.top;
                 if (pos.bottom) handle.style.bottom = pos.bottom;
                 if (pos.left) handle.style.left = pos.left;
                 if (pos.right) handle.style.right = pos.right;
-                
-                handle.style.cursor = pos.cursor;
+
                 handle.style.transform = 'translate(-50%, -50%)';
 
                 handle.onmousedown = (e) => {
                     e.stopPropagation();
-                    handleLayerResize(e, pos.name);
+                    handleLayerResize(e, pos.axis);
                 };
 
                 border.appendChild(handle);
@@ -3097,69 +3132,122 @@
             document.addEventListener('mouseup', onMouseUp);
         }
 
-        function handleLayerResize(e, direction) {
-            // Lỗi cũ (đã sửa 1 lần, còn sót 2 lỗi khác):
-            // - deltaX/deltaY tính GIỮA HAI KHUNG HÌNH LIÊN TIẾP (không phải
-            //   cộng dồn từ điểm bắt đầu — lỗi khác, đã sửa trước đó).
-            // - THIẾU quy đổi đơn vị: deltaX/deltaY là px MÀN HÌNH (CSS),
-            //   trong khi obj.scaleX/scaleY lại thuộc hệ toạ độ NỘI BỘ canvas
-            //   (canvas 800x600 có thể đang hiển thị co giãn qua CSS transform
-            //   — xem fitCanvasToWorkspace()). Hệ số 0.01 cố định trước đây
-            //   không hề tính tới tỉ lệ co giãn đó lẫn kích thước gốc của
-            //   từng object — cạnh vì vậy chạy nhanh/chậm hơn hẳn con trỏ
-            //   chuột tuỳ zoom và tuỳ ảnh to hay nhỏ. Quy đổi deltaX/deltaY
-            //   sang px NỘI BỘ canvas (chia cho cssScaleX/Y) rồi mới đổi ra
-            //   phần trăm co giãn dựa trên KÍCH THƯỚC GỐC (obj.width/height)
-            //   của từng object — cạnh bám đúng 1:1 theo con trỏ trên màn
-            //   hình, bất kể zoom hay kích thước ảnh.
-            // - Tay cầm cạnh TRÊN ('n') và cạnh TRÁI ('w') chỉnh SAI cạnh:
-            //   trước đây chỉ đổi scaleX/scaleY, mà mọi object mặc định neo
-            //   góc trên-trái (originX/Y 'left'/'top') — tăng scale luôn giãn
-            //   về phía DƯỚI-PHẢI bất kể tay cầm nào đang kéo, nên kéo cạnh
-            //   trên/trái chỉ thấy cạnh dưới/phải đối diện chạy, còn cạnh
-            //   đang cầm đứng im. Với 2 tay cầm này, phải vừa đổi scale VỪA
-            //   dịch left/top một khoảng đúng bằng phần kích thước vừa đổi,
-            //   để cạnh ĐỐI DIỆN (không phải cạnh đang kéo) đứng yên, và cạnh
-            //   đang kéo mới là cạnh di chuyển theo con trỏ.
-            let lastX = e.clientX;
-            let lastY = e.clientY;
+        // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
+        // n/s/e/w riêng biệt, tính bằng deltaX/deltaY thô — sai hẳn khi ảnh
+        // đã xoay, vì "sang phải trên màn hình" không còn là "theo trục
+        // ngang của ảnh" nữa). Logic mới:
+        //
+        // - Không còn phân biệt trái/phải/trên/dưới — chỉ còn 2 TRỤC CỤC BỘ
+        //   của layer (trục ngang cho tay cầm trái/phải, trục dọc cho tay
+        //   cầm trên/dưới), lấy nguyên từ tinhKhungXoayLayer() (đã tính đúng
+        //   góc theta chung của layer). Tay cầm bên NÀO không quan trọng —
+        //   "điểm neo đối diện" (đầu kia của trục) luôn đứng yên, còn cạnh
+        //   đang kéo bám theo hình chiếu của con trỏ LÊN đúng trục đó.
+        // - Độ dài mới dọc trục = khoảng cách (có dấu) từ điểm neo đối diện
+        //   tới con trỏ. Âm nghĩa là con trỏ đã vượt QUA điểm neo đối diện
+        //   sang phía bên kia — tự nhiên cho ra scale ÂM, tức ẢNH BỊ LẬT
+        //   (Fabric hỗ trợ scale âm = lật ảnh sẵn), không cần code riêng.
+        // - Nén tối thiểu: |độ dài mới| bị chặn dưới ở một ngưỡng px rất nhỏ
+        //   (không bao giờ về 0). Hệ quả tự nhiên của việc CHẶN DƯỚI một đại
+        //   lượng CÓ DẤU ngay tại lúc dấu đổi: ảnh nén dần tới ngưỡng đó rồi
+        //   đứng yên (không nén thêm được), con trỏ đi tiếp qua khỏi điểm
+        //   neo thì NGAY LẬP TỨC nhảy sang ngưỡng đối xứng bên kia (lật), rồi
+        //   giãn tiếp bình thường — đúng ý muốn, không cần if/else riêng cho
+        //   "lúc nào thì lật".
+        function handleLayerResize(e, axis) {
             const layer = layers[activeLayerIndex];
+            if (!layer || !layer.objects || layer.objects.length === 0) return;
+
+            // Khung tham chiếu (tâm + kích thước THEO GÓC XOAY chung của cả
+            // layer) — không có góc chung (hiếm) thì quay lại AABB thẳng
+            // trục (theta=0) như logic cũ, coi như layer chưa xoay.
+            const khungXoay = tinhKhungXoayLayer(layer);
+            let theta, tamX, tamY, rongGoc, caoGoc;
+            if (khungXoay) {
+                ({ theta, cx: tamX, cy: tamY, width: rongGoc, height: caoGoc } = khungXoay);
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left); minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width); maxY = Math.max(maxY, b.top + b.height);
+                });
+                theta = 0; tamX = (minX + maxX) / 2; tamY = (minY + maxY) / 2;
+                rongGoc = maxX - minX; caoGoc = maxY - minY;
+            }
+
+            const rad = theta * Math.PI / 180;
+            // Vector đơn vị của trục NGANG cục bộ (ex) và trục DỌC cục bộ
+            // (ey) trong hệ toạ độ THẾ GIỚI — chính là trục x/y gốc của
+            // layer sau khi xoay theta độ.
+            const ex = { x: Math.cos(rad), y: Math.sin(rad) };
+            const ey = { x: -Math.sin(rad), y: Math.cos(rad) };
+            const truc = axis === 'y' ? ey : ex; // trục ĐANG co giãn
+            const trucVuongGoc = axis === 'y' ? ex : ey; // trục còn lại, giữ nguyên
+            const doDaiGoc = axis === 'y' ? caoGoc : rongGoc;
+
+            // Điểm neo = đầu kia của trục (phía ÂM), luôn đứng yên trong
+            // suốt thao tác — không phải "cạnh trái" hay "cạnh trên" cụ thể,
+            // mà là "đầu đối diện với hướng con trỏ đang kéo ra".
+            const diemNeo = {
+                x: tamX - truc.x * doDaiGoc / 2,
+                y: tamY - truc.y * doDaiGoc / 2,
+            };
+
+            // NGƯỠNG NÉN TỐI THIỂU: quy ra px NỘI BỘ canvas, càng nhỏ càng
+            // cho phép nén càng hẹp (theo đúng yêu cầu "mức nén càng hẹp
+            // càng tốt") — 4px là còn nhìn thấy được, không về 0 tuyệt đối
+            // (0 sẽ làm scale chia cho 0 / vô nghĩa hình học).
+            const NGUONG_NEN_PX = 4;
+
+            // Chụp lại trạng thái GỐC của từng object — mọi phép tính trong
+            // lúc kéo đều tính lại từ đây (nhân theo TỈ LỆ hiện tại), không
+            // cộng dồn từng khung hình.
+            const trangThaiGoc = layer.objects.map((obj) => {
+                const c = obj.getCenterPoint();
+                return {
+                    obj, centerX: c.x, centerY: c.y,
+                    scaleX: obj.scaleX, scaleY: obj.scaleY,
+                };
+            });
 
             const onMouseMove = (moveEvent) => {
                 const canvasRect = canvas.getElement().getBoundingClientRect();
                 const cssScaleX = canvasRect.width / canvas.getWidth();
                 const cssScaleY = canvasRect.height / canvas.getHeight();
+                const mouseX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
+                const mouseY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
 
-                const deltaXCanvas = (moveEvent.clientX - lastX) / cssScaleX;
-                const deltaYCanvas = (moveEvent.clientY - lastY) / cssScaleY;
-                lastX = moveEvent.clientX;
-                lastY = moveEvent.clientY;
+                // Chiếu vector (điểm neo -> con trỏ) lên trục cục bộ — đây
+                // chính là "độ dài mới dọc trục", CÓ DẤU: dương là con trỏ
+                // còn ở đúng phía cũ (chưa lật), âm là đã vượt qua điểm neo
+                // sang phía đối diện (đã lật).
+                let doDaiMoi = (mouseX - diemNeo.x) * truc.x + (mouseY - diemNeo.y) * truc.y;
+                if (Math.abs(doDaiMoi) < NGUONG_NEN_PX) {
+                    doDaiMoi = (doDaiMoi < 0 ? -1 : 1) * NGUONG_NEN_PX;
+                }
+                const ti_le = doDaiMoi / doDaiGoc;
 
-                layer.objects.forEach(obj => {
-                    if (direction === 'e') {
-                        // Cạnh phải: neo trái đứng im, chỉ độ rộng đổi.
-                        obj.scaleX = Math.max(0.02, obj.scaleX + deltaXCanvas / obj.width);
-                    } else if (direction === 'w') {
-                        // Cạnh trái: neo PHẢI phải đứng im — vừa đổi scaleX
-                        // vừa dịch left đúng bằng phần rộng vừa đổi (dấu
-                        // ngược lại) để bù trừ, nếu không cạnh phải sẽ trôi
-                        // theo thay vì cạnh trái.
-                        const oldScaleX = obj.scaleX;
-                        const newScaleX = Math.max(0.02, oldScaleX - deltaXCanvas / obj.width);
-                        obj.left -= obj.width * (newScaleX - oldScaleX);
-                        obj.scaleX = newScaleX;
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, scaleX, scaleY }) => {
+                    // Toạ độ tâm object, biểu diễn theo (khoảng cách dọc trục
+                    // ĐANG co giãn, khoảng cách dọc trục VUÔNG GÓC) tính từ
+                    // điểm neo — trục vuông góc GIỮ NGUYÊN (không đụng tới),
+                    // chỉ trục đang kéo co giãn theo ti_le.
+                    const relX = ocx - diemNeo.x;
+                    const relY = ocy - diemNeo.y;
+                    const docTruc = relX * truc.x + relY * truc.y;
+                    const vuongGoc = relX * trucVuongGoc.x + relY * trucVuongGoc.y;
+                    const docTrucMoi = docTruc * ti_le;
+
+                    const newCenterX = diemNeo.x + docTrucMoi * truc.x + vuongGoc * trucVuongGoc.x;
+                    const newCenterY = diemNeo.y + docTrucMoi * truc.y + vuongGoc * trucVuongGoc.y;
+
+                    if (axis === 'y') {
+                        obj.scaleY = scaleY * ti_le;
+                    } else {
+                        obj.scaleX = scaleX * ti_le;
                     }
-                    if (direction === 's') {
-                        // Cạnh dưới: neo trên đứng im, chỉ độ cao đổi.
-                        obj.scaleY = Math.max(0.02, obj.scaleY + deltaYCanvas / obj.height);
-                    } else if (direction === 'n') {
-                        // Cạnh trên: neo DƯỚI phải đứng im, cùng cách bù trừ
-                        // như cạnh trái ở trên nhưng theo trục dọc.
-                        const oldScaleY = obj.scaleY;
-                        const newScaleY = Math.max(0.02, oldScaleY - deltaYCanvas / obj.height);
-                        obj.top -= obj.height * (newScaleY - oldScaleY);
-                        obj.scaleY = newScaleY;
-                    }
+                    obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
                     obj.setCoords();
                 });
                 canvas.renderAll();
