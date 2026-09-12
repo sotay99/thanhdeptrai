@@ -2894,10 +2894,23 @@
                 const screenHeight = boxHeight * cssScaleY;
                 const screenCenterX = offsetX + cx * cssScaleX;
                 const screenCenterY = offsetY + cy * cssScaleY;
-                border.style.left = (screenCenterX - screenWidth / 2) + 'px';
-                border.style.top = (screenCenterY - screenHeight / 2) + 'px';
-                border.style.width = screenWidth + 'px';
-                border.style.height = screenHeight + 'px';
+                // Làm tròn về số nguyên px: khung viền để lại toạ độ lẻ (vd
+                // 314.375px) khiến trình duyệt phải khử răng cưa (anti-alias)
+                // dàn đều phần lẻ đó cho MỖI cạnh riêng — cạnh trên/trái có
+                // thể được làm tròn XUỐNG trong khi cạnh dưới/phải làm tròn
+                // LÊN (hoặc ngược lại), khiến 4 điểm neo/nút góc (định vị theo
+                // "mép ngoài" tính toán CHÍNH XÁC bằng số thực) trông NHƯ lệch
+                // khỏi cạnh thật đã bị vẽ tròn — dù toạ độ tính toán vẫn khớp
+                // tuyệt đối. Số nguyên px loại bỏ hẳn phần lẻ gây khử răng cưa
+                // không đều đó.
+                const bLeft = Math.round(screenCenterX - screenWidth / 2);
+                const bTop = Math.round(screenCenterY - screenHeight / 2);
+                const bWidth = Math.round(screenWidth);
+                const bHeight = Math.round(screenHeight);
+                border.style.left = bLeft + 'px';
+                border.style.top = bTop + 'px';
+                border.style.width = bWidth + 'px';
+                border.style.height = bHeight + 'px';
                 // transform-origin mặc định là tâm phần tử (50% 50%) — khớp
                 // đúng tâm layer vừa tính, nên chỉ cần rotate() quanh chính nó.
                 border.style.transform = theta ? `rotate(${theta}deg)` : '';
@@ -2985,12 +2998,14 @@
             // tức là TÂM nút trùng đúng điểm góc của mép PADDING — do mép
             // padding lùi vào trong, tâm nút cũng lùi vào trong theo, kéo cả
             // nửa nút kia (nửa gần tâm ảnh) lấn hẳn vào bên trong khung.
-            // Nay đổi sang -(32 + DO_DAY_VIEN_CHINH) = -35px: mép trong cùng
-            // của nút (góc gần tâm ảnh nhất) chỉ vừa chạm đúng đỉnh góc của
-            // mép NGOÀI khung, cả nút nằm trọn bên ngoài, không lấn vào chút
-            // nào.
+            // Lần chỉnh trước đặt đúng -35px (= -(32 + DO_DAY_VIEN_CHINH)) để
+            // nút chạm KHÍT đỉnh góc, không chồng không hở — nhưng người dùng
+            // thấy vậy vẫn "hơi xa" (khoảng cách bằng 0 nhưng mắt vẫn thấy có
+            // khe). Nay bớt lại 8px (NUT_CHOM_VAO_TRONG) để nút chồm hẳn vào,
+            // chồng lấn lên đỉnh góc một chút — dễ nhận ra là "chạm" hơn.
             const DO_DAY_VIEN_CHINH = 3; // khớp .canvas-layer-border-chinh { border-width: 3px }
-            const OFFSET_NUT_GOC = -(32 + DO_DAY_VIEN_CHINH) + 'px';
+            const NUT_CHOM_VAO_TRONG = 8;
+            const OFFSET_NUT_GOC = -(32 + DO_DAY_VIEN_CHINH - NUT_CHOM_VAO_TRONG) + 'px';
             const positions = {
                 'delete': { top: OFFSET_NUT_GOC, left: OFFSET_NUT_GOC, icon: 'fa-trash' },
                 'duplicate': { top: OFFSET_NUT_GOC, right: OFFSET_NUT_GOC, icon: 'fa-copy' },
