@@ -275,9 +275,10 @@
 
   // Khung menu mục quản trị chỉ hoạt động ẩn/hiện ở màn hình hẹp (CSS canh
   // theo @media max-width:780px trong admin.css) — hiệu ứng nút nổi hoá dấu X,
-  // lớp phủ tối, và khung trượt vào từ mép, Y HỆT khung menu bên trái của
-  // trang bán hàng (PHẦN 02), chỉ khác đứng ở MÉP PHẢI. Ở màn hình rộng thì
-  // nút nổi và lớp phủ tự ẩn, còn khung vẫn hiện cố định như trước giờ.
+  // lớp phủ tối, và khung trượt vào từ mép trái, Y HỆT khung menu bên trái
+  // của trang bán hàng (PHẦN 02): cùng vị trí nút nổi, cùng hướng trượt. Ở
+  // màn hình rộng thì nút nổi và lớp phủ tự ẩn, còn khung vẫn hiện cố định
+  // như trước giờ.
   function veAdminBenTrong(){
     const a = state.admin;
     const menuMo = a.menuMo;
