@@ -346,24 +346,22 @@
                 updateLayerBorder();
                 showToast(`Nhân đôi: ${duplicate.name}`, 'success');
 
-                nayRoiBayVe(clonedObjects, 800);
+                // Layer MỚI nảy chéo góc trên-phải; layer GỐC nảy chéo
+                // NGƯỢC LẠI (góc dưới-trái) cùng khoảng cách, cùng thời gian,
+                // bắt đầu/kết thúc CÙNG LÚC (chung batDau) — 2 bản trông như
+                // tách ra rồi khớp lại làm một khi hiệu ứng vừa xong.
+                const khoangCachHieuUng = tinhKhoangCachNay(clonedObjects);
+                const batDauHieuUng = performance.now();
+                nayRoiBayVe(clonedObjects, 800, 1, khoangCachHieuUng, batDauHieuUng);
+                nayRoiBayVe(original.objects, 800, -1, khoangCachHieuUng, batDauHieuUng);
             });
         }
 
-        // Hoạt ảnh "nảy ra rồi bay về" dùng cho hiệu ứng nhân đôi layer: các
-        // object xuất phát ĐÚNG tại vị trí hiện tại (đang khớp khít lên layer
-        // gốc), lập tức lệch dần theo đường chéo hướng góc trên-phải (khoảng
-        // cách suy ra từ kích cỡ layer — không ngắn không dài), rồi bay
-        // ngược lại và kết thúc animation đúng tại vị trí xuất phát. Dùng
-        // sin(pi*t) làm hệ số lệch: bằng 0 ở t=0 và t=1 (đầu/cuối animation
-        // trùng khít vị trí gốc), đạt đỉnh ở t=0.5 (điểm xa nhất trên đường
-        // chéo) — vừa là đường đi lẫn đường về, không cần 2 đoạn tween riêng.
-        function nayRoiBayVe(danhSachObject, thoiGianMs) {
-            const goc = danhSachObject.map((obj) => ({ obj, left: obj.left, top: obj.top }));
-
-            // Khoảng cách nảy: tỉ lệ theo đường chéo hộp bao của layer, giữ
-            // trong một khoảng vừa phải để không quá ngắn (không thấy hiệu
-            // ứng) lẫn không quá dài (bay ra khỏi vùng nhìn thấy).
+        // Khoảng cách nảy dùng chung cho hiệu ứng nhân đôi layer: tỉ lệ theo
+        // đường chéo hộp bao của layer, giữ trong một khoảng vừa phải để
+        // không quá ngắn (không thấy hiệu ứng) lẫn không quá dài (bay ra
+        // khỏi vùng nhìn thấy).
+        function tinhKhoangCachNay(danhSachObject) {
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             danhSachObject.forEach((obj) => {
                 const b = obj.getBoundingRect(false, true);
@@ -373,14 +371,29 @@
                 maxY = Math.max(maxY, b.top + b.height);
             });
             const duongCheoHop = Math.hypot(maxX - minX, maxY - minY);
-            const khoangCach = Math.min(480, Math.max(150, duongCheoHop * 1.05));
+            return Math.min(480, Math.max(150, duongCheoHop * 1.05));
+        }
 
-            // Hướng chéo góc trên-phải: x dương (sang phải), y âm (lên trên).
+        // Hoạt ảnh "nảy ra rồi bay về" dùng cho hiệu ứng nhân đôi layer: các
+        // object xuất phát ĐÚNG tại vị trí hiện tại, lập tức lệch dần theo
+        // đường chéo (hướng do heSoHuong quyết định: +1 = chéo góc trên-
+        // phải, -1 = chéo góc dưới-trái — ngược lại hoàn toàn), rồi bay
+        // ngược lại và kết thúc animation đúng tại vị trí xuất phát. Dùng
+        // sin(pi*t) làm hệ số lệch: bằng 0 ở t=0 và t=1 (đầu/cuối animation
+        // trùng khít vị trí gốc), đạt đỉnh ở t=0.5 (điểm xa nhất trên đường
+        // chéo) — vừa là đường đi lẫn đường về, không cần 2 đoạn tween riêng.
+        // batDau truyền sẵn từ ngoài (thay vì tự lấy performance.now()) để 2
+        // lời gọi song song (layer mới + layer gốc) khởi động ĐÚNG CÙNG một
+        // mốc thời gian, không lệch dù chỉ vài mili-giây.
+        function nayRoiBayVe(danhSachObject, thoiGianMs, heSoHuong, khoangCach, batDau) {
+            const goc = danhSachObject.map((obj) => ({ obj, left: obj.left, top: obj.top }));
+
+            // Hướng chéo góc trên-phải (heSoHuong=1: x dương sang phải, y âm
+            // lên trên) hoặc đảo ngược hoàn toàn — góc dưới-trái (heSoHuong=-1).
             const goRad = Math.PI / 4;
-            const dx = Math.cos(goRad) * khoangCach;
-            const dy = -Math.sin(goRad) * khoangCach;
+            const dx = Math.cos(goRad) * khoangCach * heSoHuong;
+            const dy = -Math.sin(goRad) * khoangCach * heSoHuong;
 
-            const batDau = performance.now();
             function buoc(now) {
                 const t = Math.min(1, (now - batDau) / thoiGianMs);
                 const heSo = Math.sin(Math.PI * t);
@@ -3005,9 +3018,19 @@
             // không suy đoán) — xem capNhatViTriNutVaTayCam(). Object.entries
             // dưới đây chỉ còn giữ dấu hướng (dx/dy: -1/0/+1 mỗi trục) để hàm
             // đó tính offset, không còn giữ số px nào nữa.
+            // Góc trên-trái: từng là nút Xoá trực tiếp — nay là nút "+" mở
+            // modal nhỏ (xem moModalNutGocLayer()) gom các hành động lại một
+            // chỗ, để sau này thêm hành động mới không phải chen thêm góc.
+            // Góc trên-phải: từng là nút Nhân đôi trực tiếp — nay nhường chỗ
+            // cho "xoay bên trong" (hình tròn, tạm thời BỊ LIỆT — logic thêm
+            // sau). Góc dưới-trái (kéo-xoay cả layer) và dưới-phải (kéo-
+            // zoom) giữ nguyên như cũ.
             const positions = {
-                'delete': { dx: -1, dy: -1, icon: 'fa-trash' },
-                'duplicate': { dx: 1, dy: -1, icon: 'fa-copy' },
+                'menu': { dx: -1, dy: -1, icon: 'fa-plus' },
+                // Icon khác hẳn nút xoay-kéo bên dưới (fa-rotate-right, 1 mũi
+                // tên) để không gây nhầm — fa-rotate là 2 mũi tên tạo vòng
+                // tròn, vẫn rõ nghĩa "xoay" nhưng là 1 hành động khác.
+                'rotate-inner': { dx: 1, dy: -1, icon: 'fa-rotate', tron: true, biLiet: true },
                 'rotate': { dx: -1, dy: 1, icon: 'fa-rotate-right' },
                 // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
                 // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
@@ -3017,7 +3040,7 @@
 
             Object.entries(positions).forEach(([action, pos]) => {
                 const btn = document.createElement('button');
-                btn.className = 'layer-control-btn layer-corner-btn';
+                btn.className = 'layer-control-btn layer-corner-btn' + (pos.tron ? ' layer-corner-btn-tron' : '');
                 btn.style.borderColor = color;
                 btn.style.color = color;
                 btn.innerHTML = `<i class="fas ${pos.icon}"></i>`;
@@ -3026,7 +3049,11 @@
                 btn.dataset.dx = pos.dx;
                 btn.dataset.dy = pos.dy;
 
-                if (action === 'scale') {
+                if (pos.biLiet) {
+                    // Tạm thời chưa có logic — hiện ra cho đủ hình dạng
+                    // nhưng không phản hồi bấm, không đổi con trỏ.
+                    btn.disabled = true;
+                } else if (action === 'scale') {
                     // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
                     // rồi rê ra xa tâm ảnh để phóng to, rê vào gần tâm để
                     // thu nhỏ, đều tất cả các cạnh cùng lúc.
@@ -3042,6 +3069,11 @@
                     btn.onmousedown = (e) => {
                         e.stopPropagation();
                         handleLayerRotate(e);
+                    };
+                } else if (action === 'menu') {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        moModalNutGocLayer();
                     };
                 } else {
                     btn.onclick = (e) => {
@@ -3135,6 +3167,57 @@
                     duplicateLayer(layerIndex);
                     break;
             }
+        }
+
+        // ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN =====
+        // Modal nhỏ, không tiêu đề, hiện giữa MÀN HÌNH (không phải giữa
+        // layer) — tạo 1 lần duy nhất (lười tạo, addEventListener không lặp
+        // lại), các lần mở sau chỉ thêm class 'active'. Tạm thời chỉ có 2
+        // nút; sau này thêm hành động mới thì chỉ cần thêm phần tử vào
+        // '.modal-nut-goc-danh-sach', không phải sửa cơ chế đóng/mở.
+        function moModalNutGocLayer() {
+            let modal = document.getElementById('modalNutGocLayer');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalNutGocLayer';
+                modal.className = 'modal-overlay';
+                modal.innerHTML =
+                    '<div class="modal-content modal-nut-goc-layer">' +
+                        '<button type="button" class="modal-close modal-close-do" aria-label="Đóng bảng">' +
+                            '<i class="fas fa-times"></i>' +
+                        '</button>' +
+                        '<div class="modal-nut-goc-danh-sach">' +
+                            '<button type="button" class="modal-nut-goc-hanh-dong" data-hanh-dong="delete">Xoá layer này</button>' +
+                            '<button type="button" class="modal-nut-goc-hanh-dong" data-hanh-dong="duplicate">Nhân đôi Layer này</button>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(modal);
+
+                modal.querySelector('.modal-close-do').onclick = () => dongModalNutGocLayer();
+
+                // Cách 2: bấm ra ngoài phạm vi modal (chính overlay, không
+                // phải modal-content) — cùng quy ước với các modal khác
+                // trong module này (vd shortcutsModal).
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) dongModalNutGocLayer();
+                });
+
+                // Cách 3: bấm 1 trong các nút hành động — đóng modal ĐỒNG
+                // THỜI kích hoạt đúng hành động vừa bấm.
+                modal.querySelectorAll('.modal-nut-goc-hanh-dong').forEach((btn) => {
+                    btn.onclick = () => {
+                        const hanhDong = btn.dataset.hanhDong;
+                        dongModalNutGocLayer();
+                        handleLayerControlAction(hanhDong);
+                    };
+                });
+            }
+            modal.classList.add('active');
+        }
+
+        function dongModalNutGocLayer() {
+            const modal = document.getElementById('modalNutGocLayer');
+            if (modal) modal.classList.remove('active');
         }
 
         // Nút xoay — kéo (không bấm): giữ chuột trên nút rồi rê quanh tâm

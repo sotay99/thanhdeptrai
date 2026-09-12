@@ -1043,6 +1043,57 @@
             color: var(--chu);
         }
 
+        /* ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN (menu hành động của layer) =====
+           Không có .modal-header (modal này cố ý KHÔNG có tiêu đề) — chỉ có
+           nút đóng đỏ + danh sách nút hành động. */
+        .modal-nut-goc-layer {
+            max-width: 280px;
+        }
+
+        .modal-close-do {
+            background: #e53935;
+            color: #fff;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            top: 12px;
+            right: 12px;
+        }
+
+        .modal-close-do:hover {
+            background: #c62828;
+        }
+
+        .modal-nut-goc-danh-sach {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .modal-nut-goc-hanh-dong {
+            padding: 12px 16px;
+            border-radius: var(--bo-nut, 8px);
+            border: 1px solid var(--vien);
+            background: var(--the-2);
+            color: var(--chu);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .modal-nut-goc-hanh-dong:hover {
+            background: var(--current-layer-color);
+            color: #fff;
+            border-color: var(--current-layer-color);
+        }
+
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -1159,6 +1210,22 @@
         .layer-corner-btn {
             width: 32px;
             height: 32px;
+        }
+
+        /* Nút "xoay bên trong" ở góc trên-phải: hình TRÒN bao quanh icon,
+           khác 3 nút góc vuông còn lại (xoá/menu, xoay-kéo, zoom-kéo). */
+        .layer-corner-btn-tron {
+            border-radius: 50%;
+        }
+
+        .layer-control-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .layer-control-btn:disabled:hover {
+            background: var(--the);
+            color: var(--current-layer-color);
         }
 
         .resize-handle {
