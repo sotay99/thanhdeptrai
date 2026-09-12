@@ -302,6 +302,27 @@
                 activeGroupIndex = -1;
                 multiSelectedIndices.clear();
 
+                // HIỆU ỨNG "ra đời": bản sao hiện ra ở NGAY GIỮA canvas trước
+                // (giữ nguyên kích cỡ/góc xoay/độ giãn nở — chỉ dịch chuyển vị
+                // trí, không đổi gì khác), đứng yên ở đó 0,25s cho người dùng
+                // kịp thấy, rồi tự bay về ĐÚNG vị trí của layer gốc — khớp
+                // khít 100% lên trên layer gốc (vì vốn dĩ nó là bản sao y hệt
+                // layer gốc, chỉ tạm dịch chuyển đi rồi dịch chuyển về).
+                // Chỉ dịch left/top (không đụng angle/scale) nên không cần lo
+                // vấn đề "left/top là điểm neo chứ không phải tâm" như ở nút
+                // xoay — dịch chuyển thuần tuý (translate) đúng với MỌI góc
+                // xoay, không cần quy đổi qua getCenterPoint().
+                const diemDich = clonedObjects.map((obj) => ({ obj, left: obj.left, top: obj.top }));
+                const tamGoc = tinhTamNhomObject(clonedObjects);
+                const tamCanvas = { x: canvas.getWidth() / 2, y: canvas.getHeight() / 2 };
+                const dx = tamCanvas.x - tamGoc.x;
+                const dy = tamCanvas.y - tamGoc.y;
+                clonedObjects.forEach((obj) => {
+                    obj.left += dx;
+                    obj.top += dy;
+                    obj.setCoords();
+                });
+
                 // Đưa object mới lên canvas SAU KHI mô hình dữ liệu (layers,
                 // activeLayerIndex...) đã nhất quán — 'object:added' tự bắn
                 // updateLayerBorder(), tránh chạy giữa lúc dữ liệu còn dở.
@@ -311,7 +332,59 @@
                 updateCurrentLayerColor();
                 updateLayerBorder();
                 showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+
+                setTimeout(() => {
+                    baySangViTri(diemDich, 300);
+                }, 250);
             });
+        }
+
+        // Tâm hình học (hộp bao thẳng trục) của một nhóm object bất kỳ —
+        // dùng khi chỉ cần 1 điểm tâm để DỊCH CHUYỂN (translate) cả nhóm,
+        // không cần quan tâm góc xoay riêng của từng object (khác với
+        // tinhKhungXoayLayer(), vốn đòi các object phải CÙNG 1 góc mới vẽ
+        // được khung xoay khít).
+        function tinhTamNhomObject(danhSachObject) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            danhSachObject.forEach((obj) => {
+                const b = obj.getBoundingRect(false, true);
+                minX = Math.min(minX, b.left);
+                minY = Math.min(minY, b.top);
+                maxX = Math.max(maxX, b.left + b.width);
+                maxY = Math.max(maxY, b.top + b.height);
+            });
+            return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+        }
+
+        // Hoạt ảnh "bay về đúng vị trí" dùng cho hiệu ứng nhân đôi layer ở
+        // trên — tween tuyến tính left/top của từng object về đúng toạ độ
+        // đích ghi sẵn trong `diemDich` ({obj, left, top}[]), có làm mượt
+        // (ease-out) cho tự nhiên, vẽ lại canvas + khung viền mỗi khung hình.
+        function baySangViTri(diemDich, thoiGianMs) {
+            const batDau = performance.now();
+            const trangThaiBatDau = diemDich.map(({ obj, left, top }) => ({
+                obj, tuLeft: obj.left, tuTop: obj.top, denLeft: left, denTop: top,
+            }));
+
+            function easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+
+            function buoc(now) {
+                const t = Math.min(1, (now - batDau) / thoiGianMs);
+                const e = easeOutCubic(t);
+                trangThaiBatDau.forEach(({ obj, tuLeft, tuTop, denLeft, denTop }) => {
+                    obj.left = tuLeft + (denLeft - tuLeft) * e;
+                    obj.top = tuTop + (denTop - tuTop) * e;
+                    obj.setCoords();
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+                if (t < 1) {
+                    requestAnimationFrame(buoc);
+                }
+            }
+            requestAnimationFrame(buoc);
         }
 
         function renameLayer(index, newName) {
