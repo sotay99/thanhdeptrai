@@ -2714,7 +2714,10 @@
                 'delete': { top: '-16px', left: '-16px', icon: 'fa-trash' },
                 'duplicate': { top: '-16px', right: '-16px', icon: 'fa-copy' },
                 'rotate': { bottom: '-16px', left: '-16px', icon: 'fa-rotate-right' },
-                'scale': { bottom: '-16px', right: '-16px', icon: 'fa-expand' }
+                // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
+                // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
+                // vốn là 4 mũi tên rời góc, dễ hiểu lầm là "toàn màn hình").
+                'scale': { bottom: '-16px', right: '-16px', icon: 'fa-up-right-and-down-left-from-center' }
             };
 
             Object.entries(positions).forEach(([action, pos]) => {
@@ -2723,16 +2726,27 @@
                 btn.style.borderColor = color;
                 btn.style.color = color;
                 btn.innerHTML = `<i class="fas ${pos.icon}"></i>`;
-                
+
                 if (pos.top) btn.style.top = pos.top;
                 if (pos.bottom) btn.style.bottom = pos.bottom;
                 if (pos.left) btn.style.left = pos.left;
                 if (pos.right) btn.style.right = pos.right;
 
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    handleLayerControlAction(action);
-                };
+                if (action === 'scale') {
+                    // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
+                    // rồi rê ra xa tâm ảnh để phóng to, rê vào gần tâm để
+                    // thu nhỏ, đều tất cả các cạnh cùng lúc.
+                    btn.style.cursor = 'nwse-resize';
+                    btn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        handleLayerScale(e);
+                    };
+                } else {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        handleLayerControlAction(action);
+                    };
+                }
 
                 border.appendChild(btn);
             });
@@ -2780,9 +2794,6 @@
                     break;
                 case 'rotate':
                     rotateLayerContent();
-                    break;
-                case 'scale':
-                    showToast('Scale layer - Kéo các điểm neo ở cạnh', 'info');
                     break;
             }
         }
@@ -2865,6 +2876,79 @@
                         obj.top -= obj.height * (newScaleY - oldScaleY);
                         obj.scaleY = newScaleY;
                     }
+                    obj.setCoords();
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                showToast('Đã điều chỉnh kích thước layer', 'success');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Nút "zoom" ở góc khung viền (icon mũi tên 2 đầu chéo) — kéo RA xa
+        // tâm ảnh để phóng to, kéo VÀO gần tâm để thu nhỏ, đều tất cả các
+        // cạnh cùng lúc (khác 4 tay cầm ở giữa cạnh — handleLayerResize —
+        // vốn chỉ co giãn 1 chiều và neo cạnh đối diện đứng im).
+        function handleLayerScale(e) {
+            const layer = layers[activeLayerIndex];
+            if (!layer || !layer.objects || layer.objects.length === 0) {
+                showToast('Layer trống!', 'error');
+                return;
+            }
+
+            // Tâm co giãn = tâm khung bao TOÀN BỘ layer (không phải tâm
+            // riêng từng object) — layer có nhiều object thì cả khối co
+            // giãn quanh 1 tâm chung, giữ nguyên bố cục tương đối giữa
+            // chúng, giống hệt cách khung viền màu bao quanh cả layer.
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            layer.objects.forEach(obj => {
+                const b = obj.getBoundingRect(false, true);
+                minX = Math.min(minX, b.left);
+                minY = Math.min(minY, b.top);
+                maxX = Math.max(maxX, b.left + b.width);
+                maxY = Math.max(maxY, b.top + b.height);
+            });
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            // Chụp lại trạng thái BAN ĐẦU của từng object — mọi phép tính
+            // trong lúc kéo đều dựa trên trạng thái gốc này (nhân với TỈ LỆ
+            // hiện tại), không cộng dồn từng khung hình, tránh đúng lỗi
+            // "cộng dồn delta" đã từng gặp ở tay cầm cạnh.
+            const trangThaiGoc = layer.objects.map(obj => ({
+                obj, left: obj.left, top: obj.top, scaleX: obj.scaleX, scaleY: obj.scaleY,
+            }));
+
+            const onMouseMove = (moveEvent) => {
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+
+                // Quy đổi vị trí con trỏ (px màn hình) sang px NỘI BỘ canvas
+                // — cùng cách updateLayerBorder()/handleLayerResize() đã làm
+                // — rồi so khoảng cách tới tâm NGAY LÚC NÀY với khoảng cách
+                // LÚC BẮT ĐẦU kéo (đo lại mỗi lần move, không lưu 1 lần, vì
+                // "lúc bắt đầu" ở đây chính là toạ độ nút tại vị trí góc
+                // dưới-phải khung — luôn cách tâm đúng bằng NỬA đường chéo
+                // khung ban đầu, tính trực tiếp từ minX/minY/maxX/maxY).
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY;
+                const curDist = Math.hypot(curX - centerX, curY - centerY);
+                const startDist = Math.hypot(maxX - centerX, maxY - centerY) || 1;
+                const ratio = Math.max(0.05, curDist / startDist);
+
+                trangThaiGoc.forEach(({ obj, left, top, scaleX, scaleY }) => {
+                    obj.scaleX = scaleX * ratio;
+                    obj.scaleY = scaleY * ratio;
+                    obj.left = centerX + (left - centerX) * ratio;
+                    obj.top = centerY + (top - centerY) * ratio;
                     obj.setCoords();
                 });
                 canvas.renderAll();
