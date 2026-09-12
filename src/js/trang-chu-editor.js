@@ -2929,16 +2929,15 @@
                         addLayerControlButtons(border, layer.color);
                         border.dataset.hasControls = '1';
                     }
-                    // Khung xoay theo layer, nhưng 4 nút góc phải LUÔN đứng
-                    // thẳng — xoay ngược lại đúng góc đó (quanh tâm CHÍNH nó,
-                    // transform-origin mặc định), để phần icon bên trong
-                    // không bị nghiêng theo dù vị trí của nút vẫn di chuyển
-                    // theo khung cha (do nằm trong phần tử border đã xoay).
-                    // Cập nhật mỗi lần gọi (kể cả lúc đang kéo xoay), không
-                    // chỉ lúc dựng nút — góc đổi liên tục trong khi kéo.
-                    border.querySelectorAll('.layer-control-btn').forEach(btn => {
-                        btn.style.transform = theta ? `rotate(${-theta}deg)` : '';
-                    });
+                    // Vị trí 4 nút góc + 4 điểm neo được tính LẠI mỗi lần gọi
+                    // (không chỉ lúc vừa dựng) — suy thẳng từ bWidth/bHeight
+                    // THẬT của khung ngay lúc này, không phụ thuộc border-
+                    // width/mép-padding nữa (xem giải thích trong
+                    // capNhatViTriNutVaTayCam). Khung xoay theo layer, 4 nút
+                    // góc phải LUÔN đứng thẳng — hàm này tự xoay ngược lại
+                    // đúng góc đó (quanh tâm CHÍNH nó) trong lúc vẫn giữ đúng
+                    // vị trí góc, để icon không nghiêng theo dù đang kéo xoay.
+                    capNhatViTriNutVaTayCam(border, bWidth, bHeight, theta);
                     // Con trỏ chuột của 4 tay cầm kéo cạnh: mũi tên 2 đầu
                     // luôn chỉ đúng hướng về phía điểm neo ĐỐI DIỆN — trục
                     // ngang cục bộ (tay cầm trái/phải) nằm dọc theo góc theta,
@@ -2992,28 +2991,28 @@
 
             // Lỗi cũ: top/left/bottom/right của 1 phần tử position:absolute
             // được đo từ mép PADDING của cha (khung .canvas-layer-border-chinh),
-            // KHÔNG phải mép NGOÀI của khung — mà khung chính có border-width
-            // 3px (DO_DAY_VIEN_CHINH), nên mép padding đã lùi vào trong 3px so
-            // với mép ngoài. Trước đây nút góc dùng -16px (= nửa cạnh 32px),
-            // tức là TÂM nút trùng đúng điểm góc của mép PADDING — do mép
-            // padding lùi vào trong, tâm nút cũng lùi vào trong theo, kéo cả
-            // nửa nút kia (nửa gần tâm ảnh) lấn hẳn vào bên trong khung.
-            // Lần chỉnh trước đặt đúng -35px (= -(32 + DO_DAY_VIEN_CHINH)) để
-            // nút chạm KHÍT đỉnh góc, không chồng không hở — nhưng người dùng
-            // thấy vậy vẫn "hơi xa" (khoảng cách bằng 0 nhưng mắt vẫn thấy có
-            // khe). Nay bớt lại 8px (NUT_CHOM_VAO_TRONG) để nút chồm hẳn vào,
-            // chồng lấn lên đỉnh góc một chút — dễ nhận ra là "chạm" hơn.
-            const DO_DAY_VIEN_CHINH = 3; // khớp .canvas-layer-border-chinh { border-width: 3px }
-            const NUT_CHOM_VAO_TRONG = 8;
-            const OFFSET_NUT_GOC = -(32 + DO_DAY_VIEN_CHINH - NUT_CHOM_VAO_TRONG) + 'px';
+            // KHÔNG phải mép NGOÀI — mà khung chính có border-width riêng,
+            // nên mép padding lùi vào trong so với mép ngoài đúng bằng border-
+            // width đó. Việc suy ra border-width rồi TỰ CỘNG BÙ vào offset là
+            // nguồn sai số: "top"/"left" và "bottom"/"right" bù theo 2 HƯỚNG
+            // NGƯỢC NHAU, nên chỉ cần lệch giả định-vs-thực tế một chút (thiết
+            // bị/độ phân giải khác nhau) là 2 cặp cạnh trông lệch NGƯỢC hướng
+            // nhau — đúng như đã bị báo cáo (trên/trái đúng, dưới/phải sai).
+            // Nay bỏ HẲN cách suy border-width: mọi nút góc/điểm neo đều đặt
+            // "left:50%;top:50%" (không phụ thuộc border-width chút nào) rồi
+            // dịch bằng transform: translate() với số PX suy THẲNG từ chính
+            // bWidth/bHeight thật (đã biết chính xác trong updateLayerBorder,
+            // không suy đoán) — xem capNhatViTriNutVaTayCam(). Object.entries
+            // dưới đây chỉ còn giữ dấu hướng (dx/dy: -1/0/+1 mỗi trục) để hàm
+            // đó tính offset, không còn giữ số px nào nữa.
             const positions = {
-                'delete': { top: OFFSET_NUT_GOC, left: OFFSET_NUT_GOC, icon: 'fa-trash' },
-                'duplicate': { top: OFFSET_NUT_GOC, right: OFFSET_NUT_GOC, icon: 'fa-copy' },
-                'rotate': { bottom: OFFSET_NUT_GOC, left: OFFSET_NUT_GOC, icon: 'fa-rotate-right' },
+                'delete': { dx: -1, dy: -1, icon: 'fa-trash' },
+                'duplicate': { dx: 1, dy: -1, icon: 'fa-copy' },
+                'rotate': { dx: -1, dy: 1, icon: 'fa-rotate-right' },
                 // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
                 // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
                 // vốn là 4 mũi tên rời góc, dễ hiểu lầm là "toàn màn hình").
-                'scale': { bottom: OFFSET_NUT_GOC, right: OFFSET_NUT_GOC, icon: 'fa-up-right-and-down-left-from-center' }
+                'scale': { dx: 1, dy: 1, icon: 'fa-up-right-and-down-left-from-center' }
             };
 
             Object.entries(positions).forEach(([action, pos]) => {
@@ -3022,11 +3021,10 @@
                 btn.style.borderColor = color;
                 btn.style.color = color;
                 btn.innerHTML = `<i class="fas ${pos.icon}"></i>`;
-
-                if (pos.top) btn.style.top = pos.top;
-                if (pos.bottom) btn.style.bottom = pos.bottom;
-                if (pos.left) btn.style.left = pos.left;
-                if (pos.right) btn.style.right = pos.right;
+                btn.style.left = '50%';
+                btn.style.top = '50%';
+                btn.dataset.dx = pos.dx;
+                btn.dataset.dy = pos.dy;
 
                 if (action === 'scale') {
                     // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
@@ -3061,20 +3059,14 @@
             // bộ của layer, 'e'/'w' cùng thao tác trên TRỤC NGANG cục bộ —
             // vì vậy cả 2 tay cầm cùng trục dùng CHUNG axis ('y' hoặc 'x'),
             // không còn phân biệt trái/phải/trên/dưới khi tính toán.
-            // Cùng lỗi mép-padding-vs-mép-ngoài như 4 nút góc ở trên: điểm
-            // neo (10px, tâm định vị bằng translate(-50%,-50%)) trước đây
-            // dùng -5px (= nửa cạnh 10px, tâm trùng đúng mép PADDING của
-            // khung) — do mép padding lùi vào trong DO_DAY_VIEN_CHINH so với
-            // mép ngoài, tâm điểm neo cũng lùi vào trong theo, khiến nửa
-            // điểm neo lấn vào bên trong khung. Nay đổi sang
-            // -(5 + DO_DAY_VIEN_CHINH) = -8px: tâm điểm neo trùng đúng mép
-            // NGOÀI của khung, cả điểm neo nằm sát bên ngoài, không lấn vào.
-            const OFFSET_DIEM_NEO = -(5 + DO_DAY_VIEN_CHINH) + 'px';
+            // Cùng đổi sang left:50%;top:50% + translate() suy từ bWidth/
+            // bHeight thật như 4 nút góc ở trên — không còn OFFSET_DIEM_NEO
+            // cố định (px) tính từ giả định border-width nữa.
             const handlePositions = [
-                { name: 'n', top: OFFSET_DIEM_NEO, left: '50%', axis: 'y' },
-                { name: 's', bottom: OFFSET_DIEM_NEO, left: '50%', axis: 'y' },
-                { name: 'w', top: '50%', left: OFFSET_DIEM_NEO, axis: 'x' },
-                { name: 'e', top: '50%', right: OFFSET_DIEM_NEO, axis: 'x' },
+                { name: 'n', dx: 0, dy: -1, axis: 'y' },
+                { name: 's', dx: 0, dy: 1, axis: 'y' },
+                { name: 'w', dx: -1, dy: 0, axis: 'x' },
+                { name: 'e', dx: 1, dy: 0, axis: 'x' },
             ];
 
             handlePositions.forEach(pos => {
@@ -3083,13 +3075,10 @@
                 handle.dataset.axis = pos.axis;
                 handle.style.borderColor = color;
                 handle.style.background = color;
-
-                if (pos.top) handle.style.top = pos.top;
-                if (pos.bottom) handle.style.bottom = pos.bottom;
-                if (pos.left) handle.style.left = pos.left;
-                if (pos.right) handle.style.right = pos.right;
-
-                handle.style.transform = 'translate(-50%, -50%)';
+                handle.style.left = '50%';
+                handle.style.top = '50%';
+                handle.dataset.dx = pos.dx;
+                handle.dataset.dy = pos.dy;
 
                 handle.onmousedown = (e) => {
                     e.stopPropagation();
@@ -3097,6 +3086,41 @@
                 };
 
                 border.appendChild(handle);
+            });
+            // Vị trí thật được đặt ngay sau bởi capNhatViTriNutVaTayCam() ở
+            // nơi gọi hàm này (updateLayerBorder()), luôn có sẵn bWidth/
+            // bHeight/theta hiện hành — không cần tính lại ở đây.
+        }
+
+        // Đặt lại vị trí 4 nút góc + 4 điểm neo dựa THẲNG vào kích thước
+        // THẬT (bWidth/bHeight, tính sẵn trong updateLayerBorder() ngay lúc
+        // gọi) thay vì suy qua border-width/mép-padding của phần tử cha —
+        // xem lý do ở addLayerControlButtons(). "left:50%;top:50%" đưa mỗi
+        // phần tử về đúng TÂM khung trước, translate(-50%,-50%) giữ nó đứng
+        // yên ở tâm, rồi cộng thêm đúng nửa bề rộng/cao khung (+ nửa kích
+        // thước của chính nút/điểm neo đó) theo hướng dx/dy để đẩy nó ra
+        // đúng mép/góc — công thức này ĐÚNG TUYỆT ĐỐI với bWidth/bHeight bất
+        // kể border-width CSS thực tế là bao nhiêu, nên không còn kênh nào
+        // để 2 cặp cạnh lệch ngược hướng nhau như cách làm cũ.
+        function capNhatViTriNutVaTayCam(border, bWidth, bHeight, theta) {
+            const NUT_CHOM_VAO_TRONG = 8; // chồng vào trong 1 chút cho rõ cảm giác "chạm"
+            const NUA_CANH_NUT_GOC = 16; // nửa cạnh 32px của nút góc
+            const NUA_CANH_DIEM_NEO = 5; // nửa cạnh 10px của điểm neo
+
+            border.querySelectorAll('.layer-control-btn').forEach(btn => {
+                const dx = Number(btn.dataset.dx), dy = Number(btn.dataset.dy);
+                const px = dx * (bWidth / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
+                const py = dy * (bHeight / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
+                // rotate(-theta) giữ icon luôn đứng thẳng dù khung cha đã xoay.
+                btn.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))` +
+                    (theta ? ` rotate(${-theta}deg)` : '');
+            });
+
+            border.querySelectorAll('.resize-handle').forEach(handle => {
+                const dx = Number(handle.dataset.dx), dy = Number(handle.dataset.dy);
+                const px = dx * (bWidth / 2 + NUA_CANH_DIEM_NEO);
+                const py = dy * (bHeight / 2 + NUA_CANH_DIEM_NEO);
+                handle.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
             });
         }
 
