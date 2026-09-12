@@ -289,7 +289,22 @@
             }
 
             const layerId = Date.now();
-            const cloneOne = (obj) => new Promise((resolve) => obj.clone((cloned) => resolve(cloned)));
+            // Lỗi Fabric.js (v5.3.0): clone() tự khôi phục object qua
+            // constructor (`new klass(options)`), và bản thân constructor
+            // ÂM THẦM chuẩn hoá scaleX/scaleY ÂM (đang lật ngang/dọc) thành
+            // DƯƠNG ngay lúc khởi tạo — dù toObject() (bước trung gian của
+            // clone()) vẫn giữ đúng dấu âm. Gán lại qua THUỘC TÍNH (obj.scaleX
+            // = ...) sau khi khởi tạo xong thì KHÔNG bị chuẩn hoá (chỉ có lúc
+            // truyền vào constructor mới bị) — nên phải ghi đè scaleX/scaleY
+            // của bản sao bằng đúng giá trị (có dấu) của object gốc ngay sau
+            // khi clone() trả về, nếu không bản sao của 1 layer đang bị lật sẽ
+            // tự hết lật, kéo theo vị trí/kích thước lệch hẳn khỏi layer gốc.
+            const cloneOne = (obj) => new Promise((resolve) => obj.clone((cloned) => {
+                cloned.scaleX = obj.scaleX;
+                cloned.scaleY = obj.scaleY;
+                cloned.setCoords();
+                resolve(cloned);
+            }));
 
             Promise.all(original.objects.map(cloneOne)).then((clonedObjects) => {
                 // Màu chủ đạo của layer mới: khác màu layer GỐC là bắt buộc;
@@ -331,7 +346,7 @@
                 updateLayerBorder();
                 showToast(`Nhân đôi: ${duplicate.name}`, 'success');
 
-                nayRoiBayVe(clonedObjects, 400);
+                nayRoiBayVe(clonedObjects, 800);
             });
         }
 
@@ -358,7 +373,7 @@
                 maxY = Math.max(maxY, b.top + b.height);
             });
             const duongCheoHop = Math.hypot(maxX - minX, maxY - minY);
-            const khoangCach = Math.min(160, Math.max(50, duongCheoHop * 0.35));
+            const khoangCach = Math.min(480, Math.max(150, duongCheoHop * 1.05));
 
             // Hướng chéo góc trên-phải: x dương (sang phải), y âm (lên trên).
             const goRad = Math.PI / 4;
