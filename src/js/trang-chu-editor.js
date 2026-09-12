@@ -2803,31 +2803,67 @@
         }
 
         function handleLayerResize(e, direction) {
-            // Lỗi cũ: deltaX/deltaY tính từ điểm BẮT ĐẦU kéo (startX/startY cố
-            // định), nhưng lại cộng dồn vào obj.scaleX/scaleY vốn đã mang sẵn
-            // độ lệch của MỌI lần mousemove trước đó trong cùng thao tác kéo
-            // — mỗi khung hình chuột di chuyển lại cộng thêm nguyên khoảng
-            // cách-từ-lúc-bắt-đầu một lần nữa, khiến kích thước phình lên rất
-            // nhanh và không kiểm soát được (chỉ không lộ ra trước đây vì
-            // pointer-events: none chặn hẳn việc bấm được vào tay cầm). Nay
-            // tính delta GIỮA HAI KHUNG HÌNH LIÊN TIẾP (lastX/lastY cập nhật
-            // mỗi lần mousemove), khớp đúng khoảng chuột vừa di chuyển thêm.
+            // Lỗi cũ (đã sửa 1 lần, còn sót 2 lỗi khác):
+            // - deltaX/deltaY tính GIỮA HAI KHUNG HÌNH LIÊN TIẾP (không phải
+            //   cộng dồn từ điểm bắt đầu — lỗi khác, đã sửa trước đó).
+            // - THIẾU quy đổi đơn vị: deltaX/deltaY là px MÀN HÌNH (CSS),
+            //   trong khi obj.scaleX/scaleY lại thuộc hệ toạ độ NỘI BỘ canvas
+            //   (canvas 800x600 có thể đang hiển thị co giãn qua CSS transform
+            //   — xem fitCanvasToWorkspace()). Hệ số 0.01 cố định trước đây
+            //   không hề tính tới tỉ lệ co giãn đó lẫn kích thước gốc của
+            //   từng object — cạnh vì vậy chạy nhanh/chậm hơn hẳn con trỏ
+            //   chuột tuỳ zoom và tuỳ ảnh to hay nhỏ. Quy đổi deltaX/deltaY
+            //   sang px NỘI BỘ canvas (chia cho cssScaleX/Y) rồi mới đổi ra
+            //   phần trăm co giãn dựa trên KÍCH THƯỚC GỐC (obj.width/height)
+            //   của từng object — cạnh bám đúng 1:1 theo con trỏ trên màn
+            //   hình, bất kể zoom hay kích thước ảnh.
+            // - Tay cầm cạnh TRÊN ('n') và cạnh TRÁI ('w') chỉnh SAI cạnh:
+            //   trước đây chỉ đổi scaleX/scaleY, mà mọi object mặc định neo
+            //   góc trên-trái (originX/Y 'left'/'top') — tăng scale luôn giãn
+            //   về phía DƯỚI-PHẢI bất kể tay cầm nào đang kéo, nên kéo cạnh
+            //   trên/trái chỉ thấy cạnh dưới/phải đối diện chạy, còn cạnh
+            //   đang cầm đứng im. Với 2 tay cầm này, phải vừa đổi scale VỪA
+            //   dịch left/top một khoảng đúng bằng phần kích thước vừa đổi,
+            //   để cạnh ĐỐI DIỆN (không phải cạnh đang kéo) đứng yên, và cạnh
+            //   đang kéo mới là cạnh di chuyển theo con trỏ.
             let lastX = e.clientX;
             let lastY = e.clientY;
             const layer = layers[activeLayerIndex];
 
             const onMouseMove = (moveEvent) => {
-                const deltaX = moveEvent.clientX - lastX;
-                const deltaY = moveEvent.clientY - lastY;
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+
+                const deltaXCanvas = (moveEvent.clientX - lastX) / cssScaleX;
+                const deltaYCanvas = (moveEvent.clientY - lastY) / cssScaleY;
                 lastX = moveEvent.clientX;
                 lastY = moveEvent.clientY;
 
                 layer.objects.forEach(obj => {
-                    if (direction === 'e' || direction === 'w') {
-                        obj.scaleX = Math.max(0.1, obj.scaleX + (deltaX * 0.01));
+                    if (direction === 'e') {
+                        // Cạnh phải: neo trái đứng im, chỉ độ rộng đổi.
+                        obj.scaleX = Math.max(0.02, obj.scaleX + deltaXCanvas / obj.width);
+                    } else if (direction === 'w') {
+                        // Cạnh trái: neo PHẢI phải đứng im — vừa đổi scaleX
+                        // vừa dịch left đúng bằng phần rộng vừa đổi (dấu
+                        // ngược lại) để bù trừ, nếu không cạnh phải sẽ trôi
+                        // theo thay vì cạnh trái.
+                        const oldScaleX = obj.scaleX;
+                        const newScaleX = Math.max(0.02, oldScaleX - deltaXCanvas / obj.width);
+                        obj.left -= obj.width * (newScaleX - oldScaleX);
+                        obj.scaleX = newScaleX;
                     }
-                    if (direction === 'n' || direction === 's') {
-                        obj.scaleY = Math.max(0.1, obj.scaleY + (deltaY * 0.01));
+                    if (direction === 's') {
+                        // Cạnh dưới: neo trên đứng im, chỉ độ cao đổi.
+                        obj.scaleY = Math.max(0.02, obj.scaleY + deltaYCanvas / obj.height);
+                    } else if (direction === 'n') {
+                        // Cạnh trên: neo DƯỚI phải đứng im, cùng cách bù trừ
+                        // như cạnh trái ở trên nhưng theo trục dọc.
+                        const oldScaleY = obj.scaleY;
+                        const newScaleY = Math.max(0.02, oldScaleY - deltaYCanvas / obj.height);
+                        obj.top -= obj.height * (newScaleY - oldScaleY);
+                        obj.scaleY = newScaleY;
                     }
                     obj.setCoords();
                 });
