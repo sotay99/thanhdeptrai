@@ -99,7 +99,11 @@
       '<div class="khoa-hoc-mobile">' +
         '<header class="khoa-hoc-dau">' +
           '<h2>Khoá học chỉnh màu Lightroom điện thoại (miễn phí)</h2>' +
-          '<p class="khoa-hoc-dan-nhap">' + DAN_NHAP_KHOA_HOC_MOBILE + '</p>' +
+          '<div class="khoa-hoc-khung-dan-nhap">' +
+            '<img class="khoa-hoc-anh-dai-dien" src="/assets/anh/dd-sp4.svg" width="140" height="140"' +
+              ' loading="lazy" decoding="async" alt="Ảnh đại diện khoá học chỉnh màu Lightroom điện thoại">' +
+            '<p class="khoa-hoc-dan-nhap">' + DAN_NHAP_KHOA_HOC_MOBILE + '</p>' +
+          '</div>' +
           '<button type="button" class="nut nut-vien nut-rong" data-hanh-dong="xem-chi-tiet" data-ma="sp4">' +
             'Xem chi tiết thông tin khoá học này</button>' +
         '</header>' +

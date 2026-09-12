@@ -1880,7 +1880,25 @@
 
 .khoa-hoc-mobile { max-width: 720px; margin: 0 auto; }
 .khoa-hoc-dau h2 { font-size: 19px; line-height: 1.35; margin-bottom: 10px; }
-.khoa-hoc-dan-nhap { color: var(--chu-diu); font-size: 14px; line-height: 1.75; margin-bottom: 16px; }
+/* Ảnh đại diện thả trôi bên trái (float) — mấy dòng đầu của câu dẫn nhập bị
+   ảnh chiếm chỗ nên dạt sang phải, y hệt cách chữ chạy quanh ảnh trên báo.
+   Qua khỏi chiều cao ảnh thì chữ trở lại full-width bình thường. Bọc ngoài
+   bằng overflow:hidden để tạo khối chứa mới (BFC) — ảnh trôi không tràn ra
+   khỏi khối này, nút bên dưới luôn đứng full-width, không bị kẹt cạnh ảnh. */
+.khoa-hoc-khung-dan-nhap { overflow: hidden; margin-bottom: 16px; }
+.khoa-hoc-anh-dai-dien {
+  float: left;
+  width: 92px;
+  height: 92px;
+  margin: 2px 14px 10px 0;
+  border-radius: var(--bo-the);
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+}
+@media (min-width: 720px) {
+  .khoa-hoc-anh-dai-dien { width: 138px; height: 138px; margin: 2px 22px 12px 0; }
+}
+.khoa-hoc-dan-nhap { color: var(--chu-diu); font-size: 14px; line-height: 1.75; margin: 0; }
 .khoa-hoc-dau > .nut { margin-bottom: 22px; }
 
 .danh-sach-chuong { display: flex; flex-direction: column; gap: 10px; }
