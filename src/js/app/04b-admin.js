@@ -273,8 +273,14 @@
       '</div></div>';
   }
 
+  // Khung menu mục quản trị chỉ hoạt động ẩn/hiện ở màn hình hẹp (CSS canh
+  // theo @media max-width:780px trong admin.css) — hiệu ứng nút nổi hoá dấu X,
+  // lớp phủ tối, và khung trượt vào từ mép, Y HỆT khung menu bên trái của
+  // trang bán hàng (PHẦN 02), chỉ khác đứng ở MÉP PHẢI. Ở màn hình rộng thì
+  // nút nổi và lớp phủ tự ẩn, còn khung vẫn hiện cố định như trước giờ.
   function veAdminBenTrong(){
     const a = state.admin;
+    const menuMo = a.menuMo;
     const muc = MODULE_ADMIN.map(function(m){
       return '<button type="button" class="admin-muc' + (m.ma === a.module ? ' dang-xem' : '') +
         '" data-hanh-dong="admin-mo-module" data-module="' + escapeHtml(m.ma) + '">' +
@@ -283,8 +289,14 @@
     }).join('');
 
     return '' +
+      '<button type="button" class="nut-noi-admin' + (menuMo ? ' menu-dang-mo' : '') +
+        '" data-hanh-dong="admin-doi-menu" aria-label="' + (menuMo ? 'Đóng menu' : 'Chuyển mục quản trị') +
+        '" aria-expanded="' + (menuMo ? 'true' : 'false') + '">' +
+        '<span class="vach"></span><span class="vach"></span><span class="vach"></span>' +
+      '</button>' +
+      '<div class="admin-lop-phu' + (menuMo ? ' mo' : '') + '" data-hanh-dong="admin-dong-menu"></div>' +
       '<div class="admin-khung">' +
-        '<aside class="admin-canh">' +
+        '<aside class="admin-canh' + (menuMo ? ' mo' : '') + '" aria-label="Danh sách mục quản trị">' +
           '<div class="admin-nguoi">' +
             '<span class="nhan">Đang đăng nhập</span>' +
             '<span class="email">' + escapeHtml(a.nguoiDung.email) + '</span>' +
@@ -297,6 +309,41 @@
         '</aside>' +
         '<section class="admin-noi-dung">' + veModuleAdmin(a.module) + '</section>' +
       '</div>';
+  }
+
+  // Mở/đóng chỉ đổi đúng ba phần tử liên quan, KHÔNG vẽ lại cả trang — cùng lý
+  // do với capNhatKhungMenu() ở PHẦN 02: vẽ lại xoá mất trạng thái đang gõ dở
+  // trong các ô nhập của module quản trị đang mở.
+  function capNhatMenuAdmin(){
+    const nut = document.querySelector('.nut-noi-admin');
+    const khung = document.querySelector('.admin-canh');
+    const phu = document.querySelector('.admin-lop-phu');
+    if (nut) {
+      nut.classList.toggle('menu-dang-mo', state.admin.menuMo);
+      nut.setAttribute('aria-expanded', state.admin.menuMo ? 'true' : 'false');
+      nut.setAttribute('aria-label', state.admin.menuMo ? 'Đóng menu' : 'Chuyển mục quản trị');
+    }
+    if (khung) khung.classList.toggle('mo', state.admin.menuMo);
+    if (phu) phu.classList.toggle('mo', state.admin.menuMo);
+    if (document.body && document.body.classList) {
+      document.body.classList.toggle('khoa-cuon', state.admin.menuMo);
+    }
+  }
+
+  function moMenuAdmin(){
+    state.admin.menuMo = true;
+    capNhatMenuAdmin();
+  }
+
+  function dongMenuAdmin(){
+    if (!state.admin.menuMo) return;
+    state.admin.menuMo = false;
+    capNhatMenuAdmin();
+  }
+
+  function doiMenuAdmin(){
+    if (state.admin.menuMo) dongMenuAdmin();
+    else moMenuAdmin();
   }
 
   function veModuleAdmin(ma){

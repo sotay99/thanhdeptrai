@@ -149,7 +149,8 @@
       xemTruocBaiHoc: '',    // id bài học đang mở bảng "Xem trước link" (module Khoá học điện thoại)
       xemTruocBaiHocPC: '',  // id bài học đang mở bảng "Xem trước link" (module Khoá học máy tính)
       khoaHocNhap: null,     // bản nháp chương/bài khoá điện thoại đang sửa, phần 04E tự dựng khi cần tới
-      khoaHocMayTinhNhap: null // bản nháp chương/bài khoá máy tính đang sửa, phần 04F tự dựng khi cần tới
+      khoaHocMayTinhNhap: null, // bản nháp chương/bài khoá máy tính đang sửa, phần 04F tự dựng khi cần tới
+      menuMo: false          // menu mục quản trị đang mở hay không — chỉ có tác dụng ở màn hình hẹp
       // donHang — kho tạm của mục Đơn hàng, phần 04D tự dựng khi cần tới
     },
     // Module "Khoá học chỉnh màu Lightroom điện thoại" ở trang bán hàng — đọc

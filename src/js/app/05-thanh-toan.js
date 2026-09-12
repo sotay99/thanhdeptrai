@@ -570,6 +570,8 @@
     if (hanhDong === 'admin-dang-nhap') { dangNhapGoogle(); return; }
     if (hanhDong === 'admin-dang-xuat') { dangXuat(); return; }
     if (hanhDong === 'admin-mo-module') { adminMoModule(nutHanhDong.getAttribute('data-module')); return; }
+    if (hanhDong === 'admin-doi-menu') { doiMenuAdmin(); return; }
+    if (hanhDong === 'admin-dong-menu') { dongMenuAdmin(); return; }
     if (hanhDong === 'admin-hien-bi-mat') { adminHienBiMat(nutHanhDong.getAttribute('data-o')); return; }
     if (hanhDong === 'admin-luu-o') { adminLuuO(nutHanhDong.getAttribute('data-o')); return; }
     if (hanhDong === 'admin-doi-nguon') {
@@ -643,6 +645,7 @@
     if (su.key !== 'Escape') return;
     if (state.modal.length) dongModal();
     else if (state.menuMo) dongMenu();
+    else if (state.admin.menuMo) dongMenuAdmin();
   }
 
   function ganSuKien(){
