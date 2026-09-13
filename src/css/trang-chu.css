@@ -1354,15 +1354,28 @@
            → lặp lại — tổng 1 vòng 5s, animation infinite nên lặp mãi tới
            khi bấm nút con mắt lần nữa (gỡ class, dừng ngay, không kẹt giữa
            chừng vì không có transition nào khác chi phối opacity). */
+        /* Tổng 1 vòng 6s: mờ dần 1s (0%→16,667%) → mất hẳn, đứng im LẶNG
+           2,5s (16,667%→58,333%) → hiện dần rõ 1s (58,333%→75%) → đứng rõ
+           1,5s (75%→100%), NHƯNG giữa khoảng đứng rõ đó có 1 cái CHỚP tức
+           thời (mất hẳn ngay lập tức rồi hiện lại ngay lập tức, không mờ
+           dần) — 2 cặp keyframe cách nhau khoảng 1 khung hình (~0,28%,
+           ~0,017s) tự ghi đè animation-timing-function thành steps(1,end)
+           CHỈ cho đúng 2 đoạn chớp đó, nên chỉ có đoạn này "nhảy" tức thời
+           còn mọi đoạn mờ/hiện dần khác vẫn ease-in-out êm như cũ.
+           Nút con mắt là CON của khung này nên tự dính chung hiệu ứng —
+           opacity cha kéo theo cả khung LẪN nút, không cần khai riêng. */
         .canvas-layer-border.xem-truoc-khung-vien {
-            animation: xem-truoc-khung-vien-nhap-nhay 5s ease-in-out infinite;
+            animation: xem-truoc-khung-vien-nhap-nhay 6s ease-in-out infinite;
         }
 
         @keyframes xem-truoc-khung-vien-nhap-nhay {
             0% { opacity: 1; }
-            20% { opacity: 0; }
-            50% { opacity: 0; }
-            70% { opacity: 1; }
+            16.667% { opacity: 0; }
+            58.333% { opacity: 0; }
+            75% { opacity: 1; }
+            87.5% { opacity: 1; animation-timing-function: steps(1, end); }
+            87.78% { opacity: 0; animation-timing-function: steps(1, end); }
+            88.06% { opacity: 1; }
             100% { opacity: 1; }
         }
 
