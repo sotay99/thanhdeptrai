@@ -61,7 +61,7 @@
                 <i class="fas fa-keyboard"></i> ⌨️
             </button>
             <button class="btn-header" onclick="showUploadModal()">
-                <i class="fas fa-upload"></i> Tải Ảnh
+                <i class="fas fa-upload"></i> Thêm ảnh
             </button>
             <button class="btn-header" onclick="downloadImage()">
                 <i class="fas fa-download"></i> Tải Xuống

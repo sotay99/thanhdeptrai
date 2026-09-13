@@ -54,7 +54,7 @@
             workspace.appendChild(canvasElement);
 
             canvas = new fabric.Canvas('canvas', {
-                backgroundColor: '#ffffff',
+                backgroundColor: taoMauNenTrongSuot(),
                 fireRightClick: true,
                 stopContextMenu: true,
             });
@@ -85,7 +85,7 @@
             if (layers.length === 0) {
                 // Lần đầu mở module trong phiên này.
                 createBackgroundLayer();
-                showToast('Sẵn sàng! Tải ảnh để bắt đầu', 'success');
+                showToast('Sẵn sàng! Bấm Thêm ảnh để bắt đầu', 'success');
             } else {
                 // Quay lại module — canvas cũ vừa bị shop xoá, dựng canvas mới
                 // rồi vẽ lại đúng state cũ, không mất việc khách đang làm dở.
@@ -133,6 +133,30 @@
             updateLayerBorder();
         }
 
+        // "Layer nền" dưới cùng: trong suốt, rộng vô hạn (không bị giới hạn
+        // bởi kích thước 1 ảnh cụ thể như các layer thường), luôn ẩn, không
+        // bao giờ hiện thẻ/tên trong bảng Layer, không bấm chọn được — vì
+        // vậy KHÔNG mô hình hoá nó thành 1 phần tử trong mảng layers[] (cái
+        // nuôi bảng Layer, nhóm, chỉ số chọn...). Thay vào đó gắn thẳng làm
+        // backgroundColor của canvas dạng hoạ tiết ca-rô xám/trắng lặp lại
+        // (quy ước hiển thị "trong suốt" chuẩn trên internet) — hễ layer
+        // Background (layer thật, index 0) có điểm ảnh trong suốt, hoặc bị
+        // xoá hẳn, phần trống đó sẽ tự động lộ ra hoạ tiết này vì fabric vẽ
+        // các object LÊN TRÊN backgroundColor, không cần code gì thêm.
+        function taoMauNenTrongSuot() {
+            const O = 16; // cạnh 1 ô vuông, px
+            const oTron = document.createElement('canvas');
+            oTron.width = O * 2;
+            oTron.height = O * 2;
+            const ctx = oTron.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, O * 2, O * 2);
+            ctx.fillStyle = '#cbcbcb';
+            ctx.fillRect(0, 0, O, O);
+            ctx.fillRect(O, O, O, O);
+            return new fabric.Pattern({ source: oTron, repeat: 'repeat' });
+        }
+
         // ===== LAYER MANAGEMENT =====
         function createBackgroundLayer() {
             const layer = {
@@ -149,10 +173,10 @@
             updateCurrentLayerColor();
         }
 
-        function createNewLayer(fromInpaint = false) {
+        function createNewLayer(fromInpaint = false, imLang = false) {
             const layerNumber = layers.length;
             const colorIndex = layerNumber % LAYER_COLORS.length;
-            
+
             const layer = {
                 id: Date.now(),
                 name: `Lớp ${layerNumber}`,
@@ -167,7 +191,8 @@
             activeLayerIndex = layers.length - 1;
             updateLayersUI();
             updateCurrentLayerColor();
-            showToast(`Tạo layer mới: ${layer.name}`, 'success');
+            if (!imLang) showToast(`Tạo layer mới: ${layer.name}`, 'success');
+            return layer;
         }
 
         function selectLayer(index, ctrlKey = false, shiftKey = false) {
@@ -2243,6 +2268,14 @@
             document.getElementById('uploadModal').classList.remove('active');
         }
 
+        // true nếu bất kỳ layer THẬT nào (không tính layer nền trong suốt —
+        // cái đó không nằm trong mảng này) đang có ít nhất 1 điểm ảnh — tức
+        // phiên làm việc đã có ảnh, dùng để quyết định ảnh Thêm ảnh TIẾP
+        // THEO sẽ đè lớp mới hay chui vào layer nền, xem handleImageUpload().
+        function coAnhNaoTrongLayerChua() {
+            return layers.some(l => l.objects && l.objects.length > 0);
+        }
+
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -2253,29 +2286,52 @@
                     const maxWidth = 800;
                     const maxHeight = 600;
                     const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
-                    
+
                     img.scale(scale);
                     img.set({
                         left: (canvas.width - img.width * scale) / 2,
                         top: (canvas.height - img.height * scale) / 2,
                     });
 
-                    // Add to current layer
-                    const currentLayer = layers[activeLayerIndex];
-                    currentLayer.objects.push(img);
-                    
+                    // Phiên làm việc CHƯA có ảnh nào (kể cả khi layer
+                    // Background rỗng đã có sẵn từ lúc mở module, hoặc đã bị
+                    // xoá hẳn trước đó) → ảnh này TRỞ THÀNH layer background,
+                    // không tạo layer mới. Ngược lại — đã có ít nhất 1 ảnh ở
+                    // đâu đó — mọi lần Thêm ảnh sau luôn tạo 1 layer MỚI, đè
+                    // lên trên cùng (createNewLayer() push() vào cuối mảng =
+                    // canvas.add() sau cùng = vẽ trên cùng, xem vòng lặp bên
+                    // dưới).
+                    const laLayerNen = !coAnhNaoTrongLayerChua();
+                    let layerDich;
+                    if (laLayerNen) {
+                        if (layers.length === 0) createBackgroundLayer();
+                        layerDich = layers[0];
+                        activeLayerIndex = 0;
+                    } else {
+                        layerDich = createNewLayer(false, /* imLang */ true);
+                    }
+                    layerDich.objects.push(img);
+
                     canvas.clear();
-                    
+
                     // Render all visible layers
                     layers.forEach(layer => {
                         if (layer.visible) {
                             layer.objects.forEach(obj => canvas.add(obj));
                         }
                     });
-                    
+
                     canvas.renderAll();
+                    updateLayersUI();
+                    updateCurrentLayerColor();
+                    updateLayerBorder();
                     hideUploadModal();
-                    showToast('Ảnh đã được tải lên layer: ' + currentLayer.name, 'success');
+                    showToast(
+                        laLayerNen
+                            ? 'Ảnh đã trở thành layer nền: ' + layerDich.name
+                            : 'Ảnh đã được thêm vào layer mới: ' + layerDich.name,
+                        'success'
+                    );
                 });
             };
             reader.readAsDataURL(file);
@@ -4249,10 +4305,20 @@
 
         // ===== DOWNLOAD =====
         function downloadImage() {
+            // Hoạ tiết ca-rô chỉ là quy ước HIỂN THỊ cho biết vùng trong
+            // suốt — file PNG xuất ra phải trong suốt THẬT, không in caro
+            // vào ảnh. Tháo tạm backgroundColor lúc xuất rồi gắn lại ngay.
+            const nenLucHien = canvas.backgroundColor;
+            canvas.backgroundColor = null;
+            canvas.renderAll();
+
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
             link.download = 'edited-image.png';
             link.click();
+
+            canvas.backgroundColor = nenLucHien;
+            canvas.renderAll();
             showToast('Ảnh đã được tải xuống', 'success');
         }
 
