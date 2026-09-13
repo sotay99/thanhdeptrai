@@ -194,12 +194,6 @@
             border-color: var(--current-layer-color);
         }
 
-        .tool-btn.ai-feature {
-            background: linear-gradient(135deg, var(--xanh-nen) 0%, var(--xanh-mo) 100%);
-            border-color: var(--current-layer-color);
-            color: var(--current-layer-color);
-        }
-
         .tool-btn i {
             width: 20px;
             text-align: center;
@@ -1369,29 +1363,13 @@
             color: var(--chu);
         }
 
-        /* ===== ADJUSTMENTS ===== */
+        /* ===== ADJUSTMENTS =====
+           Nay chỉ còn tiêu đề "Hiệu Chỉnh" (icon + chữ, không nút không
+           thanh trượt) — xem 06-trang-chu.js. */
         .adjustments-section {
             border-top: 1px solid var(--vien-sang);
             padding-top: 15px;
             margin-top: 15px;
-        }
-
-        .slider-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .slider-container input[type="range"] {
-            flex: 1;
-        }
-
-        .slider-value {
-            min-width: 40px;
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--current-layer-color);
-            font-weight: 500;
         }
 
         /* ===== ADD LAYER BTN ===== */
