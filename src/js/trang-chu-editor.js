@@ -3120,10 +3120,7 @@
                 } else if (action === 'scale') {
                     // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
                     // rồi rê ra xa tâm ảnh để phóng to, rê vào gần tâm để
-                    // thu nhỏ, đều tất cả các cạnh cùng lúc. Con trỏ ban đầu
-                    // (trước khi capNhatViTriNutVaTayCam() chạy lần đầu ngay
-                    // sau khi tạo) — sẽ được thay ngay bằng mũi tên chéo tự
-                    // xoay theo theta, xem chú thích ở đó.
+                    // thu nhỏ, đều tất cả các cạnh cùng lúc.
                     btn.style.cursor = 'nwse-resize';
                     btn.onmousedown = (e) => {
                         e.stopPropagation();
@@ -3578,51 +3575,7 @@
             let stretch = util.multiplyTransformMatrices(rTheta, maTranCoGian);
             stretch = util.multiplyTransformMatrices(stretch, rAmTheta);
             const maTranMoi = util.multiplyTransformMatrices(stretch, maTranGoc);
-
-            // Giữ NGUYÊN góc gốc (goc.angle) — KHÔNG dùng fabric.util.
-            // qrDecompose() (vốn để angle TỰ DO, chọn 1 trong nhiều bộ
-            // {angle,scale,skew} hợp lệ theo quy ước riêng của nó). Lỗi cũ:
-            // khi sx quét qua 0 (đang lật), qrDecompose cho ra góc thay đổi
-            // rất nhiều (từ ~20° gốc vọt lên tới ~160°+) — dù ảnh render ra
-            // vẫn đúng toán học, mắt người thấy ảnh "xoay vòng/lật qua lật
-            // lại" ngay trong lúc chỉ đang kéo giãn/lật, rất khó chịu (đã
-            // thử "chọn nhánh liên tục với khung hình trước" — hết nhảy đột
-            // ngột nhưng KHÔNG hết cảnh xoay vòng, vì đó là đường cong liên
-            // tục thật của chính qrDecompose, không phải lỗi rời rạc).
-            //
-            // Sửa tận gốc: ép GÓC không đổi trong suốt lúc kéo, chỉ để
-            // scaleX/scaleY/skewX/skewY gánh hết phần biến dạng — giaiHinh
-            // DangGocCoDinh() GIẢI NGƯỢC 4 số đó sao cho compose lại đúng
-            // dựng được CHÍNH XÁC ma trận maTranMoi (đã kiểm chứng bằng số
-            // trên hàng trăm tổ hợp góc/theta) — luôn giải được vì cố định 1
-            // góc chỉ bớt đi đúng 1 bậc tự do dư (ma trận 2x2 chỉ có 4 bậc tự
-            // do, còn scaleX+scaleY+skewX+skewY+angle là 5 tham số của
-            // Fabric — dư đúng 1). Kết quả: kéo giãn/lật một ảnh đã xoay bên
-            // trong giờ CHỈ co giãn/nghiêng (skew) mượt, ảnh không còn cảm
-            // giác "xoay vòng" nữa — đúng cảm nhận tự nhiên của thao tác kéo
-            // giãn cạnh (không phải xoay).
-            return giaiHinhDangGocCoDinh(maTranMoi, goc.angle || 0);
-        }
-
-        // Giải {scaleX, scaleY, skewX, skewY} sao cho fabric.util.composeMatrix
-        // ({angle: angleCoDinh, scaleX, scaleY, skewX, skewY}) dựng lại ĐÚNG
-        // ma trận M cho trước, với "angle" CỐ ĐỊNH (không đổi). Suy ngược từ
-        // chính công thức compose của Fabric (calcDimensionsMatrix): đặt
-        // D = Rotate(-angleCoDinh)·M (bỏ phần xoay cố định ra khỏi M), D lúc
-        // này đúng bằng ma trận scale-skew thuần: D = diag(scaleX,scaleY) ·
-        // Shear(skewX) · Shear(skewY), khai triển ra hệ 4 phương trình tuyến
-        // tính đơn giản, giải ngược lần lượt scaleY → skewY → scaleX → skewX.
-        function giaiHinhDangGocCoDinh(M, angleCoDinh) {
-            const util = fabric.util;
-            const rAmAngle = util.calcRotateMatrix({ angle: -angleCoDinh });
-            const D = util.multiplyTransformMatrices(rAmAngle, M);
-            const Da = D[0], Db = D[1], Dc = D[2], Dd = D[3];
-            const scaleY = Dd;
-            const tanSkewY = Db / scaleY;
-            const scaleX = Da - Dc * tanSkewY;
-            const tanSkewX = Dc / scaleX;
-            const toDeg = (rad) => Math.atan(rad) * 180 / Math.PI;
-            return { angle: angleCoDinh, scaleX, scaleY, skewX: toDeg(tanSkewX), skewY: toDeg(tanSkewY) };
+            return util.qrDecompose(maTranMoi);
         }
 
         // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
@@ -3710,18 +3663,7 @@
             // cho phép nén càng hẹp (theo đúng yêu cầu "mức nén càng hẹp
             // càng tốt") — 4px là còn nhìn thấy được, không về 0 tuyệt đối
             // (0 sẽ làm scale chia cho 0 / vô nghĩa hình học).
-            //
-            // Layer có khungRieng dùng ngưỡng LỚN HƠN (5% chiều dài gốc,
-            // không dưới 4px): giaiHinhDangGocCoDinh() (xem keoGianTheoTrucKhung())
-            // giải skewX/skewY qua tan()/atan() — càng nén sát 0, skewX càng
-            // tiệm cận ±90° (tan tiến tới vô cực), sai số dấu phẩy động càng
-            // dễ khuếch đại thành rung/giật nhìn thấy được. Ngưỡng tuyệt đối
-            // 4px (đủ hẹp cho layer thường, không có skew) với 1 layer TO
-            // (vd rộng 1000px) chỉ là 0,4% chiều dài — quá sát điểm kỳ dị.
-            // Nới lên 5% giữ skewX trong vùng an toàn hơn hẳn mà mắt thường
-            // vẫn thấy ảnh nén rất hẹp trước khi lật, không mất cảm giác
-            // "kéo sát rồi mới lật".
-            const NGUONG_NEN_PX = layer.khungRieng ? Math.max(4, doDaiGoc * 0.05) : 4;
+            const NGUONG_NEN_PX = 4;
 
             // Chụp lại trạng thái GỐC của từng object — mọi phép tính trong
             // lúc kéo đều tính lại từ đây (nhân theo TỈ LỆ hiện tại), không
@@ -3736,6 +3678,13 @@
                     angle: obj.angle || 0, skewX: obj.skewX || 0, skewY: obj.skewY || 0,
                 };
             });
+            // Độ dài (có dấu) từ điểm neo tới TÂM KHUNG dọc trục đang co giãn
+            // — hằng số suốt lúc kéo (không đổi theo ti_le), dùng để tính lại
+            // tâm MỚI của khungRieng mỗi khung hình (nhân theo ti_le y hệt
+            // cách tính tâm mới của từng object, nhưng thành phần vuông góc
+            // luôn bằng 0 vì tâm khung nằm ĐÚNG trên trục qua điểm neo).
+            const docTrucKhungGoc = dauKeo * doDaiGoc / 2;
+
             const onMouseMove = (moveEvent) => {
                 const canvasRect = canvas.getElement().getBoundingClientRect();
                 const cssScaleX = canvasRect.width / canvas.getWidth();
@@ -3760,7 +3709,19 @@
                 // vừa bắt đầu kéo. Nhân dauKeo để "phóng to theo đúng hướng
                 // tay cầm đang cầm" luôn ra số DƯƠNG, bất kể cầm đầu nào.
                 let doDaiMoi = dauKeo * ((mouseX - diemNeo.x) * truc.x + (mouseY - diemNeo.y) * truc.y);
-                if (Math.abs(doDaiMoi) < NGUONG_NEN_PX) {
+                if (layer.khungRieng) {
+                    // Layer đã từng "xoay bên trong" (có khungRieng): hệ
+                    // thống ghi nhớ VĨNH VIỄN điều đó, và từ nay KHÔNG BAO
+                    // GIỜ cho phép lật nữa — kéo quá điểm nén cực đại chỉ
+                    // giữ nguyên ở mức nén tối đa, kéo ngược lại thì giãn ra
+                    // bình thường. Không dùng clamp giữ dấu (như bên dưới)
+                    // vì clamp đó vẫn cho phép vượt qua điểm neo (đổi dấu) —
+                    // ở đây phải chặn cứng về phía dương, không bao giờ âm.
+                    doDaiMoi = Math.max(NGUONG_NEN_PX, doDaiMoi);
+                } else if (Math.abs(doDaiMoi) < NGUONG_NEN_PX) {
+                    // Layer chưa từng xoay bên trong: vẫn cho phép lật như
+                    // cũ — chỉ giữ dấu để không "đứng hình" đúng lúc chạm
+                    // điểm nén cực đại.
                     doDaiMoi = (doDaiMoi < 0 ? -1 : 1) * NGUONG_NEN_PX;
                 }
                 const ti_le = doDaiMoi / doDaiGoc;
@@ -3794,7 +3755,7 @@
                         const hinhDang = keoGianTheoTrucKhung({ angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy);
                         obj.set({
                             angle: hinhDang.angle, scaleX: hinhDang.scaleX,
-                            scaleY: hinhDang.scaleY, skewX: hinhDang.skewX, skewY: hinhDang.skewY,
+                            scaleY: hinhDang.scaleY, skewX: hinhDang.skewX,
                         });
                     } else if (axis === 'y') {
                         obj.scaleY = scaleY * ti_le;
@@ -3805,41 +3766,22 @@
                     obj.setCoords();
                 });
                 if (layer.khungRieng) {
-                    // Tính lại khungRieng TRỰC TIẾP từ hộp bao THẬT của mọi
-                    // object (chiếu 4 góc thật — obj.getCoords(), có tính cả
-                    // skew — lên đúng 2 trục của khung: truc/trucVuongGoc),
-                    // KHÔNG suy bằng công thức "doDaiGoc * ti_le" như trước.
-                    //
-                    // Lỗi cũ: công thức đó ngầm giả định co giãn 1 trục không
-                    // ảnh hưởng trục kia — chỉ đúng khi object CHƯA có skew.
-                    // Sau lần lật ĐẦU TIÊN (skewX/skewY khác 0), co giãn tiếp
-                    // ở LẦN SAU sẽ khiến trục KHÔNG đang kéo cũng nở ra theo
-                    // (vì skew trộn 2 trục vào nhau) mà công thức cũ không
-                    // biết — khung ngày càng lệch khỏi ảnh thật qua mỗi lần
-                    // lật/kéo giãn, tới lúc ảnh "lọt hẳn ra ngoài khung".
-                    //
-                    // Tính trực tiếp từ hộp bao thật loại bỏ hẳn sai số này:
-                    // khung LUÔN khớp đúng 100% ảnh thật ở mọi thời điểm, bất
-                    // kể đã lật/kéo giãn bao nhiêu lần trước đó.
-                    let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
-                    layer.objects.forEach((o) => {
-                        o.getCoords(true, true).forEach((p) => {
-                            const u = p.x * truc.x + p.y * truc.y;
-                            const v = p.x * trucVuongGoc.x + p.y * trucVuongGoc.y;
-                            minU = Math.min(minU, u); maxU = Math.max(maxU, u);
-                            minV = Math.min(minV, v); maxV = Math.max(maxV, v);
-                        });
-                    });
-                    const midU = (minU + maxU) / 2;
-                    const midV = (minV + maxV) / 2;
-                    layer.khungRieng.cx = midU * truc.x + midV * trucVuongGoc.x;
-                    layer.khungRieng.cy = midU * truc.y + midV * trucVuongGoc.y;
+                    const docTrucKhungMoi = docTrucKhungGoc * ti_le;
+                    layer.khungRieng.cx = diemNeo.x + docTrucKhungMoi * truc.x;
+                    layer.khungRieng.cy = diemNeo.y + docTrucKhungMoi * truc.y;
+                    // Math.abs(ti_le): khungRieng.width/height là ĐỘ DÀI hình
+                    // học của khung (luôn dương, khung không có khái niệm
+                    // "lật") — chỉ object bên trong mới lật (qua dấu âm trong
+                    // scaleX/scaleY, đã xử lý đúng ở keoGianTheoTrucKhung()
+                    // bên trên). Thiếu Math.abs() ở đây thì lúc ti_le âm
+                    // (đã kéo qua khỏi điểm neo, ảnh lật) khungRieng.width/
+                    // height cũng âm theo — CSS width/height âm là vô nghĩa,
+                    // khung "đứng hình" đúng lúc chạm ngưỡng nén tối đa
+                    // (ranh giới ti_le đổi dấu), 4 nút góc theo đó cũng vỡ.
                     if (axis === 'y') {
-                        layer.khungRieng.height = maxU - minU;
-                        layer.khungRieng.width = maxV - minV;
+                        layer.khungRieng.height = doDaiGoc * Math.abs(ti_le);
                     } else {
-                        layer.khungRieng.width = maxU - minU;
-                        layer.khungRieng.height = maxV - minV;
+                        layer.khungRieng.width = doDaiGoc * Math.abs(ti_le);
                     }
                 }
                 canvas.renderAll();
