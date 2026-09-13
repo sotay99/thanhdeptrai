@@ -3147,6 +3147,14 @@
                         e.stopPropagation();
                         moModalNutGocLayer();
                     };
+                } else if (action === 'mat') {
+                    // CHỈ là hiệu ứng hiển thị (xem trước khung viền nhấp
+                    // nháy) — không đụng tới layer đang active/logic khác,
+                    // xem chú thích ở toggleXemTruocKhungVien().
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleXemTruocKhungVien(border);
+                    };
                 } else {
                     btn.onclick = (e) => {
                         e.stopPropagation();
@@ -3258,6 +3266,21 @@
                 nutMat.style.transform = `translate(calc(-50% + ${pxMat}px), calc(-50% + ${pyGiuaHai}px))` +
                     (theta ? ` rotate(${-theta}deg)` : '');
             }
+        }
+
+        // Nút "con mắt" — CHỈ bật/tắt hiệu ứng xem trước, KHÔNG đụng tới
+        // layer.visible (đó là nút ẩn/hiện layer khác hẳn ở panel), không
+        // đổi activeLayerIndex, không gọi bất kỳ logic nào khác. Bấm lần 1:
+        // ẩn 4 nút góc + 4 điểm neo (chừa lại đúng nút con mắt để còn bấm
+        // tắt được), khung viền bắt đầu nhấp nháy tuần hoàn (mờ dần → mất
+        // hẳn → đứng im 1,5s → hiện dần → đứng rõ 1,5s → lặp lại mãi, xem
+        // keyframe xem-truoc-khung-vien-nhap-nhay ở trang-chu.css). Bấm lần
+        // 2 (classList.toggle tự đảo trạng thái): dừng hẳn hoạt ảnh, hiện
+        // lại đủ 4 nút góc/4 điểm neo, khung về đúng như ban đầu ngay lập
+        // tức (bỏ animation, không có transition nên không "kẹt" giữa
+        // chừng đang mờ/đang hiện).
+        function toggleXemTruocKhungVien(border) {
+            border.classList.toggle('xem-truoc-khung-vien');
         }
 
         function handleLayerControlAction(action) {

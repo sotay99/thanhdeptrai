@@ -1339,6 +1339,33 @@
             border-width: 3px;
         }
 
+        /* ===== Hiệu ứng "xem trước" bật bằng nút con mắt =====
+           Bật bằng toggleXemTruocKhungVien() (trang-chu-editor.js) — CHỈ
+           đổi hiển thị, không đụng logic chọn layer/active nào khác. Ẩn
+           hết 4 nút góc + 4 điểm neo, CHỪA LẠI nút con mắt (data-action=
+           "mat") để còn bấm tắt được. */
+        .canvas-layer-border.xem-truoc-khung-vien .layer-control-btn:not([data-action="mat"]),
+        .canvas-layer-border.xem-truoc-khung-vien .resize-handle {
+            display: none;
+        }
+
+        /* Khung nhấp nháy tuần hoàn: mờ dần (0→20%, ~1s) → mất hẳn, đứng im
+           1,5s (20%→50%) → hiện dần (50%→70%, ~1s) → đứng rõ 1,5s (70%→100%)
+           → lặp lại — tổng 1 vòng 5s, animation infinite nên lặp mãi tới
+           khi bấm nút con mắt lần nữa (gỡ class, dừng ngay, không kẹt giữa
+           chừng vì không có transition nào khác chi phối opacity). */
+        .canvas-layer-border.xem-truoc-khung-vien {
+            animation: xem-truoc-khung-vien-nhap-nhay 5s ease-in-out infinite;
+        }
+
+        @keyframes xem-truoc-khung-vien-nhap-nhay {
+            0% { opacity: 1; }
+            20% { opacity: 0; }
+            50% { opacity: 0; }
+            70% { opacity: 1; }
+            100% { opacity: 1; }
+        }
+
         .layer-control-btn {
             position: absolute;
             width: 28px;
