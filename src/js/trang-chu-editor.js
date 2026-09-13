@@ -326,6 +326,10 @@
                     name: `${original.name} (Bản Sao)`,
                     color: mauMoi,
                     objects: clonedObjects,
+                    // Nhân bản RIÊNG khungRieng (nếu có) — spread ở trên chỉ
+                    // copy tham chiếu, sửa khung của bản sao (vd kéo giãn) sẽ
+                    // vô tình sửa luôn khung của layer gốc nếu không tách ra.
+                    khungRieng: original.khungRieng ? { ...original.khungRieng } : undefined,
                 };
                 layers.splice(index + 1, 0, duplicate);
 
@@ -2853,43 +2857,18 @@
             const layerDangChonThat = layers[activeLayerIndex];
 
             targets.forEach(layer => {
-                // Ưu tiên hộp bao ĐÃ XOAY theo góc chung của layer (nếu có)
-                // — khung viền màu xoay đồng bộ y hệt ảnh. Không có góc
-                // chung (các object trong layer xoay khác nhau — hiếm gặp)
-                // thì quay lại hộp bao thẳng trục (AABB) như trước, theta=0.
-                // NGOẠI LỆ: đang kéo nút "xoay bên trong" (dangKeoXoayBenTrong)
-                // trên ĐÚNG layer đang active — khi đó khung viền PHẢI đứng
-                // yên (không xoay theo ảnh bên trong), chỉ co giãn 4 cạnh cho
-                // luôn khít hộp bao thẳng trục của ảnh đang xoay dở — ép về
-                // nhánh AABB (theta=0) bằng cách coi như không có góc chung.
-                const khungXoay = (dangKeoXoayBenTrong && layer === layerDangChonThat)
-                    ? null
-                    : tinhKhungXoayLayer(layer);
                 let cx, cy, boxWidth, boxHeight, theta;
-                if (khungXoay) {
-                    ({ cx, cy, width: boxWidth, height: boxHeight, theta } = khungXoay);
-                    // tinhKhungXoayLayer() dùng getCenterPoint()/getScaledWidth()
-                    // — toạ độ OBJECT-SPACE, không hề biết tới canvas.setZoom()
-                    // (khác obj.getBoundingRect() ở nhánh else bên dưới, tự
-                    // ÁP SẴN viewportTransform/zoom). Bấm nút phóng to/thu nhỏ
-                    // (canvas.setZoom()) chỉ đổi CÁCH VẼ, không đổi left/top/
-                    // scale thật của object — nên centerPoint vẫn nguyên như
-                    // cũ, phải tự nhân thêm zoom ở đây để khớp lại đúng pixel
-                    // đang hiển thị, nếu không khung sẽ lệch hẳn ngay khi zoom
-                    // khác 100%.
-                    const zoom = canvas.getZoom();
-                    cx *= zoom; cy *= zoom; boxWidth *= zoom; boxHeight *= zoom;
-                } else {
+                const zoom = canvas.getZoom();
+
+                if (dangKeoXoayBenTrong && layer === layerDangChonThat) {
+                    // Đang kéo nút "xoay bên trong" trên ĐÚNG layer active —
+                    // khung viền PHẢI đứng yên (không xoay theo ảnh bên
+                    // trong), chỉ co giãn 4 cạnh cho luôn khít hộp bao THẲNG
+                    // TRỤC (AABB, theta=0) của ảnh đang xoay dở — bỏ qua cả
+                    // khungRieng cũ (nếu có, từ 1 lần xoay-bên-trong trước
+                    // đó) vì đang tạo khung MỚI ngay lúc này.
                     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                     layer.objects.forEach(obj => {
-                        // getBoundingRect(absolute, calculate) — calculate=false
-                        // (mặc định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ
-                        // được Fabric tự cập nhật ở vài mốc nhất định (ví dụ lúc
-                        // thả chuột/'object:modified'), KHÔNG cập nhật liên tục
-                        // trong lúc đang kéo — dù obj.left/top đã đổi từng khung
-                        // hình. Truyền calculate=true để ép tính lại theo vị trí
-                        // THẬT ngay tại thời điểm gọi — khớp với updateLayerBorder()
-                        // giờ chạy liên tục trong object:moving/scaling/rotating.
                         const bounds = obj.getBoundingRect(false, true);
                         minX = Math.min(minX, bounds.left);
                         minY = Math.min(minY, bounds.top);
@@ -2902,6 +2881,62 @@
                     boxWidth = maxX - minX;
                     boxHeight = maxY - minY;
                     theta = 0;
+                } else if (layer.khungRieng) {
+                    // Layer đã từng "xoay bên trong" ít nhất 1 lần — khung
+                    // viền từ đó về sau là 1 khung ĐỘC LẬP (khungRieng, toạ
+                    // độ object-space) không còn suy trực tiếp từ góc/kích
+                    // thước THẬT của object bên trong nữa (ảnh bên trong có
+                    // thể lệch khỏi khung này — đúng ý muốn, không nướng lại
+                    // ảnh). Mọi thao tác sau đó (4 tay cầm cạnh, nút xoay
+                    // thường, nút zoom) đều SỬA khungRieng này trực tiếp —
+                    // xem handleLayerResize()/handleLayerRotate()/handleLayerScale().
+                    const kr = layer.khungRieng;
+                    cx = kr.cx * zoom; cy = kr.cy * zoom;
+                    boxWidth = kr.width * zoom; boxHeight = kr.height * zoom;
+                    theta = kr.angle;
+                } else {
+                    // Ưu tiên hộp bao ĐÃ XOAY theo góc chung của layer (nếu
+                    // có) — khung viền màu xoay đồng bộ y hệt ảnh. Không có
+                    // góc chung (các object trong layer xoay khác nhau —
+                    // hiếm gặp) thì quay lại hộp bao thẳng trục (AABB) như
+                    // trước, theta=0.
+                    const khungXoay = tinhKhungXoayLayer(layer);
+                    if (khungXoay) {
+                        ({ cx, cy, width: boxWidth, height: boxHeight, theta } = khungXoay);
+                        // tinhKhungXoayLayer() dùng getCenterPoint()/getScaledWidth()
+                        // — toạ độ OBJECT-SPACE, không hề biết tới canvas.setZoom()
+                        // (khác obj.getBoundingRect() ở nhánh else bên dưới, tự
+                        // ÁP SẴN viewportTransform/zoom). Bấm nút phóng to/thu nhỏ
+                        // (canvas.setZoom()) chỉ đổi CÁCH VẼ, không đổi left/top/
+                        // scale thật của object — nên centerPoint vẫn nguyên như
+                        // cũ, phải tự nhân thêm zoom ở đây để khớp lại đúng pixel
+                        // đang hiển thị, nếu không khung sẽ lệch hẳn ngay khi zoom
+                        // khác 100%.
+                        cx *= zoom; cy *= zoom; boxWidth *= zoom; boxHeight *= zoom;
+                    } else {
+                        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                        layer.objects.forEach(obj => {
+                            // getBoundingRect(absolute, calculate) — calculate=false
+                            // (mặc định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ
+                            // được Fabric tự cập nhật ở vài mốc nhất định (ví dụ lúc
+                            // thả chuột/'object:modified'), KHÔNG cập nhật liên tục
+                            // trong lúc đang kéo — dù obj.left/top đã đổi từng khung
+                            // hình. Truyền calculate=true để ép tính lại theo vị trí
+                            // THẬT ngay tại thời điểm gọi — khớp với updateLayerBorder()
+                            // giờ chạy liên tục trong object:moving/scaling/rotating.
+                            const bounds = obj.getBoundingRect(false, true);
+                            minX = Math.min(minX, bounds.left);
+                            minY = Math.min(minY, bounds.top);
+                            maxX = Math.max(maxX, bounds.left + bounds.width);
+                            maxY = Math.max(maxY, bounds.top + bounds.height);
+                        });
+                        if (!isFinite(minX)) return;
+                        cx = (minX + maxX) / 2;
+                        cy = (minY + maxY) / 2;
+                        boxWidth = maxX - minX;
+                        boxHeight = maxY - minY;
+                        theta = 0;
+                    }
                 }
 
                 const layerId = String(layer.id);
@@ -3249,13 +3284,20 @@
                 return;
             }
 
-            // Tâm xoay chung: ưu tiên tâm khung ĐÃ XOAY (tinhKhungXoayLayer,
-            // dùng getCenterPoint() thật của Fabric — xem chú thích ở đó vì
-            // sao "left+w/2" sai khi object đã xoay); không có góc chung thì
-            // quay lại AABB thẳng trục như trước.
+            // Tâm xoay chung: layer có khungRieng (đã từng "xoay bên trong")
+            // thì LUÔN dùng tâm của khungRieng đó — khung + ảnh phải xoay
+            // cùng nhau quanh cùng 1 tâm, không phải tâm riêng của object
+            // (có thể lệch khỏi khung sau khi xoay bên trong). Không có
+            // khungRieng thì như cũ: ưu tiên tâm khung ĐÃ XOAY
+            // (tinhKhungXoayLayer, dùng getCenterPoint() thật của Fabric —
+            // xem chú thích ở đó vì sao "left+w/2" sai khi object đã xoay);
+            // không có góc chung thì quay lại AABB thẳng trục như trước.
             const khungXoayGoc = tinhKhungXoayLayer(layer);
             let centerX, centerY;
-            if (khungXoayGoc) {
+            if (layer.khungRieng) {
+                centerX = layer.khungRieng.cx;
+                centerY = layer.khungRieng.cy;
+            } else if (khungXoayGoc) {
                 centerX = khungXoayGoc.cx;
                 centerY = khungXoayGoc.cy;
             } else {
@@ -3270,6 +3312,10 @@
                 centerX = (minX + maxX) / 2;
                 centerY = (minY + maxY) / 2;
             }
+            // Góc GỐC của khung riêng (nếu có) — cộng deltaDeg y hệt góc của
+            // từng object, giữ đúng "hình dạng tương đối" giữa khung và ảnh
+            // (khung + ảnh xoay như 1 khối cứng duy nhất).
+            const goKhungRiengGoc = layer.khungRieng ? layer.khungRieng.angle : 0;
 
             // Chụp lại TÂM THẬT (getCenterPoint(), không phải left/top) và
             // góc gốc của từng object — mọi phép xoay bên dưới tính từ đây,
@@ -3325,6 +3371,13 @@
                     obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
                     obj.setCoords();
                 });
+                if (layer.khungRieng) {
+                    // Tâm khungRieng trùng centerX/centerY (điểm đang xoay
+                    // quanh) nên không đổi — chỉ góc của khung tăng thêm
+                    // đúng deltaDeg, y hệt từng object, để khung + ảnh xoay
+                    // như 1 khối cứng duy nhất.
+                    layer.khungRieng.angle = goKhungRiengGoc + deltaDeg;
+                }
                 canvas.renderAll();
                 updateLayerBorder();
             };
@@ -3423,46 +3476,32 @@
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
                 dangKeoXoayBenTrong = false;
-
-                boGomLayerThanhAnhMoi(layer).then((anhMoi) => {
-                    if (!anhMoi) {
-                        updateLayerBorder();
-                        return;
-                    }
-                    layer.objects.forEach((obj) => canvas.remove(obj));
-                    layer.objects = [anhMoi];
-                    canvas.add(anhMoi);
-                    canvas.setActiveObject(anhMoi);
-                    canvas.renderAll();
-                    updateLayerBorder();
-                    showToast('Đã xoay bên trong — layer giờ là ảnh mới', 'success');
-                });
+                layer.khungRieng = tinhKhungRiengTuAABB(layer);
+                updateLayerBorder();
+                showToast('Đã xoay bên trong', 'success');
             };
 
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         }
 
-        // "Nướng" (bake) toàn bộ object của 1 layer thành DUY NHẤT 1 ảnh mới,
-        // góc 0, đúng khít hộp bao thẳng trục HIỆN TẠI của layer — dùng ngay
-        // sau khi kéo "xoay bên trong" xong. Vẽ lại toàn bộ layer (giữ đúng
-        // góc xoay/tỉ lệ/vị trí tương đối của từng object) lên một canvas
-        // TĨNH (fabric.StaticCanvas) riêng, kích thước = đúng hộp bao đó —
-        // phần nào của hộp bao không có object nào phủ tới thì tự nhiên là
-        // nền trong suốt (canvas mới tinh, không tô nền). Trả về Promise vì
-        // clone() và fabric.Image.fromURL() đều là bất đồng bộ.
-        function boGomLayerThanhAnhMoi(layer) {
-            // Lỗi cũ: obj.getBoundingRect(false, true) trả về toạ độ ĐÃ NHÂN
-            // SẴN canvas.getZoom() (tự áp viewportTransform — đã xác nhận lại
-            // bằng cách so trực tiếp trước/sau canvas.setZoom()), trong khi
-            // obj.left/obj.top là toạ độ OBJECT-SPACE THẬT, không đổi theo
-            // zoom. Trộn 2 hệ toạ độ này (dùng minX/minY từ getBoundingRect
-            // để trừ thẳng vào left/top) làm ảnh mới bị đặt sai vị trí VÀ co
-            // nhỏ lại đúng theo % zoom hiện tại lúc bấm — ví dụ zoom 30% thì
-            // ảnh "nướng" ra chỉ còn ~30% kích thước thật rồi bị đặt lệch hẳn
-            // (khung viền "nhảy đi chỗ khác" ngay khi thả chuột, đúng như báo
-            // cáo). Sửa bằng cách chia lại cho zoom để đưa mọi thứ về ĐÚNG
-            // MỘT hệ toạ độ (object-space, không phụ thuộc mức zoom đang xem).
+        // Tính khung ĐỘC LẬP (khungRieng: {cx, cy, width, height, angle: 0})
+        // từ hộp bao thẳng trục HIỆN TẠI của layer — gọi ngay khi thả nút
+        // "xoay bên trong". Từ đây khung này tách hẳn khỏi góc/kích thước
+        // thật của object bên trong: ảnh KHÔNG bị nướng lại thành ảnh mới,
+        // vẫn giữ nguyên điểm ảnh gốc (không mất nét), chỉ đơn giản là
+        // khung viền không còn tự suy ra từ object nữa mà lưu riêng, và mọi
+        // thao tác sau đó (tay cầm cạnh/nút xoay thường/nút zoom) sửa khung
+        // này trực tiếp — xem chỗ dùng trong updateLayerBorder().
+        //
+        // Lỗi từng gặp (khi hàm này còn dùng để NƯỚNG ảnh mới): obj.
+        // getBoundingRect(false, true) trả về toạ độ ĐÃ NHÂN SẴN canvas.
+        // getZoom(), trong khi obj.left/obj.top là toạ độ OBJECT-SPACE THẬT,
+        // không đổi theo zoom — trộn 2 hệ toạ độ làm khung tính sai lệch hẳn
+        // theo % zoom đang xem. Vẫn phải chia lại cho zoom ở đây dù không
+        // còn nướng ảnh nữa, vì khungRieng lưu toạ độ OBJECT-SPACE (khớp với
+        // cx/cy nhân zoom ở updateLayerBorder(), giống hệt tinhKhungXoayLayer()).
+        function tinhKhungRiengTuAABB(layer) {
             const zoom = canvas.getZoom();
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             layer.objects.forEach((obj) => {
@@ -3472,45 +3511,57 @@
                 maxX = Math.max(maxX, (b.left + b.width) / zoom);
                 maxY = Math.max(maxY, (b.top + b.height) / zoom);
             });
-            const w = Math.ceil(maxX - minX);
-            const h = Math.ceil(maxY - minY);
-            if (!isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) {
-                return Promise.resolve(null);
-            }
+            if (!isFinite(minX)) return null;
+            return {
+                cx: (minX + maxX) / 2,
+                cy: (minY + maxY) / 2,
+                width: maxX - minX,
+                height: maxY - minY,
+                angle: 0,
+            };
+        }
 
-            const cloneOne = (obj) => new Promise((resolve) => obj.clone((cloned) => {
-                // Cùng lỗi Fabric.js đã gặp ở duplicateLayer(): constructor
-                // dựng lại object từ clone() tự chuẩn hoá scale ÂM (lật)
-                // thành DƯƠNG — ghi đè lại qua thuộc tính để giữ đúng lật.
-                cloned.scaleX = obj.scaleX;
-                cloned.scaleY = obj.scaleY;
-                cloned.setCoords();
-                resolve(cloned);
-            }));
-
-            return Promise.all(layer.objects.map(cloneOne)).then((clones) => {
-                const tempEl = document.createElement('canvas');
-                const tempCanvas = new fabric.StaticCanvas(tempEl, { width: w, height: h });
-                clones.forEach((c) => {
-                    // Dịch mọi object về hệ toạ độ riêng của ảnh mới (gốc
-                    // (0,0) = góc trên-trái hộp bao) — chỉ dịch left/top
-                    // thuần tuý, không đụng angle/scale, nên đúng với MỌI
-                    // góc xoay hiện tại của từng object.
-                    c.left -= minX;
-                    c.top -= minY;
-                    c.setCoords();
-                    tempCanvas.add(c);
-                });
-                tempCanvas.renderAll();
-                return new Promise((resolve) => {
-                    fabric.Image.fromURL(tempCanvas.toDataURL({ format: 'png' }), (img) => {
-                        img.set({ left: minX, top: minY, angle: 0 });
-                        img.setCoords();
-                        tempCanvas.dispose();
-                        resolve(img);
-                    });
-                });
+        // Ma trận tuyến tính (2x2, bỏ qua phần tịnh tiến) của 1 hình dạng
+        // fabric — dùng làm điểm xuất phát cho keoGianTheoTrucKhung() bên
+        // dưới. "goc" là {angle, scaleX, scaleY, skewX, skewY} CHỤP SẴN lúc
+        // bắt đầu kéo (không đọc trực tiếp từ object đang kéo dở, tránh cộng
+        // dồn sai số qua từng khung hình — cùng nguyên tắc "tính lại từ gốc"
+        // đã áp dụng ở mọi thao tác kéo khác trong file này).
+        //
+        // keoGianTheoTrucKhung(): sau khi layer có khungRieng (từ "xoay bên
+        // trong"), khung viền không còn cùng góc với object bên trong nữa —
+        // 4 tay cầm cạnh giờ phải kéo giãn theo TRỤC CỦA KHUNG (world-space,
+        // do khungRieng.angle quyết định), KHÔNG phải trục cục bộ của object
+        // (vốn có thể lệch hẳn khỏi khung sau khi xoay bên trong). Về đại số:
+        // muốn "co giãn (sx, sy) dọc theo 2 trục đã xoay theta độ trong hệ
+        // toạ độ THẾ GIỚI", công thức chuẩn là:
+        //     StretchTheGioi = Rotate(theta) · Scale(sx, sy) · Rotate(-theta)
+        // (xoay hệ trục về trục chuẩn, co giãn theo trục chuẩn, xoay trả
+        // lại) — áp dụng lên ma trận HIỆN TẠI của object (KHÔNG đổi thứ tự:
+        // StretchTheGioi nằm NGOÀI CÙNG, vì đây là 1 phép biến đổi world-
+        // space tác động SAU cùng lên hình đã có). Kết quả là 1 ma trận 2x2
+        // mới, decompose lại (fabric.util.qrDecompose) ra đúng bộ {angle,
+        // scaleX, scaleY, skewX} mới cho object — Fabric tự vẽ lại object
+        // theo các con số này, không hề vẽ lại/nén lại PIXEL nào của ảnh gốc
+        // (chỉ đổi ma trận hiển thị) — ảnh không bao giờ mất nét dù kéo giãn
+        // bao nhiêu lần.
+        function keoGianTheoTrucKhung(goc, thetaDo, sx, sy) {
+            const util = fabric.util;
+            const maTranGoc = util.composeMatrix({
+                angle: goc.angle || 0,
+                scaleX: goc.scaleX, scaleY: goc.scaleY,
+                skewX: goc.skewX || 0, skewY: goc.skewY || 0,
+                translateX: 0, translateY: 0,
             });
+            const rTheta = util.calcRotateMatrix({ angle: thetaDo });
+            const rAmTheta = util.calcRotateMatrix({ angle: -thetaDo });
+            const maTranCoGian = util.composeMatrix({
+                angle: 0, scaleX: sx, scaleY: sy, skewX: 0, skewY: 0, translateX: 0, translateY: 0,
+            });
+            let stretch = util.multiplyTransformMatrices(rTheta, maTranCoGian);
+            stretch = util.multiplyTransformMatrices(stretch, rAmTheta);
+            const maTranMoi = util.multiplyTransformMatrices(stretch, maTranGoc);
+            return util.qrDecompose(maTranMoi);
         }
 
         // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
@@ -3554,10 +3605,16 @@
 
             // Khung tham chiếu (tâm + kích thước THEO GÓC XOAY chung của cả
             // layer) — không có góc chung (hiếm) thì quay lại AABB thẳng
-            // trục (theta=0) như logic cũ, coi như layer chưa xoay.
+            // trục (theta=0) như logic cũ, coi như layer chưa xoay. Layer đã
+            // "xoay bên trong" (có khungRieng) thì LUÔN dùng khungRieng làm
+            // khung tham chiếu — trục kéo giãn đi theo khung ĐỘC LẬP này,
+            // không còn theo góc riêng của object bên trong nữa (có thể lệch
+            // hẳn khỏi khung sau khi xoay bên trong).
             const khungXoay = tinhKhungXoayLayer(layer);
             let theta, tamX, tamY, rongGoc, caoGoc;
-            if (khungXoay) {
+            if (layer.khungRieng) {
+                ({ angle: theta, cx: tamX, cy: tamY, width: rongGoc, height: caoGoc } = layer.khungRieng);
+            } else if (khungXoay) {
                 ({ theta, cx: tamX, cy: tamY, width: rongGoc, height: caoGoc } = khungXoay);
             } else {
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -3596,14 +3653,23 @@
 
             // Chụp lại trạng thái GỐC của từng object — mọi phép tính trong
             // lúc kéo đều tính lại từ đây (nhân theo TỈ LỆ hiện tại), không
-            // cộng dồn từng khung hình.
+            // cộng dồn từng khung hình. angle/skewX/skewY chỉ thật sự dùng
+            // khi layer có khungRieng (kéo giãn theo trục khung — xem
+            // keoGianTheoTrucKhung()); layer thường vẫn chỉ cần scaleX/scaleY.
             const trangThaiGoc = layer.objects.map((obj) => {
                 const c = obj.getCenterPoint();
                 return {
                     obj, centerX: c.x, centerY: c.y,
                     scaleX: obj.scaleX, scaleY: obj.scaleY,
+                    angle: obj.angle || 0, skewX: obj.skewX || 0, skewY: obj.skewY || 0,
                 };
             });
+            // Độ dài (có dấu) từ điểm neo tới TÂM KHUNG dọc trục đang co giãn
+            // — hằng số suốt lúc kéo (không đổi theo ti_le), dùng để tính lại
+            // tâm MỚI của khungRieng mỗi khung hình (nhân theo ti_le y hệt
+            // cách tính tâm mới của từng object, nhưng thành phần vuông góc
+            // luôn bằng 0 vì tâm khung nằm ĐÚNG trên trục qua điểm neo).
+            const docTrucKhungGoc = dauKeo * doDaiGoc / 2;
 
             const onMouseMove = (moveEvent) => {
                 const canvasRect = canvas.getElement().getBoundingClientRect();
@@ -3634,11 +3700,13 @@
                 }
                 const ti_le = doDaiMoi / doDaiGoc;
 
-                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, scaleX, scaleY }) => {
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, scaleX, scaleY, angle, skewX, skewY }) => {
                     // Toạ độ tâm object, biểu diễn theo (khoảng cách dọc trục
                     // ĐANG co giãn, khoảng cách dọc trục VUÔNG GÓC) tính từ
                     // điểm neo — trục vuông góc GIỮ NGUYÊN (không đụng tới),
-                    // chỉ trục đang kéo co giãn theo ti_le.
+                    // chỉ trục đang kéo co giãn theo ti_le. Công thức này
+                    // KHÔNG phụ thuộc góc/hình dạng riêng của object, nên
+                    // dùng chung được cho cả 2 trường hợp bên dưới.
                     const relX = ocx - diemNeo.x;
                     const relY = ocy - diemNeo.y;
                     const docTruc = relX * truc.x + relY * truc.y;
@@ -3648,7 +3716,22 @@
                     const newCenterX = diemNeo.x + docTrucMoi * truc.x + vuongGoc * trucVuongGoc.x;
                     const newCenterY = diemNeo.y + docTrucMoi * truc.y + vuongGoc * trucVuongGoc.y;
 
-                    if (axis === 'y') {
+                    if (layer.khungRieng) {
+                        // Khung đã tách khỏi góc object (sau khi xoay bên
+                        // trong) — kéo giãn phải đi theo TRỤC CỦA KHUNG
+                        // (theta ở đây CHÍNH LÀ khungRieng.angle), không phải
+                        // trục cục bộ của object. Dùng ma trận (xem
+                        // keoGianTheoTrucKhung()) để "stretch thế giới" theo
+                        // đúng trục đó mà KHÔNG đụng tới pixel ảnh gốc — chỉ
+                        // đổi angle/scaleX/scaleY/skewX hiển thị.
+                        const sx = axis === 'x' ? ti_le : 1;
+                        const sy = axis === 'y' ? ti_le : 1;
+                        const hinhDang = keoGianTheoTrucKhung({ angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy);
+                        obj.set({
+                            angle: hinhDang.angle, scaleX: hinhDang.scaleX,
+                            scaleY: hinhDang.scaleY, skewX: hinhDang.skewX,
+                        });
+                    } else if (axis === 'y') {
                         obj.scaleY = scaleY * ti_le;
                     } else {
                         obj.scaleX = scaleX * ti_le;
@@ -3656,6 +3739,16 @@
                     obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
                     obj.setCoords();
                 });
+                if (layer.khungRieng) {
+                    const docTrucKhungMoi = docTrucKhungGoc * ti_le;
+                    layer.khungRieng.cx = diemNeo.x + docTrucKhungMoi * truc.x;
+                    layer.khungRieng.cy = diemNeo.y + docTrucKhungMoi * truc.y;
+                    if (axis === 'y') {
+                        layer.khungRieng.height = doDaiGoc * ti_le;
+                    } else {
+                        layer.khungRieng.width = doDaiGoc * ti_le;
+                    }
+                }
                 canvas.renderAll();
                 updateLayerBorder();
             };
@@ -3690,7 +3783,14 @@
             // ảnh KHÔNG xoay thì hàm đó vẫn ra đúng kết quả như AABB cũ.
             const khungXoay = tinhKhungXoayLayer(layer);
             let centerX, centerY, startDist;
-            if (khungXoay) {
+            if (layer.khungRieng) {
+                // Layer có khungRieng (đã "xoay bên trong") — tâm/đường chéo
+                // phải lấy từ khungRieng, không phải object bên trong (có
+                // thể lệch khỏi khung).
+                centerX = layer.khungRieng.cx;
+                centerY = layer.khungRieng.cy;
+                startDist = Math.hypot(layer.khungRieng.width / 2, layer.khungRieng.height / 2) || 1;
+            } else if (khungXoay) {
                 centerX = khungXoay.cx;
                 centerY = khungXoay.cy;
                 // Khoảng cách tâm→góc không đổi khi xoay (xoay không đổi
@@ -3718,6 +3818,8 @@
             const trangThaiGoc = layer.objects.map(obj => ({
                 obj, left: obj.left, top: obj.top, scaleX: obj.scaleX, scaleY: obj.scaleY,
             }));
+            const khungRiengGocRong = layer.khungRieng ? layer.khungRieng.width : 0;
+            const khungRiengGocCao = layer.khungRieng ? layer.khungRieng.height : 0;
 
             const onMouseMove = (moveEvent) => {
                 const canvasRect = canvas.getElement().getBoundingClientRect();
@@ -3749,6 +3851,14 @@
                     obj.top = centerY + (top - centerY) * ratio;
                     obj.setCoords();
                 });
+                if (layer.khungRieng) {
+                    // Co giãn ĐỀU (cùng ratio cả 2 trục) luôn ăn khớp với
+                    // xoay/lệch trục sẵn có của khung — không cần tính lại
+                    // qua ma trận như tay cầm cạnh (co giãn đều giao hoán
+                    // được với xoay). Tâm không đổi (đã neo ở centerX/centerY).
+                    layer.khungRieng.width = khungRiengGocRong * ratio;
+                    layer.khungRieng.height = khungRiengGocCao * ratio;
+                }
                 canvas.renderAll();
                 updateLayerBorder();
             };
