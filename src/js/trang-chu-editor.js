@@ -3347,6 +3347,14 @@
                         '</button>' +
                         '<div class="modal-nut-goc-danh-sach">' +
                             domNhomTheHanhDong() +
+                            // Thẻ X đỏ thứ 2 — đứng ngay sau thẻ cuối cùng
+                            // (không thuộc nhóm nào), logic đóng modal y hệt
+                            // nút X tròn ở góc trên-phải: cùng nằm trong
+                            // '.the-hanh-dong' nên dùng chung vòng lặp gắn
+                            // onclick bên dưới (luôn gọi dongModalNutGocLayer()).
+                            '<button type="button" class="the-hanh-dong the-dong-modal" data-hanh-dong="dong-modal">' +
+                                '<i class="fas fa-times"></i>' +
+                            '</button>' +
                         '</div>' +
                     '</div>';
                 document.body.appendChild(modal);
@@ -3372,6 +3380,23 @@
                 });
             }
             modal.classList.add('active');
+            hieuUngMuiTenNhacLuotXuong();
+        }
+
+        // Hiệu ứng "mũi tên nhắc lướt xuống" — mỗi lần mở modal ~50 thẻ đều
+        // gọi lại (không phải chỉ lần đầu tạo modal), nhắc người dùng còn
+        // rất nhiều thẻ ở phía dưới, phải cuộn xuống mới thấy hết. Toàn bộ
+        // hoạt ảnh (to đùng → thu nhỏ → đứng im 0,25s → trôi dài xuống đáy
+        // màn hình → biến mất) nằm trong 1 keyframe CSS duy nhất
+        // (mui-ten-nhac-luot-xuong, xem trang-chu.css) — JS chỉ tạo phần tử,
+        // gắn class rồi tự dọn dẹp khi hoạt ảnh kết thúc.
+        function hieuUngMuiTenNhacLuotXuong() {
+            document.querySelectorAll('.mui-ten-nhac-luot').forEach((el) => el.remove());
+            const mui = document.createElement('div');
+            mui.className = 'mui-ten-nhac-luot';
+            mui.innerHTML = '<i class="fas fa-arrow-down"></i>';
+            document.body.appendChild(mui);
+            mui.addEventListener('animationend', () => mui.remove());
         }
 
         function dongModalNutGocLayer() {
