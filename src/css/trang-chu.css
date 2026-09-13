@@ -1045,9 +1045,20 @@
 
         /* ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN (menu hành động của layer) =====
            Không có .modal-header (modal này cố ý KHÔNG có tiêu đề) — chỉ có
-           nút đóng đỏ + danh sách nút hành động. */
+           nút đóng đỏ + ~50 thẻ hành động chia thành 9 NHÓM THẺ.
+
+           Modal RỘNG (khác các modal thường 400px) vì chứa rất nhiều thẻ —
+           cần đủ chỗ để nhiều thẻ/dòng thì mới ít phải cuộn. Chữ trong thẻ
+           CỐ Ý nhỏ (xem .the-hanh-dong) để nhìn được toàn cảnh ~50 lựa chọn
+           cùng lúc, giống cách game nhiều nút vẫn thu nhỏ nút mà không mất
+           thẩm mỹ/khó bấm — kích thước thẻ vẫn đủ để bấm thoải mái trên
+           điện thoại (min-height ~34px, padding rộng hơn font). */
         .modal-nut-goc-layer {
-            max-width: 280px;
+            max-width: 900px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 22px;
         }
 
         .modal-close-do {
@@ -1068,30 +1079,87 @@
             background: #c62828;
         }
 
+        /* Bọc ngoài TẤT CẢ các nhóm thẻ — bản thân nó cũng flex-wrap để các
+           nhóm thẻ xếp trái→phải, hết chỗ thì xuống dòng, y hệt cách các
+           thẻ bên trong 1 nhóm tự xuống dòng. */
         .modal-nut-goc-danh-sach {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
+            align-content: flex-start;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 16px;
         }
 
-        .modal-nut-goc-hanh-dong {
-            padding: 12px 16px;
-            border-radius: var(--bo-nut, 8px);
-            border: 1px solid var(--vien);
-            background: var(--the-2);
-            color: var(--chu);
-            font-size: 0.95rem;
+        /* Mỗi NHÓM THẺ: 1 khung viền riêng, cũng tự flex-wrap bên trong nó
+           — khung viền vì thế LUÔN sát biên ngoài của đúng số thẻ đang có
+           trên mỗi dòng, kể cả khi nhóm bị xuống dòng nội bộ (khung tự cao
+           thêm theo số dòng, không phải hình chữ nhật cố định kích thước).
+           Viền dùng CHUNG 1 màu cho mọi nhóm (--vien-nhom-the) — 2 nhóm nằm
+           sát nhau thì 2 đường viền cùng màu chồng lên nhau trông như 1
+           đường duy nhất (margin âm bằng đúng bề dày viền để "ăn" luôn viền
+           của gap giữa 2 nhóm, giống border-collapse của bảng). */
+        .modal-nut-goc-nhom {
+            --vien-nhom-the: #c3c8d1;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 6px;
+            padding: 6px;
+            border: 1.5px solid var(--vien-nhom-the);
+            border-radius: 10px;
+            margin: -0.75px;
+        }
+
+        .the-hanh-dong {
+            border: none;
+            border-radius: 7px;
+            padding: 7px 9px;
+            min-height: 34px;
+            font-size: 0.72rem;
+            line-height: 1.25;
             font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
             cursor: pointer;
-            text-align: left;
-            transition: all 0.2s;
+            text-align: center;
+            white-space: normal;
+            max-width: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
-        .modal-nut-goc-hanh-dong:hover {
-            background: var(--current-layer-color);
-            color: #fff;
-            border-color: var(--current-layer-color);
+        .the-hanh-dong:hover {
+            transform: scale(1.08);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+            z-index: 1;
+        }
+
+        .the-hanh-dong:active {
+            transform: scale(1);
+        }
+
+        /* 9 nhóm thẻ — 9 màu nền gradient khác nhau, cùng nhóm luôn cùng
+           màu. Chọn màu đủ tương phản với nhau để phân biệt nhanh nhóm nào
+           với nhóm nào giữa ~50 thẻ. */
+        .modal-nut-goc-nhom[data-nhom="1"] .the-hanh-dong { background: linear-gradient(135deg, #6366f1, #a5b4fc); }
+        .modal-nut-goc-nhom[data-nhom="2"] .the-hanh-dong { background: linear-gradient(135deg, #0891b2, #67e8f9); }
+        .modal-nut-goc-nhom[data-nhom="3"] .the-hanh-dong { background: linear-gradient(135deg, #db2777, #f9a8d4); }
+        .modal-nut-goc-nhom[data-nhom="4"] .the-hanh-dong { background: linear-gradient(135deg, #d97706, #fcd34d); }
+        .modal-nut-goc-nhom[data-nhom="5"] .the-hanh-dong { background: linear-gradient(135deg, #059669, #6ee7b7); }
+        .modal-nut-goc-nhom[data-nhom="6"] .the-hanh-dong { background: linear-gradient(135deg, #7c3aed, #c4b5fd); }
+        .modal-nut-goc-nhom[data-nhom="7"] .the-hanh-dong { background: linear-gradient(135deg, #dc2626, #fca5a5); }
+        .modal-nut-goc-nhom[data-nhom="8"] .the-hanh-dong { background: linear-gradient(135deg, #475569, #94a3b8); }
+        .modal-nut-goc-nhom[data-nhom="9"] .the-hanh-dong { background: linear-gradient(135deg, #0d9488, #5eead4); }
+
+        @media (max-width: 480px) {
+            .the-hanh-dong {
+                font-size: 0.68rem;
+                padding: 6px 7px;
+                max-width: 120px;
+            }
         }
 
         .info-row {

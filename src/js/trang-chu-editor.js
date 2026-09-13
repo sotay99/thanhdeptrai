@@ -3236,9 +3236,104 @@
         // ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN =====
         // Modal nhỏ, không tiêu đề, hiện giữa MÀN HÌNH (không phải giữa
         // layer) — tạo 1 lần duy nhất (lười tạo, addEventListener không lặp
-        // lại), các lần mở sau chỉ thêm class 'active'. Tạm thời chỉ có 2
-        // nút; sau này thêm hành động mới thì chỉ cần thêm phần tử vào
-        // '.modal-nut-goc-danh-sach', không phải sửa cơ chế đóng/mở.
+        // lại), các lần mở sau chỉ thêm class 'active'.
+        //
+        // Danh sách đầy đủ ~50 nút hành động, chia thành 9 NHÓM THẺ (mỗi
+        // nhóm 1 màu nền gradient riêng, xem CSS `.modal-nut-goc-nhom`).
+        // CHỈ 2 nút đầu của nhóm 1 (delete/duplicate) có logic thật — mọi
+        // nút còn lại cố ý KHÔNG gắn logic (data-hanh-dong vẫn có, nhưng
+        // handleLayerControlAction() không có case tương ứng nên bấm vào
+        // không làm gì — "liệt tạm", chờ gắn logic sau).
+        var NHOM_THE_HANH_DONG = [
+            [
+                { ma: 'delete', ten: 'Xóa Layer này' },
+                { ma: 'duplicate', ten: 'Nhân đôi Layer' },
+                { ma: 'crop', ten: 'cắt xén' },
+                { ma: 'do-mo', ten: 'độ mờ' },
+                { ma: 'phoi-canh', ten: 'phối cảnh-kéo 4 góc' },
+                { ma: 'be-cong-luoi', ten: 'bẻ cong dạng lưới' },
+                { ma: 'gian-hoa-long', ten: 'giãn-hoá lỏng' },
+                { ma: 'puppet-warp', ten: 'puppet warp' },
+                { ma: 'quay-90-thuan', ten: 'quay 90 độ (thuận)', icon: 'fa-rotate-right' },
+                { ma: 'quay-90-nguoc', ten: 'quay 90 độ (ngược)', icon: 'fa-rotate-left' },
+                { ma: 'quay-180', ten: 'quay 180 độ' },
+                { ma: 'lat-ngang', ten: 'lật ngang' },
+                { ma: 'lat-doc', ten: 'lật dọc' },
+            ],
+            [
+                { ma: 'len-1-lop', ten: 'Lên 1 lớp' },
+                { ma: 'len-tren-cung', ten: 'Lên trên cùng' },
+                { ma: 'xuong-1-lop', ten: 'Xuống 1 lớp' },
+                { ma: 'xuong-duoi-cung', ten: 'Xuống dưới cùng' },
+            ],
+            [
+                { ma: 'chinh-co-the', ten: 'chỉnh cơ thể' },
+                { ma: 'chinh-khuon-mat', ten: 'chỉnh khuôn mặt' },
+                { ma: 'make-up', ten: 'make Up' },
+                { ma: 'chinh-trang-phuc-ai', ten: 'Chỉnh trang phục (AI)' },
+                { ma: 'mau-toc-kieu-toc-ai', ten: 'Màu tóc-kiểu tóc (AI)' },
+                { ma: 'chinh-bau-troi-ai', ten: 'Chỉnh bầu trời (AI)' },
+            ],
+            [
+                { ma: 'xoa-chi-tiet-khoi-phuc', ten: 'xóa chi tiết-khôi phục' },
+                { ma: 'xoa-lap-day-lai', ten: 'xóa và lấp đầy lại' },
+                { ma: 'nhan-ban-diem-anh', ten: 'nhân bản điểm ảnh' },
+                { ma: 'che-diem-anh', ten: 'che điểm ảnh' },
+                { ma: 'tao-vung-chon-tu-dong-ai', ten: 'Tạo vùng chọn tự động (AI)' },
+                { ma: 'tao-vung-chon-thu-cong', ten: 'Tạo vùng chọn thủ công' },
+                { ma: 'xoa-phong-nen-ai', ten: 'Xoá phông nền (AI)' },
+                { ma: 'chinh-phong-nen-ai', ten: 'Chỉnh phông nền (AI)' },
+                { ma: 'sua-trong-vung-chon-ai', ten: 'sửa trong vùng chọn (AI)' },
+                { ma: 'mo-rong-anh-ai', ten: 'mở rộng ảnh (AI)' },
+                { ma: 'hieu-ung-ai', ten: 'Hiệu ứng (AI)' },
+            ],
+            [
+                { ma: 'hoa-tron-thuong', ten: 'Hòa trộn thường' },
+                { ma: 'hoa-tron-chi-tiet', ten: 'Hòa trộn chi tiết' },
+                { ma: 'dong-bo-mau-tu-layer-khac', ten: 'Đồng bộ màu từ layer khác' },
+                { ma: 'hieu-chinh-mau-sac-anh-sang', ten: 'hiệu chỉnh màu sắc ánh sáng' },
+                { ma: 'mau-sac-anh-sang-ai', ten: 'màu sắc ánh sáng (AI)' },
+                { ma: 'bo-loc', ten: 'bộ lọc' },
+                { ma: 'hieu-chinh-hieu-ung', ten: 'hiệu chỉnh hiệu ứng' },
+                { ma: 'hieu-chinh-chi-tiet', ten: 'hiệu chỉnh chi tiết' },
+                { ma: 'lam-net-ai', ten: 'Làm nét (AI)' },
+                { ma: 'co-lam-net-mo', ten: 'cọ làm nét-mờ' },
+                { ma: 'co-lam-sang-toi', ten: 'cọ làm sáng-tối' },
+            ],
+            [
+                { ma: 'but-ve', ten: 'Bút vẽ' },
+                { ma: 'chen-chu-vao-layer', ten: 'Chèn chữ vào trong Layer' },
+                { ma: 'do-mau', ten: 'đổ màu' },
+                { ma: 'chuyen-sac', ten: 'chuyển sắc' },
+            ],
+            [
+                { ma: 'hinh-dang-mockup', ten: 'hình dạng mockup' },
+                { ma: 'tao-vien', ten: 'tạo viền' },
+                { ma: 'do-bong', ten: 'đổ bóng' },
+                { ma: 'tuy-chinh-kieu-layer', ten: 'Tùy chỉnh kiểu layer' },
+            ],
+            [
+                { ma: 'tron-layer', ten: 'trộn layer' },
+                { ma: 'khoa-layer', ten: 'Khóa layer' },
+                { ma: 'an-layer', ten: 'Ẩn Layer' },
+                { ma: 'lich-su-chinh-sua-layer', ten: 'Lịch sử chỉnh sửa Layer' },
+                { ma: 'khoi-phuc-lai-toan-bo', ten: 'Khôi phục lại toàn bộ' },
+            ],
+            [
+                { ma: 'tim-hieu-chuc-nang', ten: 'Tìm hiểu về các chức năng phía trên' },
+            ],
+        ];
+
+        function domNhomTheHanhDong() {
+            return NHOM_THE_HANH_DONG.map((nhom, chiSoNhom) => {
+                const the = nhom.map((item) => {
+                    const icon = item.icon ? `<i class="fas ${item.icon}"></i> ` : '';
+                    return `<button type="button" class="the-hanh-dong" data-hanh-dong="${item.ma}">${icon}${escapeHtmlText(item.ten)}</button>`;
+                }).join('');
+                return `<div class="modal-nut-goc-nhom" data-nhom="${(chiSoNhom % 9) + 1}">${the}</div>`;
+            }).join('');
+        }
+
         function moModalNutGocLayer() {
             let modal = document.getElementById('modalNutGocLayer');
             if (!modal) {
@@ -3251,8 +3346,7 @@
                             '<i class="fas fa-times"></i>' +
                         '</button>' +
                         '<div class="modal-nut-goc-danh-sach">' +
-                            '<button type="button" class="modal-nut-goc-hanh-dong" data-hanh-dong="delete">Xoá layer này</button>' +
-                            '<button type="button" class="modal-nut-goc-hanh-dong" data-hanh-dong="duplicate">Nhân đôi Layer này</button>' +
+                            domNhomTheHanhDong() +
                         '</div>' +
                     '</div>';
                 document.body.appendChild(modal);
@@ -3266,9 +3360,10 @@
                     if (e.target === modal) dongModalNutGocLayer();
                 });
 
-                // Cách 3: bấm 1 trong các nút hành động — đóng modal ĐỒNG
-                // THỜI kích hoạt đúng hành động vừa bấm.
-                modal.querySelectorAll('.modal-nut-goc-hanh-dong').forEach((btn) => {
+                // Cách 3: bấm 1 trong các thẻ hành động — đóng modal ĐỒNG
+                // THỜI kích hoạt đúng hành động vừa bấm (nếu có logic — xem
+                // handleLayerControlAction(), các mã chưa có case thì no-op).
+                modal.querySelectorAll('.the-hanh-dong').forEach((btn) => {
                     btn.onclick = () => {
                         const hanhDong = btn.dataset.hanhDong;
                         dongModalNutGocLayer();
