@@ -1187,10 +1187,11 @@
         }
 
         /* ===== Hiệu ứng mũi tên nhắc lướt xuống — mỗi lần mở modal =====
-           Tổng thời lượng 3,4s: bung to → thu nhỏ (~0,19s đầu), đứng im
-           ĐÚNG 0,25s (5,6%→13%), rồi trôi xuống — đoạn TRÔI riêng chiếm
-           87% còn lại của 3,4s ≈ 2,96s: GẤP ĐÔI bản trước (~1,46s), theo
-           đúng yêu cầu "chậm hơn gấp đôi nữa". */
+           Tổng thời lượng 6,36s: bung to → thu nhỏ (~0,19s đầu, giữ NGUYÊN
+           thời gian tuyệt đối như bản trước), đứng im ĐÚNG 0,25s (3%→6,9%),
+           rồi trôi xuống — đoạn TRÔI riêng chiếm 93,1% còn lại của 6,36s ≈
+           5,92s: GẤP ĐÔI đoạn trôi bản trước (~2,96s), theo đúng yêu cầu
+           "tăng gấp đôi thời gian trôi". */
         .mui-ten-nhac-luot {
             position: fixed;
             top: 50%;
@@ -1206,13 +1207,13 @@
             filter: drop-shadow(0 0 18px rgba(255, 59, 48, 0.85)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.5));
             pointer-events: none;
             z-index: 100000;
-            animation: mui-ten-nhac-luot-xuong 3.4s cubic-bezier(.2, .7, .3, 1) forwards;
+            animation: mui-ten-nhac-luot-xuong 6.36s cubic-bezier(.2, .7, .3, 1) forwards;
         }
 
         @keyframes mui-ten-nhac-luot-xuong {
             0% { transform: scale(2.6); opacity: 0; }
-            5.6% { transform: scale(1); opacity: .5; }
-            13% { transform: scale(1); opacity: .5; }
+            3% { transform: scale(1); opacity: .5; }
+            6.9% { transform: scale(1); opacity: .5; }
             100% { transform: translateY(150vh) scale(1); opacity: 0; }
         }
 

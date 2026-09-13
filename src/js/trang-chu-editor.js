@@ -3396,10 +3396,11 @@
 
         // Hiệu ứng nhấp nháy 2 nút cuộn — mỗi lần mở modal đều chạy lại.
         // Nút "xuống" phóng to/thu nhỏ trước, rồi tới nút "lên", THAY PHIÊN
-        // nhau như vậy cho tới khi mỗi nút đủ 3 lần thì dừng hẳn — tổng
-        // cộng 6 lượt phóng-to-thu-nhỏ nối đuôi nhau, chia đều trong
-        // khoảng 4 giây (mỗi lượt ~0,667s: nửa đầu phóng to, nửa sau thu
-        // nhỏ lại, êm nhờ transition ở CSS chứ không nhảy khung hình).
+        // nhau như vậy cho tới khi mỗi nút đủ 6 lần thì dừng hẳn (gấp đôi
+        // 3 lần bản trước) — tổng cộng 12 lượt phóng-to-thu-nhỏ nối đuôi
+        // nhau, chia đều trong khoảng 8 giây (gấp đôi 4 giây bản trước; mỗi
+        // lượt vẫn ~0,667s: nửa đầu phóng to, nửa sau thu nhỏ lại, êm nhờ
+        // transition ở CSS chứ không nhảy khung hình).
         // CHỈ áp dụng cho 2 nút của modal này (lọc qua [data-modal-cua]).
         function hieuUngNhapNhayNutCuon() {
             henGioNhapNhayNutCuon.forEach((id) => clearTimeout(id));
@@ -3411,8 +3412,8 @@
             nutXuong.classList.remove('dang-nhap-nhay');
             nutLen.classList.remove('dang-nhap-nhay');
 
-            const TONG_THOI_LUONG = 4000;
-            const SO_LAN_MOI_NUT = 3;
+            const TONG_THOI_LUONG = 8000;
+            const SO_LAN_MOI_NUT = 6;
             const moiLuot = TONG_THOI_LUONG / (SO_LAN_MOI_NUT * 2);
             const nuaLuot = moiLuot / 2;
 
