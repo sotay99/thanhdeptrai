@@ -1187,11 +1187,10 @@
         }
 
         /* ===== Hiệu ứng mũi tên nhắc lướt xuống — mỗi lần mở modal =====
-           Tổng thời lượng 1,9s: bung to → thu nhỏ (~10%), đứng im ĐÚNG
-           0,25s (10%→23%, tức 0,13*1,9s), rồi trôi xuống — đoạn TRÔI riêng
-           chiếm 77% còn lại của 1,9s ≈ 1,46s, nằm đúng trong khoảng
-           1-1,5 giây yêu cầu (chậm hơn hẳn bản trước, vốn trôi trong lúc
-           0,9s vì gộp chung 1 khoảng 1,5s cho cả 3 giai đoạn). */
+           Tổng thời lượng 3,4s: bung to → thu nhỏ (~0,19s đầu), đứng im
+           ĐÚNG 0,25s (5,6%→13%), rồi trôi xuống — đoạn TRÔI riêng chiếm
+           87% còn lại của 3,4s ≈ 2,96s: GẤP ĐÔI bản trước (~1,46s), theo
+           đúng yêu cầu "chậm hơn gấp đôi nữa". */
         .mui-ten-nhac-luot {
             position: fixed;
             top: 50%;
@@ -1207,14 +1206,35 @@
             filter: drop-shadow(0 0 18px rgba(255, 59, 48, 0.85)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.5));
             pointer-events: none;
             z-index: 100000;
-            animation: mui-ten-nhac-luot-xuong 1.9s cubic-bezier(.2, .7, .3, 1) forwards;
+            animation: mui-ten-nhac-luot-xuong 3.4s cubic-bezier(.2, .7, .3, 1) forwards;
         }
 
         @keyframes mui-ten-nhac-luot-xuong {
             0% { transform: scale(2.6); opacity: 0; }
-            10% { transform: scale(1); opacity: 1; }
-            23% { transform: scale(1); opacity: 1; }
+            5.6% { transform: scale(1); opacity: 1; }
+            13% { transform: scale(1); opacity: 1; }
             100% { transform: translateY(150vh) scale(1); opacity: 0; }
+        }
+
+        /* ===== 2 nút cuộn lên/xuống của modal nút "+" =====
+           Dùng chung class '.nut-cuon-modal' (base.css) để hình dạng/vị
+           trí/kích thước giống hệt 2 nút cuộn ở modal "Chi tiết sản phẩm",
+           NHƯNG lớp phủ modal của module này ('.modal-overlay') có
+           z-index: 2000 — cao hơn hẳn z-index: 500 mặc định của
+           '.nut-cuon-modal' (vốn chỉ cần cao hơn '.modal-lop' z-index: 450
+           bên hệ modal chung của shop). Không ghi đè z-index chung (ảnh
+           hưởng toàn shop) — chỉ nâng z-index CHO RIÊNG 2 nút của modal
+           này (chọn qua [data-modal-cua]) lên trên cả '.modal-overlay',
+           nếu không lớp phủ (dù trong suốt) vẫn nằm trên 2 nút và "ăn"
+           hết sự kiện chuột: bấm/rê vào nút chỉ trúng lớp phủ, bị hiểu
+           nhầm thành "bấm ra ngoài" nên modal tự đóng, đồng thời khiến 2
+           nút bị lớp phủ làm mờ đi (và ở màn hình hẹp còn bị khung modal
+           đè hẳn lên, biến mất hoàn toàn). Cũng bỏ luôn hiệu ứng mờ mặc
+           định (opacity: .55) — mờ mờ giữa nền tối của lớp phủ càng khó
+           thấy hơn. */
+        .nut-cuon-modal[data-modal-cua="nutGocLayer"] {
+            z-index: 2001;
+            opacity: 1;
         }
 
         .info-row {
