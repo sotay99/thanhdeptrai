@@ -78,78 +78,11 @@
     <div class="main-container">
         <!-- LEFT SIDEBAR -->
         <div class="sidebar-left">
-            <!-- BASIC TOOLS -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-toolbox"></i> Công Cụ
-                    <button class="sidebar-panel-close" onclick="closeSidePanels()" title="Đóng">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <button class="tool-btn" onclick="addText()">
-                    <i class="fas fa-font"></i> Thêm Text
-                </button>
-                <button class="tool-btn" onclick="addShape()">
-                    <i class="fas fa-shapes"></i> Hình Dạng
-                </button>
-                <button class="tool-btn" onclick="cropImage()">
-                    <i class="fas fa-crop"></i> Cắt
-                </button>
-                <button class="tool-btn" onclick="rotateImage()">
-                    <i class="fas fa-rotate-right"></i> Xoay
-                </button>
-                <button class="tool-btn" onclick="flipImageHorizontal()">
-                    <i class="fas fa-arrows-alt-h"></i> Lật
-                </button>
-            </div>
-
-            <!-- AI FEATURES -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-brain"></i> AI Features
-                </div>
-                <button class="tool-btn ai-feature" onclick="removeBackground()">
-                    <i class="fas fa-eraser"></i> Xoá Nền
-                </button>
-                <button class="tool-btn ai-feature" onclick="showInpaintModal()">
-                    <i class="fas fa-paint-brush"></i> Sửa Vùng
-                </button>
-                <button class="tool-btn ai-feature" onclick="upscaleImage()">
-                    <i class="fas fa-arrow-up"></i> Nâng Cấp
-                </button>
-            </div>
-
-            <!-- FILTERS -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-filter"></i> Bộ Lọc
-                </div>
-                <button class="tool-btn" onclick="applyFilter('grayscale')">
-                    <i class="fas fa-image"></i> Đen Trắng
-                </button>
-                <button class="tool-btn" onclick="applyFilter('sepia')">
-                    <i class="fas fa-image"></i> Sepia
-                </button>
-                <button class="tool-btn" onclick="applyFilter('blur')">
-                    <i class="fas fa-image"></i> Mờ
-                </button>
-            </div>
-
-            <!-- HISTORY -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-history"></i> Lịch Sử
-                </div>
-                <button class="tool-btn" onclick="undo()">
-                    <i class="fas fa-undo"></i> Hoàn Tác
-                </button>
-                <button class="tool-btn" onclick="redo()">
-                    <i class="fas fa-redo"></i> Làm Lại
-                </button>
-            </div>
-
-            <!-- MÀU TÔ + THÔNG TIN ẢNH (chuyển từ khung bên phải xuống cuối
-                 khung Công Cụ để khung Lớp bên phải có thêm chỗ) -->
+            <!-- Cố ý CHỈ còn Màu Tô + Thông Tin Ảnh — mọi công cụ khác (Thêm
+                 Text/Hình Dạng/Cắt/Xoay/Lật, AI Features, Bộ Lọc, Lịch Sử)
+                 đã bị gỡ bỏ hoàn toàn (kể cả JS phía sau) theo yêu cầu, chừa
+                 chỗ trống để chủ shop tự thiết kế công cụ riêng sau này. Độ
+                 rộng khung (CSS .sidebar-left) giữ nguyên không đổi. -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">
                     <i class="fas fa-palette"></i> Màu Tô
@@ -202,42 +135,16 @@
 
         <!-- RIGHT SIDEBAR -->
         <div class="sidebar-right">
-            <!-- ADJUSTMENTS -->
+            <!-- ADJUSTMENTS — cố ý CHỈ còn tiêu đề (icon + chữ "Hiệu Chỉnh"
+                 đứng một mình), 3 thanh trượt cũ (Độ Sáng/Độ Tương Phản/
+                 Bão Hòa) và JS phía sau (updateBrightness/updateContrast/
+                 updateSaturation) đã bị gỡ bỏ hoàn toàn theo yêu cầu, chừa
+                 chỗ để chủ shop tự thiết kế công cụ hiệu chỉnh riêng sau
+                 này. Không còn nút đóng — chỉ là chữ đứng yên. -->
             <div class="adjustments-section">
                 <div class="sidebar-section-title">
-                    <i class="fas fa-sliders-h"></i> Điều Chỉnh
-                    <button class="sidebar-panel-close" onclick="closeSidePanels()" title="Đóng">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <i class="fas fa-sliders-h"></i> Hiệu Chỉnh
                 </div>
-
-                <div class="property-group">
-                    <label class="property-label">Độ Sáng</label>
-                    <div class="slider-container">
-                        <input type="range" id="brightness" min="0" max="200" value="100" 
-                               onchange="updateBrightness(this.value)">
-                        <span class="slider-value" id="brightnessValue">100%</span>
-                    </div>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Độ Tương Phản</label>
-                    <div class="slider-container">
-                        <input type="range" id="contrast" min="0" max="200" value="100" 
-                               onchange="updateContrast(this.value)">
-                        <span class="slider-value" id="contrastValue">100%</span>
-                    </div>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Bão Hòa</label>
-                    <div class="slider-container">
-                        <input type="range" id="saturation" min="0" max="200" value="100" 
-                               onchange="updateSaturation(this.value)">
-                        <span class="slider-value" id="saturationValue">100%</span>
-                    </div>
-                </div>
-
             </div>
 
             <!-- LAYERS PANEL -->
@@ -500,14 +407,6 @@
                         <td style="padding: 8px;">Save/Download image</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 8px; font-family: monospace; color: #666;"><kbd>Ctrl+Z</kbd></td>
-                        <td style="padding: 8px;">Undo (partial support)</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 8px; font-family: monospace; color: #666;"><kbd>Ctrl+Y</kbd></td>
-                        <td style="padding: 8px;">Redo (partial support)</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #eee;">
                         <td style="padding: 8px; font-family: monospace; color: #666;"><kbd>Ctrl+Shift+↑</kbd></td>
                         <td style="padding: 8px;">Move layer up</td>
                     </tr>
@@ -560,29 +459,6 @@
                     <i class="fas fa-check"></i> Xác Nhận
                 </button>
                 <button class="btn-modal-secondary" style="flex: 1; padding: 10px;" onclick="hideRenameModal()">
-                    <i class="fas fa-times"></i> Hủy
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- INPAINT MODAL -->
-    <div class="modal-overlay" id="inpaintModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="hideInpaintModal()">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="modal-header">Sửa Vùng (AI Inpainting)</div>
-            <div class="property-group">
-                <label class="property-label">Mô Tả Vùng Cần Sửa</label>
-                <textarea id="inpaintPrompt" class="property-input" rows="4" 
-                    placeholder="Ví dụ: bầu trời xanh, hoa hồng..."></textarea>
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn-modal-primary" style="flex: 1; padding: 10px;" onclick="executeInpaint()">
-                    <i class="fas fa-check"></i> Thực Hiện
-                </button>
-                <button class="btn-modal-secondary" style="flex: 1; padding: 10px;" onclick="hideInpaintModal()">
                     <i class="fas fa-times"></i> Hủy
                 </button>
             </div>
