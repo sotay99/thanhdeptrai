@@ -1291,11 +1291,11 @@
         }
 
         /* ===== Hiệu ứng mũi tên nhắc lướt xuống — mỗi lần mở modal =====
-           Tổng thời lượng 1,9s: bung to → thu nhỏ (~10%), đứng im ĐÚNG
-           0,25s (10%→23%, tức 0,13*1,9s), rồi trôi xuống — đoạn TRÔI riêng
-           chiếm 77% còn lại của 1,9s ≈ 1,46s, nằm đúng trong khoảng
-           1-1,5 giây yêu cầu (chậm hơn hẳn bản trước, vốn trôi trong lúc
-           0,9s vì gộp chung 1 khoảng 1,5s cho cả 3 giai đoạn). */
+           Tổng thời lượng 6,36s: bung to → thu nhỏ (~0,19s đầu, giữ NGUYÊN
+           thời gian tuyệt đối như bản trước), đứng im ĐÚNG 0,25s (3%→6,9%),
+           rồi trôi xuống — đoạn TRÔI riêng chiếm 93,1% còn lại của 6,36s ≈
+           5,92s: GẤP ĐÔI đoạn trôi bản trước (~2,96s), theo đúng yêu cầu
+           "tăng gấp đôi thời gian trôi". */
         .mui-ten-nhac-luot {
             position: fixed;
             top: 50%;
@@ -1311,14 +1311,46 @@
             filter: drop-shadow(0 0 18px rgba(255, 59, 48, 0.85)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.5));
             pointer-events: none;
             z-index: 100000;
-            animation: mui-ten-nhac-luot-xuong 1.9s cubic-bezier(.2, .7, .3, 1) forwards;
+            animation: mui-ten-nhac-luot-xuong 6.36s cubic-bezier(.2, .7, .3, 1) forwards;
         }
 
         @keyframes mui-ten-nhac-luot-xuong {
             0% { transform: scale(2.6); opacity: 0; }
-            10% { transform: scale(1); opacity: 1; }
-            23% { transform: scale(1); opacity: 1; }
+            3% { transform: scale(1); opacity: .5; }
+            6.9% { transform: scale(1); opacity: .5; }
             100% { transform: translateY(150vh) scale(1); opacity: 0; }
+        }
+
+        /* ===== 2 nút cuộn lên/xuống của modal nút "+" =====
+           Dùng chung class '.nut-cuon-modal' (base.css) để hình dạng/vị
+           trí/kích thước giống hệt 2 nút cuộn ở modal "Chi tiết sản phẩm",
+           NHƯNG lớp phủ modal của module này ('.modal-overlay') có
+           z-index: 2000 — cao hơn hẳn z-index: 500 mặc định của
+           '.nut-cuon-modal' (vốn chỉ cần cao hơn '.modal-lop' z-index: 450
+           bên hệ modal chung của shop). Không ghi đè z-index chung (ảnh
+           hưởng toàn shop) — chỉ nâng z-index CHO RIÊNG 2 nút của modal
+           này (chọn qua [data-modal-cua]) lên trên cả '.modal-overlay',
+           nếu không lớp phủ (dù trong suốt) vẫn nằm trên 2 nút và "ăn"
+           hết sự kiện chuột: bấm/rê vào nút chỉ trúng lớp phủ, bị hiểu
+           nhầm thành "bấm ra ngoài" nên modal tự đóng, đồng thời khiến 2
+           nút bị lớp phủ làm mờ đi (và ở màn hình hẹp còn bị khung modal
+           đè hẳn lên, biến mất hoàn toàn). Cũng bỏ luôn hiệu ứng mờ mặc
+           định (opacity: .55) — mờ mờ giữa nền tối của lớp phủ càng khó
+           thấy hơn. */
+        .nut-cuon-modal[data-modal-cua="nutGocLayer"] {
+            z-index: 2001;
+            opacity: 1;
+            transition: transform .25s ease;
+        }
+
+        /* Hiệu ứng nhấp nháy (phóng to rồi thu nhỏ lại mượt mà, dùng
+           transition ở trên chứ không phải keyframe giật cục) — bật/tắt
+           bằng JS (hieuUngNhapNhayNutCuon()) mỗi lần mở modal, xem
+           trang-chu-editor.js. CHỈ áp dụng cho 2 nút của modal này
+           ([data-modal-cua="nutGocLayer"]), không đụng nút cuộn ở modal
+           khác trong shop. */
+        .nut-cuon-modal[data-modal-cua="nutGocLayer"].dang-nhap-nhay {
+            transform: scale(1.4);
         }
 
         .info-row {
@@ -1409,6 +1441,46 @@
            không có nút). */
         .canvas-layer-border.canvas-layer-border-chinh {
             border-width: 3px;
+        }
+
+        /* ===== Hiệu ứng "xem trước" bật bằng nút con mắt =====
+           Bật bằng toggleXemTruocKhungVien() (trang-chu-editor.js) — CHỈ
+           đổi hiển thị, không đụng logic chọn layer/active nào khác. Ẩn
+           hết 4 nút góc + 4 điểm neo, CHỪA LẠI nút con mắt (data-action=
+           "mat") để còn bấm tắt được. */
+        .canvas-layer-border.xem-truoc-khung-vien .layer-control-btn:not([data-action="mat"]),
+        .canvas-layer-border.xem-truoc-khung-vien .resize-handle {
+            display: none;
+        }
+
+        /* Khung nhấp nháy tuần hoàn: mờ dần (0→20%, ~1s) → mất hẳn, đứng im
+           1,5s (20%→50%) → hiện dần (50%→70%, ~1s) → đứng rõ 1,5s (70%→100%)
+           → lặp lại — tổng 1 vòng 5s, animation infinite nên lặp mãi tới
+           khi bấm nút con mắt lần nữa (gỡ class, dừng ngay, không kẹt giữa
+           chừng vì không có transition nào khác chi phối opacity). */
+        /* Tổng 1 vòng 6s: mờ dần 1s (0%→16,667%) → mất hẳn, đứng im LẶNG
+           2,5s (16,667%→58,333%) → hiện dần rõ 1s (58,333%→75%) → đứng rõ
+           1,5s (75%→100%), NHƯNG giữa khoảng đứng rõ đó có 1 cái CHỚP tức
+           thời (mất hẳn ngay lập tức rồi hiện lại ngay lập tức, không mờ
+           dần) — 2 cặp keyframe cách nhau khoảng 1 khung hình (~0,28%,
+           ~0,017s) tự ghi đè animation-timing-function thành steps(1,end)
+           CHỈ cho đúng 2 đoạn chớp đó, nên chỉ có đoạn này "nhảy" tức thời
+           còn mọi đoạn mờ/hiện dần khác vẫn ease-in-out êm như cũ.
+           Nút con mắt là CON của khung này nên tự dính chung hiệu ứng —
+           opacity cha kéo theo cả khung LẪN nút, không cần khai riêng. */
+        .canvas-layer-border.xem-truoc-khung-vien {
+            animation: xem-truoc-khung-vien-nhap-nhay 6s ease-in-out infinite;
+        }
+
+        @keyframes xem-truoc-khung-vien-nhap-nhay {
+            0% { opacity: 1; }
+            16.667% { opacity: 0; }
+            58.333% { opacity: 0; }
+            75% { opacity: 1; }
+            87.5% { opacity: 1; animation-timing-function: steps(1, end); }
+            87.78% { opacity: 0; animation-timing-function: steps(1, end); }
+            88.06% { opacity: 1; }
+            100% { opacity: 1; }
         }
 
         .layer-control-btn {

@@ -3093,7 +3093,15 @@
                 // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
                 // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
                 // vốn là 4 mũi tên rời góc, dễ hiểu lầm là "toàn màn hình").
-                'scale': { dx: 1, dy: 1, icon: 'fa-up-right-and-down-left-from-center' }
+                'scale': { dx: 1, dy: 1, icon: 'fa-up-right-and-down-left-from-center' },
+                // Nút "con mắt" MỚI — KHÔNG phải nút ẩn/hiện layer ở panel
+                // (đó dùng fa-eye/fa-eye-slash); cố ý dùng icon khác hẳn
+                // (fa-eye-low-vision) để không gây nhầm 2 nút mắt với nhau.
+                // Vị trí không nằm ở 1 trong 4 góc như các nút khác — đặt
+                // và tính riêng trong capNhatViTriNutVaTayCam() (giữa nút
+                // zoom và điểm neo cạnh phải, sát mép ngoài) — dx/dy ở đây
+                // chỉ mang tính chú thích, không dùng để tính vị trí.
+                'mat': { dx: 1, dy: 0, icon: 'fa-eye-low-vision', tron: true },
             };
 
             Object.entries(positions).forEach(([action, pos]) => {
@@ -3138,6 +3146,14 @@
                     btn.onclick = (e) => {
                         e.stopPropagation();
                         moModalNutGocLayer();
+                    };
+                } else if (action === 'mat') {
+                    // CHỈ là hiệu ứng hiển thị (xem trước khung viền nhấp
+                    // nháy) — không đụng tới layer đang active/logic khác,
+                    // xem chú thích ở toggleXemTruocKhungVien().
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleXemTruocKhungVien(border);
                     };
                 } else {
                     btn.onclick = (e) => {
@@ -3204,6 +3220,9 @@
             const NUA_CANH_DIEM_NEO = 5; // nửa cạnh 10px của điểm neo
 
             border.querySelectorAll('.layer-control-btn').forEach(btn => {
+                // Nút "con mắt" (data-action="mat") không nằm ở 1 trong 4
+                // góc — tính riêng bên dưới, bỏ qua ở đây.
+                if (btn.dataset.action === 'mat') return;
                 const dx = Number(btn.dataset.dx), dy = Number(btn.dataset.dy);
                 const px = dx * (bWidth / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
                 const py = dy * (bHeight / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
@@ -3218,6 +3237,50 @@
                 const py = dy * (bHeight / 2 + NUA_CANH_DIEM_NEO);
                 handle.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
             });
+
+            // Nút "con mắt" — nằm dọc cạnh PHẢI, sát MÉP NGOÀI y hệt điểm
+            // neo cạnh (không chồm vào trong như 4 nút góc), ở đúng khoảng
+            // giữa nút zoom (góc dưới-phải) và điểm neo cạnh phải (giữa
+            // cạnh, dy=0) khi layer CHƯA xoay — vì mọi phép tính ở đây đều
+            // làm trong hệ toạ độ CỤC BỘ của layer (trước khi border xoay
+            // theta độ), nên "ở trên nút zoom" vẫn đúng cho MỌI góc xoay.
+            const nutMat = border.querySelector('.layer-control-btn[data-action="mat"]');
+            if (nutMat) {
+                const NUA_CANH_NUT_MAT = 16; // nút tròn 32px, cùng cỡ nút xoay-bên-trong
+                const pyDiemNeoCanhPhai = 0; // điểm neo 'e' luôn ở giữa cạnh
+                const pyNutZoom = bHeight / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG;
+                const pyGiuaHai = (pyDiemNeoCanhPhai + pyNutZoom) / 2;
+
+                // Khung (hoặc riêng cạnh phải) bị thu hẹp khiến điểm neo và
+                // nút zoom xích lại gần nhau — không còn đủ chỗ cho nút con
+                // mắt chen vào giữa mà không đè/bị đè. Đủ chỗ cần khoảng
+                // cách pyNutZoom (từ điểm neo tới nút zoom) ít nhất bằng 1
+                // đường kính nút con mắt cộng thêm biên an toàn nhỏ; thiếu
+                // bao nhiêu thì đẩy nút con mắt RA XA khung bấy nhiêu (dịch
+                // thêm ra ngoài theo trục ngang) — mở rộng lại thì tự về
+                // đúng vị trí cũ (px không còn cộng thêm gì).
+                const KHOANG_CACH_TOI_THIEU = NUA_CANH_NUT_MAT * 2 + 6;
+                const thieuHut = Math.max(0, KHOANG_CACH_TOI_THIEU - pyNutZoom);
+
+                const pxMat = bWidth / 2 + NUA_CANH_NUT_MAT + thieuHut;
+                nutMat.style.transform = `translate(calc(-50% + ${pxMat}px), calc(-50% + ${pyGiuaHai}px))` +
+                    (theta ? ` rotate(${-theta}deg)` : '');
+            }
+        }
+
+        // Nút "con mắt" — CHỈ bật/tắt hiệu ứng xem trước, KHÔNG đụng tới
+        // layer.visible (đó là nút ẩn/hiện layer khác hẳn ở panel), không
+        // đổi activeLayerIndex, không gọi bất kỳ logic nào khác. Bấm lần 1:
+        // ẩn 4 nút góc + 4 điểm neo (chừa lại đúng nút con mắt để còn bấm
+        // tắt được), khung viền bắt đầu nhấp nháy tuần hoàn (mờ dần → mất
+        // hẳn → đứng im 1,5s → hiện dần → đứng rõ 1,5s → lặp lại mãi, xem
+        // keyframe xem-truoc-khung-vien-nhap-nhay ở trang-chu.css). Bấm lần
+        // 2 (classList.toggle tự đảo trạng thái): dừng hẳn hoạt ảnh, hiện
+        // lại đủ 4 nút góc/4 điểm neo, khung về đúng như ban đầu ngay lập
+        // tức (bỏ animation, không có transition nên không "kẹt" giữa
+        // chừng đang mờ/đang hiện).
+        function toggleXemTruocKhungVien(border) {
+            border.classList.toggle('xem-truoc-khung-vien');
         }
 
         function handleLayerControlAction(action) {
@@ -3656,6 +3719,46 @@
             document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
                 n.style.display = 'flex';
             });
+            hieuUngNhapNhayNutCuon();
+        }
+
+        // Các setTimeout đang chờ chạy của hiệu ứng nhấp nháy 2 nút cuộn —
+        // giữ lại để có thể huỷ hết khi đóng modal giữa chừng (đóng rồi mở
+        // lại ngay lập tức không để 2 đợt hiệu ứng chồng lên nhau).
+        let henGioNhapNhayNutCuon = [];
+
+        // Hiệu ứng nhấp nháy 2 nút cuộn — mỗi lần mở modal đều chạy lại.
+        // Nút "xuống" phóng to/thu nhỏ trước, rồi tới nút "lên", THAY PHIÊN
+        // nhau như vậy cho tới khi mỗi nút đủ 6 lần thì dừng hẳn (gấp đôi
+        // 3 lần bản trước) — tổng cộng 12 lượt phóng-to-thu-nhỏ nối đuôi
+        // nhau, chia đều trong khoảng 8 giây (gấp đôi 4 giây bản trước; mỗi
+        // lượt vẫn ~0,667s: nửa đầu phóng to, nửa sau thu nhỏ lại, êm nhờ
+        // transition ở CSS chứ không nhảy khung hình).
+        // CHỈ áp dụng cho 2 nút của modal này (lọc qua [data-modal-cua]).
+        function hieuUngNhapNhayNutCuon() {
+            henGioNhapNhayNutCuon.forEach((id) => clearTimeout(id));
+            henGioNhapNhayNutCuon = [];
+
+            const nutXuong = document.querySelector('.nut-cuon-modal[data-modal-cua="nutGocLayer"][data-huong="xuong"]');
+            const nutLen = document.querySelector('.nut-cuon-modal[data-modal-cua="nutGocLayer"][data-huong="len"]');
+            if (!nutXuong || !nutLen) return;
+            nutXuong.classList.remove('dang-nhap-nhay');
+            nutLen.classList.remove('dang-nhap-nhay');
+
+            const TONG_THOI_LUONG = 8000;
+            const SO_LAN_MOI_NUT = 6;
+            const moiLuot = TONG_THOI_LUONG / (SO_LAN_MOI_NUT * 2);
+            const nuaLuot = moiLuot / 2;
+
+            const chayMotLuot = (nut, batDau) => {
+                henGioNhapNhayNutCuon.push(setTimeout(() => nut.classList.add('dang-nhap-nhay'), batDau));
+                henGioNhapNhayNutCuon.push(setTimeout(() => nut.classList.remove('dang-nhap-nhay'), batDau + nuaLuot));
+            };
+
+            for (let i = 0; i < SO_LAN_MOI_NUT; i++) {
+                chayMotLuot(nutXuong, i * 2 * moiLuot);
+                chayMotLuot(nutLen, moiLuot + i * 2 * moiLuot);
+            }
         }
 
         // 2 nút cuộn lên đầu/xuống cuối, SÁT MÉP PHẢI MÀN HÌNH — dùng lại
@@ -3719,8 +3822,11 @@
         function dongModalNutGocLayer() {
             const modal = document.getElementById('modalNutGocLayer');
             if (modal) modal.classList.remove('active');
+            henGioNhapNhayNutCuon.forEach((id) => clearTimeout(id));
+            henGioNhapNhayNutCuon = [];
             document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
                 n.style.display = 'none';
+                n.classList.remove('dang-nhap-nhay');
             });
         }
 
