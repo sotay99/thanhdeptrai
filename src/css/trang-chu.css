@@ -255,6 +255,16 @@
             align-items: center;
             background: var(--nen);
             position: relative;
+            /* Vùng tối 2 mép TRÁI/PHẢI rộng GẤP ĐÔI trước đây (mỗi bên
+               20px, trước chỉ có ~10px khi ảnh phải co lại vừa khung —
+               fitCanvasToWorkspace() ở trang-chu-editor.js dùng đúng giá
+               trị này (PADDING_NGANG_CANVAS) khi tính bề rộng khả dụng cho
+               ảnh, nên khoảng tối luôn được giữ đúng dù ảnh to/nhỏ thế
+               nào). Trên/dưới CỐ Ý không đụng tới — chỉ mép ngang mới đổi.
+               Vùng trắng (chính canvas) vẫn tự co giãn theo kích thước
+               ảnh như cũ, không bị ép cứng. */
+            padding-left: 20px;
+            padding-right: 20px;
         }
 
         #canvas {
@@ -1400,7 +1410,11 @@
         .canvas-layer-border {
             position: absolute;
             border: 2px solid #000000; /* đè bằng inline style.borderColor lúc vẽ */
-            box-shadow: inset 0 0 0 4px white;
+            /* KHÔNG còn box-shadow inset trắng — nó từng vẽ đè 4px trắng lên
+               chính ảnh (inset luôn nằm TRONG viền). Giờ khung được JS đẩy ra
+               NGOÀI ảnh hẳn (xem RONG_VIEN_LAYER/updateLayerBorder() ở
+               trang-chu-editor.js) nên không cần lớp che nào để "giấu" mép
+               ảnh nữa — luôn thấy trọn vẹn 100% điểm ảnh bên trong. */
             display: none;
             /* Bản thân khung để pointer-events: none — không chặn thao tác
                kéo-thả trực tiếp vào ảnh nằm bên dưới nó. Nút góc và tay cầm

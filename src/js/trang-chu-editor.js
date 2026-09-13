@@ -17,6 +17,11 @@
         // dịch chuyển khi bấm-kéo thẳng vào ảnh của 1 layer có khungRieng, xem
         // bindCanvasEvents().
         const diemTamTruocKeo = new WeakMap();
+        // Bề dày khung viền layer (px màn hình) — PHẢI >= border-width lớn
+        // nhất đang dùng ở CSS (.canvas-layer-border-chinh: 3px, .canvas-
+        // layer-border thường: 2px) để khung luôn đẩy ra NGOÀI ảnh, không
+        // đè lên bất kỳ điểm ảnh nào — xem chỗ dùng trong updateLayerBorder().
+        const RONG_VIEN_LAYER = 3;
 
         // Layer color palette
         const LAYER_COLORS = [
@@ -114,9 +119,15 @@
             const workspace = document.querySelector('.canvas-workspace');
             if (!workspace) return;
 
-            const padding = 20;
-            const availableWidth = Math.max(50, workspace.clientWidth - padding);
-            const availableHeight = Math.max(50, workspace.clientHeight - padding);
+            // Mép ngang (trái+phải) khớp với padding-left/padding-right
+            // 20px+20px vừa thêm ở .canvas-workspace (CSS) — PADDING_NGANG_CANVAS
+            // = tổng hai mép đó, để ảnh to không bị tính hụt chỗ và tràn ra
+            // ngoài vùng tối đã dành riêng. Mép dọc (trên/dưới) giữ nguyên
+            // như cũ, không đổi.
+            const PADDING_NGANG_CANVAS = 40;
+            const PADDING_DOC_CANVAS = 20;
+            const availableWidth = Math.max(50, workspace.clientWidth - PADDING_NGANG_CANVAS);
+            const availableHeight = Math.max(50, workspace.clientHeight - PADDING_DOC_CANVAS);
             const nativeWidth = canvas.getWidth();
             const nativeHeight = canvas.getHeight();
             const scale = Math.min(1, availableWidth / nativeWidth, availableHeight / nativeHeight);
@@ -2541,10 +2552,22 @@
                 const bTop = Math.round(screenCenterY - screenHeight / 2);
                 const bWidth = Math.round(screenWidth);
                 const bHeight = Math.round(screenHeight);
-                border.style.left = bLeft + 'px';
-                border.style.top = bTop + 'px';
-                border.style.width = bWidth + 'px';
-                border.style.height = bHeight + 'px';
+                // Khung viền không được che MỘT PX ẢNH nào — CSS border-width
+                // (RONG_VIEN_LAYER, khớp đúng "border: 2px solid" ở CSS) được
+                // đẩy HẲN RA NGOÀI ảnh: box-sizing hiện là border-box (thừa
+                // hưởng từ ".trang-chu-editor *"), nên set left/top LÙI RA
+                // ngoài đúng bằng bề dày viền và width/height CỘNG THÊM 2 lần
+                // bề dày đó — phần "content" bên trong viền (nơi border ăn
+                // vào) khi đó khớp CHÍNH XÁC bWidth/bHeight (kích thước ảnh
+                // thật), viền chỉ vẽ trên dải NGOÀI đó, không đè lên ảnh.
+                // 4 nút góc/4 điểm neo/nút mắt vẫn tính theo bWidth/bHeight
+                // GỐC (chưa cộng thêm viền) ở capNhatViTriNutVaTayCam() bên
+                // dưới — tâm phần tử (50%/50%) không đổi khi cộng đối xứng cả
+                // 2 phía nên toạ độ của chúng vẫn đúng nguyên xi.
+                border.style.left = (bLeft - RONG_VIEN_LAYER) + 'px';
+                border.style.top = (bTop - RONG_VIEN_LAYER) + 'px';
+                border.style.width = (bWidth + RONG_VIEN_LAYER * 2) + 'px';
+                border.style.height = (bHeight + RONG_VIEN_LAYER * 2) + 'px';
                 // transform-origin mặc định là tâm phần tử (50% 50%) — khớp
                 // đúng tâm layer vừa tính, nên chỉ cần rotate() quanh chính nó.
                 border.style.transform = theta ? `rotate(${theta}deg)` : '';
