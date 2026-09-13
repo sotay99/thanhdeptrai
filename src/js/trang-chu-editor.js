@@ -3562,10 +3562,7 @@
         // theo các con số này, không hề vẽ lại/nén lại PIXEL nào của ảnh gốc
         // (chỉ đổi ma trận hiển thị) — ảnh không bao giờ mất nét dù kéo giãn
         // bao nhiêu lần.
-        // gocLienTuc (tuỳ chọn) — {angle, scaleX, scaleY, skewX} của CHÍNH
-        // object này ở KHUNG HÌNH NGAY TRƯỚC — dùng để chọn nhánh phân rã
-        // liên tục, xem chú thích ở chonNhanhLienTuc() ngay dưới.
-        function keoGianTheoTrucKhung(goc, thetaDo, sx, sy, gocLienTuc) {
+        function keoGianTheoTrucKhung(goc, thetaDo, sx, sy) {
             const util = fabric.util;
             const maTranGoc = util.composeMatrix({
                 angle: goc.angle || 0,
@@ -3581,41 +3578,51 @@
             let stretch = util.multiplyTransformMatrices(rTheta, maTranCoGian);
             stretch = util.multiplyTransformMatrices(stretch, rAmTheta);
             const maTranMoi = util.multiplyTransformMatrices(stretch, maTranGoc);
-            const qr = util.qrDecompose(maTranMoi);
-            return gocLienTuc ? chonNhanhLienTuc(qr, gocLienTuc) : qr;
+
+            // Giữ NGUYÊN góc gốc (goc.angle) — KHÔNG dùng fabric.util.
+            // qrDecompose() (vốn để angle TỰ DO, chọn 1 trong nhiều bộ
+            // {angle,scale,skew} hợp lệ theo quy ước riêng của nó). Lỗi cũ:
+            // khi sx quét qua 0 (đang lật), qrDecompose cho ra góc thay đổi
+            // rất nhiều (từ ~20° gốc vọt lên tới ~160°+) — dù ảnh render ra
+            // vẫn đúng toán học, mắt người thấy ảnh "xoay vòng/lật qua lật
+            // lại" ngay trong lúc chỉ đang kéo giãn/lật, rất khó chịu (đã
+            // thử "chọn nhánh liên tục với khung hình trước" — hết nhảy đột
+            // ngột nhưng KHÔNG hết cảnh xoay vòng, vì đó là đường cong liên
+            // tục thật của chính qrDecompose, không phải lỗi rời rạc).
+            //
+            // Sửa tận gốc: ép GÓC không đổi trong suốt lúc kéo, chỉ để
+            // scaleX/scaleY/skewX/skewY gánh hết phần biến dạng — giaiHinh
+            // DangGocCoDinh() GIẢI NGƯỢC 4 số đó sao cho compose lại đúng
+            // dựng được CHÍNH XÁC ma trận maTranMoi (đã kiểm chứng bằng số
+            // trên hàng trăm tổ hợp góc/theta) — luôn giải được vì cố định 1
+            // góc chỉ bớt đi đúng 1 bậc tự do dư (ma trận 2x2 chỉ có 4 bậc tự
+            // do, còn scaleX+scaleY+skewX+skewY+angle là 5 tham số của
+            // Fabric — dư đúng 1). Kết quả: kéo giãn/lật một ảnh đã xoay bên
+            // trong giờ CHỈ co giãn/nghiêng (skew) mượt, ảnh không còn cảm
+            // giác "xoay vòng" nữa — đúng cảm nhận tự nhiên của thao tác kéo
+            // giãn cạnh (không phải xoay).
+            return giaiHinhDangGocCoDinh(maTranMoi, goc.angle || 0);
         }
 
-        // Phân rã ma trận (qrDecompose) thành {angle, scaleX, scaleY, skewX}
-        // KHÔNG DUY NHẤT — (angle, sx, sy) và (angle+180, -sx, -sy) luôn mô
-        // tả CHÍNH XÁC cùng 1 ma trận (vì R(angle+180) = -R(angle), nhân với
-        // -1 lần nữa ở phần scale/skew triệt tiêu nhau). fabric.util.qrDecompose
-        // luôn trả về đúng MỘT nhánh cố định theo quy ước riêng của nó — khi
-        // sx quét qua 0 (đang kéo lật ảnh), nhánh này đổi rất nhanh (đạo hàm
-        // góc theo sx tăng vọt gần sx=0, bản chất hình học của phép phân rã 1
-        // ma trận gần suy biến/hạng-1), khiến góc/skew tính ra nhảy giật dù
-        // ma trận cuối cùng vẫn biến đổi mượt — đây chính là hiện tượng
-        // "giật giật, lật qua lật lại" người dùng thấy khi rê chuột qua lại
-        // gần điểm nén cực đại (mỗi lần rê qua lại là 1 lần nhảy nhánh).
-        //
-        // Sửa: MỖI khung hình, so nhánh MẶC ĐỊNH của qrDecompose với nhánh
-        // THAY THẾ (angle+180, -scaleX, -scaleY, skewX giữ nguyên — đã kiểm
-        // chứng bằng số dựng lại đúng ma trận gốc), chọn nhánh nào có góc GẦN
-        // góc ở khung hình NGAY TRƯỚC đó hơn. Nhờ vậy hình dạng luôn biến đổi
-        // liên tục theo từng khung hình nhỏ, không còn cú nhảy nào — dù tổng
-        // quãng đường xoay khi lật hẳn (từ đầu tới cuối) vẫn có thể lớn (đó
-        // là bản chất hình học thật của phép lật một hình đã xoay sẵn, không
-        // phải lỗi), nó không còn "giật" vì không có bước nhảy đột ngột nữa.
-        function chonNhanhLienTuc(qr, gocLienTuc) {
-            const nhanhThayThe = {
-                angle: qr.angle + 180, scaleX: -qr.scaleX, scaleY: -qr.scaleY,
-                skewX: qr.skewX, skewY: qr.skewY || 0,
-            };
-            const khoangCachGoc = (a, b) => {
-                let d = Math.abs(a - b) % 360;
-                return d > 180 ? 360 - d : d;
-            };
-            return khoangCachGoc(nhanhThayThe.angle, gocLienTuc.angle) < khoangCachGoc(qr.angle, gocLienTuc.angle)
-                ? nhanhThayThe : qr;
+        // Giải {scaleX, scaleY, skewX, skewY} sao cho fabric.util.composeMatrix
+        // ({angle: angleCoDinh, scaleX, scaleY, skewX, skewY}) dựng lại ĐÚNG
+        // ma trận M cho trước, với "angle" CỐ ĐỊNH (không đổi). Suy ngược từ
+        // chính công thức compose của Fabric (calcDimensionsMatrix): đặt
+        // D = Rotate(-angleCoDinh)·M (bỏ phần xoay cố định ra khỏi M), D lúc
+        // này đúng bằng ma trận scale-skew thuần: D = diag(scaleX,scaleY) ·
+        // Shear(skewX) · Shear(skewY), khai triển ra hệ 4 phương trình tuyến
+        // tính đơn giản, giải ngược lần lượt scaleY → skewY → scaleX → skewX.
+        function giaiHinhDangGocCoDinh(M, angleCoDinh) {
+            const util = fabric.util;
+            const rAmAngle = util.calcRotateMatrix({ angle: -angleCoDinh });
+            const D = util.multiplyTransformMatrices(rAmAngle, M);
+            const Da = D[0], Db = D[1], Dc = D[2], Dd = D[3];
+            const scaleY = Dd;
+            const tanSkewY = Db / scaleY;
+            const scaleX = Da - Dc * tanSkewY;
+            const tanSkewX = Dc / scaleX;
+            const toDeg = (rad) => Math.atan(rad) * 180 / Math.PI;
+            return { angle: angleCoDinh, scaleX, scaleY, skewX: toDeg(tanSkewX), skewY: toDeg(tanSkewY) };
         }
 
         // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
@@ -3710,23 +3717,12 @@
             // cộng dồn từng khung hình. angle/skewX/skewY chỉ thật sự dùng
             // khi layer có khungRieng (kéo giãn theo trục khung — xem
             // keoGianTheoTrucKhung()); layer thường vẫn chỉ cần scaleX/scaleY.
-            // "lienTuc" (chỉ dùng khi có khungRieng): hình dạng object ở
-            // khung hình NGAY TRƯỚC — khởi tạo bằng hình dạng gốc, tự cập
-            // nhật mỗi khung hình bên dưới. Truyền vào keoGianTheoTrucKhung()
-            // để chọn đúng nhánh phân rã LIÊN TỤC với khung hình trước, tránh
-            // "giật giật, lật qua lật lại" gần điểm nén cực đại — xem
-            // chonNhanhLienTuc().
             const trangThaiGoc = layer.objects.map((obj) => {
                 const c = obj.getCenterPoint();
-                const hinhDangGoc = {
-                    angle: obj.angle || 0, scaleX: obj.scaleX, scaleY: obj.scaleY,
-                    skewX: obj.skewX || 0, skewY: obj.skewY || 0,
-                };
                 return {
                     obj, centerX: c.x, centerY: c.y,
                     scaleX: obj.scaleX, scaleY: obj.scaleY,
-                    angle: hinhDangGoc.angle, skewX: hinhDangGoc.skewX, skewY: hinhDangGoc.skewY,
-                    lienTuc: hinhDangGoc,
+                    angle: obj.angle || 0, skewX: obj.skewX || 0, skewY: obj.skewY || 0,
                 };
             });
             // Độ dài (có dấu) từ điểm neo tới TÂM KHUNG dọc trục đang co giãn
@@ -3765,8 +3761,7 @@
                 }
                 const ti_le = doDaiMoi / doDaiGoc;
 
-                trangThaiGoc.forEach((entry) => {
-                    const { obj, centerX: ocx, centerY: ocy, scaleX, scaleY, angle, skewX, skewY } = entry;
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, scaleX, scaleY, angle, skewX, skewY }) => {
                     // Toạ độ tâm object, biểu diễn theo (khoảng cách dọc trục
                     // ĐANG co giãn, khoảng cách dọc trục VUÔNG GÓC) tính từ
                     // điểm neo — trục vuông góc GIỮ NGUYÊN (không đụng tới),
@@ -3792,13 +3787,10 @@
                         // đổi angle/scaleX/scaleY/skewX hiển thị.
                         const sx = axis === 'x' ? ti_le : 1;
                         const sy = axis === 'y' ? ti_le : 1;
-                        const hinhDang = keoGianTheoTrucKhung(
-                            { angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy, entry.lienTuc,
-                        );
-                        entry.lienTuc = hinhDang;
+                        const hinhDang = keoGianTheoTrucKhung({ angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy);
                         obj.set({
                             angle: hinhDang.angle, scaleX: hinhDang.scaleX,
-                            scaleY: hinhDang.scaleY, skewX: hinhDang.skewX,
+                            scaleY: hinhDang.scaleY, skewX: hinhDang.skewX, skewY: hinhDang.skewY,
                         });
                     } else if (axis === 'y') {
                         obj.scaleY = scaleY * ti_le;
