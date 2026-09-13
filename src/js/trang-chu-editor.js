@@ -3230,7 +3230,277 @@
                 case 'duplicate':
                     duplicateLayer(layerIndex);
                     break;
+                case 'crop':
+                    moModalCatXenLayer();
+                    break;
             }
+        }
+
+        // ===== CÔNG CỤ "CẮT XÉN" (không mất nét, không nướng ảnh mới) =====
+        // Nguyên tắc cốt lõi: ảnh THẬT bên trong layer (obj) không hề bị
+        // đụng tới — không vẽ lại, không đổi điểm ảnh, không xuất ra ảnh
+        // mới. "Cắt" chỉ là gắn 1 clipPath (obj.clipPath, tính năng có sẵn
+        // của Fabric.js) — một hình chữ nhật CHE bớt phần ảnh không muốn
+        // hiện, hoàn toàn có thể gỡ/nới rộng lại bất cứ lúc nào mà ảnh gốc
+        // không suy suyển. Vùng đã "cắt" vẫn nằm nguyên trong bộ nhớ, đó là
+        // lý do mở lại modal vẫn thấy được các mảng cũ đã bị xén để kéo giãn
+        // lấy lại.
+        //
+        // Toạ độ clipPath của Fabric (khi clipPath.absolutePositioned =
+        // false, mặc định) tính theo hệ toạ độ CỤC BỘ CHƯA CO GIÃN của
+        // chính object đó (gốc 0,0 là TÂM object, trải dài -width/2..width/2
+        // và -height/2..height/2, với width/height là kích thước THẬT — vd
+        // obj.width/obj.height của 1 fabric.Image — không bị ảnh hưởng bởi
+        // scaleX/scaleY/angle/skew hiện tại). Đã kiểm chứng bằng Playwright:
+        // gắn 1 clip rect với left/top là toạ độ TÂM của vùng giữ lại (tính
+        // từ tâm object, đơn vị THẬT chưa co giãn) thì luôn cắt đúng vùng đó
+        // dù object đang xoay/co giãn thế nào — không cần biết trước
+        // scale/angle hiện tại.
+        //
+        // Lưu trạng thái cắt trên CHÍNH layer (layer.catXen = {left, top,
+        // width, height}, đơn vị PHÂN SỐ 0..1 của kích thước ảnh gốc, left/
+        // top là góc trên-trái vùng GIỮ LẠI) — không suy ngược lại từ
+        // clipPath mỗi lần mở modal, đọc thẳng cho chắc và để so sánh
+        // "có đổi gì không" lúc bấm Lưu.
+        let catXen = null; // trạng thái đang thao tác dở trong modal (null khi modal đóng)
+
+        function moModalCatXenLayer() {
+            const layer = layers[activeLayerIndex];
+            if (!layer || layer.isGroup) {
+                showToast('❌ Không thể cắt xén cả nhóm lớp! Vui lòng chọn một lớp riêng lẻ.', 'error');
+                return;
+            }
+            const obj = layer.objects.find(o => o.isType && o.isType('image'));
+            if (!obj) {
+                showToast('Không tìm thấy ảnh trong layer', 'error');
+                return;
+            }
+
+            const goc = layer.catXen ? { ...layer.catXen } : { left: 0, top: 0, width: 1, height: 1 };
+            catXen = { layer, obj, goc, hienTai: { ...goc } };
+
+            let modal = document.getElementById('modalCatXenLayer');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalCatXenLayer';
+                modal.className = 'modal-overlay';
+                modal.innerHTML =
+                    '<div class="modal-content modal-cat-xen">' +
+                        '<div class="cat-xen-thanh-tren">' +
+                            '<button type="button" class="cat-xen-nut-luu" id="catXenNutLuu">Lưu thay đổi</button>' +
+                            '<button type="button" class="modal-close modal-close-do" id="catXenNutDong" aria-label="Đóng, không lưu">' +
+                                '<i class="fas fa-times"></i>' +
+                            '</button>' +
+                        '</div>' +
+                        '<div class="cat-xen-vung-anh" id="catXenVungAnh">' +
+                            '<img id="catXenAnh" draggable="false" alt="">' +
+                            '<div class="cat-xen-mo" data-canh="tren"></div>' +
+                            '<div class="cat-xen-mo" data-canh="duoi"></div>' +
+                            '<div class="cat-xen-mo" data-canh="trai"></div>' +
+                            '<div class="cat-xen-mo" data-canh="phai"></div>' +
+                            '<div class="cat-xen-khung" id="catXenKhung">' +
+                                '<div class="cat-xen-luoi-doc" style="left:33.333%"></div>' +
+                                '<div class="cat-xen-luoi-doc" style="left:66.667%"></div>' +
+                                '<div class="cat-xen-luoi-ngang" style="top:33.333%"></div>' +
+                                '<div class="cat-xen-luoi-ngang" style="top:66.667%"></div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(modal);
+
+                // 8 điểm neo (4 góc + 4 cạnh) — mỗi điểm giữ hướng dx/dy
+                // riêng (giống quy ước 4 tay cầm cạnh của khung layer chính),
+                // dx/dy = -1/0/1 cho biết cạnh nào của khung cắt bị điểm đó
+                // kéo theo.
+                const khung = modal.querySelector('#catXenKhung');
+                const DIEM_NEO = [
+                    { dx: -1, dy: -1 }, { dx: 0, dy: -1 }, { dx: 1, dy: -1 },
+                    { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+                    { dx: -1, dy: 1 }, { dx: 0, dy: 1 }, { dx: 1, dy: 1 },
+                ];
+                DIEM_NEO.forEach(({ dx, dy }) => {
+                    const diem = document.createElement('div');
+                    diem.className = 'cat-xen-diem-neo';
+                    diem.dataset.dx = dx;
+                    diem.dataset.dy = dy;
+                    diem.style.left = ((dx + 1) / 2 * 100) + '%';
+                    diem.style.top = ((dy + 1) / 2 * 100) + '%';
+                    diem.style.cursor = coNhietChoDiemNeoCatXen(dx, dy);
+                    diem.onmousedown = (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        keoDiemNeoCatXen(e, dx, dy);
+                    };
+                    khung.appendChild(diem);
+                });
+
+                modal.querySelector('#catXenNutDong').onclick = () => dongModalCatXen(false);
+                modal.querySelector('#catXenNutLuu').onclick = () => dongModalCatXen(true);
+                // Bấm ra ngoài phạm vi modal-content = coi như bấm nút X
+                // (không lưu) — cùng quy ước với các modal khác trong module.
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) dongModalCatXen(false);
+                });
+            }
+
+            const img = modal.querySelector('#catXenAnh');
+            img.src = obj.getSrc();
+            img.onload = () => capNhatGiaoDienCatXen();
+            // Ảnh có thể đã nằm trong cache trình duyệt (load xong ngay,
+            // "onload" không bắn lại) — gọi luôn 1 lần cho chắc, vẽ lại lần
+            // nữa khi onload thật sự bắn (kích thước hiển thị lúc đó mới
+            // chính xác 100%).
+            capNhatGiaoDienCatXen();
+
+            modal.classList.add('active');
+        }
+
+        function coNhietChoDiemNeoCatXen(dx, dy) {
+            if (dx === 0) return 'ns-resize';
+            if (dy === 0) return 'ew-resize';
+            return (dx === dy) ? 'nwse-resize' : 'nesw-resize';
+        }
+
+        // Vẽ lại khung cắt/lưới/mảng mờ ngoài viền theo đúng catXen.hienTai
+        // hiện tại — gọi lại mỗi lần rê chuột kéo 1 điểm neo.
+        function capNhatGiaoDienCatXen() {
+            if (!catXen) return;
+            const modal = document.getElementById('modalCatXenLayer');
+            const r = catXen.hienTai;
+            const khung = modal.querySelector('#catXenKhung');
+            khung.style.left = (r.left * 100) + '%';
+            khung.style.top = (r.top * 100) + '%';
+            khung.style.width = (r.width * 100) + '%';
+            khung.style.height = (r.height * 100) + '%';
+
+            // 4 mảng mờ phủ đúng phần NGOÀI khung cắt (trên/dưới phủ hết bề
+            // ngang; trái/phải chỉ phủ đúng dải còn lại ở giữa, tránh chồng
+            // lên 2 mảng trên/dưới).
+            const moTren = modal.querySelector('.cat-xen-mo[data-canh="tren"]');
+            const moDuoi = modal.querySelector('.cat-xen-mo[data-canh="duoi"]');
+            const moTrai = modal.querySelector('.cat-xen-mo[data-canh="trai"]');
+            const moPhai = modal.querySelector('.cat-xen-mo[data-canh="phai"]');
+            moTren.style.cssText = `left:0; top:0; width:100%; height:${r.top * 100}%;`;
+            moDuoi.style.cssText = `left:0; top:${(r.top + r.height) * 100}%; width:100%; height:${(1 - r.top - r.height) * 100}%;`;
+            moTrai.style.cssText = `left:0; top:${r.top * 100}%; width:${r.left * 100}%; height:${r.height * 100}%;`;
+            moPhai.style.cssText = `left:${(r.left + r.width) * 100}%; top:${r.top * 100}%; width:${(1 - r.left - r.width) * 100}%; height:${r.height * 100}%;`;
+        }
+
+        // Kéo 1 điểm neo — dx/dy cho biết cạnh nào bị kéo (0 = cạnh đó đứng
+        // yên, giữ nguyên như tay cầm cạnh chính của khung layer). Toạ độ
+        // tính theo PHÂN SỐ (0..1) của kích thước hiển thị vùng ảnh, nên
+        // không phụ thuộc modal đang phóng to/thu nhỏ thế nào.
+        const NGUONG_CAT_XEN_TOI_THIEU = 0.03; // 3% kích thước ảnh — tránh kéo về 0 mất hẳn vùng chọn
+        function keoDiemNeoCatXen(e, dx, dy) {
+            const vungAnh = document.getElementById('catXenVungAnh');
+            const gocBanDau = { ...catXen.hienTai };
+
+            const onMove = (moveEvent) => {
+                const rect = vungAnh.getBoundingClientRect();
+                const px = (moveEvent.clientX - rect.left) / rect.width;
+                const py = (moveEvent.clientY - rect.top) / rect.height;
+                const r = { ...gocBanDau };
+
+                if (dx === -1) {
+                    const phaiCoDinh = gocBanDau.left + gocBanDau.width;
+                    const leftMoi = Math.min(Math.max(px, 0), phaiCoDinh - NGUONG_CAT_XEN_TOI_THIEU);
+                    r.left = leftMoi;
+                    r.width = phaiCoDinh - leftMoi;
+                } else if (dx === 1) {
+                    const traiCoDinh = gocBanDau.left;
+                    const phaiMoi = Math.max(Math.min(px, 1), traiCoDinh + NGUONG_CAT_XEN_TOI_THIEU);
+                    r.width = phaiMoi - traiCoDinh;
+                }
+
+                if (dy === -1) {
+                    const duoiCoDinh = gocBanDau.top + gocBanDau.height;
+                    const topMoi = Math.min(Math.max(py, 0), duoiCoDinh - NGUONG_CAT_XEN_TOI_THIEU);
+                    r.top = topMoi;
+                    r.height = duoiCoDinh - topMoi;
+                } else if (dy === 1) {
+                    const treCoDinh = gocBanDau.top;
+                    const duoiMoi = Math.max(Math.min(py, 1), treCoDinh + NGUONG_CAT_XEN_TOI_THIEU);
+                    r.height = duoiMoi - treCoDinh;
+                }
+
+                catXen.hienTai = r;
+                capNhatGiaoDienCatXen();
+            };
+            const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+
+        // Đóng modal. luuLai=false (nút X hoặc bấm ra ngoài): KHÔNG đụng gì
+        // tới layer, coi như không có chuyện gì xảy ra. luuLai=true (nút
+        // "Lưu thay đổi"): so sánh hienTai với goc — giống hệt nhau (trong
+        // sai số làm tròn rất nhỏ) thì cũng chỉ đóng modal, không tính là
+        // "có sửa"; khác nhau thật thì mới ghi nhận và cắt.
+        function dongModalCatXen(luuLai) {
+            const modal = document.getElementById('modalCatXenLayer');
+            if (!catXen) { if (modal) modal.classList.remove('active'); return; }
+
+            if (luuLai) {
+                const { goc, hienTai } = catXen;
+                const SAI_SO = 0.0005;
+                const coDoiKhac = Math.abs(goc.left - hienTai.left) > SAI_SO ||
+                    Math.abs(goc.top - hienTai.top) > SAI_SO ||
+                    Math.abs(goc.width - hienTai.width) > SAI_SO ||
+                    Math.abs(goc.height - hienTai.height) > SAI_SO;
+                if (coDoiKhac) {
+                    apDungCatXen(catXen.layer, catXen.obj, hienTai);
+                    showToast('✂️ Đã cắt xén layer', 'success');
+                }
+            }
+
+            catXen = null;
+            if (modal) modal.classList.remove('active');
+        }
+
+        // Gắn clipPath theo đúng vùng phân số [left,top,width,height] muốn
+        // giữ lại, rồi tính lại khung viền (khungRieng) của layer khớp
+        // ĐÚNG bề ngoài mới sau khi cắt — dùng chính ma trận biến đổi hiện
+        // tại của object (calcTransformMatrix) để suy ra 4 góc của vùng cắt
+        // ngoài đời thật, nên đúng bất kể object đang xoay/co giãn thế nào
+        // (kể cả sau khi đã "xoay bên trong" trước đó).
+        function apDungCatXen(layer, obj, r) {
+            layer.catXen = { ...r };
+
+            const rongGoc = obj.width, caoGoc = obj.height;
+            const clip = new fabric.Rect({
+                width: r.width * rongGoc,
+                height: r.height * caoGoc,
+                // left/top của clipPath là toạ độ TÂM vùng giữ lại, tính từ
+                // TÂM object (gốc 0,0 giữa object) — quy đổi từ góc trên-trái
+                // phân số r.left/r.top sang tâm rồi trừ đi 0.5 (tâm object).
+                left: (r.left + r.width / 2 - 0.5) * rongGoc,
+                top: (r.top + r.height / 2 - 0.5) * caoGoc,
+                originX: 'center',
+                originY: 'center',
+            });
+            obj.clipPath = clip;
+            obj.dirty = true;
+
+            const m = obj.calcTransformMatrix();
+            const goTraiTren = { x: (r.left - 0.5) * rongGoc, y: (r.top - 0.5) * caoGoc };
+            const goPhaiTren = { x: (r.left + r.width - 0.5) * rongGoc, y: (r.top - 0.5) * caoGoc };
+            const goPhaiDuoi = { x: (r.left + r.width - 0.5) * rongGoc, y: (r.top + r.height - 0.5) * caoGoc };
+            const goc4Diem = [goTraiTren, goPhaiTren, goPhaiDuoi].map(
+                (p) => fabric.util.transformPoint(new fabric.Point(p.x, p.y), m)
+            );
+            const [tl, tr, br] = goc4Diem;
+            const cx = (tl.x + br.x) / 2, cy = (tl.y + br.y) / 2;
+            const rong = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+            const cao = Math.hypot(br.x - tr.x, br.y - tr.y);
+            const goc = Math.atan2(tr.y - tl.y, tr.x - tl.x) * 180 / Math.PI;
+
+            layer.khungRieng = { cx, cy, width: rong, height: cao, angle: goc };
+
+            canvas.renderAll();
+            updateLayerBorder();
         }
 
         // ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN =====
