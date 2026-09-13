@@ -3386,6 +3386,45 @@
             document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
                 n.style.display = 'flex';
             });
+            hieuUngNhapNhayNutCuon();
+        }
+
+        // Các setTimeout đang chờ chạy của hiệu ứng nhấp nháy 2 nút cuộn —
+        // giữ lại để có thể huỷ hết khi đóng modal giữa chừng (đóng rồi mở
+        // lại ngay lập tức không để 2 đợt hiệu ứng chồng lên nhau).
+        let henGioNhapNhayNutCuon = [];
+
+        // Hiệu ứng nhấp nháy 2 nút cuộn — mỗi lần mở modal đều chạy lại.
+        // Nút "xuống" phóng to/thu nhỏ trước, rồi tới nút "lên", THAY PHIÊN
+        // nhau như vậy cho tới khi mỗi nút đủ 3 lần thì dừng hẳn — tổng
+        // cộng 6 lượt phóng-to-thu-nhỏ nối đuôi nhau, chia đều trong
+        // khoảng 4 giây (mỗi lượt ~0,667s: nửa đầu phóng to, nửa sau thu
+        // nhỏ lại, êm nhờ transition ở CSS chứ không nhảy khung hình).
+        // CHỈ áp dụng cho 2 nút của modal này (lọc qua [data-modal-cua]).
+        function hieuUngNhapNhayNutCuon() {
+            henGioNhapNhayNutCuon.forEach((id) => clearTimeout(id));
+            henGioNhapNhayNutCuon = [];
+
+            const nutXuong = document.querySelector('.nut-cuon-modal[data-modal-cua="nutGocLayer"][data-huong="xuong"]');
+            const nutLen = document.querySelector('.nut-cuon-modal[data-modal-cua="nutGocLayer"][data-huong="len"]');
+            if (!nutXuong || !nutLen) return;
+            nutXuong.classList.remove('dang-nhap-nhay');
+            nutLen.classList.remove('dang-nhap-nhay');
+
+            const TONG_THOI_LUONG = 4000;
+            const SO_LAN_MOI_NUT = 3;
+            const moiLuot = TONG_THOI_LUONG / (SO_LAN_MOI_NUT * 2);
+            const nuaLuot = moiLuot / 2;
+
+            const chayMotLuot = (nut, batDau) => {
+                henGioNhapNhayNutCuon.push(setTimeout(() => nut.classList.add('dang-nhap-nhay'), batDau));
+                henGioNhapNhayNutCuon.push(setTimeout(() => nut.classList.remove('dang-nhap-nhay'), batDau + nuaLuot));
+            };
+
+            for (let i = 0; i < SO_LAN_MOI_NUT; i++) {
+                chayMotLuot(nutXuong, i * 2 * moiLuot);
+                chayMotLuot(nutLen, moiLuot + i * 2 * moiLuot);
+            }
         }
 
         // 2 nút cuộn lên đầu/xuống cuối, SÁT MÉP PHẢI MÀN HÌNH — dùng lại
@@ -3449,8 +3488,11 @@
         function dongModalNutGocLayer() {
             const modal = document.getElementById('modalNutGocLayer');
             if (modal) modal.classList.remove('active');
+            henGioNhapNhayNutCuon.forEach((id) => clearTimeout(id));
+            henGioNhapNhayNutCuon = [];
             document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
                 n.style.display = 'none';
+                n.classList.remove('dang-nhap-nhay');
             });
         }
 
