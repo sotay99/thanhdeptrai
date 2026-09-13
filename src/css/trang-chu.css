@@ -24,12 +24,34 @@
             background: var(--nen);
             overflow: hidden;
             border-radius: 10px;
+
+            /* Nền TRANG (module Trang chủ) giữ màu đen/tối như logic cũ của
+               shop (--nen không đổi, kế thừa từ :root). Nhưng mọi "khung" nổi
+               lên trên nền đó — thanh công cụ trên cùng, 2 khung bên trái/
+               phải, khung xem-và-thao-tác ở giữa, các khung con bên trong
+               chúng (mục Layer, dropdown, modal nội bộ...) — đều dùng
+               var(--the)/(--the-2)/(--the-3) cho nền. Ghi đè 3 biến đó (và
+               viền/chữ đi kèm) NGAY TẠI ĐÂY, chỉ trong phạm vi .trang-chu-editor,
+               để đổi toàn bộ "khung" sang nền TRẮNG mà không đụng tới bảng
+               màu tối dùng chung của cả shop (định nghĩa ở :root trong
+               base.css) — mọi rule bên dưới vẫn viết var(--the)... như cũ,
+               chỉ giá trị thực sự phân giải ra là khác trong phạm vi module này.
+               --nen giữ nguyên (không ghi đè) vì đó là màu nền TRANG, không
+               phải màu nền khung. */
+            --the: #ffffff;
+            --the-2: #f4f5f7;
+            --the-3: #e9ebef;
+            --vien: #d5d8de;
+            --vien-sang: #c7cbd3;
+            --chu: #14161a;
+            --chu-diu: #4a505a;
+            --chu-mo: #767c86;
         }
 
         /* ===== HEADER ===== */
         .header {
-            background: linear-gradient(135deg, var(--xanh-dam) 0%, var(--xanh) 100%);
-            color: white;
+            background: var(--the);
+            color: var(--chu);
             padding: 12px 20px;
             display: flex;
             flex-wrap: wrap;
@@ -67,9 +89,9 @@
         }
 
         .btn-header {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
+            background: var(--the-2);
+            color: var(--chu);
+            border: 1px solid var(--vien-sang);
             padding: 8px 15px;
             border-radius: 5px;
             cursor: pointer;
@@ -78,16 +100,14 @@
         }
 
         .btn-header:hover {
-            background: rgba(255,255,255,0.3);
+            background: var(--the-3);
             transform: translateY(-2px);
         }
 
-        /* .btn-header (chữ trắng, nền trắng mờ) chỉ đọc được trên thanh tiêu
-           đề nền gradient tím — dùng lại y hệt bên trong modal/khung nền
-           trắng (Thông Tin Ảnh, các nút Huỷ/Xác Nhận...) làm chữ trắng trên
-           nền trắng, gần như vô hình. Hai lớp dưới đây dành riêng cho nút
-           trên nền trắng: .btn-modal-primary (hành động chính, nền màu đặc)
-           và .btn-modal-secondary (huỷ/đóng, nền xám nhạt chữ đậm). */
+        /* .btn-modal-primary (hành động chính, nền màu đặc) và
+           .btn-modal-secondary (huỷ/đóng, nền xám nhạt chữ đậm) — dùng
+           chung cho nút trong modal VÀ .btn-header, giờ tất cả đều nằm trên
+           nền trắng của khung. */
         .btn-modal-primary {
             background: var(--xanh-dam);
             color: white;
@@ -337,7 +357,13 @@
             gap: 8px;
             padding: 6px 8px;
             background: var(--the-2);
-            border: 2px solid transparent;
+            /* Viền mảnh màu đen mặc định cho MỌI thẻ — không phân biệt màu
+               chủ đạo của từng lớp/nhóm (màu chủ đạo đã thể hiện ở CHỮ tên,
+               xem .layer-name-text, đặt màu trực tiếp bằng inline style lúc
+               dựng thẻ vì mỗi thẻ cần một màu khác nhau CÙNG LÚC — biến CSS
+               --current-layer-color chỉ có 1 giá trị dùng chung cho thẻ
+               ĐANG được chọn). */
+            border: 1px solid #000000;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s;
@@ -346,8 +372,15 @@
             line-height: 1.3;
         }
 
+        /* Thẻ ĐANG được chọn để thao tác: viền đậm hơn (dày hơn) và đổi hẳn
+           sang màu chủ đạo của chính lớp/nhóm đó — --current-layer-color
+           luôn được updateCurrentLayerColor() cập nhật theo ĐÚNG lớp/nhóm
+           đang active, nên tại một thời điểm chỉ có 1 thẻ .active, dùng
+           chung biến này là đủ (khác với chữ tên, luôn hiện đồng thời ở mọi
+           thẻ nên phải per-item). */
         .layer-item.active {
             background: var(--the-3);
+            border-width: 3px;
             border-color: var(--current-layer-color);
         }
 
@@ -1010,6 +1043,180 @@
             color: var(--chu);
         }
 
+        /* ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN (menu hành động của layer) =====
+           Không có .modal-header (modal này cố ý KHÔNG có tiêu đề) — chỉ có
+           nút đóng đỏ + ~50 thẻ hành động chia thành 9 NHÓM THẺ.
+
+           Modal RỘNG (khác các modal thường 400px) vì chứa rất nhiều thẻ —
+           cần đủ chỗ để nhiều thẻ/dòng thì mới ít phải cuộn. Chữ trong thẻ
+           CỐ Ý nhỏ (xem .the-hanh-dong) để nhìn được toàn cảnh ~50 lựa chọn
+           cùng lúc, giống cách game nhiều nút vẫn thu nhỏ nút mà không mất
+           thẩm mỹ/khó bấm — kích thước thẻ vẫn đủ để bấm thoải mái trên
+           điện thoại (min-height ~34px, padding rộng hơn font). */
+        .modal-nut-goc-layer {
+            max-width: 900px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 22px;
+        }
+
+        .modal-close-do {
+            background: #e53935;
+            color: #fff;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            top: 12px;
+            right: 12px;
+        }
+
+        .modal-close-do:hover {
+            background: #c62828;
+        }
+
+        /* Bọc ngoài TẤT CẢ các nhóm thẻ — bản thân nó cũng flex-wrap để các
+           nhóm thẻ xếp trái→phải, hết chỗ thì xuống dòng, y hệt cách các
+           thẻ bên trong 1 nhóm tự xuống dòng. */
+        .modal-nut-goc-danh-sach {
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        /* Mỗi NHÓM THẺ: 1 khung viền riêng, cũng tự flex-wrap bên trong nó
+           — khung viền vì thế LUÔN sát biên ngoài của đúng số thẻ đang có
+           trên mỗi dòng, kể cả khi nhóm bị xuống dòng nội bộ (khung tự cao
+           thêm theo số dòng, không phải hình chữ nhật cố định kích thước).
+           Viền dùng CHUNG 1 màu cho mọi nhóm (--vien-nhom-the) — 2 nhóm nằm
+           sát nhau thì 2 đường viền cùng màu chồng lên nhau trông như 1
+           đường duy nhất (margin âm bằng đúng bề dày viền để "ăn" luôn viền
+           của gap giữa 2 nhóm, giống border-collapse của bảng). */
+        .modal-nut-goc-nhom {
+            --vien-nhom-the: #c3c8d1;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 6px;
+            padding: 6px;
+            border: 1.5px solid var(--vien-nhom-the);
+            border-radius: 10px;
+            margin: -0.75px;
+        }
+
+        /* Thẻ CO SÁT theo đúng bề rộng chữ bên trong (không còn max-width cố
+           định) — white-space: nowrap bắt buộc luôn nằm gọn 1 dòng, không
+           bao giờ tự xuống dòng bên trong 1 thẻ (khác với cả DÃY thẻ, dãy đó
+           vẫn tự xuống dòng bình thường ở .modal-nut-goc-nhom). */
+        .the-hanh-dong {
+            border: none;
+            border-radius: 7px;
+            padding: 6px 8px;
+            min-height: 30px;
+            font-size: 0.72rem;
+            line-height: 1.25;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            width: max-content;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .the-hanh-dong:hover {
+            transform: scale(1.08);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+            z-index: 1;
+        }
+
+        .the-hanh-dong:active {
+            transform: scale(1);
+        }
+
+        /* 9 nhóm thẻ — 9 màu nền gradient khác nhau, cùng nhóm luôn cùng
+           màu. Chọn màu đủ tương phản với nhau để phân biệt nhanh nhóm nào
+           với nhóm nào giữa ~50 thẻ. */
+        .modal-nut-goc-nhom[data-nhom="1"] .the-hanh-dong { background: linear-gradient(135deg, #6366f1, #a5b4fc); }
+        .modal-nut-goc-nhom[data-nhom="2"] .the-hanh-dong { background: linear-gradient(135deg, #0891b2, #67e8f9); }
+        .modal-nut-goc-nhom[data-nhom="3"] .the-hanh-dong { background: linear-gradient(135deg, #db2777, #f9a8d4); }
+        .modal-nut-goc-nhom[data-nhom="4"] .the-hanh-dong { background: linear-gradient(135deg, #d97706, #fcd34d); }
+        .modal-nut-goc-nhom[data-nhom="5"] .the-hanh-dong { background: linear-gradient(135deg, #059669, #6ee7b7); }
+        .modal-nut-goc-nhom[data-nhom="6"] .the-hanh-dong { background: linear-gradient(135deg, #7c3aed, #c4b5fd); }
+        .modal-nut-goc-nhom[data-nhom="7"] .the-hanh-dong { background: linear-gradient(135deg, #dc2626, #fca5a5); }
+        .modal-nut-goc-nhom[data-nhom="8"] .the-hanh-dong { background: linear-gradient(135deg, #475569, #94a3b8); }
+        .modal-nut-goc-nhom[data-nhom="9"] .the-hanh-dong { background: linear-gradient(135deg, #0d9488, #5eead4); }
+
+        @media (max-width: 480px) {
+            .the-hanh-dong {
+                padding: 6px 7px;
+            }
+        }
+
+        /* Thẻ X đỏ đóng modal — đứng NGAY SAU thẻ cuối cùng, như 1 thẻ hành
+           động bình thường (không nằm trong khung viền của nhóm nào), nhưng
+           HÌNH DẠNG và logic bấm y hệt nút X tròn ở góc trên-phải modal
+           (.modal-close-do: hình tròn 28x28, nền đỏ đặc) — ghi đè hết mọi
+           kích thước/bo góc/nền mà .the-hanh-dong đặt sẵn (thẻ chữ nhật bo
+           góc nhẹ) vì thẻ này không phải 1 thẻ hành động thông thường. */
+        .the-dong-modal {
+            width: 28px;
+            height: 28px;
+            min-height: 0;
+            padding: 0;
+            border-radius: 50%;
+            background: #e53935;
+            font-size: 1rem;
+            flex: 0 0 auto;
+        }
+
+        .the-dong-modal:hover {
+            background: #c62828;
+            transform: none;
+        }
+
+        /* ===== Hiệu ứng mũi tên nhắc lướt xuống — mỗi lần mở modal =====
+           Tổng thời lượng 1,9s: bung to → thu nhỏ (~10%), đứng im ĐÚNG
+           0,25s (10%→23%, tức 0,13*1,9s), rồi trôi xuống — đoạn TRÔI riêng
+           chiếm 77% còn lại của 1,9s ≈ 1,46s, nằm đúng trong khoảng
+           1-1,5 giây yêu cầu (chậm hơn hẳn bản trước, vốn trôi trong lúc
+           0,9s vì gộp chung 1 khoảng 1,5s cho cả 3 giai đoạn). */
+        .mui-ten-nhac-luot {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 160px;
+            height: 160px;
+            margin: -80px 0 0 -80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 140px;
+            color: #ff3b30;
+            filter: drop-shadow(0 0 18px rgba(255, 59, 48, 0.85)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.5));
+            pointer-events: none;
+            z-index: 100000;
+            animation: mui-ten-nhac-luot-xuong 1.9s cubic-bezier(.2, .7, .3, 1) forwards;
+        }
+
+        @keyframes mui-ten-nhac-luot-xuong {
+            0% { transform: scale(2.6); opacity: 0; }
+            10% { transform: scale(1); opacity: 1; }
+            23% { transform: scale(1); opacity: 1; }
+            100% { transform: translateY(150vh) scale(1); opacity: 0; }
+        }
+
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -1070,17 +1277,34 @@
             opacity: 0.8;
         }
 
-        /* ===== LAYER SELECTION BORDER ===== */
+        /* ===== LAYER SELECTION BORDER =====
+           Không còn là MỘT phần tử #layerBorder cố định — updateLayerBorder()
+           tự tạo/xoá nhiều phần tử .canvas-layer-border (mỗi lớp một khung,
+           màu theo layer.color của chính nó — bằng inline style, không dùng
+           --current-layer-color vì có thể nhiều khung hiện đồng thời cùng
+           lúc khi đang chọn 1 NHÓM). */
         .canvas-layer-border {
             position: absolute;
-            border: 2px solid var(--current-layer-color);
+            border: 2px solid #000000; /* đè bằng inline style.borderColor lúc vẽ */
             box-shadow: inset 0 0 0 4px white;
             display: none;
+            /* Bản thân khung để pointer-events: none — không chặn thao tác
+               kéo-thả trực tiếp vào ảnh nằm bên dưới nó. Nút góc và tay cầm
+               kéo cạnh (con của khung) phải tự bật lại pointer-events: auto,
+               nếu không chúng thừa hưởng "none" từ khung cha và không bao
+               giờ nhận được click/mousedown — nhìn như trang trí. */
             pointer-events: none;
         }
 
         .canvas-layer-border.visible {
             display: block;
+        }
+
+        /* Khung của lớp ĐANG thao tác thật sự (có đủ nút điều khiển) đậm hơn
+           khung của các lớp "kéo theo" khi chọn cả 1 nhóm (chỉ để nhận diện,
+           không có nút). */
+        .canvas-layer-border.canvas-layer-border-chinh {
+            border-width: 3px;
         }
 
         .layer-control-btn {
@@ -1098,6 +1322,7 @@
             color: var(--current-layer-color);
             transition: all 0.3s;
             z-index: 999;
+            pointer-events: auto;
         }
 
         .layer-control-btn:hover {
@@ -1110,6 +1335,22 @@
             height: 32px;
         }
 
+        /* Nút "xoay bên trong" ở góc trên-phải: hình TRÒN bao quanh icon,
+           khác 3 nút góc vuông còn lại (xoá/menu, xoay-kéo, zoom-kéo). */
+        .layer-corner-btn-tron {
+            border-radius: 50%;
+        }
+
+        .layer-control-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .layer-control-btn:disabled:hover {
+            background: var(--the);
+            color: var(--current-layer-color);
+        }
+
         .resize-handle {
             position: absolute;
             width: 10px;
@@ -1118,6 +1359,7 @@
             border: 2px solid white;
             border-radius: 50%;
             cursor: pointer;
+            pointer-events: auto;
         }
 
         /* ===== LOADING & NOTIFICATIONS ===== */

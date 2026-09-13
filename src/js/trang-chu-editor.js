@@ -10,6 +10,13 @@
         let currentZoom = 1;
         let currentGroupRenameId = null; // For group rename modal
         const API_BASE_URL = 'http://localhost:8000/api';
+        // true trong lúc đang kéo nút "xoay bên trong" (handleLayerRotateInner)
+        // — xem chú thích tại nơi dùng trong updateLayerBorder().
+        let dangKeoXoayBenTrong = false;
+        // Tâm object NGAY TRƯỚC khung hình kéo hiện tại — dùng để suy ra độ
+        // dịch chuyển khi bấm-kéo thẳng vào ảnh của 1 layer có khungRieng, xem
+        // bindCanvasEvents().
+        const diemTamTruocKeo = new WeakMap();
 
         // Layer color palette
         const LAYER_COLORS = [
@@ -51,6 +58,21 @@
                 fireRightClick: true,
                 stopContextMenu: true,
             });
+
+            // Fabric tự vẽ một khung chọn RIÊNG (viền mờ + 8 chấm bo góc) mỗi
+            // khi một object được click — khung này chồng lên #layerBorder
+            // (khung màu tự vẽ ở updateLayerBorder(), có đủ nút xoá/nhân
+            // đôi/xoay/điểm kéo cạnh riêng). Người dùng kéo object thì khung
+            // mờ của Fabric mới là khung thật sự bám theo con trỏ, còn khung
+            // màu chỉ đứng yên tới lần updateLayerBorder() kế tiếp — nhìn như
+            // hai khung lồng nhau. Tắt hẳn viền + tay cầm gốc của Fabric ở
+            // đây (mặc định cho MỌI object mới tạo): việc kéo-di-chuyển object
+            // không phụ thuộc hasControls/hasBorders — vẫn kéo được bình
+            // thường — chỉ mất đi khung/tay cầm hiển thị thừa. #layerBorder
+            // vẫn tự vẽ lại theo object khi object di chuyển (đã có sẵn qua
+            // canvas.on('object:moving', updateLayerBorder) ở bindCanvasEvents()).
+            fabric.Object.prototype.hasControls = false;
+            fabric.Object.prototype.hasBorders = false;
 
             setupDragAndDrop();
             bindCanvasEvents();
@@ -167,10 +189,11 @@
                     activeLayerIndex = index;
                     updateLayersUI();
                     updateCurrentLayerColor();
+                    updateLayerBorder();
                     showToast(`✓ Đã chọn từ lớp ${minIndex} đến ${maxIndex} (${multiSelectedIndices.size} lớp)`, 'info');
                     return;
                 }
-                
+
                 // Handle multi-select (Ctrl+Click)
                 if (ctrlKey) {
                     if (multiSelectedIndices.has(index)) {
@@ -182,18 +205,34 @@
                         multiSelectedIndices.add(index);
                         showToast(`✓ Thêm chọn: ${layer.name}`, 'info');
                     }
-                    
+
                     // Keep track of primary selection
                     activeLayerIndex = index;
                     updateLayersUI();
                     updateCurrentLayerColor();
+                    updateLayerBorder();
                     return;
                 }
-                
+
+                // Bấm lại ĐÚNG layer/nhóm đang active (không Ctrl/Shift, không
+                // đang có multi-select dở) — không có gì thay đổi, nên KHÔNG
+                // chạy lại bất kỳ logic nào (không toast, không vẽ lại panel/
+                // khung viền). Tránh việc bấm nhầm/bấm lại thẻ hoặc bấm vào
+                // vùng ảnh-khung viền-nút của chính layer đang chọn cứ liên
+                // tục kích hoạt lại y hệt một vòng chọn mới, dù không đổi gì.
+                if (!ctrlKey && !shiftKey && index === activeLayerIndex && multiSelectedIndices.size === 0) {
+                    const dangLaGroupActive = layer.isGroup && activeGroupIndex !== -1
+                        && layerGroups[activeGroupIndex] && layerGroups[activeGroupIndex].id === layer.groupId;
+                    const dangLaLayerThuongActive = !layer.isGroup && activeGroupIndex === -1;
+                    if (dangLaGroupActive || dangLaLayerThuongActive) {
+                        return;
+                    }
+                }
+
                 // Normal single selection (no Ctrl, no Shift)
                 multiSelectedIndices.clear(); // Clear multi-select
                 activeLayerIndex = index;
-                
+
                 // If selecting a group, mark it as active group
                 if (layer.isGroup) {
                     const group = layerGroups.find(g => g.id === layer.groupId);
@@ -202,6 +241,7 @@
                         selectedLayerIndices.clear(); // Clear multi-select
                         updateLayersUI();
                         updateCurrentLayerColor();
+                        updateLayerBorder();
                         showToast(`📁 Chọn Nhóm: ${layer.name}`, 'success');
                     }
                 } else {
@@ -210,6 +250,7 @@
                     selectedLayerIndices.clear(); // Clear multi-select
                     updateLayersUI();
                     updateCurrentLayerColor();
+                    updateLayerBorder();
                     showToast(`Chọn: ${layer.name}`, 'success');
                 }
             }
@@ -240,19 +281,155 @@
             }
         }
 
+        // Lỗi cũ: "objects: [...original.objects]" chỉ chép lại THAM CHIẾU
+        // tới đúng những object fabric đang có trên canvas — layer mới và
+        // layer cũ vì vậy cùng trỏ tới MỘT ảnh vật lý; kéo/xoay/co giãn bên
+        // này thì bên kia cũng đổi theo (không phải 2 layer độc lập), và
+        // renderAllLayers() sẽ add cùng 1 object 2 lần lên canvas. Phải NHÂN
+        // BẢN THẬT từng object (obj.clone(), callback-based trong Fabric vì
+        // ảnh cần tải lại) rồi mới gán cho layer mới.
         function duplicateLayer(index) {
             const original = layers[index];
-            const duplicate = {
-                ...original,
-                id: Date.now(),
-                name: `${original.name} (Bản Sao)`,
-                objects: [...original.objects]
-            };
-            layers.splice(index + 1, 0, duplicate);
-            activeLayerIndex = index + 1;
-            updateLayersUI();
-            updateCurrentLayerColor();
-            showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+            if (!original.objects || original.objects.length === 0) {
+                showToast('Layer trống, không có gì để nhân bản!', 'error');
+                return;
+            }
+
+            const layerId = Date.now();
+            // Lỗi Fabric.js (v5.3.0): clone() tự khôi phục object qua
+            // constructor (`new klass(options)`), và bản thân constructor
+            // ÂM THẦM chuẩn hoá scaleX/scaleY ÂM (đang lật ngang/dọc) thành
+            // DƯƠNG ngay lúc khởi tạo — dù toObject() (bước trung gian của
+            // clone()) vẫn giữ đúng dấu âm. Gán lại qua THUỘC TÍNH (obj.scaleX
+            // = ...) sau khi khởi tạo xong thì KHÔNG bị chuẩn hoá (chỉ có lúc
+            // truyền vào constructor mới bị) — nên phải ghi đè scaleX/scaleY
+            // của bản sao bằng đúng giá trị (có dấu) của object gốc ngay sau
+            // khi clone() trả về, nếu không bản sao của 1 layer đang bị lật sẽ
+            // tự hết lật, kéo theo vị trí/kích thước lệch hẳn khỏi layer gốc.
+            const cloneOne = (obj) => new Promise((resolve) => obj.clone((cloned) => {
+                cloned.scaleX = obj.scaleX;
+                cloned.scaleY = obj.scaleY;
+                cloned.setCoords();
+                resolve(cloned);
+            }));
+
+            Promise.all(original.objects.map(cloneOne)).then((clonedObjects) => {
+                // Màu chủ đạo của layer mới: khác màu layer GỐC là bắt buộc;
+                // ưu tiên thêm một màu CHƯA ai dùng trong toàn bộ layer hiện
+                // có, nếu hết màu trống (đã tạo nhiều hơn LAYER_COLORS.length
+                // layer) thì đành chấp nhận trùng với MỘT layer nào đó khác,
+                // nhưng tuyệt đối không được trùng màu layer gốc.
+                const mauDaDung = new Set(layers.filter(l => !l.isGroup).map(l => l.color));
+                const mauMoi = LAYER_COLORS.find(c => c !== original.color && !mauDaDung.has(c))
+                    || LAYER_COLORS.find(c => c !== original.color)
+                    || original.color;
+
+                const duplicate = {
+                    ...original,
+                    id: layerId,
+                    name: `${original.name} (Bản Sao)`,
+                    color: mauMoi,
+                    objects: clonedObjects,
+                    // Nhân bản RIÊNG khungRieng (nếu có) — spread ở trên chỉ
+                    // copy tham chiếu, sửa khung của bản sao (vd kéo giãn) sẽ
+                    // vô tình sửa luôn khung của layer gốc nếu không tách ra.
+                    khungRieng: original.khungRieng ? { ...original.khungRieng } : undefined,
+                };
+                layers.splice(index + 1, 0, duplicate);
+
+                // Layer mới lập tức được chọn để thao tác — layer cũ (và
+                // khung viền/thẻ của nó) không còn active nữa.
+                activeLayerIndex = index + 1;
+                activeGroupIndex = -1;
+                multiSelectedIndices.clear();
+
+                // HIỆU ỨNG "ra đời": bản sao hiện ra NGAY TẠI vị trí layer gốc
+                // (đè khít 100% lên layer gốc — không dịch chuyển gì cả lúc
+                // vừa tạo), rồi lập tức nảy ra chéo góc trên-phải một đoạn vừa
+                // phải, sau đó bay ngược lại đúng vị trí ban đầu và dừng ở đó.
+                // Đưa object mới lên canvas SAU KHI mô hình dữ liệu (layers,
+                // activeLayerIndex...) đã nhất quán — 'object:added' tự bắn
+                // updateLayerBorder(), tránh chạy giữa lúc dữ liệu còn dở.
+                clonedObjects.forEach((obj) => canvas.add(obj));
+
+                updateLayersUI();
+                updateCurrentLayerColor();
+                updateLayerBorder();
+                showToast(`Nhân đôi: ${duplicate.name}`, 'success');
+
+                // Layer MỚI nảy chéo góc trên-phải; layer GỐC nảy chéo
+                // NGƯỢC LẠI (góc dưới-trái) cùng khoảng cách, cùng thời gian,
+                // bắt đầu/kết thúc CÙNG LÚC (chung batDau) — 2 bản trông như
+                // tách ra rồi khớp lại làm một khi hiệu ứng vừa xong.
+                const khoangCachHieuUng = tinhKhoangCachNay(clonedObjects);
+                const batDauHieuUng = performance.now();
+                nayRoiBayVe(clonedObjects, 800, 1, khoangCachHieuUng, batDauHieuUng);
+                nayRoiBayVe(original.objects, 800, -1, khoangCachHieuUng, batDauHieuUng);
+            });
+        }
+
+        // Khoảng cách nảy dùng chung cho hiệu ứng nhân đôi layer: tỉ lệ theo
+        // đường chéo hộp bao của layer, giữ trong một khoảng vừa phải để
+        // không quá ngắn (không thấy hiệu ứng) lẫn không quá dài (bay ra
+        // khỏi vùng nhìn thấy).
+        function tinhKhoangCachNay(danhSachObject) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            danhSachObject.forEach((obj) => {
+                const b = obj.getBoundingRect(false, true);
+                minX = Math.min(minX, b.left);
+                minY = Math.min(minY, b.top);
+                maxX = Math.max(maxX, b.left + b.width);
+                maxY = Math.max(maxY, b.top + b.height);
+            });
+            const duongCheoHop = Math.hypot(maxX - minX, maxY - minY);
+            return Math.min(480, Math.max(150, duongCheoHop * 1.05));
+        }
+
+        // Hoạt ảnh "nảy ra rồi bay về" dùng cho hiệu ứng nhân đôi layer: các
+        // object xuất phát ĐÚNG tại vị trí hiện tại, lập tức lệch dần theo
+        // đường chéo (hướng do heSoHuong quyết định: +1 = chéo góc trên-
+        // phải, -1 = chéo góc dưới-trái — ngược lại hoàn toàn), rồi bay
+        // ngược lại và kết thúc animation đúng tại vị trí xuất phát. Dùng
+        // sin(pi*t) làm hệ số lệch: bằng 0 ở t=0 và t=1 (đầu/cuối animation
+        // trùng khít vị trí gốc), đạt đỉnh ở t=0.5 (điểm xa nhất trên đường
+        // chéo) — vừa là đường đi lẫn đường về, không cần 2 đoạn tween riêng.
+        // batDau truyền sẵn từ ngoài (thay vì tự lấy performance.now()) để 2
+        // lời gọi song song (layer mới + layer gốc) khởi động ĐÚNG CÙNG một
+        // mốc thời gian, không lệch dù chỉ vài mili-giây.
+        function nayRoiBayVe(danhSachObject, thoiGianMs, heSoHuong, khoangCach, batDau) {
+            const goc = danhSachObject.map((obj) => ({ obj, left: obj.left, top: obj.top }));
+
+            // Hướng chéo góc trên-phải (heSoHuong=1: x dương sang phải, y âm
+            // lên trên) hoặc đảo ngược hoàn toàn — góc dưới-trái (heSoHuong=-1).
+            const goRad = Math.PI / 4;
+            const dx = Math.cos(goRad) * khoangCach * heSoHuong;
+            const dy = -Math.sin(goRad) * khoangCach * heSoHuong;
+
+            function buoc(now) {
+                const t = Math.min(1, (now - batDau) / thoiGianMs);
+                const heSo = Math.sin(Math.PI * t);
+                goc.forEach(({ obj, left, top }) => {
+                    obj.left = left + dx * heSo;
+                    obj.top = top + dy * heSo;
+                    obj.setCoords();
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+                if (t < 1) {
+                    requestAnimationFrame(buoc);
+                } else {
+                    // Chốt lại đúng vị trí gốc, tránh sai số dấu phẩy động
+                    // tích luỹ qua nhiều khung hình.
+                    goc.forEach(({ obj, left, top }) => {
+                        obj.left = left;
+                        obj.top = top;
+                        obj.setCoords();
+                    });
+                    canvas.renderAll();
+                    updateLayerBorder();
+                }
+            }
+            requestAnimationFrame(buoc);
         }
 
         function renameLayer(index, newName) {
@@ -1529,7 +1706,6 @@
                         const isMultiSelected = !isNested && multiSelectedIndices.has(globalIndex);
                         const groupEl = document.createElement('div');
                         groupEl.className = `layer-item ${isActive ? 'active' : ''} ${isNested ? 'layer-item-nested' : ''} ${isMultiSelected ? 'multi-selected' : ''}`;
-                        groupEl.style.borderColor = '#000000';
                         groupEl.style.position = 'relative';
                         groupEl.draggable = !isNested;
                         groupEl.dataset.layerIndex = globalIndex;
@@ -1589,7 +1765,6 @@
                         const isMultiSelected = !isNested && multiSelectedIndices.has(globalIndex);
                         const layerEl = document.createElement('div');
                         layerEl.className = `layer-item ${isActive ? 'active' : ''} ${isNested ? 'layer-item-nested' : ''} ${isMultiSelected ? 'multi-selected' : ''}`;
-                        layerEl.style.borderColor = layer.color;
                         layerEl.style.position = 'relative';
                         layerEl.draggable = !isNested;
                         layerEl.dataset.layerIndex = globalIndex;
@@ -1608,7 +1783,7 @@
                                 <i class="fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
                             </div>
                             ${showDragHandle ? `<div class="drag-handle drag-handle-visible" title="Kéo để sắp xếp lại">⋮⋮</div>` : ''}
-                            <span class="layer-name-text">${escapeHtmlText(layer.name)}</span>
+                            <span class="layer-name-text" style="color: ${layer.color};">${escapeHtmlText(layer.name)}</span>
                             <button class="layer-menu-trigger" onclick="event.stopPropagation(); ${menuAction}" title="Tuỳ chọn">
                                 <i class="fas fa-ellipsis-vertical"></i>
                             </button>
@@ -2301,6 +2476,12 @@
                 cornerColor: layer.color,
                 transparentCorners: false,
                 lockRotation: true,
+                // Khung cắt là ngoại lệ DUY NHẤT còn cần tay cầm/viền thật
+                // của Fabric — nó không có khung màu + nút riêng như layer
+                // thường, người dùng phải kéo trực tiếp tay cầm bo góc để
+                // chỉnh vùng cắt.
+                hasControls: true,
+                hasBorders: true,
             });
             cropOverlayRect.setControlsVisibility({ mtr: false });
             canvas.add(cropOverlayRect);
@@ -2566,107 +2747,434 @@
         //    của nó (thuộc tính width/height, 800x600) — toạ độ fabric trả
         //    về tính theo pixel nội bộ, phải quy đổi sang đúng tỉ lệ đang
         //    hiển thị mới khớp ảnh thật trên màn hình.
-        function updateLayerBorder() {
-            const border = document.getElementById('layerBorder');
+        // Trả về danh sách "lớp thật" (có objects) cần vẽ khung viền quanh
+        // ảnh của chúng trên canvas, ứng với lựa chọn hiện tại ở panel Layer:
+        // - Chọn 1 lớp thường: đúng lớp đó (1 khung, có đủ nút điều khiển).
+        // - Chọn 1 NHÓM: TẤT CẢ lớp con của nhóm (đệ quy, kể cả nhóm lồng
+        //   trong nhóm) — mỗi lớp một khung riêng theo đúng màu của nó, để
+        //   người dùng thấy ngay những ảnh nào thuộc nhóm và bấm chọn từng
+        //   ảnh trên canvas. Các khung này KHÔNG có nút điều khiển riêng —
+        //   mô hình thao tác hiện tại của toàn bộ ứng dụng coi "nhóm" là một
+        //   khối, muốn chỉnh riêng 1 lớp con vẫn phải bỏ nhóm trước (xem
+        //   selectNestedLayer()); khung ở đây chỉ để NHẬN DIỆN, không phải
+        //   để chỉnh.
+        function layTargetKhungVienLayer() {
             const layer = layers[activeLayerIndex];
-
-            if (!layer || layer.isGroup || !layer.objects || layer.objects.length === 0) {
-                border.classList.remove('visible');
-                return;
+            if (!layer) return [];
+            if (layer.isGroup) {
+                const group = layerGroups.find(g => g.id === layer.groupId);
+                if (!group) return [];
+                return flattenLayersForRender(group.children)
+                    .map(({ layer: l }) => l)
+                    .filter(l => l.objects && l.objects.length > 0);
             }
+            return layer.objects && layer.objects.length > 0 ? [layer] : [];
+        }
 
-            // Get bounding box of layer objects (đã gồm zoom hiện tại)
+        // Trả về hình chữ nhật (đã xoay) khít bao quanh mọi object của layer,
+        // theo đúng góc xoay CHUNG của chúng — dùng để khung viền màu xoay
+        // đồng bộ y hệt ảnh thay vì luôn nằm ngang (trường hợp phổ biến nhất:
+        // layer chỉ có 1 object, luôn có "góc chung" = góc của chính nó).
+        // Trả về null nếu các object trong layer có góc xoay KHÁC nhau (không
+        // có 1 góc chung để xoay khung theo) — khi đó updateLayerBorder() tự
+        // quay lại cách tính hộp bao thẳng trục (AABB) như trước.
+        function tinhKhungXoayLayer(layer) {
+            if (!layer.objects || layer.objects.length === 0) return null;
+            const theta = layer.objects[0].angle || 0;
+            const cungGoc = layer.objects.every(o => Math.abs((o.angle || 0) - theta) < 0.01);
+            if (!cungGoc) return null;
+
+            // Lỗi cũ: dùng "obj.left + w/2, obj.top + h/2" làm tâm object —
+            // SAI khi object đã xoay. Fabric mặc định originX/Y='left'/'top'
+            // nghĩa là left/top neo một điểm CỐ ĐỊNH không đổi theo góc xoay,
+            // còn tâm hình học THẬT lại quay quanh điểm neo đó theo góc —
+            // "left + w/2" chỉ đúng khi angle=0. Phải dùng obj.getCenterPoint()
+            // (API chính thức của Fabric, tự xử lý đúng phép xoay quanh gốc
+            // originX/Y) để ra đúng tâm thật ở MỌI góc xoay.
+            //
+            // Đưa tâm THẬT của từng object về hệ trục "đã xoay ngược -theta"
+            // — trong hệ này mọi object nằm thẳng trục (vì góc riêng của nó
+            // đã bị trừ hết), hộp bao của cả layer trong hệ này là 1 AABB
+            // bình thường quanh các tâm đã xoay.
+            const rad = -theta * Math.PI / 180;
+            const cosT = Math.cos(rad), sinT = Math.sin(rad);
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
             layer.objects.forEach(obj => {
-                const bounds = obj.getBoundingRect();
-                minX = Math.min(minX, bounds.left);
-                minY = Math.min(minY, bounds.top);
-                maxX = Math.max(maxX, bounds.left + bounds.width);
-                maxY = Math.max(maxY, bounds.top + bounds.height);
+                const center = obj.getCenterPoint();
+                // getScaledWidth()/getScaledHeight() = width/height * scaleX/
+                // scaleY — ÂM khi object đang bị LẬT (scale âm, xem
+                // handleLayerResize). Đây là ĐỘ RỘNG/CAO hình học (khoảng
+                // cách 2 cạnh), luôn phải DƯƠNG — thiếu Math.abs() thì hộp
+                // bao gộp ra width/height ÂM khi có object bị lật, làm cả
+                // khung viền lẫn 4 nút góc (định vị theo CSS width/height âm,
+                // trình duyệt không hiểu) vỡ layout, 2 nút biến mất/chồng lấn.
+                const w = Math.abs(obj.getScaledWidth());
+                const h = Math.abs(obj.getScaledHeight());
+                const localCx = center.x * cosT - center.y * sinT;
+                const localCy = center.x * sinT + center.y * cosT;
+                minX = Math.min(minX, localCx - w / 2);
+                minY = Math.min(minY, localCy - h / 2);
+                maxX = Math.max(maxX, localCx + w / 2);
+                maxY = Math.max(maxY, localCy + h / 2);
+            });
+            if (!isFinite(minX)) return null;
+
+            const localCenterX = (minX + maxX) / 2;
+            const localCenterY = (minY + maxY) / 2;
+            // Xoay tâm đã gộp NGƯỢC LẠI (+theta) để ra đúng toạ độ THẬT trên canvas.
+            const rad2 = theta * Math.PI / 180;
+            const cos2 = Math.cos(rad2), sin2 = Math.sin(rad2);
+            const cx = localCenterX * cos2 - localCenterY * sin2;
+            const cy = localCenterX * sin2 + localCenterY * cos2;
+
+            return { theta, cx, cy, width: maxX - minX, height: maxY - minY };
+        }
+
+        function updateLayerBorder() {
+            const container = document.querySelector('.trang-chu-editor .canvas-container');
+            if (!container || !canvas) return;
+
+            const targets = layTargetKhungVienLayer();
+            const targetIds = new Set(targets.map(l => String(l.id)));
+
+            // Khung của lớp không còn liên quan (đổi lựa chọn, hoặc lớp/nhóm
+            // đó vừa bị xoá) — dọn khỏi DOM thay vì chỉ ẩn, vì số khung cần
+            // hiện thay đổi tuỳ theo đang chọn 1 lớp hay cả 1 nhóm.
+            container.querySelectorAll('.canvas-layer-border').forEach(el => {
+                if (!targetIds.has(el.dataset.layerId)) el.remove();
             });
 
-            if (isFinite(minX)) {
-                const canvasEl = canvas.getElement();
-                const canvasRect = canvasEl.getBoundingClientRect();
-                // offsetParent (không phải parentElement) trả về null khi
-                // border đang display:none (đúng lúc hàm này chạy, trước khi
-                // .visible được gắn) — dùng parentElement, ổn định bất kể
-                // trạng thái hiển thị. #layerBorder luôn là con trực tiếp
-                // của .canvas-container (position: relative).
-                const containerRect = border.parentElement.getBoundingClientRect();
-                const cssScaleX = canvasRect.width / canvas.getWidth();
-                const cssScaleY = canvasRect.height / canvas.getHeight();
-                const offsetX = canvasRect.left - containerRect.left;
-                const offsetY = canvasRect.top - containerRect.top;
+            if (targets.length === 0) return;
 
-                border.style.left = (offsetX + minX * cssScaleX) + 'px';
-                border.style.top = (offsetY + minY * cssScaleY) + 'px';
-                border.style.width = ((maxX - minX) * cssScaleX) + 'px';
-                border.style.height = ((maxY - minY) * cssScaleY) + 'px';
+            const canvasEl = canvas.getElement();
+            const canvasRect = canvasEl.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const cssScaleX = canvasRect.width / canvas.getWidth();
+            const cssScaleY = canvasRect.height / canvas.getHeight();
+            const offsetX = canvasRect.left - containerRect.left;
+            const offsetY = canvasRect.top - containerRect.top;
+
+            // Chỉ lớp ĐANG là activeLayerIndex thật sự (không phải một lớp
+            // con được "kéo theo" vì nằm trong nhóm đang chọn) mới là khung
+            // "chính" — được gắn đủ nút xoá/nhân đôi/xoay/tay cầm resize.
+            const layerDangChonThat = layers[activeLayerIndex];
+
+            targets.forEach(layer => {
+                let cx, cy, boxWidth, boxHeight, theta;
+                const zoom = canvas.getZoom();
+
+                if (dangKeoXoayBenTrong && layer === layerDangChonThat) {
+                    // Đang kéo nút "xoay bên trong" trên ĐÚNG layer active —
+                    // khung viền PHẢI đứng yên (không xoay theo ảnh bên
+                    // trong), chỉ co giãn 4 cạnh cho luôn khít hộp bao THẲNG
+                    // TRỤC (AABB, theta=0) của ảnh đang xoay dở — bỏ qua cả
+                    // khungRieng cũ (nếu có, từ 1 lần xoay-bên-trong trước
+                    // đó) vì đang tạo khung MỚI ngay lúc này.
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    layer.objects.forEach(obj => {
+                        const bounds = obj.getBoundingRect(false, true);
+                        minX = Math.min(minX, bounds.left);
+                        minY = Math.min(minY, bounds.top);
+                        maxX = Math.max(maxX, bounds.left + bounds.width);
+                        maxY = Math.max(maxY, bounds.top + bounds.height);
+                    });
+                    if (!isFinite(minX)) return;
+                    cx = (minX + maxX) / 2;
+                    cy = (minY + maxY) / 2;
+                    boxWidth = maxX - minX;
+                    boxHeight = maxY - minY;
+                    theta = 0;
+                } else if (layer.khungRieng) {
+                    // Layer đã từng "xoay bên trong" ít nhất 1 lần — khung
+                    // viền từ đó về sau là 1 khung ĐỘC LẬP (khungRieng, toạ
+                    // độ object-space) không còn suy trực tiếp từ góc/kích
+                    // thước THẬT của object bên trong nữa (ảnh bên trong có
+                    // thể lệch khỏi khung này — đúng ý muốn, không nướng lại
+                    // ảnh). Mọi thao tác sau đó (4 tay cầm cạnh, nút xoay
+                    // thường, nút zoom) đều SỬA khungRieng này trực tiếp —
+                    // xem handleLayerResize()/handleLayerRotate()/handleLayerScale().
+                    const kr = layer.khungRieng;
+                    cx = kr.cx * zoom; cy = kr.cy * zoom;
+                    boxWidth = kr.width * zoom; boxHeight = kr.height * zoom;
+                    theta = kr.angle;
+                } else {
+                    // Ưu tiên hộp bao ĐÃ XOAY theo góc chung của layer (nếu
+                    // có) — khung viền màu xoay đồng bộ y hệt ảnh. Không có
+                    // góc chung (các object trong layer xoay khác nhau —
+                    // hiếm gặp) thì quay lại hộp bao thẳng trục (AABB) như
+                    // trước, theta=0.
+                    const khungXoay = tinhKhungXoayLayer(layer);
+                    if (khungXoay) {
+                        ({ cx, cy, width: boxWidth, height: boxHeight, theta } = khungXoay);
+                        // tinhKhungXoayLayer() dùng getCenterPoint()/getScaledWidth()
+                        // — toạ độ OBJECT-SPACE, không hề biết tới canvas.setZoom()
+                        // (khác obj.getBoundingRect() ở nhánh else bên dưới, tự
+                        // ÁP SẴN viewportTransform/zoom). Bấm nút phóng to/thu nhỏ
+                        // (canvas.setZoom()) chỉ đổi CÁCH VẼ, không đổi left/top/
+                        // scale thật của object — nên centerPoint vẫn nguyên như
+                        // cũ, phải tự nhân thêm zoom ở đây để khớp lại đúng pixel
+                        // đang hiển thị, nếu không khung sẽ lệch hẳn ngay khi zoom
+                        // khác 100%.
+                        cx *= zoom; cy *= zoom; boxWidth *= zoom; boxHeight *= zoom;
+                    } else {
+                        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                        layer.objects.forEach(obj => {
+                            // getBoundingRect(absolute, calculate) — calculate=false
+                            // (mặc định) trả về toạ độ CACHE (oCoords/aCoords), CHỈ
+                            // được Fabric tự cập nhật ở vài mốc nhất định (ví dụ lúc
+                            // thả chuột/'object:modified'), KHÔNG cập nhật liên tục
+                            // trong lúc đang kéo — dù obj.left/top đã đổi từng khung
+                            // hình. Truyền calculate=true để ép tính lại theo vị trí
+                            // THẬT ngay tại thời điểm gọi — khớp với updateLayerBorder()
+                            // giờ chạy liên tục trong object:moving/scaling/rotating.
+                            const bounds = obj.getBoundingRect(false, true);
+                            minX = Math.min(minX, bounds.left);
+                            minY = Math.min(minY, bounds.top);
+                            maxX = Math.max(maxX, bounds.left + bounds.width);
+                            maxY = Math.max(maxY, bounds.top + bounds.height);
+                        });
+                        if (!isFinite(minX)) return;
+                        cx = (minX + maxX) / 2;
+                        cy = (minY + maxY) / 2;
+                        boxWidth = maxX - minX;
+                        boxHeight = maxY - minY;
+                        theta = 0;
+                    }
+                }
+
+                const layerId = String(layer.id);
+                let border = container.querySelector(`.canvas-layer-border[data-layer-id="${layerId}"]`);
+                if (!border) {
+                    border = document.createElement('div');
+                    border.className = 'canvas-layer-border';
+                    border.dataset.layerId = layerId;
+                    container.appendChild(border);
+                }
+
+                const screenWidth = boxWidth * cssScaleX;
+                const screenHeight = boxHeight * cssScaleY;
+                const screenCenterX = offsetX + cx * cssScaleX;
+                const screenCenterY = offsetY + cy * cssScaleY;
+                // Làm tròn về số nguyên px: khung viền để lại toạ độ lẻ (vd
+                // 314.375px) khiến trình duyệt phải khử răng cưa (anti-alias)
+                // dàn đều phần lẻ đó cho MỖI cạnh riêng — cạnh trên/trái có
+                // thể được làm tròn XUỐNG trong khi cạnh dưới/phải làm tròn
+                // LÊN (hoặc ngược lại), khiến 4 điểm neo/nút góc (định vị theo
+                // "mép ngoài" tính toán CHÍNH XÁC bằng số thực) trông NHƯ lệch
+                // khỏi cạnh thật đã bị vẽ tròn — dù toạ độ tính toán vẫn khớp
+                // tuyệt đối. Số nguyên px loại bỏ hẳn phần lẻ gây khử răng cưa
+                // không đều đó.
+                const bLeft = Math.round(screenCenterX - screenWidth / 2);
+                const bTop = Math.round(screenCenterY - screenHeight / 2);
+                const bWidth = Math.round(screenWidth);
+                const bHeight = Math.round(screenHeight);
+                border.style.left = bLeft + 'px';
+                border.style.top = bTop + 'px';
+                border.style.width = bWidth + 'px';
+                border.style.height = bHeight + 'px';
+                // transform-origin mặc định là tâm phần tử (50% 50%) — khớp
+                // đúng tâm layer vừa tính, nên chỉ cần rotate() quanh chính nó.
+                border.style.transform = theta ? `rotate(${theta}deg)` : '';
                 border.style.borderColor = layer.color;
                 border.classList.add('visible');
 
-                // Add corner control buttons
-                addLayerControlButtons(border, layer.color);
-            } else {
-                border.classList.remove('visible');
-            }
+                const laKhungChinh = layer === layerDangChonThat;
+                border.classList.toggle('canvas-layer-border-chinh', laKhungChinh);
+
+                if (laKhungChinh) {
+                    // Chỉ dựng lại nút góc + tay cầm khi ĐỔI lớp (hoặc lần
+                    // đầu hiện khung) — updateLayerBorder() giờ còn chạy liên
+                    // tục lúc kéo/co giãn/xoay object, dựng lại DOM nút mỗi
+                    // khung hình sẽ giật và làm gãy thao tác đang kéo dở.
+                    if (border.dataset.hasControls !== '1') {
+                        addLayerControlButtons(border, layer.color);
+                        border.dataset.hasControls = '1';
+                    }
+                    // Vị trí 4 nút góc + 4 điểm neo được tính LẠI mỗi lần gọi
+                    // (không chỉ lúc vừa dựng) — suy thẳng từ bWidth/bHeight
+                    // THẬT của khung ngay lúc này, không phụ thuộc border-
+                    // width/mép-padding nữa (xem giải thích trong
+                    // capNhatViTriNutVaTayCam). Khung xoay theo layer, 4 nút
+                    // góc phải LUÔN đứng thẳng — hàm này tự xoay ngược lại
+                    // đúng góc đó (quanh tâm CHÍNH nó) trong lúc vẫn giữ đúng
+                    // vị trí góc, để icon không nghiêng theo dù đang kéo xoay.
+                    capNhatViTriNutVaTayCam(border, bWidth, bHeight, theta);
+                    // Con trỏ chuột của 4 tay cầm kéo cạnh: mũi tên 2 đầu
+                    // luôn chỉ đúng hướng về phía điểm neo ĐỐI DIỆN — trục
+                    // ngang cục bộ (tay cầm trái/phải) nằm dọc theo góc theta,
+                    // trục dọc cục bộ (tay cầm trên/dưới) lệch thêm 90°. Cập
+                    // nhật mỗi lần gọi (kể cả đang xoay dở) vì CSS cursor
+                    // không tự xoay theo transform của phần tử — phải tự vẽ
+                    // lại ảnh mũi tên đã xoay đúng góc.
+                    border.querySelectorAll('.resize-handle').forEach(handle => {
+                        const gocConTro = handle.dataset.axis === 'y' ? theta + 90 : theta;
+                        handle.style.cursor = taoConTroMuiTenXoay(gocConTro);
+                    });
+                    // Nút zoom (góc dưới-phải, mũi tên 2 đầu chéo): 1 đầu
+                    // luôn chĩa vào ĐÚNG tâm ảnh (hướng lên-trái từ góc dưới-
+                    // phải = 45° khi khung chưa xoay), đầu kia chĩa ra ngoài
+                    // ngược lại — cộng thêm theta để bám đúng hướng khi khung
+                    // xoay, y hệt cách làm với 4 tay cầm cạnh ở trên.
+                    const nutZoom = border.querySelector('.layer-control-btn[data-action="scale"]');
+                    if (nutZoom) {
+                        nutZoom.style.cursor = taoConTroMuiTenXoay(45 + theta);
+                    }
+                } else if (border.dataset.hasControls === '1') {
+                    // Khung "kéo theo" (thuộc nhóm đang chọn nhưng không phải
+                    // lớp chính) không có nút — dọn nút cũ nếu lớp này VỪA
+                    // TỪ khung chính chuyển thành khung phụ (đổi lựa chọn
+                    // trong cùng 1 nhóm).
+                    border.querySelectorAll('.layer-control-btn, .resize-handle').forEach(el => el.remove());
+                    border.dataset.hasControls = '0';
+                }
+            });
+        }
+
+        // CSS "cursor" KHÔNG tự xoay theo transform: rotate() của phần tử
+        // đang hiển thị nó — con trỏ n-resize/e-resize... của trình duyệt
+        // luôn đứng thẳng trên màn hình bất kể khung cha xoay bao nhiêu độ.
+        // Muốn con trỏ "mũi tên 2 đầu" luôn chỉ đúng hướng điểm neo đối diện
+        // (dù ảnh/khung xoay góc nào), phải TỰ VẼ một ảnh con trỏ đã xoay
+        // sẵn đúng góc đó (SVG, nhúng thẳng qua data URI) — trình duyệt
+        // không có cách nào "xoay hộ" một cursor tên có sẵn.
+        function taoConTroMuiTenXoay(gocDo) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">` +
+                `<g transform="rotate(${gocDo} 14 14)">` +
+                `<line x1="3" y1="14" x2="25" y2="14" stroke="white" stroke-width="4" stroke-linecap="round"/>` +
+                `<line x1="3" y1="14" x2="25" y2="14" stroke="black" stroke-width="1.6" stroke-linecap="round"/>` +
+                `<polygon points="3,14 9,9 9,19" fill="black" stroke="white" stroke-width="1"/>` +
+                `<polygon points="25,14 19,9 19,19" fill="black" stroke="white" stroke-width="1"/>` +
+                `</g></svg>`;
+            const daMaHoa = encodeURIComponent(svg).replace(/'/g, "%27").replace(/"/g, "%22");
+            return `url("data:image/svg+xml,${daMaHoa}") 14 14, pointer`;
         }
 
         function addLayerControlButtons(border, color) {
-            // Remove old buttons
-            const oldButtons = document.querySelectorAll('.layer-control-btn');
-            oldButtons.forEach(btn => btn.remove());
+            // Xoá nút góc VÀ điểm kéo cạnh cũ trước khi vẽ lại — updateLayerBorder()
+            // (gọi hàm này) chạy rất thường xuyên (mỗi lần object di chuyển/co
+            // giãn/đổi zoom...); trước đây chỉ xoá '.layer-control-btn' mà bỏ sót
+            // '.resize-handle', nên mỗi lần vẽ lại lại chồng thêm 4 điểm kéo mới —
+            // các điểm chồng lên nhau khiến một thao tác kéo cộng dồn delta của
+            // nhiều điểm cùng lúc (co giãn nhanh bất thường).
+            document.querySelectorAll('.layer-control-btn').forEach(btn => btn.remove());
+            document.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
 
+            // Lỗi cũ: top/left/bottom/right của 1 phần tử position:absolute
+            // được đo từ mép PADDING của cha (khung .canvas-layer-border-chinh),
+            // KHÔNG phải mép NGOÀI — mà khung chính có border-width riêng,
+            // nên mép padding lùi vào trong so với mép ngoài đúng bằng border-
+            // width đó. Việc suy ra border-width rồi TỰ CỘNG BÙ vào offset là
+            // nguồn sai số: "top"/"left" và "bottom"/"right" bù theo 2 HƯỚNG
+            // NGƯỢC NHAU, nên chỉ cần lệch giả định-vs-thực tế một chút (thiết
+            // bị/độ phân giải khác nhau) là 2 cặp cạnh trông lệch NGƯỢC hướng
+            // nhau — đúng như đã bị báo cáo (trên/trái đúng, dưới/phải sai).
+            // Nay bỏ HẲN cách suy border-width: mọi nút góc/điểm neo đều đặt
+            // "left:50%;top:50%" (không phụ thuộc border-width chút nào) rồi
+            // dịch bằng transform: translate() với số PX suy THẲNG từ chính
+            // bWidth/bHeight thật (đã biết chính xác trong updateLayerBorder,
+            // không suy đoán) — xem capNhatViTriNutVaTayCam(). Object.entries
+            // dưới đây chỉ còn giữ dấu hướng (dx/dy: -1/0/+1 mỗi trục) để hàm
+            // đó tính offset, không còn giữ số px nào nữa.
+            // Góc trên-trái: từng là nút Xoá trực tiếp — nay là nút "+" mở
+            // modal nhỏ (xem moModalNutGocLayer()) gom các hành động lại một
+            // chỗ, để sau này thêm hành động mới không phải chen thêm góc.
+            // Góc trên-phải: từng là nút Nhân đôi trực tiếp — nay nhường chỗ
+            // cho "xoay bên trong" (hình tròn, kéo để xoay chỉ ảnh bên trong,
+            // khung viền đứng yên — xem handleLayerRotateInner()). Góc dưới-
+            // trái (kéo-xoay cả layer) và dưới-phải (kéo-zoom) giữ nguyên.
             const positions = {
-                'delete': { top: '-16px', left: '-16px', icon: 'fa-trash' },
-                'duplicate': { top: '-16px', right: '-16px', icon: 'fa-copy' },
-                'rotate': { bottom: '-16px', left: '-16px', icon: 'fa-rotate-right' },
-                'scale': { bottom: '-16px', right: '-16px', icon: 'fa-expand' }
+                'menu': { dx: -1, dy: -1, icon: 'fa-plus' },
+                // Icon khác hẳn nút xoay-kéo bên dưới (fa-rotate-right, 1 mũi
+                // tên) để không gây nhầm — fa-rotate là 2 mũi tên tạo vòng
+                // tròn, vẫn rõ nghĩa "xoay" nhưng là 1 hành động khác.
+                'rotate-inner': { dx: 1, dy: -1, icon: 'fa-rotate', tron: true },
+                'rotate': { dx: -1, dy: 1, icon: 'fa-rotate-right' },
+                // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
+                // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
+                // vốn là 4 mũi tên rời góc, dễ hiểu lầm là "toàn màn hình").
+                'scale': { dx: 1, dy: 1, icon: 'fa-up-right-and-down-left-from-center' }
             };
 
             Object.entries(positions).forEach(([action, pos]) => {
                 const btn = document.createElement('button');
-                btn.className = 'layer-control-btn layer-corner-btn';
+                btn.className = 'layer-control-btn layer-corner-btn' + (pos.tron ? ' layer-corner-btn-tron' : '');
                 btn.style.borderColor = color;
                 btn.style.color = color;
                 btn.innerHTML = `<i class="fas ${pos.icon}"></i>`;
-                
-                if (pos.top) btn.style.top = pos.top;
-                if (pos.bottom) btn.style.bottom = pos.bottom;
-                if (pos.left) btn.style.left = pos.left;
-                if (pos.right) btn.style.right = pos.right;
+                btn.style.left = '50%';
+                btn.style.top = '50%';
+                btn.dataset.dx = pos.dx;
+                btn.dataset.dy = pos.dy;
+                btn.dataset.action = action;
 
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    handleLayerControlAction(action);
-                };
+                if (action === 'rotate-inner') {
+                    // Cũng là nút KÉO: giữ chuột rồi rê quanh tâm layer,
+                    // nhưng CHỈ ảnh bên trong xoay — khung viền đứng yên,
+                    // tự co giãn 4 cạnh theo ảnh (xem handleLayerRotateInner()).
+                    btn.style.cursor = 'grab';
+                    btn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        handleLayerRotateInner(e);
+                    };
+                } else if (action === 'scale') {
+                    // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
+                    // rồi rê ra xa tâm ảnh để phóng to, rê vào gần tâm để
+                    // thu nhỏ, đều tất cả các cạnh cùng lúc.
+                    btn.style.cursor = 'nwse-resize';
+                    btn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        handleLayerScale(e);
+                    };
+                } else if (action === 'rotate') {
+                    // Cũng là nút KÉO, không phải bấm: giữ chuột rồi xoay
+                    // quanh tâm layer, ảnh xoay đồng bộ theo chuột.
+                    btn.style.cursor = 'grab';
+                    btn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        handleLayerRotate(e);
+                    };
+                } else if (action === 'menu') {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        moModalNutGocLayer();
+                    };
+                } else {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        handleLayerControlAction(action);
+                    };
+                }
 
                 border.appendChild(btn);
             });
 
-            // Add resize handles on edges
+            // 4 tay cầm kéo cạnh — vị trí (n/s/e/w) chỉ còn quyết định NƠI
+            // đặt trên khung, không còn quyết định "hướng kéo" nữa (xem
+            // handleLayerResize()): 'n'/'s' cùng thao tác trên TRỤC DỌC cục
+            // bộ của layer, 'e'/'w' cùng thao tác trên TRỤC NGANG cục bộ —
+            // vì vậy cả 2 tay cầm cùng trục dùng CHUNG axis ('y' hoặc 'x'),
+            // không còn phân biệt trái/phải/trên/dưới khi tính toán.
+            // Cùng đổi sang left:50%;top:50% + translate() suy từ bWidth/
+            // bHeight thật như 4 nút góc ở trên — không còn OFFSET_DIEM_NEO
+            // cố định (px) tính từ giả định border-width nữa.
             const handlePositions = [
-                { name: 'n', top: '-5px', left: '50%', cursor: 'n-resize' },      // Top
-                { name: 's', bottom: '-5px', left: '50%', cursor: 's-resize' },    // Bottom
-                { name: 'w', top: '50%', left: '-5px', cursor: 'w-resize' },       // Left
-                { name: 'e', top: '50%', right: '-5px', cursor: 'e-resize' }       // Right
+                { name: 'n', dx: 0, dy: -1, axis: 'y' },
+                { name: 's', dx: 0, dy: 1, axis: 'y' },
+                { name: 'w', dx: -1, dy: 0, axis: 'x' },
+                { name: 'e', dx: 1, dy: 0, axis: 'x' },
             ];
 
             handlePositions.forEach(pos => {
                 const handle = document.createElement('div');
                 handle.className = 'resize-handle';
+                handle.dataset.axis = pos.axis;
                 handle.style.borderColor = color;
                 handle.style.background = color;
-                
-                if (pos.top) handle.style.top = pos.top;
-                if (pos.bottom) handle.style.bottom = pos.bottom;
-                if (pos.left) handle.style.left = pos.left;
-                if (pos.right) handle.style.right = pos.right;
-                
-                handle.style.cursor = pos.cursor;
-                handle.style.transform = 'translate(-50%, -50%)';
+                handle.style.left = '50%';
+                handle.style.top = '50%';
+                handle.dataset.dx = pos.dx;
+                handle.dataset.dy = pos.dy;
 
                 handle.onmousedown = (e) => {
                     e.stopPropagation();
@@ -2675,11 +3183,46 @@
 
                 border.appendChild(handle);
             });
+            // Vị trí thật được đặt ngay sau bởi capNhatViTriNutVaTayCam() ở
+            // nơi gọi hàm này (updateLayerBorder()), luôn có sẵn bWidth/
+            // bHeight/theta hiện hành — không cần tính lại ở đây.
+        }
+
+        // Đặt lại vị trí 4 nút góc + 4 điểm neo dựa THẲNG vào kích thước
+        // THẬT (bWidth/bHeight, tính sẵn trong updateLayerBorder() ngay lúc
+        // gọi) thay vì suy qua border-width/mép-padding của phần tử cha —
+        // xem lý do ở addLayerControlButtons(). "left:50%;top:50%" đưa mỗi
+        // phần tử về đúng TÂM khung trước, translate(-50%,-50%) giữ nó đứng
+        // yên ở tâm, rồi cộng thêm đúng nửa bề rộng/cao khung (+ nửa kích
+        // thước của chính nút/điểm neo đó) theo hướng dx/dy để đẩy nó ra
+        // đúng mép/góc — công thức này ĐÚNG TUYỆT ĐỐI với bWidth/bHeight bất
+        // kể border-width CSS thực tế là bao nhiêu, nên không còn kênh nào
+        // để 2 cặp cạnh lệch ngược hướng nhau như cách làm cũ.
+        function capNhatViTriNutVaTayCam(border, bWidth, bHeight, theta) {
+            const NUT_CHOM_VAO_TRONG = 8; // chồng vào trong 1 chút cho rõ cảm giác "chạm"
+            const NUA_CANH_NUT_GOC = 16; // nửa cạnh 32px của nút góc
+            const NUA_CANH_DIEM_NEO = 5; // nửa cạnh 10px của điểm neo
+
+            border.querySelectorAll('.layer-control-btn').forEach(btn => {
+                const dx = Number(btn.dataset.dx), dy = Number(btn.dataset.dy);
+                const px = dx * (bWidth / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
+                const py = dy * (bHeight / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
+                // rotate(-theta) giữ icon luôn đứng thẳng dù khung cha đã xoay.
+                btn.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))` +
+                    (theta ? ` rotate(${-theta}deg)` : '');
+            });
+
+            border.querySelectorAll('.resize-handle').forEach(handle => {
+                const dx = Number(handle.dataset.dx), dy = Number(handle.dataset.dy);
+                const px = dx * (bWidth / 2 + NUA_CANH_DIEM_NEO);
+                const py = dy * (bHeight / 2 + NUA_CANH_DIEM_NEO);
+                handle.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+            });
         }
 
         function handleLayerControlAction(action) {
             const layerIndex = activeLayerIndex;
-            
+
             switch(action) {
                 case 'delete':
                     deleteLayer(layerIndex);
@@ -2687,47 +3230,840 @@
                 case 'duplicate':
                     duplicateLayer(layerIndex);
                     break;
-                case 'rotate':
-                    rotateLayerContent();
-                    break;
-                case 'scale':
-                    showToast('Scale layer - Kéo các điểm neo ở cạnh', 'info');
-                    break;
             }
         }
 
-        function rotateLayerContent() {
+        // ===== MODAL NÚT "+" Ở GÓC KHUNG VIỀN =====
+        // Modal nhỏ, không tiêu đề, hiện giữa MÀN HÌNH (không phải giữa
+        // layer) — tạo 1 lần duy nhất (lười tạo, addEventListener không lặp
+        // lại), các lần mở sau chỉ thêm class 'active'.
+        //
+        // Danh sách đầy đủ ~50 nút hành động, chia thành 9 NHÓM THẺ (mỗi
+        // nhóm 1 màu nền gradient riêng, xem CSS `.modal-nut-goc-nhom`).
+        // CHỈ 2 nút đầu của nhóm 1 (delete/duplicate) có logic thật — mọi
+        // nút còn lại cố ý KHÔNG gắn logic (data-hanh-dong vẫn có, nhưng
+        // handleLayerControlAction() không có case tương ứng nên bấm vào
+        // không làm gì — "liệt tạm", chờ gắn logic sau).
+        var NHOM_THE_HANH_DONG = [
+            [
+                { ma: 'delete', ten: 'Xóa Layer này' },
+                { ma: 'duplicate', ten: 'Nhân đôi Layer' },
+                { ma: 'crop', ten: 'cắt xén' },
+                { ma: 'do-mo', ten: 'độ mờ' },
+                { ma: 'phoi-canh', ten: 'phối cảnh-kéo 4 góc' },
+                { ma: 'be-cong-luoi', ten: 'bẻ cong dạng lưới' },
+                { ma: 'gian-hoa-long', ten: 'giãn-hoá lỏng' },
+                { ma: 'puppet-warp', ten: 'puppet warp' },
+                { ma: 'quay-90-thuan', ten: 'quay 90 độ (thuận)', icon: 'fa-rotate-right' },
+                { ma: 'quay-90-nguoc', ten: 'quay 90 độ (ngược)', icon: 'fa-rotate-left' },
+                { ma: 'quay-180', ten: 'quay 180 độ' },
+                { ma: 'lat-ngang', ten: 'lật ngang' },
+                { ma: 'lat-doc', ten: 'lật dọc' },
+            ],
+            [
+                { ma: 'len-1-lop', ten: 'Lên 1 lớp' },
+                { ma: 'len-tren-cung', ten: 'Lên trên cùng' },
+                { ma: 'xuong-1-lop', ten: 'Xuống 1 lớp' },
+                { ma: 'xuong-duoi-cung', ten: 'Xuống dưới cùng' },
+            ],
+            [
+                { ma: 'chinh-co-the', ten: 'chỉnh cơ thể' },
+                { ma: 'chinh-khuon-mat', ten: 'chỉnh khuôn mặt' },
+                { ma: 'make-up', ten: 'make Up' },
+                { ma: 'chinh-trang-phuc-ai', ten: 'Chỉnh trang phục (AI)' },
+                { ma: 'mau-toc-kieu-toc-ai', ten: 'Màu tóc-kiểu tóc (AI)' },
+                { ma: 'chinh-bau-troi-ai', ten: 'Chỉnh bầu trời (AI)' },
+            ],
+            [
+                { ma: 'xoa-chi-tiet-khoi-phuc', ten: 'xóa chi tiết-khôi phục' },
+                { ma: 'xoa-lap-day-lai', ten: 'xóa và lấp đầy lại' },
+                { ma: 'nhan-ban-diem-anh', ten: 'nhân bản điểm ảnh' },
+                { ma: 'che-diem-anh', ten: 'che điểm ảnh' },
+                { ma: 'tao-vung-chon-tu-dong-ai', ten: 'Tạo vùng chọn tự động (AI)' },
+                { ma: 'tao-vung-chon-thu-cong', ten: 'Tạo vùng chọn thủ công' },
+                { ma: 'xoa-phong-nen-ai', ten: 'Xoá phông nền (AI)' },
+                { ma: 'chinh-phong-nen-ai', ten: 'Chỉnh phông nền (AI)' },
+                { ma: 'sua-trong-vung-chon-ai', ten: 'sửa trong vùng chọn (AI)' },
+                { ma: 'mo-rong-anh-ai', ten: 'mở rộng ảnh (AI)' },
+                { ma: 'hieu-ung-ai', ten: 'Hiệu ứng (AI)' },
+            ],
+            [
+                { ma: 'hoa-tron-thuong', ten: 'Hòa trộn thường' },
+                { ma: 'hoa-tron-chi-tiet', ten: 'Hòa trộn chi tiết' },
+                { ma: 'dong-bo-mau-tu-layer-khac', ten: 'Đồng bộ màu từ layer khác' },
+                { ma: 'hieu-chinh-mau-sac-anh-sang', ten: 'hiệu chỉnh màu sắc ánh sáng' },
+                { ma: 'mau-sac-anh-sang-ai', ten: 'màu sắc ánh sáng (AI)' },
+                { ma: 'bo-loc', ten: 'bộ lọc' },
+                { ma: 'hieu-chinh-hieu-ung', ten: 'hiệu chỉnh hiệu ứng' },
+                { ma: 'hieu-chinh-chi-tiet', ten: 'hiệu chỉnh chi tiết' },
+                { ma: 'lam-net-ai', ten: 'Làm nét (AI)' },
+                { ma: 'co-lam-net-mo', ten: 'cọ làm nét-mờ' },
+                { ma: 'co-lam-sang-toi', ten: 'cọ làm sáng-tối' },
+            ],
+            [
+                { ma: 'but-ve', ten: 'Bút vẽ' },
+                { ma: 'chen-chu-vao-layer', ten: 'Chèn chữ vào trong Layer' },
+                { ma: 'do-mau', ten: 'đổ màu' },
+                { ma: 'chuyen-sac', ten: 'chuyển sắc' },
+            ],
+            [
+                { ma: 'hinh-dang-mockup', ten: 'hình dạng mockup' },
+                { ma: 'tao-vien', ten: 'tạo viền' },
+                { ma: 'do-bong', ten: 'đổ bóng' },
+                { ma: 'tuy-chinh-kieu-layer', ten: 'Tùy chỉnh kiểu layer' },
+            ],
+            [
+                { ma: 'tron-layer', ten: 'trộn layer' },
+                { ma: 'khoa-layer', ten: 'Khóa layer' },
+                { ma: 'an-layer', ten: 'Ẩn Layer' },
+                { ma: 'lich-su-chinh-sua-layer', ten: 'Lịch sử chỉnh sửa Layer' },
+                { ma: 'khoi-phuc-lai-toan-bo', ten: 'Khôi phục lại toàn bộ' },
+            ],
+            [
+                { ma: 'tim-hieu-chuc-nang', ten: 'Tìm hiểu về các chức năng phía trên' },
+            ],
+        ];
+
+        function domNhomTheHanhDong() {
+            return NHOM_THE_HANH_DONG.map((nhom, chiSoNhom) => {
+                const the = nhom.map((item) => {
+                    const icon = item.icon ? `<i class="fas ${item.icon}"></i> ` : '';
+                    return `<button type="button" class="the-hanh-dong" data-hanh-dong="${item.ma}">${icon}${escapeHtmlText(item.ten)}</button>`;
+                }).join('');
+                return `<div class="modal-nut-goc-nhom" data-nhom="${(chiSoNhom % 9) + 1}">${the}</div>`;
+            }).join('');
+        }
+
+        function moModalNutGocLayer() {
+            let modal = document.getElementById('modalNutGocLayer');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalNutGocLayer';
+                modal.className = 'modal-overlay';
+                modal.innerHTML =
+                    '<div class="modal-content modal-nut-goc-layer">' +
+                        '<button type="button" class="modal-close modal-close-do" aria-label="Đóng bảng">' +
+                            '<i class="fas fa-times"></i>' +
+                        '</button>' +
+                        '<div class="modal-nut-goc-danh-sach">' +
+                            domNhomTheHanhDong() +
+                            // Thẻ X đỏ thứ 2 — đứng ngay sau thẻ cuối cùng
+                            // (không thuộc nhóm nào), logic đóng modal y hệt
+                            // nút X tròn ở góc trên-phải: cùng nằm trong
+                            // '.the-hanh-dong' nên dùng chung vòng lặp gắn
+                            // onclick bên dưới (luôn gọi dongModalNutGocLayer()).
+                            '<button type="button" class="the-hanh-dong the-dong-modal" data-hanh-dong="dong-modal">' +
+                                '<i class="fas fa-times"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(modal);
+
+                modal.querySelector('.modal-close-do').onclick = () => dongModalNutGocLayer();
+
+                // Cách 2: bấm ra ngoài phạm vi modal (chính overlay, không
+                // phải modal-content) — cùng quy ước với các modal khác
+                // trong module này (vd shortcutsModal).
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) dongModalNutGocLayer();
+                });
+
+                // Cách 3: bấm 1 trong các thẻ hành động — đóng modal ĐỒNG
+                // THỜI kích hoạt đúng hành động vừa bấm (nếu có logic — xem
+                // handleLayerControlAction(), các mã chưa có case thì no-op).
+                modal.querySelectorAll('.the-hanh-dong').forEach((btn) => {
+                    btn.onclick = () => {
+                        const hanhDong = btn.dataset.hanhDong;
+                        dongModalNutGocLayer();
+                        handleLayerControlAction(hanhDong);
+                    };
+                });
+
+                ganNutCuonModalNutGocLayer(modal);
+            }
+            modal.classList.add('active');
+            hieuUngMuiTenNhacLuotXuong();
+            document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
+                n.style.display = 'flex';
+            });
+        }
+
+        // 2 nút cuộn lên đầu/xuống cuối, SÁT MÉP PHẢI MÀN HÌNH — dùng lại
+        // ĐÚNG class '.nut-cuon-modal' (định nghĩa ở base.css, nạp chung
+        // trang với mọi module khác của shop, kể cả module này) nên hình
+        // dạng/vị trí/kích thước giống hệt 2 nút cuộn ở modal "Chi tiết sản
+        // phẩm" bên module "Trọn bộ sản phẩm VIP" — không viết lại CSS
+        // riêng, tự động ăn theo nếu sau này shop đổi kiểu 2 nút đó.
+        // Khác 1 điểm bắt buộc: modal đó dùng chính '.modal-lop' (scroll
+        // container) làm đích cuộn; modal này cuộn container riêng của nó
+        // ('.modal-nut-goc-layer', overflow-y: auto).
+        function ganNutCuonModalNutGocLayer(modal) {
+            const dich = () => modal.querySelector('.modal-nut-goc-layer');
+
+            const nutLen = document.createElement('button');
+            nutLen.type = 'button';
+            nutLen.className = 'nut-cuon-modal';
+            nutLen.dataset.huong = 'len';
+            nutLen.dataset.modalCua = 'nutGocLayer';
+            nutLen.title = 'Cuộn lên đầu';
+            nutLen.textContent = '▲';
+            nutLen.style.top = '35vh';
+
+            const nutXuong = document.createElement('button');
+            nutXuong.type = 'button';
+            nutXuong.className = 'nut-cuon-modal';
+            nutXuong.dataset.huong = 'xuong';
+            nutXuong.dataset.modalCua = 'nutGocLayer';
+            nutXuong.title = 'Cuộn xuống cuối';
+            nutXuong.textContent = '▼';
+            nutXuong.style.top = 'calc(35vh + 46px)';
+
+            const lenDau = () => { const t = dich(); if (t) t.scrollTo({ top: 0, behavior: 'smooth' }); };
+            const xuongCuoi = () => { const t = dich(); if (t) t.scrollTo({ top: t.scrollHeight, behavior: 'smooth' }); };
+
+            nutLen.addEventListener('click', lenDau);
+            nutLen.addEventListener('mouseenter', lenDau);
+            nutXuong.addEventListener('click', xuongCuoi);
+            nutXuong.addEventListener('mouseenter', xuongCuoi);
+
+            document.body.appendChild(nutLen);
+            document.body.appendChild(nutXuong);
+        }
+
+        // Hiệu ứng "mũi tên nhắc lướt xuống" — mỗi lần mở modal ~50 thẻ đều
+        // gọi lại (không phải chỉ lần đầu tạo modal), nhắc người dùng còn
+        // rất nhiều thẻ ở phía dưới, phải cuộn xuống mới thấy hết. Toàn bộ
+        // hoạt ảnh (to đùng → thu nhỏ → đứng im 0,25s → trôi dài xuống đáy
+        // màn hình → biến mất) nằm trong 1 keyframe CSS duy nhất
+        // (mui-ten-nhac-luot-xuong, xem trang-chu.css) — JS chỉ tạo phần tử,
+        // gắn class rồi tự dọn dẹp khi hoạt ảnh kết thúc.
+        function hieuUngMuiTenNhacLuotXuong() {
+            document.querySelectorAll('.mui-ten-nhac-luot').forEach((el) => el.remove());
+            const mui = document.createElement('div');
+            mui.className = 'mui-ten-nhac-luot';
+            mui.innerHTML = '<i class="fas fa-arrow-down"></i>';
+            document.body.appendChild(mui);
+            mui.addEventListener('animationend', () => mui.remove());
+        }
+
+        function dongModalNutGocLayer() {
+            const modal = document.getElementById('modalNutGocLayer');
+            if (modal) modal.classList.remove('active');
+            document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
+                n.style.display = 'none';
+            });
+        }
+
+        // Nút xoay — kéo (không bấm): giữ chuột trên nút rồi rê quanh tâm
+        // layer, mọi object trong layer xoay đồng bộ theo góc con trỏ vừa
+        // quét được (CHỈ xoay, không đổi kích thước). Cùng cách tính tâm
+        // dùng chung như handleLayerScale() (tâm khung bao TOÀN BỘ layer),
+        // và cùng xoay các object quanh tâm đó như 1 khối cứng — vị trí
+        // tương đối giữa chúng không đổi, khớp với cách khung viền màu vẫn
+        // luôn bao quanh cả layer chứ không phải từng object riêng lẻ.
+        function handleLayerRotate(e) {
             const layer = layers[activeLayerIndex];
-            if (layer.objects.length === 0) {
+            if (!layer || !layer.objects || layer.objects.length === 0) {
                 showToast('Layer trống!', 'error');
                 return;
             }
-            
-            layer.objects.forEach(obj => {
-                obj.rotate((obj.angle || 0) + 15);
-            });
-            canvas.renderAll();
-            updateLayerBorder();
-            showToast('Xoay layer ' + layer.name, 'success');
-        }
 
-        function handleLayerResize(e, direction) {
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const layer = layers[activeLayerIndex];
+            // Tâm xoay chung: layer có khungRieng (đã từng "xoay bên trong")
+            // thì LUÔN dùng tâm của khungRieng đó — khung + ảnh phải xoay
+            // cùng nhau quanh cùng 1 tâm, không phải tâm riêng của object
+            // (có thể lệch khỏi khung sau khi xoay bên trong). Không có
+            // khungRieng thì như cũ: ưu tiên tâm khung ĐÃ XOAY
+            // (tinhKhungXoayLayer, dùng getCenterPoint() thật của Fabric —
+            // xem chú thích ở đó vì sao "left+w/2" sai khi object đã xoay);
+            // không có góc chung thì quay lại AABB thẳng trục như trước.
+            const khungXoayGoc = tinhKhungXoayLayer(layer);
+            let centerX, centerY;
+            if (layer.khungRieng) {
+                centerX = layer.khungRieng.cx;
+                centerY = layer.khungRieng.cy;
+            } else if (khungXoayGoc) {
+                centerX = khungXoayGoc.cx;
+                centerY = khungXoayGoc.cy;
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left);
+                    minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width);
+                    maxY = Math.max(maxY, b.top + b.height);
+                });
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+            }
+            // Góc GỐC của khung riêng (nếu có) — cộng deltaDeg y hệt góc của
+            // từng object, giữ đúng "hình dạng tương đối" giữa khung và ảnh
+            // (khung + ảnh xoay như 1 khối cứng duy nhất).
+            const goKhungRiengGoc = layer.khungRieng ? layer.khungRieng.angle : 0;
+
+            // Chụp lại TÂM THẬT (getCenterPoint(), không phải left/top) và
+            // góc gốc của từng object — mọi phép xoay bên dưới tính từ đây,
+            // không cộng dồn từng khung hình.
+            const trangThaiGoc = layer.objects.map(obj => {
+                const c = obj.getCenterPoint();
+                return { obj, centerX: c.x, centerY: c.y, angle: obj.angle || 0 };
+            });
+
+            const canvasRectGoc = canvas.getElement().getBoundingClientRect();
+            const cssScaleXGoc = canvasRectGoc.width / canvas.getWidth();
+            const cssScaleYGoc = canvasRectGoc.height / canvas.getHeight();
+            // Chia thêm cho canvas.getZoom(): (clientX-canvasRect.left)/cssScale
+            // ra toạ độ PIXEL đang hiển thị trên canvas (đã gồm zoom bấm nút +/-
+            // ở thanh công cụ trên cùng), còn centerX/centerY (từ getCenterPoint())
+            // lại là toạ độ OBJECT-SPACE — không hề đổi theo zoom đó. Thiếu bước
+            // quy đổi này thì mọi phép tính góc/khoảng cách sai lệch ngay khi
+            // zoom khác 100%.
+            const zoomGoc = canvas.getZoom();
+            const startCanvasX = (e.clientX - canvasRectGoc.left) / cssScaleXGoc / zoomGoc;
+            const startCanvasY = (e.clientY - canvasRectGoc.top) / cssScaleYGoc / zoomGoc;
+            // Góc BAN ĐẦU từ tâm tới con trỏ — mọi lần di chuyển sau đó chỉ
+            // cần trừ đi góc này để ra đúng phần góc đã xoay THÊM, rồi cộng
+            // thẳng vào góc GỐC của từng object (không cộng dồn từng khung
+            // hình, tránh lỗi delta cộng dồn đã từng gặp ở tay cầm cạnh).
+            const startAngle = Math.atan2(startCanvasY - centerY, startCanvasX - centerX) * 180 / Math.PI;
 
             const onMouseMove = (moveEvent) => {
-                const deltaX = moveEvent.clientX - startX;
-                const deltaY = moveEvent.clientY - startY;
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+                const zoom = canvas.getZoom();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
+                const curAngle = Math.atan2(curY - centerY, curX - centerX) * 180 / Math.PI;
+                const deltaDeg = curAngle - startAngle;
+                const rad = deltaDeg * Math.PI / 180;
+                const cosD = Math.cos(rad), sinD = Math.sin(rad);
 
-                layer.objects.forEach(obj => {
-                    if (direction === 'e' || direction === 'w') {
-                        obj.scaleX = Math.max(0.1, obj.scaleX + (deltaX * 0.01));
-                    }
-                    if (direction === 'n' || direction === 's') {
-                        obj.scaleY = Math.max(0.1, obj.scaleY + (deltaY * 0.01));
-                    }
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, angle }) => {
+                    // Xoay TÂM THẬT của object quanh tâm chung layer (quỹ
+                    // đạo), cộng với xoay CHÍNH object đó cùng 1 góc (spin
+                    // tại chỗ) — cả layer xoay như 1 khối cứng duy nhất.
+                    const relX = ocx - centerX;
+                    const relY = ocy - centerY;
+                    const newCenterX = centerX + (relX * cosD - relY * sinD);
+                    const newCenterY = centerY + (relX * sinD + relY * cosD);
+                    // Đặt góc TRƯỚC rồi mới setPositionByOrigin() — hàm đó
+                    // dùng chính obj.angle hiện tại để tính lại left/top cho
+                    // đúng tâm mong muốn (xem chú thích ở tinhKhungXoayLayer
+                    // về lý do không thể tự gán left/top bằng tay).
+                    obj.angle = angle + deltaDeg;
+                    obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
+                    obj.setCoords();
                 });
+                if (layer.khungRieng) {
+                    // Tâm khungRieng trùng centerX/centerY (điểm đang xoay
+                    // quanh) nên không đổi — chỉ góc của khung tăng thêm
+                    // đúng deltaDeg, y hệt từng object, để khung + ảnh xoay
+                    // như 1 khối cứng duy nhất.
+                    layer.khungRieng.angle = goKhungRiengGoc + deltaDeg;
+                }
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                showToast('Đã xoay layer', 'success');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Nút "xoay bên trong" (hình tròn, góc trên-phải) — kéo để xoay CHỈ
+        // ảnh bên trong layer, khung viền đứng yên không xoay theo (khác
+        // hẳn nút xoay thường ở trên: khung + ảnh xoay cùng nhau). Toán xoay
+        // giống hệt handleLayerRotate() (xoay cả layer như 1 khối cứng quanh
+        // tâm chung, chỉ xoay không đổi kích thước) — khác duy nhất ở chỗ
+        // bật cờ dangKeoXoayBenTrong để updateLayerBorder() ép khung viền
+        // dùng hộp bao thẳng trục (AABB, theta=0) trong lúc kéo, khiến 4
+        // cạnh tự co giãn độc lập theo đúng điểm cực gần nhất của ảnh đang
+        // xoay dở (đúng là hộp bao thẳng trục của MỌI góc xoay, không cần
+        // thêm phép tính riêng). Khi thả chuột: "nướng" (bake) toàn bộ layer
+        // thành 1 ảnh MỚI duy nhất, góc = 0, đúng khít hộp bao vừa co giãn —
+        // chỗ trống (do ảnh xoay chéo không lấp đầy hết hộp bao vuông góc)
+        // trở thành nền trong suốt. Từ đó về sau, layer này là ảnh mới đó:
+        // nút xoay thường/zoom/nhân đôi/4 tay cầm cạnh đều thao tác trên ảnh
+        // mới, không còn dấu vết của phép xoay bên trong vừa làm.
+        function handleLayerRotateInner(e) {
+            const layer = layers[activeLayerIndex];
+            if (!layer || !layer.objects || layer.objects.length === 0) {
+                showToast('Layer trống!', 'error');
+                return;
+            }
+
+            const khungXoayGoc = tinhKhungXoayLayer(layer);
+            let centerX, centerY;
+            if (khungXoayGoc) {
+                centerX = khungXoayGoc.cx;
+                centerY = khungXoayGoc.cy;
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left);
+                    minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width);
+                    maxY = Math.max(maxY, b.top + b.height);
+                });
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+            }
+
+            const trangThaiGoc = layer.objects.map(obj => {
+                const c = obj.getCenterPoint();
+                return { obj, centerX: c.x, centerY: c.y, angle: obj.angle || 0 };
+            });
+
+            const canvasRectGoc = canvas.getElement().getBoundingClientRect();
+            const cssScaleXGoc = canvasRectGoc.width / canvas.getWidth();
+            const cssScaleYGoc = canvasRectGoc.height / canvas.getHeight();
+            const zoomGoc = canvas.getZoom();
+            const startCanvasX = (e.clientX - canvasRectGoc.left) / cssScaleXGoc / zoomGoc;
+            const startCanvasY = (e.clientY - canvasRectGoc.top) / cssScaleYGoc / zoomGoc;
+            const startAngle = Math.atan2(startCanvasY - centerY, startCanvasX - centerX) * 180 / Math.PI;
+
+            dangKeoXoayBenTrong = true;
+
+            const onMouseMove = (moveEvent) => {
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+                const zoom = canvas.getZoom();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
+                const curAngle = Math.atan2(curY - centerY, curX - centerX) * 180 / Math.PI;
+                const deltaDeg = curAngle - startAngle;
+                const rad = deltaDeg * Math.PI / 180;
+                const cosD = Math.cos(rad), sinD = Math.sin(rad);
+
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, angle }) => {
+                    const relX = ocx - centerX;
+                    const relY = ocy - centerY;
+                    const newCenterX = centerX + (relX * cosD - relY * sinD);
+                    const newCenterY = centerY + (relX * sinD + relY * cosD);
+                    obj.angle = angle + deltaDeg;
+                    obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
+                    obj.setCoords();
+                });
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                dangKeoXoayBenTrong = false;
+                layer.khungRieng = tinhKhungRiengTuAABB(layer);
+                updateLayerBorder();
+                showToast('Đã xoay bên trong', 'success');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Tính khung ĐỘC LẬP (khungRieng: {cx, cy, width, height, angle: 0})
+        // từ hộp bao thẳng trục HIỆN TẠI của layer — gọi ngay khi thả nút
+        // "xoay bên trong". Từ đây khung này tách hẳn khỏi góc/kích thước
+        // thật của object bên trong: ảnh KHÔNG bị nướng lại thành ảnh mới,
+        // vẫn giữ nguyên điểm ảnh gốc (không mất nét), chỉ đơn giản là
+        // khung viền không còn tự suy ra từ object nữa mà lưu riêng, và mọi
+        // thao tác sau đó (tay cầm cạnh/nút xoay thường/nút zoom) sửa khung
+        // này trực tiếp — xem chỗ dùng trong updateLayerBorder().
+        //
+        // Lỗi từng gặp (khi hàm này còn dùng để NƯỚNG ảnh mới): obj.
+        // getBoundingRect(false, true) trả về toạ độ ĐÃ NHÂN SẴN canvas.
+        // getZoom(), trong khi obj.left/obj.top là toạ độ OBJECT-SPACE THẬT,
+        // không đổi theo zoom — trộn 2 hệ toạ độ làm khung tính sai lệch hẳn
+        // theo % zoom đang xem. Vẫn phải chia lại cho zoom ở đây dù không
+        // còn nướng ảnh nữa, vì khungRieng lưu toạ độ OBJECT-SPACE (khớp với
+        // cx/cy nhân zoom ở updateLayerBorder(), giống hệt tinhKhungXoayLayer()).
+        function tinhKhungRiengTuAABB(layer) {
+            const zoom = canvas.getZoom();
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            layer.objects.forEach((obj) => {
+                const b = obj.getBoundingRect(false, true);
+                minX = Math.min(minX, b.left / zoom);
+                minY = Math.min(minY, b.top / zoom);
+                maxX = Math.max(maxX, (b.left + b.width) / zoom);
+                maxY = Math.max(maxY, (b.top + b.height) / zoom);
+            });
+            if (!isFinite(minX)) return null;
+            return {
+                cx: (minX + maxX) / 2,
+                cy: (minY + maxY) / 2,
+                width: maxX - minX,
+                height: maxY - minY,
+                angle: 0,
+            };
+        }
+
+        // Ma trận tuyến tính (2x2, bỏ qua phần tịnh tiến) của 1 hình dạng
+        // fabric — dùng làm điểm xuất phát cho keoGianTheoTrucKhung() bên
+        // dưới. "goc" là {angle, scaleX, scaleY, skewX, skewY} CHỤP SẴN lúc
+        // bắt đầu kéo (không đọc trực tiếp từ object đang kéo dở, tránh cộng
+        // dồn sai số qua từng khung hình — cùng nguyên tắc "tính lại từ gốc"
+        // đã áp dụng ở mọi thao tác kéo khác trong file này).
+        //
+        // keoGianTheoTrucKhung(): sau khi layer có khungRieng (từ "xoay bên
+        // trong"), khung viền không còn cùng góc với object bên trong nữa —
+        // 4 tay cầm cạnh giờ phải kéo giãn theo TRỤC CỦA KHUNG (world-space,
+        // do khungRieng.angle quyết định), KHÔNG phải trục cục bộ của object
+        // (vốn có thể lệch hẳn khỏi khung sau khi xoay bên trong). Về đại số:
+        // muốn "co giãn (sx, sy) dọc theo 2 trục đã xoay theta độ trong hệ
+        // toạ độ THẾ GIỚI", công thức chuẩn là:
+        //     StretchTheGioi = Rotate(theta) · Scale(sx, sy) · Rotate(-theta)
+        // (xoay hệ trục về trục chuẩn, co giãn theo trục chuẩn, xoay trả
+        // lại) — áp dụng lên ma trận HIỆN TẠI của object (KHÔNG đổi thứ tự:
+        // StretchTheGioi nằm NGOÀI CÙNG, vì đây là 1 phép biến đổi world-
+        // space tác động SAU cùng lên hình đã có). Kết quả là 1 ma trận 2x2
+        // mới, decompose lại (fabric.util.qrDecompose) ra đúng bộ {angle,
+        // scaleX, scaleY, skewX} mới cho object — Fabric tự vẽ lại object
+        // theo các con số này, không hề vẽ lại/nén lại PIXEL nào của ảnh gốc
+        // (chỉ đổi ma trận hiển thị) — ảnh không bao giờ mất nét dù kéo giãn
+        // bao nhiêu lần.
+        function keoGianTheoTrucKhung(goc, thetaDo, sx, sy) {
+            const util = fabric.util;
+            const maTranGoc = util.composeMatrix({
+                angle: goc.angle || 0,
+                scaleX: goc.scaleX, scaleY: goc.scaleY,
+                skewX: goc.skewX || 0, skewY: goc.skewY || 0,
+                translateX: 0, translateY: 0,
+            });
+            const rTheta = util.calcRotateMatrix({ angle: thetaDo });
+            const rAmTheta = util.calcRotateMatrix({ angle: -thetaDo });
+            const maTranCoGian = util.composeMatrix({
+                angle: 0, scaleX: sx, scaleY: sy, skewX: 0, skewY: 0, translateX: 0, translateY: 0,
+            });
+            let stretch = util.multiplyTransformMatrices(rTheta, maTranCoGian);
+            stretch = util.multiplyTransformMatrices(stretch, rAmTheta);
+            const maTranMoi = util.multiplyTransformMatrices(stretch, maTranGoc);
+            return util.qrDecompose(maTranMoi);
+        }
+
+        // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
+        // n/s/e/w riêng biệt, tính bằng deltaX/deltaY thô — sai hẳn khi ảnh
+        // đã xoay, vì "sang phải trên màn hình" không còn là "theo trục
+        // ngang của ảnh" nữa). Logic mới:
+        //
+        // - Không còn phân biệt trái/phải/trên/dưới — chỉ còn 2 TRỤC CỤC BỘ
+        //   của layer (trục ngang cho tay cầm trái/phải, trục dọc cho tay
+        //   cầm trên/dưới), lấy nguyên từ tinhKhungXoayLayer() (đã tính đúng
+        //   góc theta chung của layer). Tay cầm bên NÀO không quan trọng —
+        //   "điểm neo đối diện" (đầu kia của trục) luôn đứng yên, còn cạnh
+        //   đang kéo bám theo hình chiếu của con trỏ LÊN đúng trục đó.
+        // - Độ dài mới dọc trục = khoảng cách (có dấu) từ điểm neo đối diện
+        //   tới con trỏ. Âm nghĩa là con trỏ đã vượt QUA điểm neo đối diện
+        //   sang phía bên kia — tự nhiên cho ra scale ÂM, tức ẢNH BỊ LẬT
+        //   (Fabric hỗ trợ scale âm = lật ảnh sẵn), không cần code riêng.
+        // - Nén tối thiểu: |độ dài mới| bị chặn dưới ở một ngưỡng px rất nhỏ
+        //   (không bao giờ về 0). Hệ quả tự nhiên của việc CHẶN DƯỚI một đại
+        //   lượng CÓ DẤU ngay tại lúc dấu đổi: ảnh nén dần tới ngưỡng đó rồi
+        //   đứng yên (không nén thêm được), con trỏ đi tiếp qua khỏi điểm
+        //   neo thì NGAY LẬP TỨC nhảy sang ngưỡng đối xứng bên kia (lật), rồi
+        //   giãn tiếp bình thường — đúng ý muốn, không cần if/else riêng cho
+        //   "lúc nào thì lật".
+        // handleName: tên tay cầm THẬT SỰ vừa bấm ('n'/'s'/'e'/'w') — dù 2
+        // tay cầm cùng trục dùng chung logic trục, điểm neo (đầu ĐỐI DIỆN)
+        // khác nhau tuỳ đang cầm đầu nào. Lỗi cũ: chỉ truyền axis ('x'/'y'),
+        // nên điểm neo luôn cố định ở đầu ÂM của trục bất kể đang kéo đầu
+        // nào — kéo tay cầm ở đầu ÂM (n/w) vô tình biến điểm neo trùng với
+        // CHÍNH tay cầm đang kéo, khiến cạnh đối diện (đầu dương) chạy thay
+        // vì đó mới là "đầu xa điểm neo" theo công thức, còn cạnh đang cầm
+        // đứng im.
+        function handleLayerResize(e, handleName) {
+            const layer = layers[activeLayerIndex];
+            if (!layer || !layer.objects || layer.objects.length === 0) return;
+
+            const axis = (handleName === 'n' || handleName === 's') ? 'y' : 'x';
+            // dauKeo = hướng của tay cầm ĐANG BẤM dọc trục cục bộ: +1 nếu là
+            // đầu DƯƠNG (e/s — cùng chiều ex/ey), -1 nếu là đầu ÂM (w/n).
+            const dauKeo = (handleName === 'e' || handleName === 's') ? 1 : -1;
+
+            // Khung tham chiếu (tâm + kích thước THEO GÓC XOAY chung của cả
+            // layer) — không có góc chung (hiếm) thì quay lại AABB thẳng
+            // trục (theta=0) như logic cũ, coi như layer chưa xoay. Layer đã
+            // "xoay bên trong" (có khungRieng) thì LUÔN dùng khungRieng làm
+            // khung tham chiếu — trục kéo giãn đi theo khung ĐỘC LẬP này,
+            // không còn theo góc riêng của object bên trong nữa (có thể lệch
+            // hẳn khỏi khung sau khi xoay bên trong).
+            const khungXoay = tinhKhungXoayLayer(layer);
+            let theta, tamX, tamY, rongGoc, caoGoc;
+            if (layer.khungRieng) {
+                ({ angle: theta, cx: tamX, cy: tamY, width: rongGoc, height: caoGoc } = layer.khungRieng);
+            } else if (khungXoay) {
+                ({ theta, cx: tamX, cy: tamY, width: rongGoc, height: caoGoc } = khungXoay);
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left); minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width); maxY = Math.max(maxY, b.top + b.height);
+                });
+                theta = 0; tamX = (minX + maxX) / 2; tamY = (minY + maxY) / 2;
+                rongGoc = maxX - minX; caoGoc = maxY - minY;
+            }
+
+            const rad = theta * Math.PI / 180;
+            // Vector đơn vị của trục NGANG cục bộ (ex) và trục DỌC cục bộ
+            // (ey) trong hệ toạ độ THẾ GIỚI — chính là trục x/y gốc của
+            // layer sau khi xoay theta độ.
+            const ex = { x: Math.cos(rad), y: Math.sin(rad) };
+            const ey = { x: -Math.sin(rad), y: Math.cos(rad) };
+            const truc = axis === 'y' ? ey : ex; // trục ĐANG co giãn
+            const trucVuongGoc = axis === 'y' ? ex : ey; // trục còn lại, giữ nguyên
+            const doDaiGoc = axis === 'y' ? caoGoc : rongGoc;
+
+            // Điểm neo = đầu ĐỐI DIỆN với tay cầm đang bấm (không phải luôn
+            // cố định ở đầu âm) — nếu đang cầm đầu dương (dauKeo=+1) thì neo
+            // ở đầu âm; nếu đang cầm đầu âm (dauKeo=-1) thì neo ở đầu dương.
+            const diemNeo = {
+                x: tamX - dauKeo * truc.x * doDaiGoc / 2,
+                y: tamY - dauKeo * truc.y * doDaiGoc / 2,
+            };
+
+            // NGƯỠNG NÉN TỐI THIỂU: quy ra px NỘI BỘ canvas, càng nhỏ càng
+            // cho phép nén càng hẹp (theo đúng yêu cầu "mức nén càng hẹp
+            // càng tốt") — 4px là còn nhìn thấy được, không về 0 tuyệt đối
+            // (0 sẽ làm scale chia cho 0 / vô nghĩa hình học).
+            const NGUONG_NEN_PX = 4;
+
+            // Chụp lại trạng thái GỐC của từng object — mọi phép tính trong
+            // lúc kéo đều tính lại từ đây (nhân theo TỈ LỆ hiện tại), không
+            // cộng dồn từng khung hình. angle/skewX/skewY chỉ thật sự dùng
+            // khi layer có khungRieng (kéo giãn theo trục khung — xem
+            // keoGianTheoTrucKhung()); layer thường vẫn chỉ cần scaleX/scaleY.
+            const trangThaiGoc = layer.objects.map((obj) => {
+                const c = obj.getCenterPoint();
+                return {
+                    obj, centerX: c.x, centerY: c.y,
+                    scaleX: obj.scaleX, scaleY: obj.scaleY,
+                    angle: obj.angle || 0, skewX: obj.skewX || 0, skewY: obj.skewY || 0,
+                };
+            });
+            // Độ dài (có dấu) từ điểm neo tới TÂM KHUNG dọc trục đang co giãn
+            // — hằng số suốt lúc kéo (không đổi theo ti_le), dùng để tính lại
+            // tâm MỚI của khungRieng mỗi khung hình (nhân theo ti_le y hệt
+            // cách tính tâm mới của từng object, nhưng thành phần vuông góc
+            // luôn bằng 0 vì tâm khung nằm ĐÚNG trên trục qua điểm neo).
+            const docTrucKhungGoc = dauKeo * doDaiGoc / 2;
+
+            const onMouseMove = (moveEvent) => {
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+                // Chia thêm cho canvas.getZoom() để quy đổi từ toạ độ PIXEL
+                // đang hiển thị (đã gồm zoom bấm nút +/-) về đúng OBJECT-SPACE
+                // — cùng hệ toạ độ với diemNeo/tamX/tamY (từ getCenterPoint()),
+                // vốn không đổi theo zoom.
+                const zoom = canvas.getZoom();
+                const mouseX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const mouseY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
+
+                // Chiếu vector (điểm neo -> con trỏ) lên trục cục bộ — đây
+                // chính là "độ dài mới dọc trục", CÓ DẤU: dương là con trỏ
+                // còn ở đúng phía cũ (chưa lật), âm là đã vượt qua điểm neo
+                // sang phía đối diện (đã lật).
+                // Nhân thêm dauKeo: hình chiếu thô (mouse-diemNeo)·truc mang
+                // dấu theo TRỤC TOÁN HỌC cố định, không theo "phía tay cầm
+                // đang kéo" — nếu không nhân lại, kéo tay cầm đầu ÂM (n/w) ra
+                // xa điểm neo (đúng ý "phóng to") sẽ tính RA ÂM (vì nó lùi xa
+                // theo chiều ngược trục), bị hiểu nhầm thành "đã lật" ngay khi
+                // vừa bắt đầu kéo. Nhân dauKeo để "phóng to theo đúng hướng
+                // tay cầm đang cầm" luôn ra số DƯƠNG, bất kể cầm đầu nào.
+                let doDaiMoi = dauKeo * ((mouseX - diemNeo.x) * truc.x + (mouseY - diemNeo.y) * truc.y);
+                if (layer.khungRieng) {
+                    // Layer đã từng "xoay bên trong" (có khungRieng): hệ
+                    // thống ghi nhớ VĨNH VIỄN điều đó, và từ nay KHÔNG BAO
+                    // GIỜ cho phép lật nữa — kéo quá điểm nén cực đại chỉ
+                    // giữ nguyên ở mức nén tối đa, kéo ngược lại thì giãn ra
+                    // bình thường. Không dùng clamp giữ dấu (như bên dưới)
+                    // vì clamp đó vẫn cho phép vượt qua điểm neo (đổi dấu) —
+                    // ở đây phải chặn cứng về phía dương, không bao giờ âm.
+                    doDaiMoi = Math.max(NGUONG_NEN_PX, doDaiMoi);
+                } else if (Math.abs(doDaiMoi) < NGUONG_NEN_PX) {
+                    // Layer chưa từng xoay bên trong: vẫn cho phép lật như
+                    // cũ — chỉ giữ dấu để không "đứng hình" đúng lúc chạm
+                    // điểm nén cực đại.
+                    doDaiMoi = (doDaiMoi < 0 ? -1 : 1) * NGUONG_NEN_PX;
+                }
+                const ti_le = doDaiMoi / doDaiGoc;
+
+                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, scaleX, scaleY, angle, skewX, skewY }) => {
+                    // Toạ độ tâm object, biểu diễn theo (khoảng cách dọc trục
+                    // ĐANG co giãn, khoảng cách dọc trục VUÔNG GÓC) tính từ
+                    // điểm neo — trục vuông góc GIỮ NGUYÊN (không đụng tới),
+                    // chỉ trục đang kéo co giãn theo ti_le. Công thức này
+                    // KHÔNG phụ thuộc góc/hình dạng riêng của object, nên
+                    // dùng chung được cho cả 2 trường hợp bên dưới.
+                    const relX = ocx - diemNeo.x;
+                    const relY = ocy - diemNeo.y;
+                    const docTruc = relX * truc.x + relY * truc.y;
+                    const vuongGoc = relX * trucVuongGoc.x + relY * trucVuongGoc.y;
+                    const docTrucMoi = docTruc * ti_le;
+
+                    const newCenterX = diemNeo.x + docTrucMoi * truc.x + vuongGoc * trucVuongGoc.x;
+                    const newCenterY = diemNeo.y + docTrucMoi * truc.y + vuongGoc * trucVuongGoc.y;
+
+                    if (layer.khungRieng) {
+                        // Khung đã tách khỏi góc object (sau khi xoay bên
+                        // trong) — kéo giãn phải đi theo TRỤC CỦA KHUNG
+                        // (theta ở đây CHÍNH LÀ khungRieng.angle), không phải
+                        // trục cục bộ của object. Dùng ma trận (xem
+                        // keoGianTheoTrucKhung()) để "stretch thế giới" theo
+                        // đúng trục đó mà KHÔNG đụng tới pixel ảnh gốc — chỉ
+                        // đổi angle/scaleX/scaleY/skewX hiển thị.
+                        const sx = axis === 'x' ? ti_le : 1;
+                        const sy = axis === 'y' ? ti_le : 1;
+                        const hinhDang = keoGianTheoTrucKhung({ angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy);
+                        obj.set({
+                            angle: hinhDang.angle, scaleX: hinhDang.scaleX,
+                            scaleY: hinhDang.scaleY, skewX: hinhDang.skewX,
+                        });
+                    } else if (axis === 'y') {
+                        obj.scaleY = scaleY * ti_le;
+                    } else {
+                        obj.scaleX = scaleX * ti_le;
+                    }
+                    obj.setPositionByOrigin(new fabric.Point(newCenterX, newCenterY), 'center', 'center');
+                    obj.setCoords();
+                });
+                if (layer.khungRieng) {
+                    const docTrucKhungMoi = docTrucKhungGoc * ti_le;
+                    layer.khungRieng.cx = diemNeo.x + docTrucKhungMoi * truc.x;
+                    layer.khungRieng.cy = diemNeo.y + docTrucKhungMoi * truc.y;
+                    // Math.abs(ti_le): khungRieng.width/height là ĐỘ DÀI hình
+                    // học của khung (luôn dương, khung không có khái niệm
+                    // "lật") — chỉ object bên trong mới lật (qua dấu âm trong
+                    // scaleX/scaleY, đã xử lý đúng ở keoGianTheoTrucKhung()
+                    // bên trên). Thiếu Math.abs() ở đây thì lúc ti_le âm
+                    // (đã kéo qua khỏi điểm neo, ảnh lật) khungRieng.width/
+                    // height cũng âm theo — CSS width/height âm là vô nghĩa,
+                    // khung "đứng hình" đúng lúc chạm ngưỡng nén tối đa
+                    // (ranh giới ti_le đổi dấu), 4 nút góc theo đó cũng vỡ.
+                    if (axis === 'y') {
+                        layer.khungRieng.height = doDaiGoc * Math.abs(ti_le);
+                    } else {
+                        layer.khungRieng.width = doDaiGoc * Math.abs(ti_le);
+                    }
+                }
+                canvas.renderAll();
+                updateLayerBorder();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                showToast('Đã điều chỉnh kích thước layer', 'success');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Nút "zoom" ở góc khung viền (icon mũi tên 2 đầu chéo) — kéo RA xa
+        // tâm ảnh để phóng to, kéo VÀO gần tâm để thu nhỏ, đều tất cả các
+        // cạnh cùng lúc (khác 4 tay cầm ở giữa cạnh — handleLayerResize —
+        // vốn chỉ co giãn 1 chiều và neo cạnh đối diện đứng im).
+        function handleLayerScale(e) {
+            const layer = layers[activeLayerIndex];
+            if (!layer || !layer.objects || layer.objects.length === 0) {
+                showToast('Layer trống!', 'error');
+                return;
+            }
+
+            // Tâm co giãn = tâm khung bao TOÀN BỘ layer (không phải tâm
+            // riêng từng object) — layer có nhiều object thì cả khối co
+            // giãn quanh 1 tâm chung, giữ nguyên bố cục tương đối giữa
+            // chúng, giống hệt cách khung viền màu bao quanh cả layer. Dùng
+            // lại CHÍNH khung đã xoay (tinhKhungXoayLayer) nếu có, để tâm và
+            // "nửa đường chéo" khớp đúng khung màu đang hiển thị (đã xoay);
+            // ảnh KHÔNG xoay thì hàm đó vẫn ra đúng kết quả như AABB cũ.
+            const khungXoay = tinhKhungXoayLayer(layer);
+            let centerX, centerY, startDist;
+            if (layer.khungRieng) {
+                // Layer có khungRieng (đã "xoay bên trong") — tâm/đường chéo
+                // phải lấy từ khungRieng, không phải object bên trong (có
+                // thể lệch khỏi khung).
+                centerX = layer.khungRieng.cx;
+                centerY = layer.khungRieng.cy;
+                startDist = Math.hypot(layer.khungRieng.width / 2, layer.khungRieng.height / 2) || 1;
+            } else if (khungXoay) {
+                centerX = khungXoay.cx;
+                centerY = khungXoay.cy;
+                // Khoảng cách tâm→góc không đổi khi xoay (xoay không đổi
+                // khoảng cách tới tâm) — dùng nửa đường chéo của khung CHƯA
+                // xoay là chính xác cho MỌI góc theta, không cần biết góc.
+                startDist = Math.hypot(khungXoay.width / 2, khungXoay.height / 2) || 1;
+            } else {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                layer.objects.forEach(obj => {
+                    const b = obj.getBoundingRect(false, true);
+                    minX = Math.min(minX, b.left);
+                    minY = Math.min(minY, b.top);
+                    maxX = Math.max(maxX, b.left + b.width);
+                    maxY = Math.max(maxY, b.top + b.height);
+                });
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+                startDist = Math.hypot(maxX - centerX, maxY - centerY) || 1;
+            }
+
+            // Chụp lại trạng thái BAN ĐẦU của từng object — mọi phép tính
+            // trong lúc kéo đều dựa trên trạng thái gốc này (nhân với TỈ LỆ
+            // hiện tại), không cộng dồn từng khung hình, tránh đúng lỗi
+            // "cộng dồn delta" đã từng gặp ở tay cầm cạnh.
+            const trangThaiGoc = layer.objects.map(obj => ({
+                obj, left: obj.left, top: obj.top, scaleX: obj.scaleX, scaleY: obj.scaleY,
+            }));
+            const khungRiengGocRong = layer.khungRieng ? layer.khungRieng.width : 0;
+            const khungRiengGocCao = layer.khungRieng ? layer.khungRieng.height : 0;
+
+            const onMouseMove = (moveEvent) => {
+                const canvasRect = canvas.getElement().getBoundingClientRect();
+                const cssScaleX = canvasRect.width / canvas.getWidth();
+                const cssScaleY = canvasRect.height / canvas.getHeight();
+
+                // Quy đổi vị trí con trỏ (px màn hình) sang px NỘI BỘ canvas
+                // — cùng cách updateLayerBorder()/handleLayerResize() đã làm
+                // — rồi so khoảng cách tới tâm NGAY LÚC NÀY với khoảng cách
+                // LÚC BẮT ĐẦU kéo (startDist tính sẵn ở trên — độc lập với
+                // góc xoay, xem chú thích chỗ tính khungXoay). Nhờ dùng
+                // khoảng cách tới TÂM thay vì so trực tiếp toạ độ nút, việc
+                // xác định "đang phóng to hay thu nhỏ" đúng bất kể khung có
+                // đang xoay ở góc nào — kéo ra xa tâm luôn là phóng to, kéo
+                // vào gần tâm luôn là thu nhỏ.
+                // Chia thêm cho canvas.getZoom() để về đúng OBJECT-SPACE —
+                // cùng hệ toạ độ với centerX/centerY (từ getCenterPoint()),
+                // không đổi theo zoom bấm nút +/- ở thanh công cụ trên cùng.
+                const zoom = canvas.getZoom();
+                const curX = (moveEvent.clientX - canvasRect.left) / cssScaleX / zoom;
+                const curY = (moveEvent.clientY - canvasRect.top) / cssScaleY / zoom;
+                const curDist = Math.hypot(curX - centerX, curY - centerY);
+                const ratio = Math.max(0.05, curDist / startDist);
+
+                trangThaiGoc.forEach(({ obj, left, top, scaleX, scaleY }) => {
+                    obj.scaleX = scaleX * ratio;
+                    obj.scaleY = scaleY * ratio;
+                    obj.left = centerX + (left - centerX) * ratio;
+                    obj.top = centerY + (top - centerY) * ratio;
+                    obj.setCoords();
+                });
+                if (layer.khungRieng) {
+                    // Co giãn ĐỀU (cùng ratio cả 2 trục) luôn ăn khớp với
+                    // xoay/lệch trục sẵn có của khung — không cần tính lại
+                    // qua ma trận như tay cầm cạnh (co giãn đều giao hoán
+                    // được với xoay). Tâm không đổi (đã neo ở centerX/centerY).
+                    layer.khungRieng.width = khungRiengGocRong * ratio;
+                    layer.khungRieng.height = khungRiengGocCao * ratio;
+                }
                 canvas.renderAll();
                 updateLayerBorder();
             };
@@ -2775,6 +4111,12 @@
         // Nay gọi trong bindCanvasEvents() ngay sau khi canvas được tạo.
         function bindCanvasEvents() {
             canvas.on('selection:created', () => {
+                // Bấm vào chính khu vực ảnh/khung của layer ĐANG active không
+                // được coi là một lượt chọn mới — syncActiveLayerToObject trả
+                // về false khi không có gì đổi, lúc đó không vẽ lại khung,
+                // không hiện toast, không chạy logic nào thêm.
+                const doiChon = syncActiveLayerToObject(canvas.getActiveObject());
+                if (!doiChon) return;
                 updateLayerBorder();
                 const obj = canvas.getActiveObject();
                 if (obj) {
@@ -2782,11 +4124,49 @@
                 }
             });
 
-            canvas.on('selection:updated', updateLayerBorder);
+            canvas.on('selection:updated', () => {
+                const doiChon = syncActiveLayerToObject(canvas.getActiveObject());
+                if (!doiChon) return;
+                updateLayerBorder();
+            });
 
             canvas.on('selection:cleared', () => {
                 updateLayerBorder();
             });
+
+            // Lỗi cũ: khung màu #layerBorder chỉ được vẽ lại lúc THẢ chuột
+            // (object:modified) — trong lúc đang kéo/co giãn/xoay, khung đứng
+            // yên tại chỗ cũ, tạo cảm giác "khung không chịu đi theo ảnh".
+            // 3 sự kiện dưới đây bắn liên tục trong suốt thao tác, không chỉ
+            // lúc thả chuột — nhờ vậy khung bám sát object theo thời gian
+            // thực, giống hệt cách nó đã bám đúng theo zoom (fitCanvasToWorkspace
+            // gọi updateLayerBorder() mỗi khi đổi tỉ lệ hiển thị).
+            //
+            // Lỗi riêng cho layer đã "xoay bên trong" (có khungRieng): bấm-
+            // kéo THẲNG vào ảnh (không qua 4 tay cầm/nút góc — Fabric tự xử
+            // lý kiểu kéo mặc định này, không đi qua handleLayerResize/Rotate/
+            // Scale của ta) chỉ dịch chuyển OBJECT, không hề biết tới
+            // khungRieng — khung đứng yên trong khi ảnh trôi đi chỗ khác.
+            // diemTamTruocKeo ghi lại tâm object NGAY TRƯỚC khung hình này để
+            // suy ra đúng độ dịch chuyển (delta), cộng dồn thẳng vào tâm
+            // khungRieng mỗi khung hình — khung trôi theo ảnh y hệt.
+            canvas.on('mouse:down', (opt) => {
+                if (opt.target) diemTamTruocKeo.set(opt.target, opt.target.getCenterPoint());
+            });
+            canvas.on('object:moving', (opt) => {
+                const obj = opt.target;
+                const layer = layers.find(l => l.objects && l.objects.includes(obj));
+                if (layer && layer.khungRieng) {
+                    const truoc = diemTamTruocKeo.get(obj) || obj.getCenterPoint();
+                    const hienTai = obj.getCenterPoint();
+                    layer.khungRieng.cx += hienTai.x - truoc.x;
+                    layer.khungRieng.cy += hienTai.y - truoc.y;
+                    diemTamTruocKeo.set(obj, hienTai);
+                }
+                updateLayerBorder();
+            });
+            canvas.on('object:scaling', updateLayerBorder);
+            canvas.on('object:rotating', updateLayerBorder);
 
             canvas.on('object:modified', () => {
                 updateLayerBorder();
@@ -2799,6 +4179,41 @@
                 updateLayerBorder();
                 renderAllLayers();
             });
+        }
+
+        // Bấm/kéo THẲNG vào object trên canvas (không qua danh sách layer bên
+        // trái) là cách chọn tự nhiên nhất, nhưng Fabric chỉ biết object nào
+        // được chọn — không tự biết object đó thuộc layer nào trong mô hình
+        // của ứng dụng. Không đồng bộ lại activeLayerIndex thì #layerBorder
+        // (luôn vẽ theo layers[activeLayerIndex]) tiếp tục bám lớp đang chọn
+        // TRƯỚC ĐÓ trong khi người dùng đang thao tác trên một object khác —
+        // trông y như "khung không theo ảnh".
+        // Trả về true nếu lượt chọn này THỰC SỰ đổi layer/nhóm active (nên
+        // vẽ lại khung/toast), false nếu layer/nhóm đó đã đang active từ
+        // trước (bấm lại chính nó — không có gì phải làm thêm).
+        function syncActiveLayerToObject(obj) {
+            if (!obj) return false;
+
+            const topIndex = layers.findIndex(l => !l.isGroup && l.objects && l.objects.includes(obj));
+            if (topIndex !== -1) {
+                if (activeLayerIndex === topIndex) return false;
+                selectLayer(topIndex, false, false);
+                return true;
+            }
+
+            // Object nằm trong 1 nhóm — chọn nhóm ngoài cùng, giống cách
+            // selectNestedLayer() xử lý khi bấm tên 1 lớp con trong panel.
+            const groupTopIndex = layers.findIndex(l => {
+                if (!l.isGroup) return false;
+                const group = layerGroups.find(g => g.id === l.groupId);
+                return group && flattenLayersForRender(group.children).some(({ layer }) => layer.objects && layer.objects.includes(obj));
+            });
+            if (groupTopIndex !== -1) {
+                if (activeLayerIndex === groupTopIndex) return false;
+                selectLayer(groupTopIndex, false, false);
+                return true;
+            }
+            return false;
         }
 
         // ===== UNDO/REDO =====

@@ -194,7 +194,10 @@
                     </button>
                 </div>
             </div>
-            <div class="canvas-layer-border" id="layerBorder"></div>
+            <!-- Khung viền quanh ảnh của lớp đang chọn (class .canvas-layer-border)
+                 được updateLayerBorder() tự tạo/xoá động ngay trong khung này —
+                 có thể nhiều khung cùng lúc khi đang chọn 1 NHÓM (mỗi lớp con
+                 một khung riêng theo màu của nó), xem trang-chu-editor.js. -->
         </div>
 
         <!-- RIGHT SIDEBAR -->
