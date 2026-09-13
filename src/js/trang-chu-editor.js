@@ -13,6 +13,10 @@
         // true trong lúc đang kéo nút "xoay bên trong" (handleLayerRotateInner)
         // — xem chú thích tại nơi dùng trong updateLayerBorder().
         let dangKeoXoayBenTrong = false;
+        // Tâm object NGAY TRƯỚC khung hình kéo hiện tại — dùng để suy ra độ
+        // dịch chuyển khi bấm-kéo thẳng vào ảnh của 1 layer có khungRieng, xem
+        // bindCanvasEvents().
+        const diemTamTruocKeo = new WeakMap();
 
         // Layer color palette
         const LAYER_COLORS = [
@@ -3743,10 +3747,19 @@
                     const docTrucKhungMoi = docTrucKhungGoc * ti_le;
                     layer.khungRieng.cx = diemNeo.x + docTrucKhungMoi * truc.x;
                     layer.khungRieng.cy = diemNeo.y + docTrucKhungMoi * truc.y;
+                    // Math.abs(ti_le): khungRieng.width/height là ĐỘ DÀI hình
+                    // học của khung (luôn dương, khung không có khái niệm
+                    // "lật") — chỉ object bên trong mới lật (qua dấu âm trong
+                    // scaleX/scaleY, đã xử lý đúng ở keoGianTheoTrucKhung()
+                    // bên trên). Thiếu Math.abs() ở đây thì lúc ti_le âm
+                    // (đã kéo qua khỏi điểm neo, ảnh lật) khungRieng.width/
+                    // height cũng âm theo — CSS width/height âm là vô nghĩa,
+                    // khung "đứng hình" đúng lúc chạm ngưỡng nén tối đa
+                    // (ranh giới ti_le đổi dấu), 4 nút góc theo đó cũng vỡ.
                     if (axis === 'y') {
-                        layer.khungRieng.height = doDaiGoc * ti_le;
+                        layer.khungRieng.height = doDaiGoc * Math.abs(ti_le);
                     } else {
-                        layer.khungRieng.width = doDaiGoc * ti_le;
+                        layer.khungRieng.width = doDaiGoc * Math.abs(ti_le);
                     }
                 }
                 canvas.renderAll();
@@ -3936,7 +3949,30 @@
             // lúc thả chuột — nhờ vậy khung bám sát object theo thời gian
             // thực, giống hệt cách nó đã bám đúng theo zoom (fitCanvasToWorkspace
             // gọi updateLayerBorder() mỗi khi đổi tỉ lệ hiển thị).
-            canvas.on('object:moving', updateLayerBorder);
+            //
+            // Lỗi riêng cho layer đã "xoay bên trong" (có khungRieng): bấm-
+            // kéo THẲNG vào ảnh (không qua 4 tay cầm/nút góc — Fabric tự xử
+            // lý kiểu kéo mặc định này, không đi qua handleLayerResize/Rotate/
+            // Scale của ta) chỉ dịch chuyển OBJECT, không hề biết tới
+            // khungRieng — khung đứng yên trong khi ảnh trôi đi chỗ khác.
+            // diemTamTruocKeo ghi lại tâm object NGAY TRƯỚC khung hình này để
+            // suy ra đúng độ dịch chuyển (delta), cộng dồn thẳng vào tâm
+            // khungRieng mỗi khung hình — khung trôi theo ảnh y hệt.
+            canvas.on('mouse:down', (opt) => {
+                if (opt.target) diemTamTruocKeo.set(opt.target, opt.target.getCenterPoint());
+            });
+            canvas.on('object:moving', (opt) => {
+                const obj = opt.target;
+                const layer = layers.find(l => l.objects && l.objects.includes(obj));
+                if (layer && layer.khungRieng) {
+                    const truoc = diemTamTruocKeo.get(obj) || obj.getCenterPoint();
+                    const hienTai = obj.getCenterPoint();
+                    layer.khungRieng.cx += hienTai.x - truoc.x;
+                    layer.khungRieng.cy += hienTai.y - truoc.y;
+                    diemTamTruocKeo.set(obj, hienTai);
+                }
+                updateLayerBorder();
+            });
             canvas.on('object:scaling', updateLayerBorder);
             canvas.on('object:rotating', updateLayerBorder);
 
