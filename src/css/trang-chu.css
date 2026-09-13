@@ -1166,16 +1166,32 @@
 
         /* Thẻ X đỏ đóng modal — đứng NGAY SAU thẻ cuối cùng, như 1 thẻ hành
            động bình thường (không nằm trong khung viền của nhóm nào), nhưng
-           logic bấm y hệt nút X tròn ở góc trên-phải modal. */
+           HÌNH DẠNG và logic bấm y hệt nút X tròn ở góc trên-phải modal
+           (.modal-close-do: hình tròn 28x28, nền đỏ đặc) — ghi đè hết mọi
+           kích thước/bo góc/nền mà .the-hanh-dong đặt sẵn (thẻ chữ nhật bo
+           góc nhẹ) vì thẻ này không phải 1 thẻ hành động thông thường. */
         .the-dong-modal {
-            background: linear-gradient(135deg, #e53935, #ff7b72);
+            width: 28px;
+            height: 28px;
+            min-height: 0;
+            padding: 0;
+            border-radius: 50%;
+            background: #e53935;
+            font-size: 1rem;
+            flex: 0 0 auto;
         }
 
         .the-dong-modal:hover {
-            background: linear-gradient(135deg, #c62828, #e53935);
+            background: #c62828;
+            transform: none;
         }
 
-        /* ===== Hiệu ứng mũi tên nhắc lướt xuống — mỗi lần mở modal ===== */
+        /* ===== Hiệu ứng mũi tên nhắc lướt xuống — mỗi lần mở modal =====
+           Tổng thời lượng 1,9s: bung to → thu nhỏ (~10%), đứng im ĐÚNG
+           0,25s (10%→23%, tức 0,13*1,9s), rồi trôi xuống — đoạn TRÔI riêng
+           chiếm 77% còn lại của 1,9s ≈ 1,46s, nằm đúng trong khoảng
+           1-1,5 giây yêu cầu (chậm hơn hẳn bản trước, vốn trôi trong lúc
+           0,9s vì gộp chung 1 khoảng 1,5s cho cả 3 giai đoạn). */
         .mui-ten-nhac-luot {
             position: fixed;
             top: 50%;
@@ -1191,15 +1207,13 @@
             filter: drop-shadow(0 0 18px rgba(255, 59, 48, 0.85)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.5));
             pointer-events: none;
             z-index: 100000;
-            animation: mui-ten-nhac-luot-xuong 1.5s cubic-bezier(.2, .7, .3, 1) forwards;
+            animation: mui-ten-nhac-luot-xuong 1.9s cubic-bezier(.2, .7, .3, 1) forwards;
         }
 
         @keyframes mui-ten-nhac-luot-xuong {
             0% { transform: scale(2.6); opacity: 0; }
             10% { transform: scale(1); opacity: 1; }
-            /* Đứng im (không đổi transform) từ 10% tới ~27% — quãng đó ứng
-               với đúng 0,25s trên tổng thời lượng 1.5s. */
-            27% { transform: scale(1); opacity: 1; }
+            23% { transform: scale(1); opacity: 1; }
             100% { transform: translateY(150vh) scale(1); opacity: 0; }
         }
 

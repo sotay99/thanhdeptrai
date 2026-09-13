@@ -3378,9 +3378,56 @@
                         handleLayerControlAction(hanhDong);
                     };
                 });
+
+                ganNutCuonModalNutGocLayer(modal);
             }
             modal.classList.add('active');
             hieuUngMuiTenNhacLuotXuong();
+            document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
+                n.style.display = 'flex';
+            });
+        }
+
+        // 2 nút cuộn lên đầu/xuống cuối, SÁT MÉP PHẢI MÀN HÌNH — dùng lại
+        // ĐÚNG class '.nut-cuon-modal' (định nghĩa ở base.css, nạp chung
+        // trang với mọi module khác của shop, kể cả module này) nên hình
+        // dạng/vị trí/kích thước giống hệt 2 nút cuộn ở modal "Chi tiết sản
+        // phẩm" bên module "Trọn bộ sản phẩm VIP" — không viết lại CSS
+        // riêng, tự động ăn theo nếu sau này shop đổi kiểu 2 nút đó.
+        // Khác 1 điểm bắt buộc: modal đó dùng chính '.modal-lop' (scroll
+        // container) làm đích cuộn; modal này cuộn container riêng của nó
+        // ('.modal-nut-goc-layer', overflow-y: auto).
+        function ganNutCuonModalNutGocLayer(modal) {
+            const dich = () => modal.querySelector('.modal-nut-goc-layer');
+
+            const nutLen = document.createElement('button');
+            nutLen.type = 'button';
+            nutLen.className = 'nut-cuon-modal';
+            nutLen.dataset.huong = 'len';
+            nutLen.dataset.modalCua = 'nutGocLayer';
+            nutLen.title = 'Cuộn lên đầu';
+            nutLen.textContent = '▲';
+            nutLen.style.top = '35vh';
+
+            const nutXuong = document.createElement('button');
+            nutXuong.type = 'button';
+            nutXuong.className = 'nut-cuon-modal';
+            nutXuong.dataset.huong = 'xuong';
+            nutXuong.dataset.modalCua = 'nutGocLayer';
+            nutXuong.title = 'Cuộn xuống cuối';
+            nutXuong.textContent = '▼';
+            nutXuong.style.top = 'calc(35vh + 46px)';
+
+            const lenDau = () => { const t = dich(); if (t) t.scrollTo({ top: 0, behavior: 'smooth' }); };
+            const xuongCuoi = () => { const t = dich(); if (t) t.scrollTo({ top: t.scrollHeight, behavior: 'smooth' }); };
+
+            nutLen.addEventListener('click', lenDau);
+            nutLen.addEventListener('mouseenter', lenDau);
+            nutXuong.addEventListener('click', xuongCuoi);
+            nutXuong.addEventListener('mouseenter', xuongCuoi);
+
+            document.body.appendChild(nutLen);
+            document.body.appendChild(nutXuong);
         }
 
         // Hiệu ứng "mũi tên nhắc lướt xuống" — mỗi lần mở modal ~50 thẻ đều
@@ -3402,6 +3449,9 @@
         function dongModalNutGocLayer() {
             const modal = document.getElementById('modalNutGocLayer');
             if (modal) modal.classList.remove('active');
+            document.querySelectorAll('.nut-cuon-modal[data-modal-cua="nutGocLayer"]').forEach((n) => {
+                n.style.display = 'none';
+            });
         }
 
         // Nút xoay — kéo (không bấm): giữ chuột trên nút rồi rê quanh tâm
