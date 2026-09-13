@@ -3011,6 +3011,15 @@
                         const gocConTro = handle.dataset.axis === 'y' ? theta + 90 : theta;
                         handle.style.cursor = taoConTroMuiTenXoay(gocConTro);
                     });
+                    // Nút zoom (góc dưới-phải, mũi tên 2 đầu chéo): 1 đầu
+                    // luôn chĩa vào ĐÚNG tâm ảnh (hướng lên-trái từ góc dưới-
+                    // phải = 45° khi khung chưa xoay), đầu kia chĩa ra ngoài
+                    // ngược lại — cộng thêm theta để bám đúng hướng khi khung
+                    // xoay, y hệt cách làm với 4 tay cầm cạnh ở trên.
+                    const nutZoom = border.querySelector('.layer-control-btn[data-action="scale"]');
+                    if (nutZoom) {
+                        nutZoom.style.cursor = taoConTroMuiTenXoay(45 + theta);
+                    }
                 } else if (border.dataset.hasControls === '1') {
                     // Khung "kéo theo" (thuộc nhóm đang chọn nhưng không phải
                     // lớp chính) không có nút — dọn nút cũ nếu lớp này VỪA
@@ -3097,6 +3106,7 @@
                 btn.style.top = '50%';
                 btn.dataset.dx = pos.dx;
                 btn.dataset.dy = pos.dy;
+                btn.dataset.action = action;
 
                 if (action === 'rotate-inner') {
                     // Cũng là nút KÉO: giữ chuột rồi rê quanh tâm layer,
@@ -3110,7 +3120,10 @@
                 } else if (action === 'scale') {
                     // Không phải một cú bấm — phải KÉO: giữ chuột trên nút
                     // rồi rê ra xa tâm ảnh để phóng to, rê vào gần tâm để
-                    // thu nhỏ, đều tất cả các cạnh cùng lúc.
+                    // thu nhỏ, đều tất cả các cạnh cùng lúc. Con trỏ ban đầu
+                    // (trước khi capNhatViTriNutVaTayCam() chạy lần đầu ngay
+                    // sau khi tạo) — sẽ được thay ngay bằng mũi tên chéo tự
+                    // xoay theo theta, xem chú thích ở đó.
                     btn.style.cursor = 'nwse-resize';
                     btn.onmousedown = (e) => {
                         e.stopPropagation();
@@ -3549,7 +3562,10 @@
         // theo các con số này, không hề vẽ lại/nén lại PIXEL nào của ảnh gốc
         // (chỉ đổi ma trận hiển thị) — ảnh không bao giờ mất nét dù kéo giãn
         // bao nhiêu lần.
-        function keoGianTheoTrucKhung(goc, thetaDo, sx, sy) {
+        // gocLienTuc (tuỳ chọn) — {angle, scaleX, scaleY, skewX} của CHÍNH
+        // object này ở KHUNG HÌNH NGAY TRƯỚC — dùng để chọn nhánh phân rã
+        // liên tục, xem chú thích ở chonNhanhLienTuc() ngay dưới.
+        function keoGianTheoTrucKhung(goc, thetaDo, sx, sy, gocLienTuc) {
             const util = fabric.util;
             const maTranGoc = util.composeMatrix({
                 angle: goc.angle || 0,
@@ -3565,7 +3581,41 @@
             let stretch = util.multiplyTransformMatrices(rTheta, maTranCoGian);
             stretch = util.multiplyTransformMatrices(stretch, rAmTheta);
             const maTranMoi = util.multiplyTransformMatrices(stretch, maTranGoc);
-            return util.qrDecompose(maTranMoi);
+            const qr = util.qrDecompose(maTranMoi);
+            return gocLienTuc ? chonNhanhLienTuc(qr, gocLienTuc) : qr;
+        }
+
+        // Phân rã ma trận (qrDecompose) thành {angle, scaleX, scaleY, skewX}
+        // KHÔNG DUY NHẤT — (angle, sx, sy) và (angle+180, -sx, -sy) luôn mô
+        // tả CHÍNH XÁC cùng 1 ma trận (vì R(angle+180) = -R(angle), nhân với
+        // -1 lần nữa ở phần scale/skew triệt tiêu nhau). fabric.util.qrDecompose
+        // luôn trả về đúng MỘT nhánh cố định theo quy ước riêng của nó — khi
+        // sx quét qua 0 (đang kéo lật ảnh), nhánh này đổi rất nhanh (đạo hàm
+        // góc theo sx tăng vọt gần sx=0, bản chất hình học của phép phân rã 1
+        // ma trận gần suy biến/hạng-1), khiến góc/skew tính ra nhảy giật dù
+        // ma trận cuối cùng vẫn biến đổi mượt — đây chính là hiện tượng
+        // "giật giật, lật qua lật lại" người dùng thấy khi rê chuột qua lại
+        // gần điểm nén cực đại (mỗi lần rê qua lại là 1 lần nhảy nhánh).
+        //
+        // Sửa: MỖI khung hình, so nhánh MẶC ĐỊNH của qrDecompose với nhánh
+        // THAY THẾ (angle+180, -scaleX, -scaleY, skewX giữ nguyên — đã kiểm
+        // chứng bằng số dựng lại đúng ma trận gốc), chọn nhánh nào có góc GẦN
+        // góc ở khung hình NGAY TRƯỚC đó hơn. Nhờ vậy hình dạng luôn biến đổi
+        // liên tục theo từng khung hình nhỏ, không còn cú nhảy nào — dù tổng
+        // quãng đường xoay khi lật hẳn (từ đầu tới cuối) vẫn có thể lớn (đó
+        // là bản chất hình học thật của phép lật một hình đã xoay sẵn, không
+        // phải lỗi), nó không còn "giật" vì không có bước nhảy đột ngột nữa.
+        function chonNhanhLienTuc(qr, gocLienTuc) {
+            const nhanhThayThe = {
+                angle: qr.angle + 180, scaleX: -qr.scaleX, scaleY: -qr.scaleY,
+                skewX: qr.skewX, skewY: qr.skewY || 0,
+            };
+            const khoangCachGoc = (a, b) => {
+                let d = Math.abs(a - b) % 360;
+                return d > 180 ? 360 - d : d;
+            };
+            return khoangCachGoc(nhanhThayThe.angle, gocLienTuc.angle) < khoangCachGoc(qr.angle, gocLienTuc.angle)
+                ? nhanhThayThe : qr;
         }
 
         // Thiết kế lại hoàn toàn (bản cũ coi 4 tay cầm là 4 hướng màn hình
@@ -3660,12 +3710,23 @@
             // cộng dồn từng khung hình. angle/skewX/skewY chỉ thật sự dùng
             // khi layer có khungRieng (kéo giãn theo trục khung — xem
             // keoGianTheoTrucKhung()); layer thường vẫn chỉ cần scaleX/scaleY.
+            // "lienTuc" (chỉ dùng khi có khungRieng): hình dạng object ở
+            // khung hình NGAY TRƯỚC — khởi tạo bằng hình dạng gốc, tự cập
+            // nhật mỗi khung hình bên dưới. Truyền vào keoGianTheoTrucKhung()
+            // để chọn đúng nhánh phân rã LIÊN TỤC với khung hình trước, tránh
+            // "giật giật, lật qua lật lại" gần điểm nén cực đại — xem
+            // chonNhanhLienTuc().
             const trangThaiGoc = layer.objects.map((obj) => {
                 const c = obj.getCenterPoint();
+                const hinhDangGoc = {
+                    angle: obj.angle || 0, scaleX: obj.scaleX, scaleY: obj.scaleY,
+                    skewX: obj.skewX || 0, skewY: obj.skewY || 0,
+                };
                 return {
                     obj, centerX: c.x, centerY: c.y,
                     scaleX: obj.scaleX, scaleY: obj.scaleY,
-                    angle: obj.angle || 0, skewX: obj.skewX || 0, skewY: obj.skewY || 0,
+                    angle: hinhDangGoc.angle, skewX: hinhDangGoc.skewX, skewY: hinhDangGoc.skewY,
+                    lienTuc: hinhDangGoc,
                 };
             });
             // Độ dài (có dấu) từ điểm neo tới TÂM KHUNG dọc trục đang co giãn
@@ -3704,7 +3765,8 @@
                 }
                 const ti_le = doDaiMoi / doDaiGoc;
 
-                trangThaiGoc.forEach(({ obj, centerX: ocx, centerY: ocy, scaleX, scaleY, angle, skewX, skewY }) => {
+                trangThaiGoc.forEach((entry) => {
+                    const { obj, centerX: ocx, centerY: ocy, scaleX, scaleY, angle, skewX, skewY } = entry;
                     // Toạ độ tâm object, biểu diễn theo (khoảng cách dọc trục
                     // ĐANG co giãn, khoảng cách dọc trục VUÔNG GÓC) tính từ
                     // điểm neo — trục vuông góc GIỮ NGUYÊN (không đụng tới),
@@ -3730,7 +3792,10 @@
                         // đổi angle/scaleX/scaleY/skewX hiển thị.
                         const sx = axis === 'x' ? ti_le : 1;
                         const sy = axis === 'y' ? ti_le : 1;
-                        const hinhDang = keoGianTheoTrucKhung({ angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy);
+                        const hinhDang = keoGianTheoTrucKhung(
+                            { angle, scaleX, scaleY, skewX, skewY }, theta, sx, sy, entry.lienTuc,
+                        );
+                        entry.lienTuc = hinhDang;
                         obj.set({
                             angle: hinhDang.angle, scaleX: hinhDang.scaleX,
                             scaleY: hinhDang.scaleY, skewX: hinhDang.skewX,
