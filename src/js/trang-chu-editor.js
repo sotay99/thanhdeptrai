@@ -3093,7 +3093,15 @@
                 // Mũi tên 2 đầu chéo, 1 đầu chĩa vào tâm — đúng biểu tượng
                 // "kéo để phóng to/thu nhỏ" quen thuộc (không phải fa-expand,
                 // vốn là 4 mũi tên rời góc, dễ hiểu lầm là "toàn màn hình").
-                'scale': { dx: 1, dy: 1, icon: 'fa-up-right-and-down-left-from-center' }
+                'scale': { dx: 1, dy: 1, icon: 'fa-up-right-and-down-left-from-center' },
+                // Nút "con mắt" MỚI — KHÔNG phải nút ẩn/hiện layer ở panel
+                // (đó dùng fa-eye/fa-eye-slash); cố ý dùng icon khác hẳn
+                // (fa-eye-low-vision) để không gây nhầm 2 nút mắt với nhau.
+                // Vị trí không nằm ở 1 trong 4 góc như các nút khác — đặt
+                // và tính riêng trong capNhatViTriNutVaTayCam() (giữa nút
+                // zoom và điểm neo cạnh phải, sát mép ngoài) — dx/dy ở đây
+                // chỉ mang tính chú thích, không dùng để tính vị trí.
+                'mat': { dx: 1, dy: 0, icon: 'fa-eye-low-vision', tron: true },
             };
 
             Object.entries(positions).forEach(([action, pos]) => {
@@ -3204,6 +3212,9 @@
             const NUA_CANH_DIEM_NEO = 5; // nửa cạnh 10px của điểm neo
 
             border.querySelectorAll('.layer-control-btn').forEach(btn => {
+                // Nút "con mắt" (data-action="mat") không nằm ở 1 trong 4
+                // góc — tính riêng bên dưới, bỏ qua ở đây.
+                if (btn.dataset.action === 'mat') return;
                 const dx = Number(btn.dataset.dx), dy = Number(btn.dataset.dy);
                 const px = dx * (bWidth / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
                 const py = dy * (bHeight / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG);
@@ -3218,6 +3229,35 @@
                 const py = dy * (bHeight / 2 + NUA_CANH_DIEM_NEO);
                 handle.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
             });
+
+            // Nút "con mắt" — nằm dọc cạnh PHẢI, sát MÉP NGOÀI y hệt điểm
+            // neo cạnh (không chồm vào trong như 4 nút góc), ở đúng khoảng
+            // giữa nút zoom (góc dưới-phải) và điểm neo cạnh phải (giữa
+            // cạnh, dy=0) khi layer CHƯA xoay — vì mọi phép tính ở đây đều
+            // làm trong hệ toạ độ CỤC BỘ của layer (trước khi border xoay
+            // theta độ), nên "ở trên nút zoom" vẫn đúng cho MỌI góc xoay.
+            const nutMat = border.querySelector('.layer-control-btn[data-action="mat"]');
+            if (nutMat) {
+                const NUA_CANH_NUT_MAT = 16; // nút tròn 32px, cùng cỡ nút xoay-bên-trong
+                const pyDiemNeoCanhPhai = 0; // điểm neo 'e' luôn ở giữa cạnh
+                const pyNutZoom = bHeight / 2 + NUA_CANH_NUT_GOC - NUT_CHOM_VAO_TRONG;
+                const pyGiuaHai = (pyDiemNeoCanhPhai + pyNutZoom) / 2;
+
+                // Khung (hoặc riêng cạnh phải) bị thu hẹp khiến điểm neo và
+                // nút zoom xích lại gần nhau — không còn đủ chỗ cho nút con
+                // mắt chen vào giữa mà không đè/bị đè. Đủ chỗ cần khoảng
+                // cách pyNutZoom (từ điểm neo tới nút zoom) ít nhất bằng 1
+                // đường kính nút con mắt cộng thêm biên an toàn nhỏ; thiếu
+                // bao nhiêu thì đẩy nút con mắt RA XA khung bấy nhiêu (dịch
+                // thêm ra ngoài theo trục ngang) — mở rộng lại thì tự về
+                // đúng vị trí cũ (px không còn cộng thêm gì).
+                const KHOANG_CACH_TOI_THIEU = NUA_CANH_NUT_MAT * 2 + 6;
+                const thieuHut = Math.max(0, KHOANG_CACH_TOI_THIEU - pyNutZoom);
+
+                const pxMat = bWidth / 2 + NUA_CANH_NUT_MAT + thieuHut;
+                nutMat.style.transform = `translate(calc(-50% + ${pxMat}px), calc(-50% + ${pyGiuaHai}px))` +
+                    (theta ? ` rotate(${-theta}deg)` : '');
+            }
         }
 
         function handleLayerControlAction(action) {
