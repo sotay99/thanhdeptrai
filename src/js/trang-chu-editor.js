@@ -2873,7 +2873,7 @@
                     // đó) vì đang tạo khung MỚI ngay lúc này.
                     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                     layer.objects.forEach(obj => {
-                        const bounds = obj.getBoundingRect(false, true);
+                        const bounds = hopBaoThatCoTinhCatXen(obj, layer);
                         minX = Math.min(minX, bounds.left);
                         minY = Math.min(minY, bounds.top);
                         maxX = Math.max(maxX, bounds.left + bounds.width);
@@ -3397,6 +3397,17 @@
                     khung.appendChild(diem);
                 });
 
+                // Bấm-kéo NGAY TRÊN vùng chọn (không trúng 1 trong 8 điểm
+                // neo — các điểm đó tự stopPropagation() ở trên nên không
+                // lọt xuống đây) để DI CHUYỂN cả vùng chọn sang chỗ khác,
+                // giữ nguyên kích thước — xem diChuyenVungCatXen().
+                khung.style.cursor = 'move';
+                khung.onmousedown = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    diChuyenVungCatXen(e);
+                };
+
                 modal.querySelector('#catXenNutDong').onclick = () => dongModalCatXen(false);
                 modal.querySelector('#catXenNutLuu').onclick = () => dongModalCatXen(true);
                 // Bấm ra ngoài phạm vi modal-content = coi như bấm nút X
@@ -3485,6 +3496,38 @@
                     const duoiMoi = Math.max(Math.min(py, 1), treCoDinh + NGUONG_CAT_XEN_TOI_THIEU);
                     r.height = duoiMoi - treCoDinh;
                 }
+
+                catXen.hienTai = r;
+                capNhatGiaoDienCatXen();
+            };
+            const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+
+        // Bấm-kéo NGAY TRÊN vùng chọn (không trúng điểm neo nào) — DI CHUYỂN
+        // cả vùng sang vị trí khác, kích thước (width/height) giữ NGUYÊN,
+        // chỉ left/top đổi. Cùng cách tính toạ độ phân số theo bề rộng/cao
+        // hiển thị của '#catXenVungAnh' như keoDiemNeoCatXen(), nên mượt mà
+        // và không phụ thuộc modal đang hiển thị to/nhỏ thế nào.
+        function diChuyenVungCatXen(e) {
+            const vungAnh = document.getElementById('catXenVungAnh');
+            const rect = vungAnh.getBoundingClientRect();
+            const gocBanDau = { ...catXen.hienTai };
+            const chuotBatDauX = (e.clientX - rect.left) / rect.width;
+            const chuotBatDauY = (e.clientY - rect.top) / rect.height;
+
+            const onMove = (moveEvent) => {
+                const px = (moveEvent.clientX - rect.left) / rect.width;
+                const py = (moveEvent.clientY - rect.top) / rect.height;
+                const dx = px - chuotBatDauX;
+                const dy = py - chuotBatDauY;
+                const r = { ...gocBanDau };
+                r.left = Math.min(Math.max(gocBanDau.left + dx, 0), 1 - gocBanDau.width);
+                r.top = Math.min(Math.max(gocBanDau.top + dy, 0), 1 - gocBanDau.height);
 
                 catXen.hienTai = r;
                 capNhatGiaoDienCatXen();
@@ -3974,15 +4017,22 @@
                 return;
             }
 
+            // Tâm để xoay quanh: layer đã có khungRieng (từ 1 lần cắt xén
+            // hoặc xoay bên trong trước đó) thì LUÔN ưu tiên tâm khung đó —
+            // đúng ngay cả khi ảnh đã bị cắt lệch tâm so với hộp bao gốc
+            // (tinhKhungXoayLayer không biết gì về vùng đã cắt).
             const khungXoayGoc = tinhKhungXoayLayer(layer);
             let centerX, centerY;
-            if (khungXoayGoc) {
+            if (layer.khungRieng) {
+                centerX = layer.khungRieng.cx;
+                centerY = layer.khungRieng.cy;
+            } else if (khungXoayGoc) {
                 centerX = khungXoayGoc.cx;
                 centerY = khungXoayGoc.cy;
             } else {
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 layer.objects.forEach(obj => {
-                    const b = obj.getBoundingRect(false, true);
+                    const b = hopBaoThatCoTinhCatXen(obj, layer);
                     minX = Math.min(minX, b.left);
                     minY = Math.min(minY, b.top);
                     maxX = Math.max(maxX, b.left + b.width);
@@ -4065,7 +4115,7 @@
             const zoom = canvas.getZoom();
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             layer.objects.forEach((obj) => {
-                const b = obj.getBoundingRect(false, true);
+                const b = hopBaoThatCoTinhCatXen(obj, layer);
                 minX = Math.min(minX, b.left / zoom);
                 minY = Math.min(minY, b.top / zoom);
                 maxX = Math.max(maxX, (b.left + b.width) / zoom);
@@ -4079,6 +4129,39 @@
                 height: maxY - minY,
                 angle: 0,
             };
+        }
+
+        // obj.getBoundingRect() KHÔNG biết gì về clipPath (xem apDungCatXen()
+        // — cắt xén chỉ gắn clipPath, không đổi width/height/toạ độ thật của
+        // object) — nên nếu layer này đã từng "cắt xén" object ảnh của nó,
+        // hộp bao thật phải tính LẠI từ đúng vùng còn hiển thị (layer.catXen),
+        // không phải lấy nguyên hộp bao CŨ trước khi cắt. Thiếu bước này thì
+        // "xoay bên trong" (dùng hộp bao để tự co giãn khung viền — xem 2 nơi
+        // gọi hàm này) sẽ phồng khung ra khớp với ảnh GỐC chưa cắt, sai hẳn.
+        // Trả về CÙNG quy ước toạ độ với obj.getBoundingRect(false, true):
+        // đã nhân sẵn canvas.getZoom() (viewportTransform của canvas này
+        // không hề pan, chỉ zoom — xem chú thích ở tinhKhungRiengTuAABB gốc).
+        function hopBaoThatCoTinhCatXen(obj, layer) {
+            const objAnhChinh = layer.objects.find(o => o.isType && o.isType('image'));
+            if (!layer.catXen || obj !== objAnhChinh) {
+                return obj.getBoundingRect(false, true);
+            }
+            const r = layer.catXen;
+            const rongGoc = obj.width, caoGoc = obj.height;
+            const m = obj.calcTransformMatrix();
+            const goc4Diem = [
+                { x: (r.left - 0.5) * rongGoc, y: (r.top - 0.5) * caoGoc },
+                { x: (r.left + r.width - 0.5) * rongGoc, y: (r.top - 0.5) * caoGoc },
+                { x: (r.left + r.width - 0.5) * rongGoc, y: (r.top + r.height - 0.5) * caoGoc },
+                { x: (r.left - 0.5) * rongGoc, y: (r.top + r.height - 0.5) * caoGoc },
+            ].map(p => fabric.util.transformPoint(new fabric.Point(p.x, p.y), m));
+            const zoom = canvas.getZoom();
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            goc4Diem.forEach(p => {
+                minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+                minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+            });
+            return { left: minX * zoom, top: minY * zoom, width: (maxX - minX) * zoom, height: (maxY - minY) * zoom };
         }
 
         // Ma trận tuyến tính (2x2, bỏ qua phần tịnh tiến) của 1 hình dạng
