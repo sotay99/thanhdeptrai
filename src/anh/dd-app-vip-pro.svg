@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="gavp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient></defs>
+<rect width="240" height="240" rx="30" fill="url(#gavp)"/>
+<!-- lưới 6 ô vuông bo góc, mỗi ô một màu, gợi khái niệm "nhiều app" chung một kho -->
+<rect x="48" y="48" width="48" height="48" rx="12" fill="#ff5a7a"/>
+<rect x="104" y="48" width="48" height="48" rx="12" fill="#ffd479"/>
+<rect x="160" y="48" width="48" height="48" rx="12" fill="#31a8ff"/>
+<rect x="48" y="104" width="48" height="48" rx="12" fill="#2d9d5f"/>
+<rect x="104" y="104" width="48" height="48" rx="12" fill="#c04bd6"/>
+<rect x="160" y="104" width="48" height="48" rx="12" fill="#4a86c9"/>
+<!-- mỗi ô một nét trắng đơn giản, gợi icon chung không sao chép logo thật -->
+<path d="M64 72 l8 8 l16 -16" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>
+<circle cx="128" cy="72" r="11" fill="none" stroke="#fff" stroke-width="4.5" opacity=".92"/>
+<path d="M176 64 l16 16 m0 -16 l-16 16" stroke="#fff" stroke-width="4.5" stroke-linecap="round" opacity=".92"/>
+<path d="M64 136 l16 0 m-8 -8 l0 16" stroke="#fff" stroke-width="4.5" stroke-linecap="round" opacity=".92"/>
+<path d="M120 136 l16 -16 l0 16 Z" fill="#fff" opacity=".92"/>
+<rect x="172" y="120" width="24" height="24" rx="5" fill="none" stroke="#fff" stroke-width="4.5" opacity=".92"/>
+<!-- huy hiệu kim cương VIP ở đáy, nổi bật trên dải bạc -->
+<rect x="48" y="170" width="144" height="4" rx="2" fill="#39414c"/>
+<path d="M120 164 l16 14 l-16 20 l-16 -20 Z" fill="#ffd479" stroke="#161b22" stroke-width="1.5"/>
+<rect x="166" y="176" width="60" height="26" rx="13" fill="#2d9d5f"/>
+<text x="196" y="194" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">VIP</text>
+</svg>

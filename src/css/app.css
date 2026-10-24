@@ -2208,3 +2208,155 @@
 /* Dấu * đỏ đánh dấu câu bắt buộc ở module "Yêu cầu hoàn tiền". */
 .dau-bat-buoc { color: #e5484d; }
 
+/* Chữ "Shop Thànhđẹptrai.vn" ở thanh tiêu đề giờ là nút bấm về Trang chủ
+   (PHẦN 05B) — chỉ đổi con trỏ, không đổi gì khác ở hình thức hiện có. */
+.thanh-tieu-de { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+/* ==========================================================================
+   TRANG CHỦ — LANDINGPAGE (PHẦN 05B)
+   ========================================================================== */
+
+.tc-hero { text-align: center; padding: 10px 6px 26px; }
+.tc-hero h1 { font-size: 23px; font-weight: 800; letter-spacing: .2px; margin-bottom: 8px; }
+.tc-hero h1 .cham-xanh { color: var(--xanh); }
+.tc-hero p { color: var(--chu-diu); font-size: 13.5px; max-width: 560px; margin: 0 auto; }
+
+.tc-khoi { margin-bottom: 30px; }
+.tc-dau-khoi { margin-bottom: 14px; }
+.tc-dau-khoi h2 {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.tc-dau-khoi p { color: var(--chu-diu); font-size: 13px; }
+
+.tc-nhan {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--la-dam-net);
+  background: var(--xanh-nen);
+  border: 1px solid rgba(45, 157, 95, .35);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.tc-luoi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.tc-the {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 16px 12px;
+  background: var(--the);
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  box-shadow: var(--bong);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .18s, transform .18s, box-shadow .18s;
+}
+.tc-the:hover { transform: translateY(-2px); border-color: var(--xanh); box-shadow: var(--bong-noi); }
+
+.tc-the .tc-anh {
+  width: 84px;
+  height: 84px;
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Bồng bềnh — TÁI DÙNG @keyframes bong-benh-anh đã có (dùng chung với
+     .the-sanpham .anh-dai-dien ở PHẦN 03), không viết lại. */
+  animation: bong-benh-anh 9s ease-in-out infinite;
+  will-change: transform;
+}
+.tc-the .tc-anh img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tc-the .tc-icon { font-size: 36px; line-height: 1; color: var(--xanh); }
+
+.tc-the .tc-ten { font-size: 13px; font-weight: 600; line-height: 1.35; }
+
+.tc-the-don { flex-direction: row; text-align: left; padding: 18px; max-width: 640px; }
+.tc-the-don .tc-anh { flex: 0 0 auto; width: 84px; height: 84px; }
+.tc-the-don .tc-than-don { flex: 1 1 auto; min-width: 0; }
+.tc-the-don .tc-ten { display: block; font-size: 15px; margin-bottom: 6px; }
+.tc-nhom-app { font-size: 12.5px; color: var(--chu-diu); line-height: 1.5; margin-bottom: 3px; }
+.tc-nhom-app:last-child { margin-bottom: 0; }
+.tc-nhom-app strong { color: var(--chu); }
+
+@media (max-width: 480px) {
+  .tc-the-don { flex-direction: column; text-align: center; }
+}
+
+/* HIỆU ỨNG "TRÔI RA KHI CUỘN TỚI" — khác cơ chế cho-troi-len/dang-troi-len
+   của .the-sanpham (PHẦN 03: trôi MỘT LẦN lúc vào module, không theo cuộn).
+   Ở đây .cho-troi-len/.dang-troi-len dùng CHUNG TÊN nhưng ĐỔI PHẠM VI nhờ
+   gắn trên .tc-khoi/.tc-the/.tc-hero — CSS specificity theo selector đích
+   nên không đụng rule của PHẦN 03 (selector đó chỉ nhắm .the-sanpham).
+   Đường cong nhanh-đầu-chậm-cuối giống PHẦN 03, nhưng kéo dài thời lượng hơn
+   (2.8s so với 2s) theo đúng yêu cầu "tổng thời gian trôi dài ra". */
+.tc-khoi.cho-troi-len, .tc-the.cho-troi-len, .tc-hero.cho-troi-len {
+  opacity: 0;
+  transform: translateY(56px);
+}
+.tc-khoi.dang-troi-len, .tc-the.dang-troi-len, .tc-hero.dang-troi-len {
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform 2.8s cubic-bezier(.16, 1, .3, 1), opacity 1.4s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-khoi.cho-troi-len, .tc-the.cho-troi-len, .tc-hero.cho-troi-len { opacity: 1; transform: none; }
+  .tc-the .tc-anh { animation: none; }
+}
+
+/* HAI THANH CHẠY CHỮ VÔ HẠN — nội dung lặp lại đúng hai lần nối liền
+   (veMarqueeTrangChu ở PHẦN 05B) nên chỉ cần trượt đúng 50% chiều ngang rồi
+   lặp lại là liền mạch, không giật. Chạy từ PHẢI qua TRÁI — chữ xuất hiện ở
+   mép phải, trôi dần sang trái, đúng chiều mắt đọc trái→phải khi lướt qua. */
+.tc-marquee {
+  overflow: hidden;
+  padding: 13px 0;
+  margin: 26px 0;
+  border-top: 1px solid var(--vien);
+  border-bottom: 1px solid var(--vien);
+}
+.tc-marquee-track {
+  display: inline-flex;
+  width: max-content;
+  gap: 26px;
+  animation: tc-cuon-chu 46s linear infinite;
+}
+.tc-marquee:hover .tc-marquee-track { animation-play-state: paused; }
+.tc-marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tc-marquee-item:hover { border-color: var(--xanh); color: var(--xanh); }
+@keyframes tc-cuon-chu {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-marquee-track { animation: none; }
+}
+

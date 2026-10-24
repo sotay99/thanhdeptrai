@@ -600,6 +600,7 @@
     if (state.trang === 'admin') return veTrangAdmin();
     if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
+    if (m && m.ma === 'trang-chu') return veModuleTrangChu();
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
     if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
     if (m && m.ma === 'khoa-hoc-may-tinh') return veModuleKhoaHocMayTinh();
@@ -650,7 +651,7 @@
         '<span class="vach"></span><span class="vach"></span><span class="vach"></span>' +
       '</button>' +
       veMenuTrai() +
-      '<header class="thanh-tieu-de">' +
+      '<header class="thanh-tieu-de" data-hanh-dong="mo-module" data-module="trang-chu">' +
         '<img class="logo-shop" src="/assets/anh/logo.svg" width="30" height="30" alt="" aria-hidden="true">' +
         '<h1 class="ten-shop">Shop Thànhđẹptrai<span class="cham-xanh">.vn</span></h1>' +
       '</header>' +
@@ -661,5 +662,6 @@
 
     // Gắn hiệu ứng NGAY SAU khi HTML mới đã nằm trong trang.
     ganHieuUngTroiLen();
+    ganHieuUngTrangChu();   // vô hại ở module khác — không tìm thấy phần tử nào
     doChoThanhDay();   // chừa đúng chiều cao thật của thanh neo đáy
   }

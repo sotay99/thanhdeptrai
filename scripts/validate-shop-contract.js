@@ -2233,9 +2233,8 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
-// 36) "TRANG CHỦ" trống (đang nâng cấp) — trang AI Image Editor Pro cũ chuyển
-//     hẳn sang module "image-editor-pro" đứng CUỐI menu, hiện cảnh báo nổi tự
-//     ẩn sau 5 giây mỗi lần vào module.
+// 36) Module "image-editor-pro" (trang AI Image Editor Pro cũ, đứng CUỐI
+//     menu) — hiện cảnh báo nổi tự ẩn sau 5 giây mỗi lần vào module.
 // ---------------------------------------------------------------------------
 {
   [
@@ -2248,14 +2247,6 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
 
-  if (/function\s+veModuleTrangChu\s*\(/.test(banNoi)) {
-    fail('Hàm veModuleTrangChu() phải đã đổi tên thành veModuleImageEditorPro() — không còn gắn với module "trang-chu".');
-  }
-  // Module "trang-chu" phải là module CUỐI CÙNG trong MODULE không khớp hàm vẽ
-  // riêng nào — rơi vào veManNangCap() chung ("đang nâng cấp").
-  if (/m\.ma === 'trang-chu'\)\s*return\s+veModule/.test(banNoi)) {
-    fail('Module "trang-chu" không được có hàm vẽ nội dung riêng — phải trống/đang nâng cấp.');
-  }
   // GIAY_HIEN_CANH_BAO_EDITOR phải đúng 5 giây.
   if (!/GIAY_HIEN_CANH_BAO_EDITOR\s*=\s*5;/.test(banNoi)) {
     fail('GIAY_HIEN_CANH_BAO_EDITOR phải bằng 5 (giây).');
@@ -2356,6 +2347,56 @@ if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
   }
   if (!banNoi.includes("ma: 'yeu-cau-tu-van'")) {
     fail("Thiếu mục 'Yêu cầu tư vấn' trong MODULE_ADMIN.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 40) MODULE "TRANG CHỦ" — landingpage thật (không còn rơi vào khung "đang
+//     nâng cấp"): 7 khối quảng bá theo đúng thứ tự đã chốt, hai thanh chạy
+//     chữ vô hạn chứa toàn bộ menu, hiệu ứng trôi-khi-cuộn-tới tách bạch với
+//     cơ chế trôi-khi-vào-module của module "Trọn bộ sản phẩm VIP".
+// ---------------------------------------------------------------------------
+{
+  [
+    [/m\s*&&\s*m\.ma === 'trang-chu'\)\s*return\s+veModuleTrangChu\(\)/, "module trang-chu dẫn đúng tới veModuleTrangChu()"],
+    [/function\s+veModuleTrangChu\s*\(/, "hàm vẽ nội dung Trang chủ"],
+    [/function\s+ganHieuUngTrangChu\s*\(/, "hàm gắn hiệu ứng trôi-khi-cuộn (IntersectionObserver)"],
+    [/function\s+vaoModuleTuTrangChu\s*\(/, "hàm xử lý bấm vào thành phần ở Trang chủ (mở menu rồi nhảy module)"],
+    [/function\s+veMarqueeTrangChu\s*\(/, "hàm vẽ thanh chạy chữ"],
+    [/moMenu\(\);\s*\n\s*moModule\(ma\);/, "bấm vào thành phần Trang chủ: mở menu TRƯỚC rồi mới nhảy module"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Đủ 7 khối theo đúng thứ tự đã chốt.
+  ['khoa-hoc-mien-phi', 'qua-tang-android', 'goi-vip', 'app-vip-pro', 'video-ngan', 'cong-nhan', 'lien-he']
+    .forEach((id) => {
+      if (!banNoi.includes(`id: '${id}'`)) fail(`Thiếu khối "${id}" (hoặc sai thứ tự) ở Trang chủ.`);
+    });
+
+  // Hai khối đầu phải ghi rõ "Miễn phí".
+  if (!/id:\s*'khoa-hoc-mien-phi'[\s\S]{0,200}nhan:\s*'Miễn phí'/.test(banNoi)) {
+    fail('Khối "3 khoá học miễn phí" phải ghi rõ nhãn "Miễn phí".');
+  }
+  if (!/id:\s*'qua-tang-android'[\s\S]{0,200}nhan:\s*'Miễn phí'/.test(banNoi)) {
+    fail('Khối "Quà tặng Android" phải ghi rõ nhãn "Miễn phí".');
+  }
+
+  // Thanh chạy chữ phải chứa toàn bộ MODULE (trừ chính "trang-chu"), không
+  // phải một danh sách con tự chọn.
+  if (!/dsModuleChayChu[\s\S]{0,40}MODULE\.filter/.test(banNoi)) {
+    fail('Thanh chạy chữ phải lấy từ toàn bộ MODULE (dsModuleChayChu), không phải danh sách rút gọn.');
+  }
+
+  // Ảnh đại diện App VIP Pro phải là ảnh tự vẽ riêng (module này trước đó
+  // chưa có ảnh đại diện chung).
+  if (!fs.existsSync(path.join(root, "src/anh/dd-app-vip-pro.svg"))) {
+    fail("Thiếu tệp ảnh src/anh/dd-app-vip-pro.svg.");
+  }
+
+  // Chữ "Shop Thànhđẹptrai.vn" ở thanh tiêu đề phải bấm được để về Trang chủ.
+  if (!/thanh-tieu-de" data-hanh-dong="mo-module" data-module="trang-chu"/.test(banNoi)) {
+    fail('Thanh tiêu đề phải gắn data-hanh-dong="mo-module" data-module="trang-chu" để bấm về Trang chủ.');
   }
 }
 
