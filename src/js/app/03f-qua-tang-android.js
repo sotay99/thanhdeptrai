@@ -12,26 +12,99 @@
           và khách hàng đều y hệt bên module gốc.
 
        2-5. PicsArt, Remini, SnapEdit, XingTu — KHÔNG có mã sản phẩm riêng,
-          KHÔNG giá, KHÔNG đơn hàng, KHÔNG email nào cả. Dòng giá vẫn giữ,
-          hiện chữ "MIỄN PHÍ" (giống cách sp4/sp5 — hai khoá học — hiển thị).
-          Nút "Xem chi tiết sản phẩm" mở bảng rỗng (nội dung để chủ shop thiết
-          kế sau). Nút cuối thẻ là "Sử dụng sản phẩm này", mở bảng "Hướng dẫn
-          sử dụng" — DÙNG CHUNG một bài hướng dẫn cài APK tổng quát (xem
-          NOI_DUNG_HUONG_DAN_QUA_TANG), chỉ đổi tên app. Bảng đó có nút cuối
-          "Tải file APK về máy và cài đặt" dẫn tới link MediaFire của đúng sản
-          phẩm — link KHÔNG để cứng trong mã nguồn, đọc từ nhánh Firebase công
-          khai quaTangAndroid (admin tự sửa trong /admin, xem O_QUA_TANG_ANDROID
-          ở PHẦN 04B), tái dùng NGUYÊN cơ chế "một ô, một nút Lưu".
+          KHÔNG giá, KHÔNG đơn hàng, KHÔNG email nào cả. Tên hiện trên thẻ
+          LUÔN theo mẫu "<Tên app> - VIP Đã có bản quyền trọn đời". Dòng giá
+          vẫn giữ, hiện chữ "MIỄN PHÍ" (giống cách sp4/sp5 — hai khoá học —
+          hiển thị).
+          Nút "Xem chi tiết sản phẩm" mở bảng mô tả viết riêng cho từng app —
+          tái dùng NGUYÊN cơ chế dựng bảng mô tả sản phẩm của PHẦN 01B
+          (veOAnh/veKhoiMoTa): ảnh "đã quét an toàn" ở ĐẦU bài (ghép ngang
+          hàng với khối chữ đầu tiên, giống hệt sp1), các khối tính năng VIP
+          mở khoá bên dưới, KHÔNG có khối cam kết cuối bài (sp2-5 không mua
+          bán gì nên không cam kết giao hàng/hoàn tiền).
+          Nút cuối thẻ là "Sử dụng sản phẩm này", mở bảng "Hướng dẫn sử dụng"
+          — DÙNG CHUNG một bài hướng dẫn cài APK tổng quát, chỉ đổi tên app.
+          Bảng đó có nút cuối "Tải file APK về máy và cài đặt" dẫn tới link
+          MediaFire của đúng sản phẩm — link KHÔNG để cứng trong mã nguồn, đọc
+          từ nhánh Firebase công khai quaTangAndroid (admin tự sửa trong
+          /admin, xem O_QUA_TANG_ANDROID ở PHẦN 04B), tái dùng NGUYÊN cơ chế
+          "một ô, một nút Lưu".
+
+       Ảnh "đã quét an toàn" của sp1 (Lightroom) KHÔNG định nghĩa ở đây — nó
+       dán vào CUỐI bài mô tả sp1 ở PHẦN 01B (ANH_CUOI_MO_TA), áp dụng chung
+       cho cả module này lẫn module "Trọn bộ sản phẩm VIP" vì hai nơi gọi
+       chung một hàm moModalChiTietSanPham('sp1').
 
      Ảnh đại diện 2-5 tái dùng ẢNH ĐÃ CẮT của module "Mua App VIP Pro"
      (PHẦN 03E) — XingTu mượn ảnh Hypic vì không có ảnh riêng.
      =========================================================================== */
 
+  // ten: hiện trên THẺ ở lưới — luôn theo mẫu "<Tên app> - VIP Đã có bản
+  // quyền trọn đời". tenPhienBan: hiện làm TIÊU ĐỀ bảng "Xem chi tiết sản
+  // phẩm" — ghi rõ số phiên bản, khác với ten ở thẻ.
+  // anh: ảnh đại diện ở thẻ (tái dùng ảnh đã cắt của module App VIP Pro).
+  // anhChiTiet: ảnh lớn "đã quét an toàn" đứng đầu bảng chi tiết.
+  // khoi: nội dung bảng chi tiết — khối đầu tiên LUÔN kiểu 'khau-hieu' (ghép
+  // ngang hàng với anhChiTiet), các khối sau dựng thường, KHÔNG có khối cam
+  // kết ở cuối (khác sp1 — sp1 có mua bán thật nên giữ cam kết).
   const QUA_TANG_ANDROID = [
-    { ma: 'qt-picsart',  ten: 'PicsArt',  anh: '/assets/anh/app-vip-picsart.jpg'  },
-    { ma: 'qt-remini',   ten: 'Remini',   anh: '/assets/anh/app-vip-remini.jpg'   },
-    { ma: 'qt-snapedit', ten: 'SnapEdit', anh: '/assets/anh/app-vip-snapedit.jpg' },
-    { ma: 'qt-xingtu',   ten: 'XingTu',   anh: '/assets/anh/app-vip-hypic.jpg'    }
+    { ma: 'qt-picsart', tenApp: 'PicsArt', ten: 'PicsArt - VIP Đã có bản quyền trọn đời', tenPhienBan: 'PicsArt_v29.1.4',
+      anh: '/assets/anh/app-vip-picsart.jpg', anhChiTiet: '/assets/anh/qt-antoan-picsart.jpg',
+      khoi: [
+        { kieu: 'khau-hieu',
+          chu: 'Studio chỉnh ảnh AI mạnh nhất trong túi bạn — không quảng cáo, không watermark, không giới hạn. 🎨✨' },
+        { kieu: 'muc', tieuDe: '🔓 Những tính năng VIP Pro được mở khoá', y: [
+          '🚫 <strong>Xoá sạch quảng cáo và watermark PicsArt</strong> khi xuất ảnh — tải về sạch 100%, không logo che góc.',
+          '🤖 <strong>Bộ công cụ AI cao cấp:</strong> xoá và thay thế vật thể bằng AI (Magic Replace), mở rộng khung ảnh bằng AI (Magic Expand), tạo phông nền bằng AI.',
+          '✂️ <strong>Tách nền tự động không giới hạn lượt</strong> — độ chính xác cao, không cần tự tô viền tay.',
+          '🎁 Mở khoá <strong>toàn bộ kho sticker, phông nền, font chữ cao cấp</strong> — hàng chục nghìn mẫu.',
+          '📤 <strong>Xuất ảnh độ phân giải gốc</strong>, không bị nén hay giảm chất lượng như bản miễn phí.'
+        ] }
+      ] },
+    { ma: 'qt-remini', tenApp: 'Remini', ten: 'Remini - VIP Đã có bản quyền trọn đời', tenPhienBan: 'Remini-v3.7.1333',
+      anh: '/assets/anh/app-vip-remini.jpg', anhChiTiet: '/assets/anh/qt-antoan-remini.jpg',
+      khoi: [
+        { kieu: 'khau-hieu',
+          chu: 'Phục chế ảnh mờ, cũ, vỡ nét thành ảnh sắc nét như chụp bằng máy ảnh chuyên nghiệp — chỉ trong một chạm. 📸✨' },
+        { kieu: 'muc', tieuDe: '🔓 Những tính năng VIP Pro được mở khoá', y: [
+          '🚫 <strong>Xoá sạch quảng cáo và watermark Remini</strong> trên mọi ảnh, video xuất ra.',
+          '✨ <strong>Nâng cấp chất lượng ảnh bằng AI</strong> (AI Photo Enhancer) không giới hạn số lượt, không phải chờ quảng cáo giữa mỗi lần dùng.',
+          '🎬 <strong>Video Enhancer AI</strong> — làm nét lại video cũ, mờ, vỡ khung hình.',
+          '🎭 Mở khoá toàn bộ <strong>bộ lọc AI cao cấp</strong>: AI Avatar, Hollywood Filter, và các AI Filter thế hệ mới.',
+          '📤 <strong>Xuất ảnh/video ở độ phân giải tối đa</strong>, không giới hạn như bản miễn phí.'
+        ] }
+      ] },
+    { ma: 'qt-snapedit', tenApp: 'SnapEdit', ten: 'SnapEdit - VIP Đã có bản quyền trọn đời', tenPhienBan: 'SnapEdit-v7.6.6',
+      anh: '/assets/anh/app-vip-snapedit.jpg', anhChiTiet: '/assets/anh/qt-antoan-snapedit.jpg',
+      khoi: [
+        { kieu: 'khau-hieu',
+          chu: 'Xoá nền, xoá người thừa, chỉnh ảnh bằng AI chỉ trong vài giây — không cần biết Photoshop. 🪄' },
+        { kieu: 'muc', tieuDe: '🔓 Những tính năng VIP Pro được mở khoá', y: [
+          '🚫 <strong>Xoá sạch quảng cáo và watermark SnapEdit</strong> khi xuất ảnh.',
+          '✂️ <strong>Xoá nền ảnh (Remove Background) không giới hạn lượt</strong>, độ chính xác cao, tách cả tóc và chi tiết nhỏ.',
+          '🪄 <strong>Công cụ AI xoá vật thể, người lạ, rác trong ảnh</strong> (Remove Object) không giới hạn.',
+          '✨ <strong>AI Photo Enhancer</strong> nâng cấp chất lượng ảnh mờ, ảnh cũ.',
+          '📤 <strong>Xuất ảnh full độ phân giải gốc</strong>, không giới hạn số lượt chỉnh sửa mỗi ngày.'
+        ] }
+      ] },
+    { ma: 'qt-xingtu', tenApp: 'XingTu', ten: 'XingTu - VIP Đã có bản quyền trọn đời', tenPhienBan: 'XingTu_v7.0.0_Việt Hoá',
+      anh: '/assets/anh/app-vip-hypic.jpg', anhChiTiet: '/assets/anh/qt-antoan-xingtu.jpg',
+      khoi: [
+        { kieu: 'khau-hieu',
+          chu: 'App làm đẹp ảnh chân dung hàng đầu Trung Quốc (cùng nhà phát triển với CapCut) — bản Việt hoá đầy đủ, dễ dùng. 💄' },
+        { kieu: 'luu-y', tieuDe: 'ℹ️ Lưu ý về phiên bản', y: [
+          'Đây là phiên bản XingTu <strong>đã ra mắt được một thời gian</strong> (không phải bản mới nhất), nhưng vẫn ' +
+          '<strong>dùng thoải mái và ổn định</strong> cho mọi nhu cầu chỉnh sửa quen thuộc: chỉnh mặt, trang điểm, chỉnh ' +
+          'vóc dáng cơ thể... app chạy mượt, không lỗi vặt.'
+        ] },
+        { kieu: 'muc', tieuDe: '🔓 Những tính năng VIP được mở khoá', y: [
+          '💄 <strong>Trang điểm AI</strong> — tô son, kẻ mắt, làm mịn da tự nhiên chỉ bằng một chạm.',
+          '🧍 <strong>Chỉnh dáng người (Bodyedit)</strong> — thon gọn, cao ráo, chỉnh tỷ lệ cơ thể tự nhiên, không méo nền.',
+          '😊 <strong>Chỉnh mặt chi tiết</strong> — mắt to hơn, mũi cao hơn, cằm V-line... tinh chỉnh từng chi tiết khuôn mặt.',
+          '🎨 Mở khoá <strong>kho filter, phông nền, bộ lọc thời trang cao cấp</strong> cập nhật liên tục.',
+          '🚫 Xoá quảng cáo, mở khoá toàn bộ công cụ chỉnh sửa nâng cao đang bị khoá ở bản thường.'
+        ] }
+      ] }
   ];
 
   // Link MediaFire của từng app — admin khai trong /admin, tái dùng cơ chế
@@ -113,15 +186,34 @@
       '</article>';
   }
 
-  // "Xem chi tiết sản phẩm" của sp2-5: nội dung để chủ shop thiết kế sau,
-  // bảng chỉ dựng khung rỗng với một lời nhắc tạm.
+  // "Xem chi tiết sản phẩm" của sp2-5 — tái dùng NGUYÊN cơ chế dựng bảng mô tả
+  // của PHẦN 01B (veOAnh/veKhoiMoTa): ảnh lớn ghép ngang hàng với khối chữ đầu
+  // tiên, các khối sau trôi vào lần lượt. Khác sp1 ở chỗ KHÔNG có khối cam kết
+  // cuối bài (sp2-5 không mua bán gì nên không cam kết giao hàng/hoàn tiền).
+  function veNoiDungChiTietQuaTang(q){
+    const danhSach = q.khoi || [];
+    if (!danhSach.length) return '';
+    return '' +
+      '<div class="hang-anh-chu troi-ngang" style="animation-delay:0s">' +
+        veOAnh(q.anhChiTiet, 'Ảnh minh hoạ: ' + q.tenPhienBan) + veKhoiMoTa(danhSach[0], 0, true) +
+      '</div>' +
+      danhSach.slice(1).map(function(k, i){ return veKhoiMoTa(k, i + 1); }).join('');
+  }
+
   function moModalChiTietQuaTang(ma){
     const q = timQuaTangAndroid(ma);
     if (!q) return;
     moModal({
       ma: 'qt-chi-tiet-' + ma,
-      tieuDe: escapeHtml(q.ten),
-      than: '<p class="loi-nhan-hang">Nội dung chi tiết đang được cập nhật, mời bạn quay lại bảng này sau nhé.</p>',
+      tieuDe: 'Chi tiết sản phẩm',
+      than: '' +
+        '<div class="mo-ta-sp">' +
+          '<div class="mo-ta-dinh troi-ngang">' +
+            '<h3>' + escapeHtml(q.tenPhienBan) + '</h3>' +
+            '<p class="hang-gia"><span class="gia-chot" data-chu-cuoi="MIỄN PHÍ">MIỄN PHÍ</span></p>' +
+          '</div>' +
+          veNoiDungChiTietQuaTang(q) +
+        '</div>',
       day: '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>'
     });
   }
@@ -137,7 +229,7 @@
     moModal({
       ma: 'qt-huong-dan-' + ma,
       tieuDe: 'Hướng dẫn sử dụng',
-      than: '<div class="noi-dung-huong-dan">' + noiDungHuongDanQuaTang(q.ten) + '</div>',
+      than: '<div class="noi-dung-huong-dan">' + noiDungHuongDanQuaTang(q.tenApp) + '</div>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
         (link

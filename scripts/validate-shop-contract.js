@@ -1914,9 +1914,13 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   });
 
   // Đủ 4 app, đúng tên — sửa chữ thì cập nhật mẫu dưới đây theo CLAUDE.md,
-  // đừng xoá mục.
+  // đừng xoá mục. tenApp là tên gọn (dùng trong bài hướng dẫn cài đặt); ten
+  // trên thẻ luôn kèm hậu tố "- VIP Đã có bản quyền trọn đời".
   ['PicsArt', 'Remini', 'SnapEdit', 'XingTu'].forEach((ten) => {
-    if (!banNoi.includes(`ten: '${ten}'`)) fail(`Thiếu app "${ten}" trong QUA_TANG_ANDROID.`);
+    if (!banNoi.includes(`tenApp: '${ten}'`)) fail(`Thiếu app "${ten}" trong QUA_TANG_ANDROID.`);
+    if (!banNoi.includes(`ten: '${ten} - VIP Đã có bản quyền trọn đời'`)) {
+      fail(`Tên thẻ của app "${ten}" phải theo mẫu "<Tên app> - VIP Đã có bản quyền trọn đời".`);
+    }
   });
 
   // Ảnh đại diện 4 app phải TÁI SỬ DỤNG ảnh đã cắt của module App VIP Pro

@@ -36,6 +36,14 @@
   // Ảnh minh hoạ kho khoá học, dùng cho bảng "Đặc quyền".
   const ANH_DAC_QUYEN = '/assets/anh/dac-quyen.jpg';
 
+  // Ảnh bằng chứng "đã quét an toàn" (Google Play Protect) dán ở CUỐI bảng mô
+  // tả — hiện chỉ sp1 (Lightroom) có, dùng chung cho cả module "Trọn bộ sản
+  // phẩm VIP" lẫn "Quà tặng dành cho thiết bị Android" vì hai nơi gọi chung
+  // một hàm moModalChiTietSanPham('sp1').
+  const ANH_CUOI_MO_TA = {
+    sp1: '/assets/anh/hd-sp1-baomat.jpg'
+  };
+
   // Ảnh ĐẠI DIỆN vuông 1:1 hiện ở đầu mỗi thẻ trong lưới sản phẩm — khác với
   // ANH_SAN_PHAM ở trên (ảnh lớn trong bảng mô tả chi tiết). Mã nào chưa khai
   // thì thẻ dựng khung rỗng giữ chỗ, không vỡ bố cục.
@@ -349,6 +357,13 @@
     const tre = trongHang ? '' : ' style="animation-delay:' + (thuTu * TRE_MOI_KHOI_MO_TA).toFixed(2) + 's"';
     const dau = '<section class="khoi-mo-ta khoi-' + khoi.kieu + (trongHang ? '' : ' troi-ngang') + '"' + tre + '>';
     let than = '';
+    if (khoi.kieu === 'anh-rong') {
+      // Khối ảnh đứng riêng, không ghép ngang với chữ — dùng để dán bằng
+      // chứng (vd: ảnh "đã quét an toàn") vào CUỐI bảng mô tả.
+      than = veOAnh(khoi.anh, khoi.moTa || '');
+      if (khoi.chu) than += '<p>' + khoi.chu + '</p>';
+      return dau + than + '</section>';
+    }
     if (khoi.tieuDe) than += '<h4>' + khoi.tieuDe + '</h4>';
     if (khoi.chu) than += '<p>' + khoi.chu + '</p>';
     if (khoi.y && khoi.y.length) {
@@ -368,6 +383,11 @@
     if (mt && mt.khauHieu) danhSach.push({ kieu: 'khau-hieu', chu: mt.khauHieu });
     if (mt && mt.khoi) mt.khoi.forEach(function(k){ danhSach.push(k); });
     danhSach.push({ kieu: 'cam-ket', tieuDe: '🤝 Cam kết của shop dành cho bạn', y: CAM_KET_CHUNG });
+    if (ANH_CUOI_MO_TA[sp.ma]) {
+      danhSach.push({ kieu: 'anh-rong', anh: ANH_CUOI_MO_TA[sp.ma],
+        moTa: 'Google Play Protect đã quét và xác nhận app an toàn',
+        chu: '🛡️ App đã được <strong>Google Play Protect quét và xác nhận an toàn</strong> — không virus, không rủi ro, không cước phí ẩn.' });
+    }
 
     const anh = ANH_SAN_PHAM[sp.ma];
     if (!anh || !danhSach.length) return danhSach.map(function(k, i){ return veKhoiMoTa(k, i); }).join('');

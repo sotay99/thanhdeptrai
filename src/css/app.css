@@ -942,6 +942,12 @@
 .khoi-cam-ket h4 { color: var(--la-dam-net); }
 .khoi-cam-ket li { border-top-color: rgba(45, 157, 95, .18); }
 
+/* Khối ảnh đứng riêng (bằng chứng "đã quét an toàn") — căn giữa, không trải
+   hết bề ngang bảng mô tả như hai cột ảnh+chữ ở đầu bài. */
+.khoi-anh-rong { text-align: center; }
+.khoi-anh-rong .anh-san-pham { flex: none; width: 100%; max-width: 280px; margin: 0 auto 10px; }
+.khoi-anh-rong p { text-align: left; }
+
 @media (max-width: 560px) {
   .khoi-mo-ta { padding: 12px 13px; }
   .mo-ta-dinh .gia-chot { font-size: 19px; }
