@@ -33,6 +33,8 @@
   background: linear-gradient(90deg, rgba(49, 168, 255, 0), var(--xanh) 22%, rgba(49, 168, 255, .25) 60%, rgba(49, 168, 255, 0));
 }
 
+.thanh-tieu-de .logo-shop { flex: 0 0 auto; border-radius: 8px; display: block; }
+
 .thanh-tieu-de .ten-shop {
   font-size: 16px;
   font-weight: 800;

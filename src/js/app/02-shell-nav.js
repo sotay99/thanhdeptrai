@@ -430,24 +430,112 @@
     });
   }
 
+  // Dòng "Liên hệ" đứng cuối cả hai bảng văn bản — bấm là mở module Liên hệ
+  // và Thông tin về Shop (chồng thêm một modal nữa lên trên, không đóng bảng
+  // đang đọc — đóng bảng trên cùng là quay lại y nguyên vị trí đang đọc).
+  function dongLienHeCuoiVanBan(){
+    return '<p class="dong-lien-he-cuoi">Mọi thắc mắc khác, xin liên hệ: ' +
+      '<button type="button" class="nut-lien-ket-module" data-hanh-dong="mo-module" data-module="lien-he">' +
+      'Liên hệ và Thông tin về Shop</button>.</p>';
+  }
+
+  function moModalDieuKhoan(m){
+    moModal({
+      ma: 'van-ban-dieu-khoan',
+      tieuDe: m.ten,
+      than: '' +
+        '<div class="noi-dung-van-ban">' +
+          '<p>Việc bạn truy cập và mua hàng tại <strong>thanhdeptrai.vn</strong> đồng nghĩa với việc bạn đã đọc, ' +
+            'hiểu và đồng ý với các điều khoản dưới đây.</p>' +
+
+          '<h3>1. Sản phẩm số và hình thức giao hàng</h3>' +
+          '<p>Toàn bộ sản phẩm trên web (preset, phần mềm, khoá học...) đều là <strong>sản phẩm số</strong>, giao ' +
+            'tự động qua email ngay sau khi nhận được thanh toán, hoặc qua tin nhắn Zalo/SMS nếu bạn không để lại ' +
+            'email. Mỗi khách nhận một đường dẫn lấy hàng riêng, không dùng chung với ai khác.</p>' +
+
+          '<h3>2. Giá bán và thanh toán</h3>' +
+          '<p>Giá hiển thị trên web là giá cuối cùng khách phải trả. Thanh toán bằng hình thức chuyển khoản qua mã ' +
+            'QR; shop <strong>không lưu và không yêu cầu</strong> thông tin thẻ hay tài khoản ngân hàng của bạn.</p>' +
+
+          '<h3>3. Chính sách hoàn tiền</h3>' +
+          '<p>Shop hoàn tiền <strong>100%</strong> nếu bạn không hài lòng trong <strong>15 ngày đầu sử dụng</strong>, ' +
+            'không hỏi lý do dài dòng. Gửi yêu cầu qua mục ' +
+            '<button type="button" class="nut-lien-ket-module" data-hanh-dong="mo-module" data-module="hoan-tien">' +
+            'Yêu cầu hoàn tiền</button> ở menu bên trái.</p>' +
+
+          '<h3>4. Quyền sử dụng sản phẩm</h3>' +
+          '<p>Sản phẩm bạn mua chỉ dùng cho <strong>mục đích cá nhân</strong>. Tuyệt đối không chia sẻ, bán lại, ' +
+            'hay phân phối dưới bất kỳ hình thức nào cho bên thứ ba.</p>' +
+
+          '<h3>5. Giới hạn trách nhiệm</h3>' +
+          '<p>Một số sản phẩm liên quan tới phần mềm của bên thứ ba (Adobe Lightroom, Photoshop...). Shop không ' +
+            'chịu trách nhiệm về lỗi hay thay đổi phát sinh từ chính các ứng dụng gốc đó — những vấn đề thuộc về ' +
+            'preset/khoá học do shop cung cấp, shop luôn hỗ trợ tận nơi.</p>' +
+
+          '<h3>6. Thay đổi điều khoản</h3>' +
+          '<p>Shop có quyền cập nhật các điều khoản này bất cứ lúc nào. Bản mới nhất luôn được hiển thị tại đúng ' +
+            'mục này.</p>' +
+
+          '<h3>7. Liên hệ</h3>' +
+          dongLienHeCuoiVanBan() +
+        '</div>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
+    });
+  }
+
+  function moModalBaoMat(m){
+    moModal({
+      ma: 'van-ban-bao-mat',
+      tieuDe: m.ten,
+      than: '' +
+        '<div class="noi-dung-van-ban">' +
+          '<p>Shop <strong>thanhdeptrai.vn</strong> tôn trọng quyền riêng tư của khách hàng. Chính sách dưới đây ' +
+            'giải thích rõ chúng tôi thu thập gì, dùng vào việc gì, và bảo vệ thông tin của bạn ra sao.</p>' +
+
+          '<h3>1. Thông tin thu thập</h3>' +
+          '<p>Chỉ khi bạn chủ động đặt mua hàng hoặc gửi yêu cầu hoàn tiền, shop mới ghi nhận: email, số Zalo/điện ' +
+            'thoại, và nội dung bạn tự nhập vào biểu mẫu. Ngoài ra, trình duyệt của bạn tự sinh một ' +
+            '<strong>mã thiết bị ngẫu nhiên</strong> (lưu cục bộ, không định danh cá nhân) để nhận đúng hàng đã ' +
+            'mua. Shop <strong>không bao giờ</strong> thu thập mật khẩu hay thông tin thẻ/tài khoản ngân hàng của ' +
+            'bạn.</p>' +
+
+          '<h3>2. Mục đích sử dụng</h3>' +
+          '<p>Thông tin thu thập được chỉ dùng để <strong>giao sản phẩm, hỗ trợ và liên hệ khi cần thiết</strong> ' +
+            '— không dùng vào bất kỳ mục đích nào khác.</p>' +
+
+          '<h3>3. Lưu trữ và bảo mật</h3>' +
+          '<p>Dữ liệu được lưu trên Firebase Realtime Database của Google, chỉ tài khoản đã xác thực của chủ shop ' +
+            'mới truy cập được — khách hàng khác hay người lạ không thể đọc được thông tin của bạn.</p>' +
+
+          '<h3>4. Chia sẻ với bên thứ ba</h3>' +
+          '<p>Shop <strong>không bán, không chia sẻ</strong> thông tin của bạn cho bất kỳ bên nào, trừ khi pháp ' +
+            'luật yêu cầu.</p>' +
+
+          '<h3>5. Quyền của khách hàng</h3>' +
+          '<p>Bạn có quyền yêu cầu xem, chỉnh sửa hoặc xoá thông tin của mình bất cứ lúc nào — chỉ cần liên hệ ' +
+            'trực tiếp với shop.</p>' +
+
+          '<h3>6. Lưu trữ cục bộ trên trình duyệt</h3>' +
+          '<p>Web chỉ lưu đúng một mã thiết bị ngẫu nhiên trong trình duyệt của bạn để nhận đúng sản phẩm đã mua — ' +
+            'đây <strong>không phải</strong> cookie theo dõi quảng cáo hay thu thập hành vi duyệt web.</p>' +
+
+          '<h3>7. Thay đổi chính sách</h3>' +
+          '<p>Chính sách này có thể được cập nhật theo thời gian. Bản mới nhất luôn hiển thị tại đúng mục này.</p>' +
+
+          '<h3>8. Liên hệ</h3>' +
+          dongLienHeCuoiVanBan() +
+        '</div>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
+    });
+  }
+
   function moModalVanBan(m){
     if (m.ma === 'dac-quyen') { moModalDacQuyen(m); return; }
     if (m.ma === 'lien-he') { moModalLienHe(m); return; }
     if (m.ma === 'cong-nhan') { moModalCongNhan(m); return; }
     if (m.ma === 'hoan-tien') { moModalHoanTien(m); return; }
-    // Hai mục còn lại ("Điều khoản sử dụng", "Bảo mật") là văn bản sắp viết.
-    moModal({
-      ma: 'van-ban-' + m.ma,
-      tieuDe: m.ten,
-      than: '' +
-        '<div class="noi-dung-van-ban" style="text-align:center">' +
-          '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">🛠️</p>' +
-          '<p><strong>Nội dung đang được nâng cấp.</strong></p>' +
-          '<p style="color:var(--chu-diu);margin-bottom:0">Phần “' + escapeHtml(m.ten) +
-          '” sẽ sớm sẵn sàng. Trong lúc chờ, mọi thắc mắc xin liên hệ trực tiếp với shop.</p>' +
-        '</div>',
-      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
-    });
+    if (m.ma === 'dieu-khoan') { moModalDieuKhoan(m); return; }
+    if (m.ma === 'bao-mat') { moModalBaoMat(m); return; }
   }
 
   // Hai bộ khoá học không bán rời mà là quà tặng, nên bảng chi tiết của chúng
@@ -563,6 +651,7 @@
       '</button>' +
       veMenuTrai() +
       '<header class="thanh-tieu-de">' +
+        '<img class="logo-shop" src="/assets/anh/logo.svg" width="30" height="30" alt="" aria-hidden="true">' +
         '<h1 class="ten-shop">Shop Thànhđẹptrai<span class="cham-xanh">.vn</span></h1>' +
       '</header>' +
       '<main class="khung-noi-dung' + (coThanhDay ? '' : ' khong-thanh-day') + '">' +

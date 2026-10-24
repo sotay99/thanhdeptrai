@@ -530,9 +530,25 @@
     return TRANG_CHU_HTML;
   }
 
+  // Favicon gắn bằng JS lúc chạy thay vì <link> tĩnh trong index.html — thẻ
+  // <link> tĩnh sẽ bị scripts/build-static.js đếm nhầm vào "4 tham chiếu nội
+  // bộ theo thứ tự nạp" của index.html (CSS nền/CSS app/Firebase/app.js) và
+  // làm build báo lỗi. Đường dẫn ảnh TRẦN này vẫn được dungAnh() ở build-static
+  // thay bằng tên có vân tay như mọi ảnh khác, chỉ là thay NGAY TRONG CHUỖI JS
+  // chứ không phải trong index.html.
+  function ganFavicon(){
+    if (!document.head) return;
+    const the = document.createElement('link');
+    the.rel = 'icon';
+    the.type = 'image/svg+xml';
+    the.href = '/assets/anh/logo.svg';
+    document.head.appendChild(the);
+  }
+
   // ------------------------------------------------------------- KHỞI ĐỘNG
 
   function boot(){
+    ganFavicon();
     state.trang = docDuongDan();
     state.nhanHang.maNhanHang = docMaNhanHangTrenDuongDan();
     state.module = docHash();

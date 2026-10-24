@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#1d2430"/>
+    <stop offset="1" stop-color="#0d1015"/>
+  </linearGradient>
+  <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#31a8ff"/>
+    <stop offset=".55" stop-color="#8b5cf6"/>
+    <stop offset="1" stop-color="#ff5a7a"/>
+  </linearGradient>
+</defs>
+<rect width="100" height="100" rx="22" fill="url(#bg)"/>
+<!-- Chữ T cách điệu: thanh ngang là một "thanh trượt chỉnh màu", núm tròn
+     ở đầu thanh trượt chính là điểm bắt đầu nét dọc — gộp "chữ T" (Thành)
+     với hình ảnh chỉnh màu/chỉnh ảnh là nghề cốt lõi của shop. -->
+<rect x="22" y="26" width="56" height="7" rx="3.5" fill="url(#grad)"/>
+<circle cx="34" cy="29.5" r="6.5" fill="#0d1015"/>
+<circle cx="34" cy="29.5" r="4.6" fill="url(#grad)"/>
+<rect x="46.5" y="26" width="7" height="48" rx="3.5" fill="url(#grad)"/>
+</svg>

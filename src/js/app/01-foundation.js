@@ -90,8 +90,8 @@
     { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: true  },
     { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: true  },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: true  },
-    { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
-    { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false },
+    { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: true  },
+    { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: true  },
     // Trang AI Image Editor Pro - Layers trước đây là nội dung của module
     // "Trang chủ" (ma: 'trang-chu') — nay "Trang chủ" trống (đang nâng cấp),
     // còn nguyên trang trình chỉnh sửa chuyển sang module riêng này, đứng

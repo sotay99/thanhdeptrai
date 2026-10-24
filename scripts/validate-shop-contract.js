@@ -2264,6 +2264,50 @@ if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
 }
 
 // ---------------------------------------------------------------------------
+// 38) MODULE "ĐIỀU KHOẢN SỬ DỤNG VÀ ĐIỀU KIỆN" / "BẢO MẬT VÀ QUYỀN RIÊNG TƯ"
+//     — nội dung đầy đủ (không còn khung "đang nâng cấp"), mỗi bài kết thúc
+//     bằng link mở module Liên hệ. Logo shop gắn ở thanh tiêu đề + favicon,
+//     gắn bằng JS (không phải <link> tĩnh trong index.html).
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'dieu-khoan',[\s\S]{0,200}sanSang:\s*true/, "module Điều khoản đã bật (sanSang: true)"],
+    [/ma:\s*'bao-mat',[\s\S]{0,200}sanSang:\s*true/, "module Bảo mật đã bật (sanSang: true)"],
+    [/function\s+moModalDieuKhoan\s*\(/, "hàm mở modal Điều khoản sử dụng"],
+    [/function\s+moModalBaoMat\s*\(/, "hàm mở modal Bảo mật và quyền riêng tư"],
+    [/function\s+dongLienHeCuoiVanBan\s*\(/, "hàm dựng dòng Liên hệ cuối bài, dùng chung cho cả hai modal"],
+    [/function\s+ganFavicon\s*\(/, "hàm gắn favicon bằng JS lúc chạy"],
+    [/the\.href\s*=\s*'\/assets\/anh\/logo\.svg'/, "favicon trỏ đúng logo.svg"],
+    [/class="logo-shop" src="\/assets\/anh\/logo\.svg"/, "logo hiện ở thanh tiêu đề, dùng ĐÚNG tệp với favicon"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // KHÔNG được có <link rel="icon"> TĨNH trong index.html — sẽ bị
+  // build-static.js đếm nhầm vào "4 tham chiếu nội bộ" và báo lỗi build.
+  const indexHtml = doc("index.html");
+  if (/<link[^>]*rel=["']icon["']/i.test(indexHtml)) {
+    fail('index.html không được có thẻ <link rel="icon"> tĩnh — favicon phải gắn bằng JS (ganFavicon).');
+  }
+
+  // Mỗi bài phải đủ các mục đã chốt trong dàn ý, không được rút gọn.
+  ['Sản phẩm số và hình thức giao hàng', 'Giá bán và thanh toán', 'Chính sách hoàn tiền',
+    'Quyền sử dụng sản phẩm', 'Giới hạn trách nhiệm', 'Thay đổi điều khoản']
+    .forEach((muc) => {
+      if (!banNoi.includes(muc)) fail(`Điều khoản sử dụng thiếu mục "${muc}".`);
+    });
+  ['Thông tin thu thập', 'Mục đích sử dụng', 'Lưu trữ và bảo mật', 'Chia sẻ với bên thứ ba',
+    'Quyền của khách hàng', 'Lưu trữ cục bộ trên trình duyệt', 'Thay đổi chính sách']
+    .forEach((muc) => {
+      if (!banNoi.includes(muc)) fail(`Bảo mật và quyền riêng tư thiếu mục "${muc}".`);
+    });
+
+  if (!banNoi.includes('/assets/anh/logo.svg')) {
+    fail('Thiếu tệp logo /assets/anh/logo.svg.');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
