@@ -64,7 +64,7 @@ var WEB_SHOP = 'thanhdeptrai.vn';
  * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
  * Version: New version → Deploy.
  */
-var PHIEN_BAN = '2026-10-24 · HoanTien+TuVan';
+var PHIEN_BAN = '2026-10-24 · ViModuleRieng';
 
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
@@ -636,8 +636,23 @@ function guiHangChoDonDaXacNhan() {
     // Báo yêu cầu "Hoàn tiền" TRƯỚC — module đó không có đơn hàng nào ở
     // layDonChoGui() nên phải xử lý riêng, và đặt ở đây để return sớm bên
     // dưới (không có đơn nào chờ gửi) không bao giờ bỏ sót nó.
-    xuLyYeuCauHoanTien(emailShop);
-    xuLyYeuCauTuVan(emailShop);
+    //
+    // MỖI MODULE MỘT TRY/CATCH RIÊNG — lỗi thật đã xảy ra: thiếu .indexOn
+    // cho nhánh yeuCauHoanTien trên Firebase làm xuLyYeuCauHoanTien() ném
+    // lỗi không ai bắt, kéo sập LUÔN cả lượt gửi đơn hàng thật bên dưới dù
+    // lỗi chẳng liên quan gì tới đơn hàng — khách đã trả tiền mà không nhận
+    // được email giao hàng. Giờ lỗi ở module nào chỉ dừng module đó, các
+    // module còn lại (và quan trọng nhất: đơn hàng thật) vẫn chạy bình thường.
+    try {
+      xuLyYeuCauHoanTien(emailShop);
+    } catch (loiHoanTien) {
+      Logger.log('Lỗi khi xử lý Yêu cầu hoàn tiền (không ảnh hưởng các phần khác): ' + loiHoanTien.message);
+    }
+    try {
+      xuLyYeuCauTuVan(emailShop);
+    } catch (loiTuVan) {
+      Logger.log('Lỗi khi xử lý Yêu cầu tư vấn (không ảnh hưởng các phần khác): ' + loiTuVan.message);
+    }
 
     var danhSach = layDonChoGui();
     if (!danhSach.length) return;

@@ -64,7 +64,7 @@ var WEB_SHOP = 'thanhdeptrai.vn';
  * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
  * Version: New version → Deploy.
  */
-var PHIEN_BAN = '2026-10-24 \u00b7 HoanTien+TuVan';
+var PHIEN_BAN = '2026-10-24 \u00b7 ViModuleRieng';
 
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
@@ -636,8 +636,23 @@ function guiHangChoDonDaXacNhan() {
     // Báo yêu cầu "Hoàn tiền" TRƯỚC — module đó không có đơn hàng nào ở
     // layDonChoGui() nên phải xử lý riêng, và đặt ở đây để return sớm bên
     // dưới (không có đơn nào chờ gửi) không bao giờ bỏ sót nó.
-    xuLyYeuCauHoanTien(emailShop);
-    xuLyYeuCauTuVan(emailShop);
+    //
+    // MỖI MODULE MỘT TRY/CATCH RIÊNG — lỗi thật đã xảy ra: thiếu .indexOn
+    // cho nhánh yeuCauHoanTien trên Firebase làm xuLyYeuCauHoanTien() ném
+    // lỗi không ai bắt, kéo sập LUÔN cả lượt gửi đơn hàng thật bên dưới dù
+    // lỗi chẳng liên quan gì tới đơn hàng — khách đã trả tiền mà không nhận
+    // được email giao hàng. Giờ lỗi ở module nào chỉ dừng module đó, các
+    // module còn lại (và quan trọng nhất: đơn hàng thật) vẫn chạy bình thường.
+    try {
+      xuLyYeuCauHoanTien(emailShop);
+    } catch (loiHoanTien) {
+      Logger.log('L\u1ed7i khi x\u1eed l\u00fd Y\u00eau c\u1ea7u ho\u00e0n ti\u1ec1n (kh\u00f4ng \u1ea3nh h\u01b0\u1edfng c\u00e1c ph\u1ea7n kh\u00e1c): ' + loiHoanTien.message);
+    }
+    try {
+      xuLyYeuCauTuVan(emailShop);
+    } catch (loiTuVan) {
+      Logger.log('L\u1ed7i khi x\u1eed l\u00fd Y\u00eau c\u1ea7u t\u01b0 v\u1ea5n (kh\u00f4ng \u1ea3nh h\u01b0\u1edfng c\u00e1c ph\u1ea7n kh\u00e1c): ' + loiTuVan.message);
+    }
 
     var danhSach = layDonChoGui();
     if (!danhSach.length) return;

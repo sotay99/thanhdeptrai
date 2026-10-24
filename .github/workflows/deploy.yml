@@ -1,7 +1,15 @@
 name: Deploy to Firebase Hosting
 
 # Đẩy lên main là DEPLOY THẲNG RA TRANG THẬT cho khách hàng.
-# Chỉ có hosting — website này không dùng Cloud Function.
+# Hosting VÀ luật Realtime Database — không dùng Cloud Function.
+#
+# LỖI THẬT ĐÃ XẢY RA: trước đây chỉ "--only hosting", nên mọi thay đổi
+# trong database.rules.json (ví dụ thêm .indexOn cho nhánh yeuCauHoanTien,
+# yeuCauTuVan) nằm mãi trong kho GitHub mà KHÔNG BAO GIỜ lên Firebase thật.
+# Hậu quả: apps-script đọc nhánh thiếu chỉ mục bị Firebase từ chối (lỗi 400),
+# ném lỗi không ai bắt, làm sập LUÔN cả lượt gửi đơn hàng thật đi kèm trong
+# cùng một hàm định kỳ — khách trả tiền mà không nhận được email giao hàng.
+# Giờ đẩy cả hai mục tiêu trong MỘT bước, luôn đồng bộ với nhau.
 
 on:
   push:
@@ -12,6 +20,7 @@ on:
       - "src/**"
       - "scripts/**"
       - "firebase.json"
+      - "database.rules.json"
       - ".firebaserc"
       - ".github/workflows/deploy.yml"
 
@@ -38,8 +47,9 @@ jobs:
       - name: Write service account key to file
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/firebase-key.json
 
-      # Hook predeploy trong firebase.json tự chạy build + cả 3 script kiểm tra.
+      # Hook predeploy trong firebase.json tự chạy build + cả 3 script kiểm tra
+      # (chỉ gắn với mục tiêu "hosting" — "database" không có predeploy riêng).
       - name: Deploy to Firebase
-        run: firebase deploy --only hosting --project default
+        run: firebase deploy --only hosting,database --project default
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json
