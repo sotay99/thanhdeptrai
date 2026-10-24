@@ -2420,16 +2420,17 @@
 /* NỀN ĐEN THUẦN RIÊNG CHO TRANG CHỦ — gắn lên <body> ở render() (PHẦN 02),
    gỡ ngay khi rời Trang chủ nên không ảnh hưởng module khác (những nơi đó
    vẫn dùng var(--nen) như cũ). Hoạ tiết: vài "tia sét" ngoằn ngoèo, hai
-   đường lượn sóng, và rải vài chấm tròn đậm nhạt khác nhau — TẤT CẢ cùng một
-   màu xanh thương hiệu (#31a8ff). Độ mờ ĐÃ TĂNG GẤP ĐÔI so với bản đầu
-   (12–30%, trước là 6–15%) theo đúng yêu cầu "sáng lên" — vẫn chỉ là vài nét
-   chấm phá, không giành sự chú ý với các khối nội dung bên trên. Vẽ bằng SVG
-   nội tuyến (data URI) — không thêm tệp ảnh nào, nhẹ và sắc nét ở mọi độ
-   phân giải. "%23" = ký tự "#" đã mã hoá (data URI không cho "#" trần, trình
-   duyệt tự giải mã lại thành "#31a8ff" khi dựng SVG). */
+   đường lượn sóng, và 20 chấm tròn đậm nhạt khác nhau (gấp đôi 10 chấm ban
+   đầu) — TẤT CẢ cùng một màu xanh thương hiệu (#31a8ff). Độ mờ đã tăng lần
+   nữa lên mức sáng rõ (30–60%, qua hai lần "sáng lên" từ 6–15% ban đầu) theo
+   đúng yêu cầu — vẫn chỉ là nét chấm phá, không giành sự chú ý của các khối
+   nội dung bên trên vì luôn nằm DƯỚI chúng (background, không phải lớp phủ).
+   Vẽ bằng SVG nội tuyến (data URI) — không thêm tệp ảnh nào, nhẹ và sắc nét
+   ở mọi độ phân giải. "%23" = ký tự "#" đã mã hoá (data URI không cho "#"
+   trần, trình duyệt tự giải mã lại thành "#31a8ff" khi dựng SVG). */
 body.trang-chu-nen {
   background-color: #000;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1400'%3E%3Cg stroke='%2331a8ff' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M120 60 L160 180 L100 220 L170 360' stroke-width='3' opacity='.2'/%3E%3Cpath d='M860 240 L900 330 L840 370 L910 480' stroke-width='3' opacity='.16'/%3E%3Cpath d='M60 820 L100 900 L50 940 L120 1060' stroke-width='3' opacity='.18'/%3E%3Cpath d='M50 620 C250 560 350 760 550 700 C750 640 800 820 950 760' stroke-width='2' opacity='.14'/%3E%3Cpath d='M30 1180 C200 1120 300 1300 500 1240 C700 1180 780 1340 970 1280' stroke-width='2' opacity='.12'/%3E%3C/g%3E%3Cg fill='%2331a8ff'%3E%3Ccircle cx='200' cy='120' r='3' opacity='.24'/%3E%3Ccircle cx='760' cy='90' r='4' opacity='.16'/%3E%3Ccircle cx='920' cy='520' r='2.5' opacity='.3'/%3E%3Ccircle cx='140' cy='460' r='3.5' opacity='.14'/%3E%3Ccircle cx='480' cy='300' r='2' opacity='.2'/%3E%3Ccircle cx='620' cy='920' r='3' opacity='.18'/%3E%3Ccircle cx='260' cy='1020' r='2.5' opacity='.26'/%3E%3Ccircle cx='820' cy='1100' r='4' opacity='.12'/%3E%3Ccircle cx='400' cy='1340' r='3' opacity='.2'/%3E%3Ccircle cx='60' cy='1300' r='2' opacity='.16'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1400'%3E%3Cg stroke='%2331a8ff' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M120 60 L160 180 L100 220 L170 360' stroke-width='3' opacity='.5'/%3E%3Cpath d='M860 240 L900 330 L840 370 L910 480' stroke-width='3' opacity='.42'/%3E%3Cpath d='M60 820 L100 900 L50 940 L120 1060' stroke-width='3' opacity='.46'/%3E%3Cpath d='M50 620 C250 560 350 760 550 700 C750 640 800 820 950 760' stroke-width='2' opacity='.36'/%3E%3Cpath d='M30 1180 C200 1120 300 1300 500 1240 C700 1180 780 1340 970 1280' stroke-width='2' opacity='.32'/%3E%3C/g%3E%3Cg fill='%2331a8ff'%3E%3Ccircle cx='200' cy='120' r='3' opacity='.5'/%3E%3Ccircle cx='760' cy='90' r='4' opacity='.35'/%3E%3Ccircle cx='920' cy='520' r='2.5' opacity='.6'/%3E%3Ccircle cx='140' cy='460' r='3.5' opacity='.3'/%3E%3Ccircle cx='480' cy='300' r='2' opacity='.45'/%3E%3Ccircle cx='620' cy='920' r='3' opacity='.4'/%3E%3Ccircle cx='260' cy='1020' r='2.5' opacity='.55'/%3E%3Ccircle cx='820' cy='1100' r='4' opacity='.3'/%3E%3Ccircle cx='400' cy='1340' r='3' opacity='.45'/%3E%3Ccircle cx='60' cy='1300' r='2' opacity='.35'/%3E%3Ccircle cx='340' cy='180' r='2' opacity='.4'/%3E%3Ccircle cx='600' cy='60' r='1.5' opacity='.3'/%3E%3Ccircle cx='980' cy='250' r='3' opacity='.5'/%3E%3Ccircle cx='40' cy='560' r='2.5' opacity='.35'/%3E%3Ccircle cx='300' cy='680' r='4' opacity='.45'/%3E%3Ccircle cx='700' cy='500' r='1.5' opacity='.3'/%3E%3Ccircle cx='860' cy='760' r='2.5' opacity='.55'/%3E%3Ccircle cx='180' cy='880' r='3.5' opacity='.4'/%3E%3Ccircle cx='540' cy='1180' r='2' opacity='.3'/%3E%3Ccircle cx='940' cy='1380' r='3' opacity='.5'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat-y;
   background-size: 1000px 1400px;
   background-position: top center;
