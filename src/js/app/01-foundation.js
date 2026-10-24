@@ -143,6 +143,13 @@
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
     daChon: [],                  // mảng mã sản phẩm khách đã chọn
+    // Giỏ hàng thật (daChon) được LƯU TẠM vào đây trong lúc đi qua luồng
+    // "Mua hàng" một bước (muaHangNgay(), PHẦN 03 — nút ở module Quà tặng
+    // Android) — null nghĩa là KHÔNG đang ở luồng đó. Luồng này luôn chỉ có
+    // đúng MỘT sản phẩm, không được lẫn với lựa chọn khách đang có ở module
+    // "Trọn bộ sản phẩm VIP". Trả lại đúng giỏ hàng thật khi rời luồng (đóng
+    // modal hoặc đã chốt đơn xong) — xem thoatMuaNgay().
+    daChonLuuTamMuaNgay: null,
     // Module "Mua App VIP Pro giá rẻ" (PHẦN 03E) — lựa chọn TÁCH HẲN khỏi
     // daChon ở trên vì đây là luồng không giá, không thanh toán, không liên
     // quan gì tới tinhTien()/sanPhamDaChon(). Không còn thu thập thông tin

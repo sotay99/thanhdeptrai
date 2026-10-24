@@ -120,11 +120,26 @@
 
   // --------------------------------------------------------------- VẼ NỘI DUNG
 
+  // Độ trễ (giây) trước khi ảnh đại diện bắt đầu bồng bềnh — Y CHANG cách làm
+  // ở TRE_BONG_BENH (PHẦN 01B, module "Trọn bộ sản phẩm VIP"): vài số lẻ,
+  // không chia hết cho nhau, để nhiều ảnh gần nhau không nhấp nhô cùng lúc.
+  // Trang chủ có nhiều thẻ hơn 9 món của TRE_BONG_BENH nên lặp vòng qua mảng
+  // này (biChiSoTreBongBenh tăng dần mỗi thẻ, reset ở đầu veModuleTrangChu()).
+  const DAY_TRE_BONG_BENH_TC = [1.5, 2.7, 0.6, 4.1, 3.3, 5.4, 1.9, 6.2, 3.8, 0.9, 5.0, 2.2];
+  let biChiSoTreBongBenh = 0;
+  function treBongBenhTiepTheo(){
+    const tre = DAY_TRE_BONG_BENH_TC[biChiSoTreBongBenh % DAY_TRE_BONG_BENH_TC.length];
+    biChiSoTreBongBenh++;
+    return tre;
+  }
+
   function veTheTrangChu(muc){
+    const tre = treBongBenhTiepTheo();
     return '' +
       '<article class="tc-the cho-troi-len" data-hanh-dong="nhap-nhay-module" data-module="' +
         escapeHtml(muc.module) + '">' +
-        '<figure class="tc-anh"><img src="' + muc.anh + '" width="84" height="84" loading="lazy" decoding="async"' +
+        '<figure class="tc-anh" style="animation-delay:' + tre + 's">' +
+          '<img src="' + muc.anh + '" width="84" height="84" loading="lazy" decoding="async"' +
           ' alt="Ảnh đại diện: ' + escapeHtml(muc.ten) + '"></figure>' +
         '<span class="tc-ten">' + escapeHtml(muc.ten) + '</span>' +
       '</article>';
@@ -133,6 +148,7 @@
   // Thẻ đại diện DUY NHẤT cho cả module — anh (ảnh) hoặc icon (chữ/emoji),
   // kèm "noiDungThem" tuỳ khối (App VIP Pro chèn thêm danh sách 3 nhóm app).
   function veTheDonTrangChu(khoi){
+    const tre = treBongBenhTiepTheo();
     const anhHoacIcon = khoi.anh
       ? '<img src="' + khoi.anh + '" width="84" height="84" loading="lazy" decoding="async" alt="Ảnh đại diện: ' +
         escapeHtml(khoi.tieuDe) + '">'
@@ -143,7 +159,7 @@
     return '' +
       '<article class="tc-the tc-the-don cho-troi-len" data-hanh-dong="nhap-nhay-module" data-module="' +
         escapeHtml(khoi.module) + '">' +
-        '<figure class="tc-anh">' + anhHoacIcon + '</figure>' +
+        '<figure class="tc-anh" style="animation-delay:' + tre + 's">' + anhHoacIcon + '</figure>' +
         '<div class="tc-than-don">' +
           '<span class="tc-ten">' + escapeHtml(khoi.tieuDe) + '</span>' +
           nhomApp +
@@ -170,6 +186,9 @@
   // hàm gắn thêm đầu/cuối MỌI module khác, nên id ở đây phải khác id những
   // nơi đó dùng để không trùng trong cùng một DOM.
   function veModuleTrangChu(){
+    // Reset về đầu mảng DAY_TRE_BONG_BENH_TC mỗi lần vẽ lại — vào lại Trang
+    // chủ bao nhiêu lần cũng ra đúng một kiểu so le, không cộng dồn lệch pha.
+    biChiSoTreBongBenh = 0;
     // Cố định ngay SAU khối "goi-vip" (chỉ số 2: khoa-hoc-mien-phi, qua-tang-
     // android, goi-vip) và TRƯỚC "app-vip-pro" — không chia đôi theo số lượng
     // khối như trước, vì vị trí này đã được chốt rõ.

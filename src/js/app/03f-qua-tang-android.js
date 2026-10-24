@@ -281,9 +281,15 @@
     });
   }
 
+  // Remini và XingTu KHÔNG còn tải được thẳng từ Quà tặng Android nữa — hai
+  // app này giờ chỉ phát khi khách mua App Lightroom VIP Pro (quà tặng kèm
+  // theo, xem moModalNhanHang ở PHẦN 03B). Bấm nút tải ở đây chỉ hiện thông
+  // báo hướng dẫn, chặn hẳn việc tải — KHÔNG mở link thật nữa.
+  const MA_CHAN_TAI_QUA_TANG = ['qt-remini', 'qt-xingtu'];
+
   // "Sử dụng sản phẩm này" của sp2-5: bảng "Hướng dẫn sử dụng" dùng chung một
   // bài hướng dẫn cài APK tổng quát (chỉ đổi tên app), có nút cuối dẫn tới
-  // link MediaFire admin đã khai.
+  // link MediaFire admin đã khai — TRỪ Remini/XingTu (xem MA_CHAN_TAI_QUA_TANG).
   function moModalHuongDanQuaTang(ma){
     const q = timQuaTangAndroid(ma);
     if (!q) return;
@@ -293,17 +299,35 @@
     // APK) và chữ nút tải — các app khác dùng bài hướng dẫn chung bên dưới.
     const noiDung = q.veHuongDan ? q.veHuongDan(danhMucCua('sp2')) : noiDungHuongDanQuaTang(q.tenApp);
     const chuNutTai = q.chuNutTai || 'Tải file APK về máy và cài đặt';
+    const chanTai = MA_CHAN_TAI_QUA_TANG.indexOf(ma) !== -1;
+    const nutTai = chanTai
+      ? '<button type="button" class="nut nut-chinh" data-hanh-dong="qt-chan-tai">' + escapeHtml(chuNutTai) + '</button>'
+      : (link
+        ? '<a class="nut nut-chinh" href="' + escapeHtml(link) + '" target="_blank" rel="noopener">' +
+          escapeHtml(chuNutTai) + '</a>'
+        : '<button type="button" class="nut nut-chinh" disabled>Link đang được cập nhật</button>');
     moModal({
       ma: 'qt-huong-dan-' + ma,
       tieuDe: 'Hướng dẫn sử dụng',
       than: '<div class="noi-dung-huong-dan">' + noiDung + '</div>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        (link
-          ? '<a class="nut nut-chinh" href="' + escapeHtml(link) + '" target="_blank" rel="noopener">' +
-            escapeHtml(chuNutTai) + '</a>'
-          : '<button type="button" class="nut nut-chinh" disabled>Link đang được cập nhật</button>'),
+        nutTai,
       khiVe: function(){ initKhungVideo(); hienMuiTenTruot(); }
+    });
+  }
+
+  // Thông báo chặn tải, đè LÊN TRÊN bảng hướng dẫn (không đóng bảng đó) —
+  // đúng nguyên văn chủ shop chốt. "Đã hiểu" chỉ đóng thông báo này, bảng
+  // hướng dẫn bên dưới vẫn còn nguyên.
+  function moModalChanTaiQuaTang(){
+    moModal({
+      ma: 'qt-chan-tai',
+      tieuDe: 'Sản phẩm tặng kèm',
+      than: '<p>Sản phẩm miễn phí này được đính kèm khi mua sản phẩm App Lightroom VIP Pro, nếu bạn đã mua ' +
+        'sản phẩm APP Lightroom, hãy vào link sản phẩm mà Shop đã bàn giao cho bạn, bấm vào sản phẩm app ' +
+        'Lightroom, ở đó có đính kèm App Remini và XingTu Việt hoá Vip Pro được tặng kèm theo</p>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đã hiểu</button>'
     });
   }
 

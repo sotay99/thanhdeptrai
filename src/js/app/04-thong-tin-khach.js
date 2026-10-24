@@ -208,6 +208,11 @@
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
         '<button type="button" class="nut nut-chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',
-      khiVe: function(){ capNhatFormKhachHang(); }
+      khiVe: function(){ capNhatFormKhachHang(); },
+      // Vô hại khi KHÔNG ở luồng "Mua hàng" một bước (thoatMuaNgay() tự kiểm,
+      // xem PHẦN 03) — chỉ thật sự trả lại giỏ hàng khi đúng luồng đó, dù
+      // bảng này đóng theo cách nào: bấm "Đóng bảng", hay đi hết tới chốt đơn
+      // (dongHetModal() ở chotDon(), PHẦN 05, cũng gọi khiDong của từng bảng).
+      khiDong: function(){ thoatMuaNgay(); }
     });
   }

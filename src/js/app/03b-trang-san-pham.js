@@ -381,7 +381,61 @@
         (tep.length
           ? '<div class="danh-sach-tep">' + tep.map(veDongTep).join('') + '</div>'
           : '<p class="loi-nhan-hang">' + escapeHtml(chuLyDo('chua-khai')) + '</p>') +
+        (sp.ma === 'sp1' ? veKhoiQuaTangKemSp1() : '') +
       '</div>';
+  }
+
+  // ---------------------------------------- QUÀ TẶNG KÈM THEO (CHỈ Ở SP1)
+  //
+  // Mua App Lightroom VIP Pro được tặng kèm Remini + XingTu (hai app đã bỏ
+  // khỏi luồng tải trực tiếp ở module "Quà tặng Android", PHẦN 03F). Hai
+  // dòng này dùng CHUNG link admin đã khai cho module đó (nhánh quaTangAndroid
+  // — xem taiLinkQuaTangAndroid(), nạp sẵn lúc boot() ở PHẦN 06), KHOÁ cho
+  // tới khi khách đã tải thành công ÍT NHẤT một tệp của chính sp1 (dấu hiệu
+  // duy nhất xác nhận được — máy chủ đã cấp phát link thật cho thiết bị này).
+  const QUA_TANG_KEM_SP1 = ['qt-remini', 'qt-xingtu'];
+
+  function daTaiLightroomThanhCong(){
+    const kq = state.nhanHang.ketQuaTep || {};
+    return Object.keys(kq).some(function(i){ return kq[i] && kq[i].duoc; });
+  }
+
+  function veKhoiQuaTangKemSp1(){
+    const duoc = daTaiLightroomThanhCong();
+    const dong = QUA_TANG_KEM_SP1.map(function(ma){
+      const q = timQuaTangAndroid(ma);
+      if (!q) return '';
+      const nhan = escapeHtml(q.tenPhienBan + ' - VIP Đã có bản quyền trọn đời');
+      const truongLink = TRUONG_LINK_QUA_TANG[ma];
+      const link = String((state.quaTangAndroidLink || {})[truongLink] || '');
+      const nutTai = (duoc && link)
+        ? '<a class="nut nut-nho nut-la nut-tai-ve" href="' + escapeHtml(link) + '" target="_blank" rel="noopener">⬇ Tải xuống</a>'
+        : '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="qt-chan-tai-qua-tang-kem">⬇ Tải xuống</button>';
+      return '<div class="dong-qua-tang-kem"><span class="ten">' + nhan + '</span>' + nutTai + '</div>';
+    }).join('');
+    return '' +
+      '<div class="khoi-qua-tang-kem" data-khoi-qua-tang-kem>' +
+        '<p class="tieu-de-qua-tang-kem">Quà tặng (2 app VIP pro) được kèm theo sản phẩm này:</p>' +
+        dong +
+      '</div>';
+  }
+
+  // Chỉ vẽ lại ĐÚNG khối quà tặng kèm (không vẽ lại cả bảng) — gọi lại mỗi
+  // khi một tệp sp1 vừa được máy chủ cấp phép, vì lúc đó cổng khoá có thể
+  // vừa mở ra.
+  function capNhatKhoiQuaTangKemSp1(){
+    if (state.nhanHang.maSanPham !== 'sp1') return;
+    const khoi = document.querySelector('[data-khoi-qua-tang-kem]');
+    if (khoi) khoi.outerHTML = veKhoiQuaTangKemSp1();
+  }
+
+  function moModalChanTaiQuaTangKemSp1(){
+    moModal({
+      ma: 'qt-chan-tai-kem-sp1',
+      tieuDe: 'Cần tải Lightroom trước',
+      than: '<p>Vui lòng tải app Lightroom trước.</p>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đã hiểu</button>'
+    });
   }
 
   // ------------------------------------------------ HƯỚNG DẪN SỬ DỤNG
@@ -707,6 +761,8 @@
   function capNhatVungTep(i){
     const vung = document.querySelector('[data-vung-tep="' + i + '"]');
     if (vung) vung.innerHTML = veKetQuaTep(i);
+    // Tệp sp1 vừa được cấp phép có thể vừa mở khoá quà tặng kèm theo.
+    capNhatKhoiQuaTangKemSp1();
   }
 
   function xacNhanTai(chiSo){

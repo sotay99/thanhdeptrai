@@ -562,6 +562,11 @@
     // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
     taiThongTinCK();
     taiThongTinLienHe();
+    // Nạp trước link Remini/XingTu (nhánh quaTangAndroid) — cần ở CẢ trang
+    // /sanpham (quà tặng kèm theo sp1, PHẦN 03B) lẫn module "Quà tặng
+    // Android" (PHẦN 03F), nên nạp chung một lần ở đây thay vì đợi vào đúng
+    // module kia mới nạp.
+    taiLinkQuaTangAndroid();
     // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
     // không hỏi tới nên không phải tải.
     if (state.trang === 'sanpham') moTrangNhanHang();

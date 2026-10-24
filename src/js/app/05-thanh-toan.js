@@ -225,13 +225,29 @@
         oHienTai.innerHTML = '<img src="' + dataUri + '" alt="Mã QR chuyển khoản">';
       })
       .catch(function(e){
-        console.error('Không nạp được mã QR:', e);
+        console.error('Không nạp được mã QR (fetch CORS):', e);
         const oHienTai = document.querySelector('[data-o-qr]');
         if (!oHienTai) return;
-        // Vẫn hiện được mã QR bằng cách trỏ thẳng tới ảnh; chỉ mất khả năng
-        // chụp ảnh cả modal, nên báo trước cho khách biết.
+        // Dự phòng: trỏ thẳng tới ảnh, KHÔNG gắn crossorigin — nếu VietQR
+        // không trả header CORS, "crossorigin" làm trình duyệt TỪ CHỐI hiện
+        // luôn ảnh (lỗi thật đã xảy ra: ảnh vỡ ở mọi thiết bị, kể cả tầng dự
+        // phòng, vì cả hai tầng cùng đòi CORS). Bỏ crossorigin thì ảnh LUÔN
+        // hiện được — chỉ còn rủi ro riêng khâu chụp ảnh cả modal (html2canvas
+        // vẫn tự thử useCORS khi chụp, không phụ thuộc thuộc tính này của
+        // thẻ <img>, nên phần lớn vẫn chụp được bình thường).
         oHienTai.classList.remove('trong');
-        oHienTai.innerHTML = '<img src="' + escapeHtml(duongDanQR()) + '" alt="Mã QR chuyển khoản" crossorigin="anonymous">';
+        const anh = document.createElement('img');
+        anh.alt = 'Mã QR chuyển khoản';
+        anh.onerror = function(){
+          // Cả ảnh trực tiếp cũng không tải được — dịch vụ QR thật sự đang
+          // lỗi/không tới được, không còn cách nào hiện ảnh nữa.
+          oHienTai.classList.add('trong');
+          oHienTai.innerHTML = '<div class="dang-tai">Không tạo được mã QR lúc này. Bạn vui lòng chuyển khoản thủ công theo các dòng bên dưới, hoặc thử lại sau ít phút.</div>';
+          hienCanhBaoQR('');
+        };
+        anh.src = duongDanQR();
+        oHienTai.innerHTML = '';
+        oHienTai.appendChild(anh);
         hienCanhBaoQR('Mã QR tải theo cách dự phòng — nếu nút tải ảnh không chạy, bạn hãy chụp màn hình giúp shop.');
       });
   }
@@ -563,6 +579,8 @@
     if (hanhDong === 'mua-hang-ngay') { muaHangNgay(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'qt-xem-chi-tiet') { moModalChiTietQuaTang(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'qt-su-dung') { moModalHuongDanQuaTang(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'qt-chan-tai') { moModalChanTaiQuaTang(); return; }
+    if (hanhDong === 'qt-chan-tai-qua-tang-kem') { moModalChanTaiQuaTangKemSp1(); return; }
     if (hanhDong === 'chon-app-vip') { chonAppVip(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'dat-mua-app-vip') { batDauDatMuaAppVip(); return; }
     if (hanhDong === 'mo-qua-tang-tu-canh-bao') { moQuaTangTuCanhBao(); return; }

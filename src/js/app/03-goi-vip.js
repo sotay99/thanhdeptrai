@@ -89,13 +89,31 @@
       '</article>';
   }
 
-  // Bấm "Mua hàng" ở thẻ cheDo 'mua-ngay' (module Quà tặng Android): đảm bảo
-  // sản phẩm đã có trong daChon rồi mở ngay modal "Xác nhận đơn hàng" — một
-  // bước, không qua bước lựa chọn nhiều món như module gốc.
+  // Bấm "Mua hàng" ở thẻ cheDo 'mua-ngay' (module Quà tặng Android): mở ngay
+  // modal "Xác nhận đơn hàng" — một bước, không qua bước lựa chọn nhiều món
+  // như module gốc, và CHỈ ĐÚNG MỘT sản phẩm (ma) — TÁCH HẲN khỏi lựa chọn
+  // khách đang có ở module "Trọn bộ sản phẩm VIP" (lỗi thật đã xảy ra: bấm
+  // mua ở đây mà trước đó đã chọn sẵn mấy món bên module VIP thì modal hiện
+  // lẫn cả những món đó, vì cả hai nơi dùng chung state.daChon).
+  //
+  // Lưu tạm giỏ hàng thật vào daChonLuuTamMuaNgay rồi ghi đè daChon = [ma] —
+  // thoatMuaNgay() (PHẦN 02/05) trả lại đúng giỏ hàng thật khi rời luồng này,
+  // nên quay lại module VIP khách vẫn thấy đúng lựa chọn cũ, không mất gì.
   function muaHangNgay(ma){
     if (!timSanPham(ma)) return;
-    if (!dangChon(ma)) doiChon(ma);
+    if (state.daChonLuuTamMuaNgay === null) state.daChonLuuTamMuaNgay = state.daChon.slice();
+    state.daChon = [ma];
     moModalDonHang();
+  }
+
+  // Trả lại đúng giỏ hàng thật (nếu đang ở luồng "Mua hàng" một bước) — gọi
+  // khi rời luồng theo BẤT KỲ cách nào: đóng modal giữa chừng, hay đã chốt
+  // đơn xong. Không đang ở luồng này (daChonLuuTamMuaNgay === null) thì
+  // không làm gì — an toàn gọi ở mọi nơi đóng modal mà không cần kiểm trước.
+  function thoatMuaNgay(){
+    if (state.daChonLuuTamMuaNgay === null) return;
+    state.daChon = state.daChonLuuTamMuaNgay;
+    state.daChonLuuTamMuaNgay = null;
   }
 
   // Thẻ ở trang /sanpham. Giữ nguyên đầu thẻ và hàng giá của thẻ bán hàng —
