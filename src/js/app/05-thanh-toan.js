@@ -663,6 +663,16 @@
     if (hanhDong === 'ps-xuong') { adminPsDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'ps-xem-truoc') { adminPsXemTruocVideo(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'ps-luu-tat-ca') { adminPsLuuTatCa(); return; }
+    if (hanhDong === 'xem-anh-cong-nhan') { moModalXemAnhCongNhan(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'cong-nhan-chuyen') {
+      chuyenAnhCongNhan(nutHanhDong.getAttribute('data-id'), nutHanhDong.getAttribute('data-huong'));
+      return;
+    }
+    if (hanhDong === 'cn-them-anh') { adminCnThemAnh(); return; }
+    if (hanhDong === 'cn-xoa') { adminCnXoaDong(nutHanhDong.getAttribute('data-dong')); return; }
+    if (hanhDong === 'cn-len') { adminCnDoiCho(nutHanhDong.getAttribute('data-dong'), -1); return; }
+    if (hanhDong === 'cn-xuong') { adminCnDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
+    if (hanhDong === 'cn-luu-tat-ca') { adminCnLuuTatCa(); return; }
   }
 
   function xuLyGoPhim(su){
@@ -672,6 +682,7 @@
     if (adminGoKhoaHoc(dich)) return;
     if (adminGoVideoNgan(dich)) return;
     if (adminGoKhoaPhotoshop(dich)) return;
+    if (adminGoCongNhan(dich)) return;
     if (adminGoKhoaHocMayTinh(dich)) return;
     if (adminDonGoTim(dich)) return;
     const truongAppVip = dich.getAttribute('data-truong-app-vip');

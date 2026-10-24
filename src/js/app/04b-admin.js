@@ -46,7 +46,8 @@
     { ma: 'khoa-hoc-pc', ten: 'Khoá học Lightroom máy tính', bieuTuong: '🖥️' },
     { ma: 'qua-tang-android', ten: 'Quà tặng Android (link APK)', bieuTuong: '🎁' },
     { ma: 'video-ngan', ten: 'Video ngắn', bieuTuong: '▶' },
-    { ma: 'khoa-photoshop', ten: 'Khoá Photoshop', bieuTuong: '✦' }
+    { ma: 'khoa-photoshop', ten: 'Khoá Photoshop', bieuTuong: '✦' },
+    { ma: 'cong-nhan', ten: 'Sự công nhận của khách hàng', bieuTuong: '★' }
   ];
 
   // --------------------------------------------------------- KHAI BÁO CÁC Ô
@@ -188,7 +189,8 @@
     'khoa-hoc-pc': 'khoahoc/lrPC',
     'qua-tang-android': 'quaTangAndroid',
     'video-ngan': 'videoNgan',
-    'khoa-photoshop': 'khoahoc/photoshop'
+    'khoa-photoshop': 'khoahoc/photoshop',
+    'cong-nhan': 'congNhan'
   };
 
   function taiCaiDatAdmin(){
@@ -369,6 +371,7 @@
       O_QUA_TANG_ANDROID);
     if (ma === 'video-ngan') return veAdminVideoNgan();
     if (ma === 'khoa-photoshop') return veAdminKhoaPhotoshop();
+    if (ma === 'cong-nhan') return veAdminCongNhan();
     return veAdminChuaLam(ma);
   }
 

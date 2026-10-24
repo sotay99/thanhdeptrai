@@ -1986,8 +1986,8 @@
 /* Modal xem video bài học — BAO TRỌN màn hình, khác hẳn mọi modal khác của
    web (vốn có viền và chừa lề). Chọn theo tiền tố mã modal thay vì thêm một
    tham số riêng cho moModal() — không đụng gì tới hệ thống modal dùng chung. */
-.modal-lop[data-ma-modal^="bai-hoc-"] { padding: 0; align-items: stretch; }
-.modal-lop[data-ma-modal^="bai-hoc-"] .modal {
+.modal-lop[data-ma-modal^="bai-hoc-"], .modal-lop[data-ma-modal^="anh-cong-nhan-"] { padding: 0; align-items: stretch; }
+.modal-lop[data-ma-modal^="bai-hoc-"] .modal, .modal-lop[data-ma-modal^="anh-cong-nhan-"] .modal {
   width: 100%;
   height: 100%;
   max-width: none;
@@ -1998,13 +1998,50 @@
   display: flex;
   flex-direction: column;
 }
-.modal-lop[data-ma-modal^="bai-hoc-"] .modal-than {
+.modal-lop[data-ma-modal^="bai-hoc-"] .modal-than, .modal-lop[data-ma-modal^="anh-cong-nhan-"] .modal-than {
   flex: 1;
   max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
+/* ============================================================================
+   MODULE "SỰ CÔNG NHẬN CỦA KHÁCH HÀNG" — lưới ảnh tự co giãn (nhiều cột trên
+   màn hình rộng, ít cột trên màn hình hẹp, KHÔNG cần media query riêng vì
+   auto-fill + 1fr tự tính số cột theo bề ngang) + bảng phóng to toàn màn
+   hình khi bấm vào một ảnh (tái dùng CSS [data-ma-modal^="anh-cong-nhan-"]
+   bên trên — bao trọn màn hình y hệt modal xem video bài học).
+   ============================================================================ */
+
+.luoi-cong-nhan {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+.o-anh-cong-nhan {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 0;
+  border-radius: var(--bo);
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+  background: var(--the-2);
+}
+.o-anh-cong-nhan img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.anh-cong-nhan-to {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+.anh-cong-nhan-to img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
 /* ============================================================================
    MODULE "KHOÁ HỌC LIGHTROOM MÁY TÍNH" — hai khoá nhúng playlist YouTube +

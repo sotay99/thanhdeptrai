@@ -2099,6 +2099,43 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
+// 34) MODULE "SỰ CÔNG NHẬN CỦA KHÁCH HÀNG" — lưới ảnh {id, link} đọc từ
+//     Firebase, link Google Drive tự chuyển sang thumbnail nhúng được, bấm
+//     ảnh phóng to toàn màn hình + điều hướng Ảnh trước/tiếp theo.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'cong-nhan',[\s\S]{0,200}sanSang:\s*true/, "module Sự công nhận đã bật (sanSang: true)"],
+    [/function\s+moModalCongNhan\s*\(/, "hàm mở modal Sự công nhận của khách hàng"],
+    [/function\s+taiCongNhan\s*\(/, "hàm tải danh sách ảnh từ Firebase"],
+    [/function\s+srcAnhCongNhan\s*\(/, "hàm dựng src ảnh (tự nhận diện link Drive)"],
+    [/function\s+moModalXemAnhCongNhan\s*\(/, "hàm mở modal phóng to ảnh"],
+    [/function\s+chuyenAnhCongNhan\s*\(/, "hàm chuyển Ảnh trước/tiếp theo"],
+    [/function\s+veAdminCongNhan\s*\(/, "hàm vẽ trang quản lý trong /admin"],
+    [/function\s+adminCnLuuTatCa\s*\(/, "hàm lưu tất cả (bản nháp, một nút Lưu)"],
+    [/idDriveTuLink\(link\)/, "srcAnhCongNhan tái dùng idDriveTuLink có sẵn (không viết lại luật tách mã Drive)"],
+    [/'https:\/\/drive\.google\.com\/thumbnail\?id='\s*\+\s*id/, "link Drive dựng đúng địa chỉ thumbnail"],
+    [/ma:\s*'anh-cong-nhan-'\s*\+\s*id/, "modal phóng to dùng tiền tố anh-cong-nhan- (khớp CSS bao trọn màn hình)"],
+    [/Hơn 1\.000 khách hàng/, "đoạn giới thiệu nhắc hơn 1.000 khách hàng"],
+    [/xin phép khách hàng trước khi đăng/, "đoạn giới thiệu cam kết đã xin phép khách / riêng tư"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Rules Firebase: đọc công khai, chỉ chủ shop ghi được.
+  const rulesCN = doc("database.rules.json");
+  if (!/"congNhan":\s*\{/.test(rulesCN)) {
+    fail('Thiếu nhánh "congNhan" trong database.rules.json.');
+  }
+
+  // CSS lưới ảnh phải TỰ CO GIÃN (auto-fill), không hard-code số cột cố định
+  // cho từng cỡ màn hình.
+  if (!/\.luoi-cong-nhan\s*\{[^}]*repeat\(auto-fill/.test(cssApp)) {
+    fail('Lưới ảnh .luoi-cong-nhan phải dùng grid-template-columns: repeat(auto-fill, …) để tự co giãn.');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
