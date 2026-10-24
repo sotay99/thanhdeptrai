@@ -43,7 +43,8 @@
     { ma: 'danh-muc',    ten: 'Danh mục sản phẩm',      bieuTuong: '📦' },
     { ma: 'don-hang',    ten: 'Đơn hàng',               bieuTuong: '🧾' },
     { ma: 'khoa-hoc',    ten: 'Khoá học Lightroom mobile', bieuTuong: '🎬' },
-    { ma: 'khoa-hoc-pc', ten: 'Khoá học Lightroom máy tính', bieuTuong: '🖥️' }
+    { ma: 'khoa-hoc-pc', ten: 'Khoá học Lightroom máy tính', bieuTuong: '🖥️' },
+    { ma: 'qua-tang-android', ten: 'Quà tặng Android (link APK)', bieuTuong: '🎁' }
   ];
 
   // --------------------------------------------------------- KHAI BÁO CÁC Ô
@@ -182,7 +183,8 @@
     'kho':       'thongtinkho',
     'danh-muc':  'danhmuc',
     'khoa-hoc':  'khoahoc/lrMobile',
-    'khoa-hoc-pc': 'khoahoc/lrPC'
+    'khoa-hoc-pc': 'khoahoc/lrPC',
+    'qua-tang-android': 'quaTangAndroid'
   };
 
   function taiCaiDatAdmin(){
@@ -358,6 +360,9 @@
     if (ma === 'don-hang')  return veAdminDonHang();
     if (ma === 'khoa-hoc')  return veAdminKhoaHoc();
     if (ma === 'khoa-hoc-pc') return veAdminKhoaHocMayTinh();
+    if (ma === 'qua-tang-android') return veAdminNhomO('qua-tang-android', 'Quà tặng dành cho thiết bị Android',
+      'Link MediaFire của 4 app PicsArt/Remini/SnapEdit/XingTu ở module "Quà tặng dành cho thiết bị Android" — sửa ở đây là ngoài web đổi theo ngay, không phải deploy lại. Riêng Lightroom (sản phẩm 1) dùng chung hạ tầng của sp1 nên không cần khai lại ở đây.',
+      O_QUA_TANG_ANDROID);
     return veAdminChuaLam(ma);
   }
 
@@ -476,6 +481,7 @@
     if (khoa === 'lien-he') return O_LIEN_HE;
     if (khoa === 'nhan-tien') return O_NHAN_TIEN;
     if (khoa === 'khoa-hoc-pc') return O_KHOA_HOC_PC_YOUTUBE;
+    if (khoa === 'qua-tang-android') return O_QUA_TANG_ANDROID;
     return O_KHOA_AI;
   }
 

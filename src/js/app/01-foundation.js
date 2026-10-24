@@ -81,7 +81,7 @@
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: true  },
     { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
     { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: true  },
-    { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
+    { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
@@ -127,6 +127,11 @@
     // không thanh toán, không liên quan gì tới tinhTien()/sanPhamDaChon().
     appVipChon: [],
     yeuCauAppVip: { soDienThoai: '', ghiChu: '', dangGui: false },
+    // Module "Quà tặng dành cho thiết bị Android" (PHẦN 03F) — 4 link APK do
+    // admin khai trong Firebase (nhánh quaTangAndroid, công khai đọc), tải một
+    // lần lúc vào module rồi giữ lại đây.
+    quaTangAndroidLink: {},
+    quaTangAndroidDaTai: false,
     khachHang: { email: '', zalo: '', dienThoai: '', whatsapp: '', telegram: '' },
     // Ghi nhớ trường nào đang được TỰ ĐỘNG điền theo trường kia. Khách tự gõ
     // vào trường nào thì trường đó thoát khỏi cơ chế đồng bộ.

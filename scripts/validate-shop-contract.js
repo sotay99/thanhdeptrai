@@ -199,8 +199,14 @@ if (!/const\s+TRUONG_LIEN_LAC\s*=\s*\['email', 'zalo', 'dienThoai', 'whatsapp', 
 if (!/function boDauCach\(/.test(banNoi) || !/replace\(\/\\s\+\/g, ''\)/.test(banNoi)) {
   fail("Email, số zalo và số điện thoại đều phải loại bỏ mọi dấu cách");
 }
-// Bấm vào khoảng trống của khung sản phẩm cũng là chọn / bỏ chọn.
-if (!/<article class="the-sanpham[\s\S]{0,220}data-hanh-dong="chon-san-pham"/.test(banNoi)) {
+// Bấm vào khoảng trống của khung sản phẩm cũng là chọn / bỏ chọn — cheDo
+// 'mua-ngay' (module Quà tặng Android, PHẦN 03F) đổi hành động của cả khung
+// thành "mua-hang-ngay" qua biến hanhDongCuoiThe, nên hợp đồng soát đúng biến
+// đó thay vì chuỗi chữ cứng.
+if (!/const hanhDongCuoiThe = muaNgay \? 'mua-hang-ngay' : 'chon-san-pham';/.test(banNoi)) {
+  fail("Cả khung sản phẩm phải bấm được để chọn / bỏ chọn");
+}
+if (!/<article class="the-sanpham[\s\S]{0,260}data-hanh-dong="'\s*\+\s*hanhDongCuoiThe/.test(banNoi)) {
   fail("Cả khung sản phẩm phải bấm được để chọn / bỏ chọn");
 }
 
@@ -1885,6 +1891,70 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   }
   if (!/xuLyYeuCauAppVip\(emailShop\);/.test(appsScript)) {
     fail("guiHangChoDonDaXacNhan() phải gọi xuLyYeuCauAppVip() mỗi lượt chạy định kỳ.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 30) MODULE "QUÀ TẶNG DÀNH CHO THIẾT BỊ ANDROID" — sp1 nhúng lại ở cheDo
+//     'mua-ngay' (mua thẳng, tận dụng hạ tầng sp1 có sẵn); 4 app còn lại
+//     không có mã sản phẩm, không giá, không đơn hàng, chỉ có bảng hướng dẫn
+//     dùng chung + link MediaFire đọc từ Firebase (admin quản lý).
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'qua-tang-android',[\s\S]{0,200}sanSang:\s*true/, "module Quà tặng Android đã bật (sanSang: true)"],
+    [/function\s+veModuleQuaTangAndroid\s*\(/, "hàm vẽ module Quà tặng Android"],
+    [/function\s+muaHangNgay\s*\(/, "hàm mua thẳng sp1 (mở modal Xác nhận đơn hàng một bước)"],
+    [/function\s+moModalChiTietQuaTang\s*\(/, "hàm mở modal Xem chi tiết (rỗng, chờ thiết kế sau)"],
+    [/function\s+moModalHuongDanQuaTang\s*\(/, "hàm mở modal Hướng dẫn sử dụng dùng chung"],
+    [/cheDo === 'mua-ngay'/, "cheDo 'mua-ngay' trong veTheSanPham"],
+    [/'Mua hàng'/, "chữ nút 'Mua hàng' thay cho 'Chọn sản phẩm này'"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Đủ 4 app, đúng tên — sửa chữ thì cập nhật mẫu dưới đây theo CLAUDE.md,
+  // đừng xoá mục.
+  ['PicsArt', 'Remini', 'SnapEdit', 'XingTu'].forEach((ten) => {
+    if (!banNoi.includes(`ten: '${ten}'`)) fail(`Thiếu app "${ten}" trong QUA_TANG_ANDROID.`);
+  });
+
+  // Ảnh đại diện 4 app phải TÁI SỬ DỤNG ảnh đã cắt của module App VIP Pro
+  // (không cắt ảnh mới, không ghép chuỗi động).
+  [
+    '/assets/anh/app-vip-picsart.jpg',
+    '/assets/anh/app-vip-remini.jpg',
+    '/assets/anh/app-vip-snapedit.jpg',
+    '/assets/anh/app-vip-hypic.jpg',
+  ].forEach((duong) => {
+    if (!banNoi.includes(duong)) fail(`Thiếu đường dẫn ảnh tái sử dụng "${duong}".`);
+  });
+
+  // 4 app KHÔNG được có mã sản phẩm / dòng mua hàng nào — chỉ có nút "Sử dụng
+  // sản phẩm này" mở hướng dẫn, không có luồng mua hàng/thanh toán.
+  if (/qt-su-dung[\s\S]{0,300}data-hanh-dong="mua-hang"/.test(banNoi)) {
+    fail('Thẻ app Quà tặng Android (sp2-5) không được có luồng mua hàng.');
+  }
+
+  // Rules Firebase: đọc công khai (web cần đọc link mà không đăng nhập), chỉ
+  // chủ shop ghi được — link MediaFire không để cứng trong mã nguồn.
+  const rulesQT = doc("database.rules.json");
+  if (!/"quaTangAndroid":\s*\{/.test(rulesQT)) {
+    fail('Thiếu nhánh "quaTangAndroid" trong database.rules.json.');
+  }
+  ['linkPicsart', 'linkRemini', 'linkSnapedit', 'linkXingtu'].forEach((truong) => {
+    if (!new RegExp(`"${truong}"\\s*:\\s*\\{`).test(rulesQT)) {
+      fail(`database.rules.json thiếu trường ${truong} trong nhánh quaTangAndroid.`);
+    }
+    if (!banNoi.includes(`truong: '${truong}'`)) {
+      fail(`Thiếu khai báo ô admin cho trường ${truong} (O_QUA_TANG_ANDROID).`);
+    }
+  });
+
+  // Link MediaFire tuyệt đối không được nằm cứng trong mã nguồn — chỉ đọc từ
+  // Firebase lúc chạy, giống nguyên tắc giấu số tài khoản/địa chỉ kho.
+  if (/mediafire\.com\/file\/[a-z0-9]{6,}/i.test(banNoi)) {
+    fail("Link MediaFire thật không được nằm cứng trong mã nguồn — chỉ admin khai qua Firebase.");
   }
 }
 

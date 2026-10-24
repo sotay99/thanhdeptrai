@@ -36,12 +36,18 @@
   // việc bấm dẫn đi đâu.
   function veTheSanPham(sp, chiSo, cheDo){
     if (cheDo === 'nhan-hang') return veTheNhanHang(sp, chiSo);
-    const daChon = dangChon(sp.ma);
+    // cheDo 'mua-ngay': module "Quà tặng Android" (PHẦN 03F) nhúng lại đúng
+    // thẻ sp1 này nhưng muốn mua thẳng một bước, không qua lựa chọn nhiều món
+    // như module "Trọn bộ sản phẩm VIP" — nút cuối thẻ đổi hẳn thành "Mua
+    // hàng", bấm là mở ngay modal "Xác nhận đơn hàng" (xem muaHangNgay).
+    const muaNgay = cheDo === 'mua-ngay';
+    const daChon = muaNgay ? false : dangChon(sp.ma);
     const phanTram = phanTramGiamSanPham(sp);
     const choTroi = state.hieuUngVaoModule ? ' cho-troi-len' : '';
     // Lúc chờ trôi, giá chốt cố ý hiện ĐÚNG BẰNG giá gốc; trôi xong nó mới đếm
     // ngược về giá thật (xem chayNhaySo) — khách thấy rõ mình được bớt bao nhiêu.
     const giaHienBanDau = state.hieuUngVaoModule ? sp.giaGoc : sp.giaChot;
+    const hanhDongCuoiThe = muaNgay ? 'mua-hang-ngay' : 'chon-san-pham';
 
     // Cả khung sản phẩm cũng là một vùng bấm chọn. Không cần xử lý gì thêm để
     // tránh bấm hai lần: bộ phân phối sự kiện tìm phần tử [data-hanh-dong] GẦN
@@ -50,7 +56,7 @@
     // mới tới lượt chính khung.
     return '' +
       '<article class="the-sanpham' + (daChon ? ' da-chon' : '') + choTroi +
-        '" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '">' +
+        '" data-hanh-dong="' + hanhDongCuoiThe + '" data-ma="' + escapeHtml(sp.ma) + '">' +
         // Số thứ tự dán ở góc trên bên trái CỦA CẢ THẺ, nằm đè lên ảnh đại diện.
         // Vì thế nó là con trực tiếp của thẻ chứ không nằm trong dòng tên.
         '<span class="so-tt" aria-hidden="true">' + (chiSo + 1) + '</span>' +
@@ -75,12 +81,21 @@
           '<span class="gia-chot" data-gia-chot="' + sp.giaChot + '" data-gia-goc="' + sp.giaGoc + '">' +
             dinhDangTien(giaHienBanDau) + '</span>' +
         '</div>' +
-        '<button type="button" class="nut nut-rong ' + (daChon ? 'nut-chinh' : 'nut-chua-chon') +
-          '" data-hanh-dong="chon-san-pham" data-ma="' + escapeHtml(sp.ma) + '"' +
-          ' aria-pressed="' + (daChon ? 'true' : 'false') + '">' +
-          (daChon ? '✓ Đã chọn — bấm để bỏ' : 'Chọn sản phẩm này') +
+        '<button type="button" class="nut nut-rong ' + (muaNgay ? 'nut-chinh' : (daChon ? 'nut-chinh' : 'nut-chua-chon')) +
+          '" data-hanh-dong="' + hanhDongCuoiThe + '" data-ma="' + escapeHtml(sp.ma) + '"' +
+          (muaNgay ? '' : ' aria-pressed="' + (daChon ? 'true' : 'false') + '"') + '>' +
+          (muaNgay ? 'Mua hàng' : (daChon ? '✓ Đã chọn — bấm để bỏ' : 'Chọn sản phẩm này')) +
         '</button>' +
       '</article>';
+  }
+
+  // Bấm "Mua hàng" ở thẻ cheDo 'mua-ngay' (module Quà tặng Android): đảm bảo
+  // sản phẩm đã có trong daChon rồi mở ngay modal "Xác nhận đơn hàng" — một
+  // bước, không qua bước lựa chọn nhiều món như module gốc.
+  function muaHangNgay(ma){
+    if (!timSanPham(ma)) return;
+    if (!dangChon(ma)) doiChon(ma);
+    moModalDonHang();
   }
 
   // Thẻ ở trang /sanpham. Giữ nguyên đầu thẻ và hàng giá của thẻ bán hàng —

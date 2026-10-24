@@ -555,6 +555,9 @@
     if (hanhDong === 'xuong-qua-tang') { xuongKhuQuaTang(); return; }
     if (hanhDong === 'cuon-len-dau') { cuonLenDauTrang(); return; }
     if (hanhDong === 'mua-hang') { moModalDonHang(); return; }
+    if (hanhDong === 'mua-hang-ngay') { muaHangNgay(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'qt-xem-chi-tiet') { moModalChiTietQuaTang(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'qt-su-dung') { moModalHuongDanQuaTang(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'chon-app-vip') { chonAppVip(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'dat-mua-app-vip') { moModalDatMuaAppVip(); return; }
     if (hanhDong === 'gui-yeu-cau-app-vip') { guiYeuCauAppVip(); return; }

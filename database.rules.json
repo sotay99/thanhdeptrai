@@ -156,6 +156,25 @@
           ".validate": false
         }
       }
+    },
+    "quaTangAndroid": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      "linkPicsart": {
+        ".validate": "newData.isString() && newData.val().length <= 300"
+      },
+      "linkRemini": {
+        ".validate": "newData.isString() && newData.val().length <= 300"
+      },
+      "linkSnapedit": {
+        ".validate": "newData.isString() && newData.val().length <= 300"
+      },
+      "linkXingtu": {
+        ".validate": "newData.isString() && newData.val().length <= 300"
+      },
+      "$khac": {
+        ".validate": false
+      }
     }
   }
 }
