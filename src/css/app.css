@@ -46,14 +46,6 @@
 
 .thanh-tieu-de .ten-shop .cham-xanh { color: var(--xanh); }
 
-/* Màn hình hẹp, CHỈ ở Trang chủ (body.trang-chu-nen — PHẦN 02): ẩn hẳn chữ
-   "Shop Thànhđẹptrai.vn" khỏi thanh tiêu đề, chỉ còn logo. Mọi module khác
-   vẫn hiện đủ như cũ — Trang chủ đã tự có tên shop to ở khối hero bên dưới
-   rồi, nhắc lại ở thanh tiêu đề chật hẹp là thừa. */
-@media (max-width: 560px) {
-  body.trang-chu-nen .thanh-tieu-de .ten-shop { display: none; }
-}
-
 .khung-noi-dung {
   max-width: 1120px;
   margin: 0 auto;
@@ -2276,6 +2268,14 @@
 .tc-hero h1 .cham-xanh { color: var(--xanh); }
 .tc-hero p { color: var(--chu-diu); font-size: 13.5px; max-width: 560px; margin: 0 auto; }
 
+/* Màn hình hẹp: ẩn dòng tiêu đề "Shop Thànhđẹptrai.vn" NGAY TRONG khối hero
+   của Trang chủ (không phải thanh tiêu đề chung của cả web — thanh đó vẫn
+   hiện đủ ở MỌI module, MỌI cỡ màn hình, không đụng tới). Đoạn giới thiệu
+   bên dưới (.tc-hero p) vẫn hiện như thường. */
+@media (max-width: 560px) {
+  .tc-hero h1 { display: none; }
+}
+
 /* Toàn bộ Trang chủ căn GIỮA — tiêu đề, mô tả, cả các khối bên trong từng
    mục — khác hẳn lề trái mặc định của mọi module khác trong app. */
 .tc-khoi { margin-bottom: 30px; text-align: center; }
@@ -2303,9 +2303,16 @@
   padding: 4px 20px;
 }
 
+/* auto-fit + bề rộng cột CÓ TRẦN (170px, không phải 1fr vô hạn) + justify-
+   content: center — khi số thẻ ít hơn số cột vừa màn hình (3 hay 5 thẻ, ví
+   dụ khối "3 khoá học miễn phí"/"Quà tặng Android"), cả NHÓM thẻ co về đúng
+   bề rộng thật của nó rồi nằm giữa hàng, không còn dồn lệch trái bỏ trống
+   bên phải. Khối nhiều thẻ (ví dụ "Trọn bộ sản phẩm VIP", 7 thẻ) tự lấp đầy
+   nhiều hàng như cũ, chỉ khác mỗi thẻ có trần 170px thay vì giãn vô hạn. */
 .tc-luoi {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 170px));
+  justify-content: center;
   gap: 12px;
 }
 

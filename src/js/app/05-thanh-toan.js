@@ -223,6 +223,9 @@
         if (!oHienTai) return;
         oHienTai.classList.remove('trong');
         oHienTai.innerHTML = '<img src="' + dataUri + '" alt="Mã QR chuyển khoản">';
+        // Ảnh là data URI (dữ liệu nhúng thẳng, không còn ở tên miền ngoài) —
+        // html2canvas đọc được bình thường, nút "Tải mã QR" dùng được thật.
+        coTheChupAnhQR(true);
       })
       .catch(function(e){
         console.error('Không nạp được mã QR (fetch CORS):', e);
@@ -232,9 +235,12 @@
         // không trả header CORS, "crossorigin" làm trình duyệt TỪ CHỐI hiện
         // luôn ảnh (lỗi thật đã xảy ra: ảnh vỡ ở mọi thiết bị, kể cả tầng dự
         // phòng, vì cả hai tầng cùng đòi CORS). Bỏ crossorigin thì ảnh LUÔN
-        // hiện được — chỉ còn rủi ro riêng khâu chụp ảnh cả modal (html2canvas
-        // vẫn tự thử useCORS khi chụp, không phụ thuộc thuộc tính này của
-        // thẻ <img>, nên phần lớn vẫn chụp được bình thường).
+        // hiện được trên MÀN HÌNH — nhưng html2canvas KHÔNG đọc được pixel
+        // của ảnh tên miền ngoài không có CORS khi chụp lại (giới hạn bảo
+        // mật của trình duyệt, không có cách nào lách): bấm "Tải mã QR" lúc
+        // này sẽ ra một tấm ảnh THIẾU hẳn phần mã QR — lỗi thật khách đã
+        // chụp gửi. Vì vậy TẮT HẲN nút tải ở nhánh này, không để khách bấm
+        // ra một tấm ảnh thiếu mà không biết.
         oHienTai.classList.remove('trong');
         const anh = document.createElement('img');
         anh.alt = 'Mã QR chuyển khoản';
@@ -244,12 +250,22 @@
           oHienTai.classList.add('trong');
           oHienTai.innerHTML = '<div class="dang-tai">Không tạo được mã QR lúc này. Bạn vui lòng chuyển khoản thủ công theo các dòng bên dưới, hoặc thử lại sau ít phút.</div>';
           hienCanhBaoQR('');
+          coTheChupAnhQR(false);
         };
         anh.src = duongDanQR();
         oHienTai.innerHTML = '';
         oHienTai.appendChild(anh);
-        hienCanhBaoQR('Mã QR tải theo cách dự phòng — nếu nút tải ảnh không chạy, bạn hãy chụp màn hình giúp shop.');
+        hienCanhBaoQR('Mã QR tải theo cách dự phòng — ảnh vẫn xem được bình thường, nhưng nút "Tải mã QR" không dùng được lúc này. Bạn vui lòng tự chụp màn hình phần này giúp shop.');
+        coTheChupAnhQR(false);
       });
+  }
+
+  // Bật/tắt nút "Tải mã QR" tuỳ ảnh QR hiện tại có chụp lại an toàn được hay
+  // không — xem lý do kỹ ở nhánh .catch() của napAnhQR() phía trên.
+  function coTheChupAnhQR(duoc){
+    const nut = document.querySelector('.nut-tai-qr');
+    if (!nut) return;
+    nut.style.display = duoc ? '' : 'none';
   }
 
   // ------------------------------------------------------------- SAO CHÉP
@@ -407,7 +423,9 @@
       '<div class="khung-qr trong" data-o-qr>' +
         '<div class="dang-tai">Đang tạo mã QR…</div>' +
       '</div>' +
-      '<button type="button" class="nut nut-vien nut-tai-qr" data-hanh-dong="tai-anh-qr">⬇ Tải ảnh QR về máy</button>' +
+      // Ẩn sẵn — chỉ hiện lại khi napAnhQR() xác nhận ảnh QR tải theo cách
+      // CHÍNH (data URI, chụp lại an toàn). Tránh chớp nút rồi tắt ngay.
+      '<button type="button" class="nut nut-vien nut-tai-qr" data-hanh-dong="tai-anh-qr" style="display:none">⬇ Tải ảnh QR về máy</button>' +
       '<div class="bang-ck">' +
         veDongCK('Ngân hàng', tt.nganHang || 'Chưa lấy được', tt.nganHang, '') +
         veDongCK('Số tài khoản', tt.soTaiKhoan || 'Chưa lấy được', tt.soTaiKhoan, '') +
