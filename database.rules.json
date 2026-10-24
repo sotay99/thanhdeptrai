@@ -55,11 +55,14 @@
       ],
       "$ma": {
         ".write": true,
-        ".validate": "newData.hasChildren(['hoTen', 'tenSanPham', 'lyDo', 'maSanPham', 'soTaiKhoan', 'taoLuc'])",
+        ".validate": "newData.hasChildren(['hoTen', 'tenSanPham', 'soTienMuonNhan', 'lyDo', 'maSanPham', 'soTaiKhoan', 'taoLuc'])",
         "hoTen": {
           ".validate": "newData.isString() && newData.val().length <= 1000"
         },
         "tenSanPham": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "soTienMuonNhan": {
           ".validate": "newData.isString() && newData.val().length <= 1000"
         },
         "lyDo": {
@@ -70,6 +73,46 @@
         },
         "soTaiKhoan": {
           ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "taoLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "daBao": {
+          ".validate": "newData.isBoolean()"
+        },
+        "baoLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "$khac": {
+          ".validate": false
+        }
+      }
+    },
+    "yeuCauTuVan": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      ".indexOn": [
+        "daBao"
+      ],
+      "$ma": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['dsSanPham', 'taoLuc'])",
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 35"
+        },
+        "zalo": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "dienThoai": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "whatsapp": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "telegram": {
+          ".validate": "newData.isString() && newData.val().length <= 13"
+        },
+        "dsSanPham": {
+          ".validate": "newData.hasChildren()"
         },
         "taoLuc": {
           ".validate": "newData.isNumber()"

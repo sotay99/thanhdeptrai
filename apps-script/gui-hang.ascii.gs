@@ -64,7 +64,7 @@ var WEB_SHOP = 'thanhdeptrai.vn';
  * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
  * Version: New version → Deploy.
  */
-var PHIEN_BAN = '2026-10-24 \u00b7 LR21 + HoanTien';
+var PHIEN_BAN = '2026-10-24 \u00b7 HoanTien+TuVan';
 
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
@@ -527,6 +527,7 @@ function soanThuYeuCauHoanTien(yc) {
     '<p><strong>C\u00f3 kh\u00e1ch v\u1eeba g\u1eedi y\u00eau c\u1ea7u ho\u00e0n ti\u1ec1n.</strong></p>' +
     '<p><strong>H\u1ecd v\u00e0 t\u00ean:</strong> ' + thoatHtml(yc.hoTen || '') + '</p>' +
     '<p><strong>T\u00ean s\u1ea3n ph\u1ea9m:</strong> ' + thoatHtml(yc.tenSanPham || '') + '</p>' +
+    '<p><strong>S\u1ed1 ti\u1ec1n mu\u1ed1n nh\u1eadn l\u1ea1i:</strong> ' + thoatHtml(yc.soTienMuonNhan || '') + '</p>' +
     '<p><strong>L\u00fd do ho\u00e0n ti\u1ec1n:</strong> ' + thoatHtml(yc.lyDo || '').replace(/\n/g, '<br>') + '</p>' +
     '<p><strong>M\u00e3 s\u1ea3n ph\u1ea9m (ho\u1eb7c link s\u1ea3n ph\u1ea9m):</strong> ' + thoatHtml(yc.maSanPham || '') + '</p>' +
     '<p><strong>S\u1ed1 t\u00e0i kho\u1ea3n nh\u1eadn ho\u00e0n ti\u1ec1n:</strong> ' + thoatHtml(yc.soTaiKhoan || '') + '</p>';
@@ -543,6 +544,74 @@ function xuLyYeuCauHoanTien(emailShop) {
       capNhatYeuCauHoanTien(yc.__ma, { daBao: true, baoLuc: Date.now() });
     } catch (loi) {
       Logger.log('L\u1ed7i khi b\u00e1o y\u00eau c\u1ea7u ho\u00e0n ti\u1ec1n ' + yc.__ma + ': ' + loi.message);
+    }
+  });
+}
+
+/* --------------------------------------------------- YÊU CẦU "TƯ VẤN THÊM" */
+//
+// Module "Tôi cần được Tư vấn thêm" (xem PHẦN 03K của web) — nút cuối "Trọn
+// bộ sản phẩm VIP...". Khách chọn sản phẩm rồi điền 5 trường liên lạc (y hệt
+// modal xác nhận đơn hàng), ghi vào nhánh yeuCauTuVan kèm danh sách mã sản
+// phẩm. KHÔNG có trang xem chi tiết từng yêu cầu ở /admin ngoài mục thống kê
+// (xem PHẦN 04K) — chủ shop còn nhận qua email ngay khi có yêu cầu mới.
+
+/** Lấy các yêu cầu tư vấn CHƯA báo qua email (daBao chưa phải true). */
+function layYeuCauTuVanChoBao() {
+  var traLoi = goiFirebase('yeuCauTuVan',
+    'orderBy=' + encodeURIComponent('"daBao"') + '&equalTo=false&limitToFirst=' + SO_DON_MOI_LAN);
+  if (traLoi.getResponseCode() !== 200) {
+    throw new Error('Firebase tr\u1ea3 v\u1ec1 m\u00e3 ' + traLoi.getResponseCode() +
+      ' khi \u0111\u1ecdc yeuCauTuVan: ' + traLoi.getContentText().slice(0, 300));
+  }
+  var du = JSON.parse(traLoi.getContentText());
+  if (!du) return [];
+  return Object.keys(du).map(function (ma) {
+    var yc = du[ma];
+    yc.__ma = ma;
+    return yc;
+  });
+}
+
+function capNhatYeuCauTuVan(maYc, thayDoi) {
+  var traLoi = goiFirebase('yeuCauTuVan/' + maYc, '', {
+    method: 'patch',
+    contentType: 'application/json',
+    payload: JSON.stringify(thayDoi)
+  });
+  if (traLoi.getResponseCode() !== 200) {
+    throw new Error('Kh\u00f4ng c\u1eadp nh\u1eadt \u0111\u01b0\u1ee3c y\u00eau c\u1ea7u t\u01b0 v\u1ea5n ' + maYc + ': ' + traLoi.getContentText().slice(0, 200));
+  }
+}
+
+function soanThuYeuCauTuVan(yc) {
+  var dsSanPham = Array.isArray(yc.dsSanPham) ? yc.dsSanPham
+    : (yc.dsSanPham ? Object.keys(yc.dsSanPham).map(function (k) { return yc.dsSanPham[k]; }) : []);
+  var tenSanPhamHtml = dsSanPham.map(function (ma) {
+    return thoatHtml(TEN_SAN_PHAM[ma] || ma);
+  }).join('<br>');
+  var linkZaloKhach = linkZalo(yc.zalo);
+  return '' +
+    '<p><strong>C\u00f3 kh\u00e1ch v\u1eeba g\u1eedi y\u00eau c\u1ea7u c\u1ea7n \u0111\u01b0\u1ee3c t\u01b0 v\u1ea5n th\u00eam.</strong></p>' +
+    '<p><strong>S\u1ea3n ph\u1ea9m c\u1ea7n t\u01b0 v\u1ea5n:</strong><br>' + (tenSanPhamHtml || '(kh\u00f4ng c\u00f3)') + '</p>' +
+    '<p><strong>Email:</strong> ' + thoatHtml(yc.email || '') + '</p>' +
+    '<p><strong>S\u1ed1 zalo:</strong> ' + thoatHtml(yc.zalo || '') +
+      (linkZaloKhach ? ' \u2014 <a href="' + linkZaloKhach + '">nh\u1eafn Zalo ngay</a>' : '') + '</p>' +
+    '<p><strong>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i:</strong> ' + thoatHtml(yc.dienThoai || '') + '</p>' +
+    '<p><strong>S\u1ed1 WhatsApp:</strong> ' + thoatHtml(yc.whatsapp || '') + '</p>' +
+    '<p><strong>S\u1ed1 Telegram:</strong> ' + thoatHtml(yc.telegram || '') + '</p>';
+}
+
+function xuLyYeuCauTuVan(emailShop) {
+  var danhSach = layYeuCauTuVanChoBao();
+  if (!danhSach.length) return;
+  Logger.log('C\u00f3 ' + danhSach.length + ' y\u00eau c\u1ea7u t\u01b0 v\u1ea5n ch\u1edd b\u00e1o.');
+  danhSach.forEach(function (yc) {
+    try {
+      guiThu(emailShop, '[T\u01b0 v\u1ea5n] Kh\u00e1ch m\u1edbi g\u1eedi y\u00eau c\u1ea7u c\u1ea7n \u0111\u01b0\u1ee3c t\u01b0 v\u1ea5n', soanThuYeuCauTuVan(yc));
+      capNhatYeuCauTuVan(yc.__ma, { daBao: true, baoLuc: Date.now() });
+    } catch (loi) {
+      Logger.log('L\u1ed7i khi b\u00e1o y\u00eau c\u1ea7u t\u01b0 v\u1ea5n ' + yc.__ma + ': ' + loi.message);
     }
   });
 }
@@ -568,6 +637,7 @@ function guiHangChoDonDaXacNhan() {
     // layDonChoGui() nên phải xử lý riêng, và đặt ở đây để return sớm bên
     // dưới (không có đơn nào chờ gửi) không bao giờ bỏ sót nó.
     xuLyYeuCauHoanTien(emailShop);
+    xuLyYeuCauTuVan(emailShop);
 
     var danhSach = layDonChoGui();
     if (!danhSach.length) return;

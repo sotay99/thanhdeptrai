@@ -12,6 +12,7 @@
   "03h-khoa-photoshop.js",
   "03i-cong-nhan.js",
   "03j-hoan-tien.js",
+  "03k-tu-van.js",
   "04-thong-tin-khach.js",
   "04b-admin.js",
   "04c-admin-danh-muc.js",
@@ -22,6 +23,7 @@
   "04h-admin-khoa-photoshop.js",
   "04i-admin-cong-nhan.js",
   "04j-admin-thong-ke-app-vip.js",
+  "04k-admin-tu-van.js",
   "05-thanh-toan.js",
   "06-trang-chu.js"
 ]

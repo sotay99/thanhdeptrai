@@ -1016,9 +1016,14 @@ if (!/function\s+chonTatCa\(\)\{[\s\S]{0,400}?hienThongBaoGiam\(\);/.test(banNoi
   fail('Nút "Chọn tất cả" phải gọi hienThongBaoGiam() không tham số để thông báo ra giữa màn hình.');
 }
 
-// Nút Tư vấn cố ý chưa nối việc, nhưng KHÔNG được disabled (disabled làm nút xám).
-if (/class="nut nut-rong nut-tu-van"[^>]*(disabled|data-hanh-dong)/.test(banNoi)) {
-  fail('Nút Tư vấn không được đặt disabled, cũng chưa được gắn data-hanh-dong.');
+// Nút Tư vấn đã nối việc (PHẦN 03K): phải gắn data-hanh-dong="bam-tu-van" và
+// KHÔNG disabled (disabled làm nút xám, bamTuVan() tự kiểm việc đã chọn sản
+// phẩm hay chưa thay vì khoá cứng nút).
+if (!/class="nut nut-rong nut-tu-van" data-hanh-dong="bam-tu-van"/.test(banNoi)) {
+  fail('Nút Tư vấn phải gắn data-hanh-dong="bam-tu-van".');
+}
+if (/class="nut nut-rong nut-tu-van"[^>]*disabled/.test(banNoi)) {
+  fail('Nút Tư vấn không được đặt disabled.');
 }
 
 if (!fs.existsSync(path.join(root, "src/anh/dac-quyen.jpg"))) {
@@ -2175,8 +2180,9 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
-// 35) MODULE "YÊU CẦU HOÀN TIỀN" — 5 câu y chang biểu mẫu gốc, mỗi ô tối đa
-//     1000 ký tự, cả 5 câu đều bắt buộc, không có trang xem ở /admin.
+// 35) MODULE "YÊU CẦU HOÀN TIỀN" — 6 câu y chang biểu mẫu gốc (có thêm "Số
+//     tiền muốn nhận lại"), mỗi ô tối đa 1000 ký tự, cả 6 câu đều bắt buộc,
+//     có banner nổi bật "15 ngày" đầu modal, không có trang xem ở /admin.
 // ---------------------------------------------------------------------------
 {
   [
@@ -2188,13 +2194,14 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
     [/GIOI_HAN_HOAN_TIEN\s*=\s*1000/, "giới hạn 1000 ký tự mỗi ô"],
     [/maxlength="'\s*\+\s*GIOI_HAN_HOAN_TIEN/, "ô nhập có thuộc tính maxlength giới hạn thật trên trình duyệt"],
     [/BẠN SẼ ĐƯỢC HOÀN TIỀN 100%/, "modal cảm ơn dùng đúng nguyên văn lời cảm ơn của biểu mẫu gốc"],
+    [/khoi-mo-ta khoi-luu-y[\s\S]{0,120}KHÔNG QUÁ 15 ngày kể từ ngày mua sản phẩm/, "banner nổi bật nhắc hạn 15 ngày, hiện đầu modal"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
 
-  // Đủ 5 câu hỏi, đúng trường — sửa câu chữ thì cập nhật mẫu dưới đây theo
+  // Đủ 6 câu hỏi, đúng trường — sửa câu chữ thì cập nhật mẫu dưới đây theo
   // CLAUDE.md, đừng xoá mục.
-  ['hoTen', 'tenSanPham', 'lyDo', 'maSanPham', 'soTaiKhoan'].forEach((truong) => {
+  ['hoTen', 'tenSanPham', 'soTienMuonNhan', 'lyDo', 'maSanPham', 'soTaiKhoan'].forEach((truong) => {
     if (!banNoi.includes(`truong: '${truong}'`)) fail(`Thiếu câu hỏi "${truong}" trong O_HOAN_TIEN.`);
   });
 
@@ -2204,7 +2211,7 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   const khoiHT = rulesHT.match(/"yeuCauHoanTien"\s*:\s*\{[\s\S]*?\n    \},?\n/);
   if (!khoiHT) fail('Thiếu nhánh "yeuCauHoanTien" trong database.rules.json.');
   else {
-    ['hoTen', 'tenSanPham', 'lyDo', 'maSanPham', 'soTaiKhoan'].forEach((truong) => {
+    ['hoTen', 'tenSanPham', 'soTienMuonNhan', 'lyDo', 'maSanPham', 'soTaiKhoan'].forEach((truong) => {
       if (!new RegExp(`"${truong}"[\\s\\S]{0,80}length <= 1000`).test(khoiHT[0])) {
         fail(`database.rules.json thiếu giới hạn 1000 ký tự cho trường ${truong} trong yeuCauHoanTien.`);
       }
@@ -2304,6 +2311,51 @@ if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
 
   if (!banNoi.includes('/assets/anh/logo.svg')) {
     fail('Thiếu tệp logo /assets/anh/logo.svg.');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 39) MODULE "TÔI CẦN ĐƯỢC TƯ VẤN THÊM" — bắt buộc đã chọn sản phẩm mới mở
+//     được modal 5 trường liên lạc (y hệt modal xác nhận đơn hàng, state
+//     riêng), gửi xong có modal cảm ơn, báo admin qua email + trang /admin.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/function\s+bamTuVan\s*\(/, "hàm bamTuVan() kiểm đã chọn sản phẩm chưa"],
+    [/function\s+moModalTuVan\s*\(/, "hàm mở modal Tư vấn"],
+    [/function\s+guiYeuCauTuVan\s*\(/, "hàm gửi yêu cầu tư vấn lên Firebase"],
+    [/function\s+moModalCamOnTuVan\s*\(/, "hàm mở modal cảm ơn sau khi gửi"],
+    [/[Vv]ui lòng chọn ít nhất một sản phẩm trước khi nhận tư vấn/, "lời nhắc khi chưa chọn sản phẩm"],
+    [/tư vấn của shop trong thời gian sớm nhất/, "ngữ cảnh tư vấn trong nội dung modal"],
+    [/SHOP SẼ CỐ GẮNG LIÊN HỆ TRONG THỜI GIAN SỚM NHẤT CÓ THỂ/, "modal cảm ơn đúng nội dung đã chốt"],
+    [/data-hanh-dong="dong-modal">Đã hiểu/, "nút Đã hiểu đóng modal cảm ơn"],
+    [/rtdb\.ref\('yeuCauTuVan'\)\.push\(\)/, "ghi yêu cầu vào ĐÚNG nhánh yeuCauTuVan"],
+    [/data-truong-tu-van="/, "ô nhập dùng thuộc tính riêng data-truong-tu-van (không đụng state.khachHang)"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Rules Firebase: ghi công khai, chỉ chủ shop đọc được.
+  const rulesTV = doc("database.rules.json");
+  if (!/"yeuCauTuVan"\s*:\s*\{/.test(rulesTV)) {
+    fail('Thiếu nhánh "yeuCauTuVan" trong database.rules.json.');
+  }
+
+  // apps-script phải tự báo email cho chủ shop.
+  const appsScriptTV = doc("apps-script/gui-hang.gs");
+  if (!/function\s+xuLyYeuCauTuVan\s*\(/.test(appsScriptTV)) {
+    fail("Thiếu hàm xuLyYeuCauTuVan() trong apps-script/gui-hang.gs.");
+  }
+  if (!/xuLyYeuCauTuVan\(emailShop\);/.test(appsScriptTV)) {
+    fail("guiHangChoDonDaXacNhan() phải gọi xuLyYeuCauTuVan() mỗi lượt chạy định kỳ.");
+  }
+
+  // Trang /admin phải có mục thống kê đầy đủ thông tin liên lạc + sản phẩm.
+  if (!/function\s+veAdminYeuCauTuVan\s*\(/.test(banNoi)) {
+    fail("Thiếu hàm veAdminYeuCauTuVan() ở trang quản trị.");
+  }
+  if (!banNoi.includes("ma: 'yeu-cau-tu-van'")) {
+    fail("Thiếu mục 'Yêu cầu tư vấn' trong MODULE_ADMIN.");
   }
 }
 

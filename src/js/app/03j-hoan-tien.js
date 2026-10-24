@@ -17,11 +17,12 @@
   // batBuoc: true cho cả 5 ô, theo đúng yêu cầu của shop (khác bản Google Form
   // gốc, nơi câu "Tên sản phẩm..." để trống được).
   const O_HOAN_TIEN = [
-    { truong: 'hoTen',       nhan: 'Họ và Tên của bạn?',                                            kieu: 'input' },
-    { truong: 'tenSanPham',  nhan: 'Tên sản phẩm mà bạn đã mua và muốn Hoàn tiền lại?',               kieu: 'input' },
-    { truong: 'lyDo',        nhan: 'Tại sao bạn muốn hoàn trả lại tiền sản phẩm bạn đã mua?',         kieu: 'textarea' },
-    { truong: 'maSanPham',   nhan: 'Mã sản phẩm (hoặc link sản phẩm) của bạn tại trang web? (Nếu không nhớ, bạn có thể xem lại trong email Shop gửi hoặc tin nhắn của shop).', kieu: 'input' },
-    { truong: 'soTaiKhoan',  nhan: 'Số tài khoản của bạn kèm theo tên ngân hàng (để nhận tiền được hoàn trả lại)!', kieu: 'input' }
+    { truong: 'hoTen',           nhan: 'Họ và Tên của bạn?',                                            kieu: 'input' },
+    { truong: 'tenSanPham',      nhan: 'Tên sản phẩm mà bạn đã mua và muốn Hoàn tiền lại?',               kieu: 'input' },
+    { truong: 'soTienMuonNhan',  nhan: 'Số tiền muốn nhận lại?',                                         kieu: 'input' },
+    { truong: 'lyDo',            nhan: 'Tại sao bạn muốn hoàn trả lại tiền sản phẩm bạn đã mua?',         kieu: 'textarea' },
+    { truong: 'maSanPham',       nhan: 'Mã sản phẩm (hoặc link sản phẩm) của bạn tại trang web? (Nếu không nhớ, bạn có thể xem lại trong email Shop gửi hoặc tin nhắn của shop).', kieu: 'input' },
+    { truong: 'soTaiKhoan',      nhan: 'Số tài khoản của bạn kèm theo tên ngân hàng (để nhận tiền được hoàn trả lại)!', kieu: 'input' }
   ];
 
   function veOHoanTien(o, giaTri){
@@ -44,6 +45,7 @@
       ma: 'hoan-tien',
       tieuDe: m.ten,
       than: '' +
+        '<div class="khoi-mo-ta khoi-luu-y"><h4>Được hoàn tiền nếu KHÔNG QUÁ 15 ngày kể từ ngày mua sản phẩm</h4></div>' +
         '<p class="dan-nhap-modal">Thành luôn hỗ trợ hết mình nếu bạn yêu cầu hoàn tiền mua sản phẩm! Vui lòng ' +
           'điền đủ thông tin bên dưới (mỗi ô tối đa ' + GIOI_HAN_HOAN_TIEN + ' ký tự).</p>' +
         O_HOAN_TIEN.map(function(o){ return veOHoanTien(o, y[o.truong]); }).join('') +
@@ -96,13 +98,16 @@
     rtdb.ref('yeuCauHoanTien').push().set({
       hoTen: y.hoTen,
       tenSanPham: y.tenSanPham,
+      soTienMuonNhan: y.soTienMuonNhan,
       lyDo: y.lyDo,
       maSanPham: y.maSanPham,
       soTaiKhoan: y.soTaiKhoan,
       taoLuc: Date.now(),
       daBao: false
     }).then(function(){
-      state.yeuCauHoanTien = { hoTen: '', tenSanPham: '', lyDo: '', maSanPham: '', soTaiKhoan: '', dangGui: false };
+      state.yeuCauHoanTien = {
+        hoTen: '', tenSanPham: '', soTienMuonNhan: '', lyDo: '', maSanPham: '', soTaiKhoan: '', dangGui: false
+      };
       moModalCamOnHoanTien();
     }).catch(function(e){
       console.error('Không gửi được yêu cầu hoàn tiền:', e);

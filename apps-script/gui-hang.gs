@@ -64,7 +64,7 @@ var WEB_SHOP = 'thanhdeptrai.vn';
  * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
  * Version: New version → Deploy.
  */
-var PHIEN_BAN = '2026-10-24 · LR21 + HoanTien';
+var PHIEN_BAN = '2026-10-24 · HoanTien+TuVan';
 
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
@@ -527,6 +527,7 @@ function soanThuYeuCauHoanTien(yc) {
     '<p><strong>Có khách vừa gửi yêu cầu hoàn tiền.</strong></p>' +
     '<p><strong>Họ và tên:</strong> ' + thoatHtml(yc.hoTen || '') + '</p>' +
     '<p><strong>Tên sản phẩm:</strong> ' + thoatHtml(yc.tenSanPham || '') + '</p>' +
+    '<p><strong>Số tiền muốn nhận lại:</strong> ' + thoatHtml(yc.soTienMuonNhan || '') + '</p>' +
     '<p><strong>Lý do hoàn tiền:</strong> ' + thoatHtml(yc.lyDo || '').replace(/\n/g, '<br>') + '</p>' +
     '<p><strong>Mã sản phẩm (hoặc link sản phẩm):</strong> ' + thoatHtml(yc.maSanPham || '') + '</p>' +
     '<p><strong>Số tài khoản nhận hoàn tiền:</strong> ' + thoatHtml(yc.soTaiKhoan || '') + '</p>';
@@ -543,6 +544,74 @@ function xuLyYeuCauHoanTien(emailShop) {
       capNhatYeuCauHoanTien(yc.__ma, { daBao: true, baoLuc: Date.now() });
     } catch (loi) {
       Logger.log('Lỗi khi báo yêu cầu hoàn tiền ' + yc.__ma + ': ' + loi.message);
+    }
+  });
+}
+
+/* --------------------------------------------------- YÊU CẦU "TƯ VẤN THÊM" */
+//
+// Module "Tôi cần được Tư vấn thêm" (xem PHẦN 03K của web) — nút cuối "Trọn
+// bộ sản phẩm VIP...". Khách chọn sản phẩm rồi điền 5 trường liên lạc (y hệt
+// modal xác nhận đơn hàng), ghi vào nhánh yeuCauTuVan kèm danh sách mã sản
+// phẩm. KHÔNG có trang xem chi tiết từng yêu cầu ở /admin ngoài mục thống kê
+// (xem PHẦN 04K) — chủ shop còn nhận qua email ngay khi có yêu cầu mới.
+
+/** Lấy các yêu cầu tư vấn CHƯA báo qua email (daBao chưa phải true). */
+function layYeuCauTuVanChoBao() {
+  var traLoi = goiFirebase('yeuCauTuVan',
+    'orderBy=' + encodeURIComponent('"daBao"') + '&equalTo=false&limitToFirst=' + SO_DON_MOI_LAN);
+  if (traLoi.getResponseCode() !== 200) {
+    throw new Error('Firebase trả về mã ' + traLoi.getResponseCode() +
+      ' khi đọc yeuCauTuVan: ' + traLoi.getContentText().slice(0, 300));
+  }
+  var du = JSON.parse(traLoi.getContentText());
+  if (!du) return [];
+  return Object.keys(du).map(function (ma) {
+    var yc = du[ma];
+    yc.__ma = ma;
+    return yc;
+  });
+}
+
+function capNhatYeuCauTuVan(maYc, thayDoi) {
+  var traLoi = goiFirebase('yeuCauTuVan/' + maYc, '', {
+    method: 'patch',
+    contentType: 'application/json',
+    payload: JSON.stringify(thayDoi)
+  });
+  if (traLoi.getResponseCode() !== 200) {
+    throw new Error('Không cập nhật được yêu cầu tư vấn ' + maYc + ': ' + traLoi.getContentText().slice(0, 200));
+  }
+}
+
+function soanThuYeuCauTuVan(yc) {
+  var dsSanPham = Array.isArray(yc.dsSanPham) ? yc.dsSanPham
+    : (yc.dsSanPham ? Object.keys(yc.dsSanPham).map(function (k) { return yc.dsSanPham[k]; }) : []);
+  var tenSanPhamHtml = dsSanPham.map(function (ma) {
+    return thoatHtml(TEN_SAN_PHAM[ma] || ma);
+  }).join('<br>');
+  var linkZaloKhach = linkZalo(yc.zalo);
+  return '' +
+    '<p><strong>Có khách vừa gửi yêu cầu cần được tư vấn thêm.</strong></p>' +
+    '<p><strong>Sản phẩm cần tư vấn:</strong><br>' + (tenSanPhamHtml || '(không có)') + '</p>' +
+    '<p><strong>Email:</strong> ' + thoatHtml(yc.email || '') + '</p>' +
+    '<p><strong>Số zalo:</strong> ' + thoatHtml(yc.zalo || '') +
+      (linkZaloKhach ? ' — <a href="' + linkZaloKhach + '">nhắn Zalo ngay</a>' : '') + '</p>' +
+    '<p><strong>Số điện thoại:</strong> ' + thoatHtml(yc.dienThoai || '') + '</p>' +
+    '<p><strong>Số WhatsApp:</strong> ' + thoatHtml(yc.whatsapp || '') + '</p>' +
+    '<p><strong>Số Telegram:</strong> ' + thoatHtml(yc.telegram || '') + '</p>';
+}
+
+function xuLyYeuCauTuVan(emailShop) {
+  var danhSach = layYeuCauTuVanChoBao();
+  if (!danhSach.length) return;
+  Logger.log('Có ' + danhSach.length + ' yêu cầu tư vấn chờ báo.');
+  danhSach.forEach(function (yc) {
+    try {
+      guiThu(emailShop, '[Tư vấn] Khách mới gửi yêu cầu cần được tư vấn', soanThuYeuCauTuVan(yc));
+      capNhatYeuCauTuVan(yc.__ma, { daBao: true, baoLuc: Date.now() });
+    } catch (loi) {
+      Logger.log('Lỗi khi báo yêu cầu tư vấn ' + yc.__ma + ': ' + loi.message);
     }
   });
 }
@@ -568,6 +637,7 @@ function guiHangChoDonDaXacNhan() {
     // layDonChoGui() nên phải xử lý riêng, và đặt ở đây để return sớm bên
     // dưới (không có đơn nào chờ gửi) không bao giờ bỏ sót nó.
     xuLyYeuCauHoanTien(emailShop);
+    xuLyYeuCauTuVan(emailShop);
 
     var danhSach = layDonChoGui();
     if (!danhSach.length) return;

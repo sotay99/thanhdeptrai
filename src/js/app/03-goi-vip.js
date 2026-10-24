@@ -190,11 +190,11 @@
       // luôn mở ra y hệt một bảng.
       '<button type="button" class="nut nut-rong nut-hoan-tien" data-hanh-dong="mo-module" data-module="hoan-tien">' +
         '<span aria-hidden="true">↩</span> Yêu cầu hoàn tiền 100% với sản phẩm đã mua</button>' +
-      // CỐ Ý chưa có data-hanh-dong: nút đã dựng sẵn chỗ nhưng chưa nối việc gì.
-      // Cũng cố ý KHÔNG dùng thuộc tính disabled — disabled làm nút xám đi và
-      // báo với khách rằng nó hỏng; ở đây nó chỉ là dòng chữ chờ ngày nối việc.
-      '<button type="button" class="nut nut-rong nut-tu-van">' +
+      // Bắt buộc đã chọn ít nhất một sản phẩm — bamTuVan() (PHẦN 03K) tự kiểm
+      // và chỉ hiện lời nhắc nếu chưa chọn gì, không mở modal.
+      '<button type="button" class="nut nut-rong nut-tu-van" data-hanh-dong="bam-tu-van">' +
         '<span aria-hidden="true">💬</span> Tôi cần được Tư vấn thêm</button>' +
+      '<p class="loi loi-chung" data-loi="tuVanChung"></p>' +
       veKhuQuaTang();
   }
 

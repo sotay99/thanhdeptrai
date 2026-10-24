@@ -209,7 +209,8 @@
       // donHang — kho tạm của mục Đơn hàng, phần 04D tự dựng khi cần tới
       // congNhanNhap — bản nháp ảnh công nhận khách hàng, phần 04I tự dựng khi cần tới
       // khoaPhotoshopNhap — bản nháp chương/bài khoá Photoshop, phần 04H tự dựng khi cần tới
-      thongKeAppVip: { daTai: false, dangTai: false, hang: [] }  // mục "Thống kê đặt mua App VIP", phần 04J
+      thongKeAppVip: { daTai: false, dangTai: false, hang: [] },  // mục "Thống kê đặt mua App VIP", phần 04J
+      yeuCauTuVan: { daTai: false, dangTai: false, ds: [] }  // mục "Yêu cầu tư vấn", phần 04K
     },
     // Module "Khoá học chỉnh màu Lightroom điện thoại" ở trang bán hàng — đọc
     // công khai từ Realtime Database, không cần đăng nhập.
@@ -256,9 +257,16 @@
       dangTai: false,
       anhDangMo: ''
     },
-    // Module "Yêu cầu hoàn tiền" (PHẦN 03J) — 5 câu y chang biểu mẫu gốc,
+    // Module "Yêu cầu hoàn tiền" (PHẦN 03J) — 6 câu y chang biểu mẫu gốc,
     // không cần đăng nhập, không có trang xem ở /admin (chỉ email).
-    yeuCauHoanTien: { hoTen: '', tenSanPham: '', lyDo: '', maSanPham: '', soTaiKhoan: '', dangGui: false },
+    yeuCauHoanTien: {
+      hoTen: '', tenSanPham: '', soTienMuonNhan: '', lyDo: '', maSanPham: '', soTaiKhoan: '', dangGui: false
+    },
+    // Module "Tôi cần được Tư vấn thêm" (PHẦN 03K) — gắn ở cuối "Trọn bộ sản
+    // phẩm VIP...". Y hệt 5 trường liên lạc của modal "Xác nhận đơn hàng"
+    // (PHẦN 04), nhưng KHÔNG dùng chung state.khachHang — khách có thể đang mở
+    // một đơn hàng thật và một yêu cầu tư vấn cùng lúc, dùng chung sẽ đè dữ liệu.
+    tuVan: { email: '', zalo: '', dienThoai: '', whatsapp: '', telegram: '', dangGui: false },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
     // không làm cả lưới nhấp nháy trôi lại từ đầu.
