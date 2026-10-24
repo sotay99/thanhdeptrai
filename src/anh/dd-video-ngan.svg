@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="gvn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a4d"/><stop offset="1" stop-color="#161b22"/></linearGradient>
+<linearGradient id="skyvn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a7a"/><stop offset=".55" stop-color="#c04bd6"/><stop offset="1" stop-color="#4a6fe0"/></linearGradient></defs>
+<rect width="240" height="240" rx="30" fill="url(#gvn)"/>
+<rect x="76" y="34" width="88" height="172" rx="18" fill="#0f1318" stroke="#3d4753" stroke-width="3"/>
+<rect x="84" y="44" width="72" height="152" rx="8" fill="url(#skyvn)"/>
+<circle cx="120" cy="96" r="26" fill="#161b22" opacity=".55"/>
+<path d="M112 84 L134 96 L112 108 Z" fill="#fff"/>
+<rect x="92" y="150" width="56" height="5" rx="2.5" fill="#fff" opacity=".9"/>
+<rect x="92" y="162" width="36" height="5" rx="2.5" fill="#fff" opacity=".6"/>
+<circle cx="140" cy="176" r="9" fill="#fff" opacity=".95"/>
+<path d="M136 172 l2.5 5 l5 -7" stroke="#2d9d5f" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="132" cy="54" r="3" fill="#fff" opacity=".85"/>
+<g>
+ <circle cx="44" cy="92" r="20" fill="#1b2430" stroke="#3d4753" stroke-width="2"/>
+ <path d="M38 83 L54 92 L38 101 Z" fill="#ff5a7a"/>
+</g>
+<g>
+ <circle cx="196" cy="148" r="20" fill="#1b2430" stroke="#3d4753" stroke-width="2"/>
+ <path d="M190 139 L206 148 L190 157 Z" fill="#31a8ff"/>
+</g>
+<rect x="166" y="176" width="60" height="26" rx="13" fill="#2d9d5f"/>
+<text x="196" y="194" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">FREE</text>
+</svg>

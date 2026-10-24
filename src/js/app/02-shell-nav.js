@@ -438,6 +438,7 @@
     if (m && m.ma === 'khoa-hoc-may-tinh') return veModuleKhoaHocMayTinh();
     if (m && m.ma === 'app-vip-pro') return veModuleAppVipPro();
     if (m && m.ma === 'qua-tang-android') return veModuleQuaTangAndroid();
+    if (m && m.ma === 'video-ngan') return veModuleVideoNgan();
     return veManNangCap(m ? m.ten : '');
   }
 

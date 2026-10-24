@@ -119,7 +119,11 @@
   }
 
   function vePhanKhoaHoc(p){
-    const baiHtml = p.baiHoc.map(veTheBaiHoc).join('');
+    // Bọc trong hàm chứ KHÔNG truyền thẳng veTheBaiHoc vào map: map đưa cả
+    // CHỈ SỐ vào tham số thứ hai (hanhDong), làm bài thứ 2 trở đi trong một
+    // chương dispatch sai hành động — lỗi thật từng xảy ra, xem cách
+    // veModuleGoiVip() ở PHẦN 03 đã tránh lỗi này với veTheSanPham.
+    const baiHtml = p.baiHoc.map(function(b){ return veTheBaiHoc(b); }).join('');
     if (!p.chuong) {
       // Bài đứng trước chương đầu tiên: hiện thẳng ra, không bọc trong khối
       // sổ ra vì không có tên chương nào để làm tiêu đề.
@@ -147,11 +151,14 @@
   // hanhDong cho phép module "khoá học máy tính" (PHẦN 03D) tái dùng đúng thẻ
   // này nhưng gắn hành động riêng ("mo-bai-hoc-pc") — mỗi khoá đọc dữ liệu từ
   // một nhánh Firebase khác nhau nên không thể dùng chung MỘT hành động.
-  function veTheBaiHoc(b, hanhDong){
+  // nhan: chữ đứng trước số thứ tự — mặc định "Bài" (khoá học có chương/bài
+  // thật sự); module "Xem video ngắn" (PHẦN 03G) truyền "Video" vì không có
+  // khái niệm chương/bài ở đó.
+  function veTheBaiHoc(b, hanhDong, nhan){
     return '<button type="button" class="the-bai-hoc" data-hanh-dong="' + (hanhDong || 'mo-bai-hoc') +
       '" data-id="' + escapeHtml(b.id) + '">' +
       '<span class="so-bai" aria-hidden="true">▶</span>' +
-      '<span class="ten-bai">Bài ' + b.soThuTu + ': ' + escapeHtml(b.ten || '(chưa đặt tên)') + '</span>' +
+      '<span class="ten-bai">' + (nhan || 'Bài') + ' ' + b.soThuTu + ': ' + escapeHtml(b.ten || '(chưa đặt tên)') + '</span>' +
     '</button>';
   }
 

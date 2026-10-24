@@ -86,7 +86,7 @@
     { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
     { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
-    { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: false },
+    { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: true  },
     { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: false },
     { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: false },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
@@ -210,6 +210,16 @@
     // Y hệt state.khoaHoc ở trên, nhưng cho khoá học Lightroom MÁY TÍNH (đọc từ
     // nhánh khoahoc/lrPC/muc, tách hẳn khỏi khoá điện thoại).
     khoaHocMayTinh: {
+      muc: [],
+      daTai: false,
+      dangTai: false,
+      chuongMo: {},
+      baiDangMo: ''
+    },
+    // Module "Xem video ngắn" (PHẦN 03G) — Y HỆT state.khoaHoc, đọc từ nhánh
+    // videoNgan/muc, nhưng mảng chỉ TOÀN "bai" (không tạo "chuong" bao giờ) nên
+    // xepKhoaHoc() tự trả về danh sách phẳng, không có khối sổ ra nào.
+    videoNgan: {
       muc: [],
       daTai: false,
       dangTai: false,

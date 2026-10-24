@@ -1978,6 +1978,55 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
+// 31) MODULE "XEM VIDEO NGẮN" — y khuôn module khoá học Lightroom mobile
+//     (PHẦN 03C/04E) nhưng mảng CHỈ TOÀN "bai" (không chuong), không có nút
+//     "Xem chi tiết", đánh số "Video N" thay vì "Bài N".
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'video-ngan',[\s\S]{0,200}sanSang:\s*true/, "module Xem video ngắn đã bật (sanSang: true)"],
+    [/function\s+veModuleVideoNgan\s*\(/, "hàm vẽ module Xem video ngắn"],
+    [/function\s+taiVideoNgan\s*\(/, "hàm tải danh sách video từ Firebase"],
+    [/function\s+moModalVideoNgan\s*\(/, "hàm mở modal xem video"],
+    [/function\s+chuyenVideoNgan\s*\(/, "hàm chuyển Video trước/tiếp theo"],
+    [/function\s+veAdminVideoNgan\s*\(/, "hàm vẽ trang quản lý Video ngắn trong /admin"],
+    [/function\s+adminVnLuuTatCa\s*\(/, "hàm lưu tất cả (bản nháp, một nút Lưu) của Video ngắn"],
+    [/rtdb\.ref\('videoNgan\/muc'\)\.once\('value'\)/, "đọc đúng nhánh videoNgan/muc"],
+    [/rtdb\.ref\(NHANH_VIDEO_NGAN\)\.set\(goi\)/, "ghi đúng nhánh videoNgan/muc khi Lưu tất cả"],
+    [/veTheBaiHoc\([\s\S]{0,80}'mo-video-ngan',\s*'Video'\)/, "thẻ video gọi veTheBaiHoc với nhãn 'Video'"],
+    [/ma:\s*'bai-hoc-vn-'\s*\+\s*id/, "modal xem video dùng tiền tố bai-hoc-vn- (khớp CSS [data-ma-modal^=\"bai-hoc-\"])"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // KHÔNG được có nút "Xem chi tiết thông tin khoá học này" trong module này
+  // — nó không phải một khoá học có mã sản phẩm/bảng mô tả riêng.
+  if (/veModuleVideoNgan[\s\S]{0,2000}Xem chi tiết thông tin khoá học này/.test(banNoi)) {
+    fail('Module "Xem video ngắn" không được có nút "Xem chi tiết thông tin khoá học này".');
+  }
+
+  // "+ Thêm chương" chỉ được có ở 04E/04F (khoá học thật), KHÔNG được lọt
+  // vào trang quản lý Video ngắn — xác nhận bằng cách soát hàm vẽ riêng của
+  // nó không chứa chữ "chương" nào.
+  const khoiAdminVideoNgan = banNoi.match(/function veDanhSachVideoNgan[\s\S]*?\n  \}/);
+  if (!khoiAdminVideoNgan || /chương|chuong/i.test(khoiAdminVideoNgan[0])) {
+    fail('Trang quản lý Video ngắn không được có khái niệm "chương" (chỉ "+ Thêm video").');
+  }
+
+  // Ảnh đại diện phải TỰ VẼ riêng (không tái dùng ảnh của module khác).
+  if (!banNoi.includes('/assets/anh/dd-video-ngan.svg')) {
+    fail('Thiếu ảnh đại diện riêng /assets/anh/dd-video-ngan.svg cho module Xem video ngắn.');
+  }
+
+  // Rules Firebase: đọc công khai, chỉ chủ shop ghi được — giống nguyên tắc
+  // của nhánh khoahoc.
+  const rulesVN = doc("database.rules.json");
+  if (!/"videoNgan":\s*\{/.test(rulesVN)) {
+    fail('Thiếu nhánh "videoNgan" trong database.rules.json.');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).
