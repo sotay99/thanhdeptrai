@@ -2303,17 +2303,27 @@
   padding: 4px 20px;
 }
 
-/* auto-fit + bề rộng cột CÓ TRẦN (170px, không phải 1fr vô hạn) + justify-
-   content: center — khi số thẻ ít hơn số cột vừa màn hình (3 hay 5 thẻ, ví
-   dụ khối "3 khoá học miễn phí"/"Quà tặng Android"), cả NHÓM thẻ co về đúng
-   bề rộng thật của nó rồi nằm giữa hàng, không còn dồn lệch trái bỏ trống
-   bên phải. Khối nhiều thẻ (ví dụ "Trọn bộ sản phẩm VIP", 7 thẻ) tự lấp đầy
-   nhiều hàng như cũ, chỉ khác mỗi thẻ có trần 170px thay vì giãn vô hạn. */
+/* Màn hình hẹp: ÉP CỨNG đúng 2 cột — auto-fit/auto-fill tự đoán số cột theo
+   bề rộng còn trống KHÔNG đáng tin cậy ở ngưỡng biên (lỗi thật đã xảy ra:
+   máy này ra 2 cột, máy kia ra 1 cột, chỉ lệch vài pixel). Từ 480px trở lên
+   mới chuyển sang auto-fit + bề rộng cột CÓ TRẦN (170px, không phải 1fr vô
+   hạn) + justify-content: center — khi số thẻ ít hơn số cột vừa màn hình (3
+   hay 5 thẻ, khối "3 khoá học miễn phí"/"Quà tặng Android"), cả NHÓM thẻ co
+   về đúng bề rộng thật rồi nằm giữa hàng, không dồn lệch trái bỏ trống bên
+   phải. Khối nhiều thẻ (khối "Trọn bộ sản phẩm VIP", 7 thẻ) tự lấp đầy một
+   hàng duy nhất ở màn hình rộng — xem thêm khung Trang chủ nới sát mép
+   (body.trang-chu-nen .khung-noi-dung) bên dưới, nhường thêm chỗ cho đúng
+   việc này. */
 .tc-luoi {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 170px));
+  grid-template-columns: repeat(2, 1fr);
   justify-content: center;
   gap: 12px;
+}
+@media (min-width: 480px) {
+  .tc-luoi {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 170px));
+  }
 }
 
 .tc-the {
@@ -2441,5 +2451,15 @@ body.trang-chu-nen {
   background-repeat: repeat-y;
   background-size: 1000px 1400px;
   background-position: top center;
+}
+
+/* Khung nội dung Trang chủ nới RỘNG SÁT HAI MÉP MÀN HÌNH — khác mọi module
+   khác (vẫn giữ nguyên trần 1120px cho dễ đọc). Chỉ riêng Trang chủ cần rộng
+   hơn hẳn để các khối nhiều thẻ (ví dụ "Trọn bộ sản phẩm VIP", 7 thẻ) có đủ
+   chỗ xếp vừa MỘT HÀNG ở màn hình lớn, không bị ép xuống hàng vì vướng trần
+   cũ. Vẫn chừa padding ngang như .khung-noi-dung gốc — không cho nội dung
+   dính sát hẳn vào viền màn hình, chỉ bỏ cái TRẦN 1120px thôi. */
+body.trang-chu-nen .khung-noi-dung {
+  max-width: 1800px;
 }
 
