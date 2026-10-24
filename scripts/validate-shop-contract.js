@@ -1821,6 +1821,74 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
+// 29) MODULE "MUA APP VIP PRO GIÁ RẺ" — lưới 20 app không giá, không xem chi
+//     tiết, gửi yêu cầu (KHÔNG phải đơn hàng) kèm số điện thoại/Zalo.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'app-vip-pro',[\s\S]{0,200}sanSang:\s*true/, "module Mua App VIP Pro đã bật (sanSang: true)"],
+    [/function\s+veModuleAppVipPro\s*\(/, "hàm vẽ module Mua App VIP Pro"],
+    [/function\s+chonAppVip\s*\(/, "hành động chọn/bỏ chọn một app"],
+    [/function\s+moModalDatMuaAppVip\s*\(/, "hàm mở modal Đặt mua"],
+    [/function\s+guiYeuCauAppVip\s*\(/, "hàm gửi yêu cầu lên Firebase"],
+    [/rtdb\.ref\('yeuCauAppVip'\)\.push\(\)/, "ghi yêu cầu vào ĐÚNG nhánh yeuCauAppVip (không lẫn vào donhang)"],
+    [/KHÔNG được kèm theo<\/strong> bộ quà tặng/i, "cảnh báo không kèm quà tặng"],
+    [/App bán chạy nhất/, "tên nhóm 1"],
+    [/App Selfie hot/, "tên nhóm 2"],
+    [/App thiết kế/, "tên nhóm 3"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Đủ 20 app, đúng tên — sửa chữ thì cập nhật mẫu dưới đây theo CLAUDE.md,
+  // đừng xoá mục.
+  const TEN_APP_VIP = [
+    'Lightroom', 'Beauty Plus', 'Lightleap', 'Pixelance', 'CapCut', 'Remini', 'Beauty Cam',
+    'Meitu', 'Ulike', 'Snow', 'B612', 'Hypic', 'Foodie', 'Pretty Up',
+    'Canva', 'Pics Art', 'Photoroom', 'Snapedit', 'Face App', 'Chat GPT',
+  ];
+  TEN_APP_VIP.forEach((ten) => {
+    if (!banNoi.includes(`ten: '${ten}'`)) fail(`Thiếu app "${ten}" trong APP_VIP_PRO.`);
+  });
+
+  // KHÔNG được có giá hay nút "Xem chi tiết" dính vào thẻ app — khác hẳn
+  // .the-sanpham của module gói VIP.
+  if (/the-app-vip[\s\S]{0,400}xem-chi-tiet/.test(banNoi)) {
+    fail('Thẻ app trong module Mua App VIP Pro không được có nút "Xem chi tiết".');
+  }
+
+  // 20 ảnh đại diện phải tồn tại thật trong src/anh/ (đã kiểm ở validate-static.js
+  // qua cơ chế vân tay chung, ở đây chỉ canh KHÔNG ghép chuỗi động — đường dẫn
+  // phải là literal để build-static.js đối chiếu được).
+  const MA_APP_VIP = [
+    'lightroom', 'beautyplus', 'lightleap', 'pixelance', 'capcut', 'remini', 'beautycam',
+    'meitu', 'ulike', 'snow', 'b612', 'hypic', 'foodie', 'prettyup',
+    'canva', 'picsart', 'photoroom', 'snapedit', 'faceapp', 'chatgpt',
+  ];
+  MA_APP_VIP.forEach((ma) => {
+    if (!banNoi.includes(`/assets/anh/app-vip-${ma}.jpg`)) fail(`Thiếu đường dẫn ảnh cho app "${ma}".`);
+  });
+
+  // Rules Firebase: ghi công khai (khách không đăng nhập vẫn gửi được), chỉ
+  // chủ shop đọc được — giống hệt nguyên tắc của nhánh donhang.
+  const rules = doc("database.rules.json");
+  if (!/"yeuCauAppVip":\s*\{/.test(rules)) {
+    fail('Thiếu nhánh "yeuCauAppVip" trong database.rules.json.');
+  }
+
+  // apps-script phải tự báo email cho chủ shop khi có yêu cầu mới — không bắt
+  // chủ shop tự vào /admin xem (module này không có trang quản lý trong
+  // /admin, theo đúng yêu cầu ban đầu).
+  const appsScript = doc("apps-script/gui-hang.gs");
+  if (!/function\s+xuLyYeuCauAppVip\s*\(/.test(appsScript)) {
+    fail("Thiếu hàm xuLyYeuCauAppVip() trong apps-script/gui-hang.gs.");
+  }
+  if (!/xuLyYeuCauAppVip\(emailShop\);/.test(appsScript)) {
+    fail("guiHangChoDonDaXacNhan() phải gọi xuLyYeuCauAppVip() mỗi lượt chạy định kỳ.");
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).

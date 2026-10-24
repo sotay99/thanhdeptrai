@@ -436,6 +436,7 @@
     if (m && m.ma === 'trang-chu') return veModuleTrangChu();
     if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
     if (m && m.ma === 'khoa-hoc-may-tinh') return veModuleKhoaHocMayTinh();
+    if (m && m.ma === 'app-vip-pro') return veModuleAppVipPro();
     return veManNangCap(m ? m.ten : '');
   }
 
@@ -454,8 +455,11 @@
     if (!el) return;
     const m = timModule(state.module);
     // Thanh báo giá chỉ có ở module bán hàng. Trang nhận hàng không bán gì nên
-    // không có thanh nào ở đáy.
-    const coThanhDay = state.trang === 'chinh' && !!(m && m.ma === 'goi-vip');
+    // không có thanh nào ở đáy. Module "Mua App VIP Pro" có thanh neo đáy
+    // RIÊNG (đếm app, không tính tiền) — xem veThanhAppVip() ở PHẦN 03E.
+    const laGoiVip = state.trang === 'chinh' && !!(m && m.ma === 'goi-vip');
+    const laAppVip = state.trang === 'chinh' && !!(m && m.ma === 'app-vip-pro');
+    const coThanhDay = laGoiVip || laAppVip;
 
     // Trang quản trị có vỏ riêng: không nút nổi, không menu của khách, không
     // thanh tiêu đề shop. Nó là chỗ làm việc, không phải chỗ mua hàng.
@@ -478,7 +482,7 @@
       '<main class="khung-noi-dung' + (coThanhDay ? '' : ' khong-thanh-day') + '">' +
         veNoiDungModule() +
       '</main>' +
-      (coThanhDay ? veThanhBaoGia() : '');
+      (coThanhDay ? (laAppVip ? veThanhAppVip() : veThanhBaoGia()) : '');
 
     // Gắn hiệu ứng NGAY SAU khi HTML mới đã nằm trong trang.
     ganHieuUngTroiLen();

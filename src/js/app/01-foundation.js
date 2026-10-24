@@ -40,13 +40,47 @@
     { ma: 'sp9', ten: '1000+ font chữ Việt Hoá cao cấp cho máy tính', giaGoc: 159000, giaChot: 39000 }
   ];
 
+  // 20 app của module "Mua App VIP Pro giá rẻ" (PHẦN 03E) — KHÔNG có giá niêm
+  // yết riêng từng app (giá dao động 90K-149K tuỳ app, shop tự tư vấn sau khi
+  // khách chọn), nên không dùng chung khuôn SAN_PHAM phía trên. Tên giữ
+  // nguyên văn theo ảnh chủ shop gửi — đổi chữ sẽ làm
+  // scripts/validate-shop-contract.js đỏ.
+  const APP_VIP_PRO = [
+    { ma: 'lightroom',  ten: 'Lightroom',   nhom: 'ban-chay' },
+    { ma: 'beautyplus', ten: 'Beauty Plus', nhom: 'ban-chay' },
+    { ma: 'lightleap',  ten: 'Lightleap',   nhom: 'ban-chay' },
+    { ma: 'pixelance',  ten: 'Pixelance',   nhom: 'ban-chay' },
+    { ma: 'capcut',     ten: 'CapCut',      nhom: 'ban-chay' },
+    { ma: 'remini',     ten: 'Remini',      nhom: 'ban-chay' },
+    { ma: 'beautycam',  ten: 'Beauty Cam',  nhom: 'ban-chay' },
+    { ma: 'meitu',      ten: 'Meitu',     nhom: 'selfie' },
+    { ma: 'ulike',      ten: 'Ulike',     nhom: 'selfie' },
+    { ma: 'snow',       ten: 'Snow',      nhom: 'selfie' },
+    { ma: 'b612',       ten: 'B612',      nhom: 'selfie' },
+    { ma: 'hypic',      ten: 'Hypic',     nhom: 'selfie' },
+    { ma: 'foodie',     ten: 'Foodie',    nhom: 'selfie' },
+    { ma: 'prettyup',   ten: 'Pretty Up', nhom: 'selfie' },
+    { ma: 'canva',      ten: 'Canva',     nhom: 'thiet-ke' },
+    { ma: 'picsart',    ten: 'Pics Art',  nhom: 'thiet-ke' },
+    { ma: 'photoroom',  ten: 'Photoroom', nhom: 'thiet-ke' },
+    { ma: 'snapedit',   ten: 'Snapedit',  nhom: 'thiet-ke' },
+    { ma: 'faceapp',    ten: 'Face App',  nhom: 'thiet-ke' },
+    { ma: 'chatgpt',    ten: 'Chat GPT',  nhom: 'thiet-ke' }
+  ];
+
+  const NHOM_APP_VIP = [
+    { ma: 'ban-chay', ten: 'App bán chạy nhất' },
+    { ma: 'selfie',   ten: 'App Selfie hot' },
+    { ma: 'thiet-ke', ten: 'App thiết kế' }
+  ];
+
   // Danh sách module trong menu bên trái.
   //   kieu 'trang'  — mở ra một trang nội dung, đổi địa chỉ #hash
   //   kieu 'modal'  — không đổi trang, chỉ bật một bảng phụ lên
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: true  },
     { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
-    { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: false },
+    { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: true  },
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: false },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: true  },
@@ -88,6 +122,11 @@
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
     daChon: [],                  // mảng mã sản phẩm khách đã chọn
+    // Module "Mua App VIP Pro giá rẻ" (PHẦN 03E) — lựa chọn và thông tin liên
+    // hệ TÁCH HẲN khỏi daChon/khachHang ở trên vì đây là luồng không giá,
+    // không thanh toán, không liên quan gì tới tinhTien()/sanPhamDaChon().
+    appVipChon: [],
+    yeuCauAppVip: { soDienThoai: '', ghiChu: '', dangGui: false },
     khachHang: { email: '', zalo: '', dienThoai: '', whatsapp: '', telegram: '' },
     // Ghi nhớ trường nào đang được TỰ ĐỘNG điền theo trường kia. Khách tự gõ
     // vào trường nào thì trường đó thoát khỏi cơ chế đồng bộ.

@@ -2016,3 +2016,106 @@
 .mo-ta-khoa-hoc-yt a { color: var(--xanh); text-decoration: underline; }
 .noi-dung-bai-hoc { width: 100%; }
 .noi-dung-bai-hoc .khung-video.video-doc { margin-left: auto; margin-right: auto; }
+
+/* ============================================================================
+   MODULE "MUA APP VIP PRO GIÁ RẺ" — lưới nhỏ, không giá, không xem chi tiết.
+   ============================================================================ */
+
+.canh-bao-app-vip {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid rgba(229, 83, 75, .45);
+  border-radius: 10px;
+  background: rgba(229, 83, 75, .1);
+  color: var(--chu-diu);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.nhom-app-vip { margin-bottom: 20px; }
+.tieu-de-nhom-app-vip { font-size: 15px; margin: 0 0 10px; color: var(--chu); }
+
+/* Lưới NHIỀU ô nhỏ hơn hẳn .luoi-sanpham — mỗi app không có nhiều thông tin
+   để hiện nên ô co nhỏ lại, nhiều ô trên một hàng. */
+.luoi-app-vip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.the-app-vip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px 9px;
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  background: var(--the);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.the-app-vip:hover { border-color: var(--xanh); }
+
+.the-app-vip.da-chon {
+  border-color: var(--xanh);
+  background: var(--xanh-nen);
+  box-shadow: 0 0 0 1px var(--xanh) inset;
+}
+
+.anh-app-vip {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--bo);
+  object-fit: cover;
+  background: var(--the-2);
+}
+
+.ten-app-vip { font-size: 11.5px; font-weight: 600; color: var(--chu); line-height: 1.3; }
+
+.dau-chon-app-vip {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--xanh);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0;
+  transform: scale(.6);
+  transition: opacity .15s, transform .15s;
+}
+
+.the-app-vip.da-chon .dau-chon-app-vip { opacity: 1; transform: scale(1); }
+
+.ghi-chu-cuoi-app-vip { margin: 4px 0 0; font-size: 12.5px; color: var(--chu-mo); line-height: 1.6; }
+
+.ds-app-da-chon {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ds-app-da-chon li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  font-size: 12.5px;
+  color: var(--chu);
+}
+
+.dan-nhap-modal { margin: 0 0 8px; font-size: 13px; color: var(--chu-diu); }
+

@@ -64,7 +64,7 @@ var WEB_SHOP = 'thanhdeptrai.vn';
  * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
  * Version: New version → Deploy.
  */
-var PHIEN_BAN = '2026-09-10 \u00b7 LR21';
+var PHIEN_BAN = '2026-10-24 \u00b7 LR21 + AppVipPro';
 
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
@@ -486,6 +486,74 @@ function soanThuBaoShop(don, ketQua) {
   return html;
 }
 
+/* ------------------------------------------------- YÊU CẦU "MUA APP VIP PRO" */
+//
+// Module không giá, không thanh toán (xem PHẦN 03E của web) — khách chọn app
+// rồi để lại số điện thoại/Zalo, ghi vào nhánh yeuCauAppVip (KHÔNG PHẢI
+// donhang — không lẫn với khâu lọc trangThai='daXacNhan' ở trên). Chủ shop tự
+// nhắn tin tư vấn giá sau, script chỉ có việc BÁO qua email ngay khi có yêu
+// cầu mới, chạy chung nhịp với hàm gửi hàng bên trên.
+
+/** Lấy các yêu cầu CHƯA báo qua email (daBao chưa phải true). */
+function layYeuCauAppVipChoBao() {
+  var traLoi = goiFirebase('yeuCauAppVip',
+    'orderBy=' + encodeURIComponent('"daBao"') + '&equalTo=false&limitToFirst=' + SO_DON_MOI_LAN);
+  if (traLoi.getResponseCode() !== 200) {
+    throw new Error('Firebase tr\u1ea3 v\u1ec1 m\u00e3 ' + traLoi.getResponseCode() +
+      ' khi \u0111\u1ecdc yeuCauAppVip: ' + traLoi.getContentText().slice(0, 300));
+  }
+  var du = JSON.parse(traLoi.getContentText());
+  if (!du) return [];
+  return Object.keys(du).map(function (ma) {
+    var yc = du[ma];
+    yc.__ma = ma;
+    return yc;
+  });
+}
+
+function capNhatYeuCauAppVip(maYc, thayDoi) {
+  var traLoi = goiFirebase('yeuCauAppVip/' + maYc, '', {
+    method: 'patch',
+    contentType: 'application/json',
+    payload: JSON.stringify(thayDoi)
+  });
+  if (traLoi.getResponseCode() !== 200) {
+    throw new Error('Kh\u00f4ng c\u1eadp nh\u1eadt \u0111\u01b0\u1ee3c y\u00eau c\u1ea7u App VIP Pro ' + maYc + ': ' + traLoi.getContentText().slice(0, 200));
+  }
+}
+
+function soanThuYeuCauAppVip(yc) {
+  var ds = Array.isArray(yc.dsApp) ? yc.dsApp : Object.keys(yc.dsApp || {}).map(function (k) { return yc.dsApp[k]; });
+  var dongApp = ds.map(function (ten) { return '<li>' + thoatHtml(ten) + '</li>'; }).join('');
+  var sdt = thoatHtml(yc.soDienThoai || '(kh\u00f4ng c\u00f3)');
+  var duongZalo = linkZalo(String(yc.soDienThoai || '').trim());
+  var dongSdt = duongZalo
+    ? '<p><strong>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i/Zalo:</strong> ' + sdt + ' \u2014 <a href="' + duongZalo + '">nh\u1eafn Zalo ngay</a></p>'
+    : '<p><strong>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i/Zalo:</strong> ' + sdt + '</p>';
+  var ghiChu = yc.ghiChu ? '<p><strong>L\u1eddi nh\u1eafn c\u1ee7a kh\u00e1ch:</strong> ' + thoatHtml(yc.ghiChu) + '</p>' : '';
+  return '' +
+    '<p><strong>C\u00f3 kh\u00e1ch v\u1eeba g\u1eedi y\u00eau c\u1ea7u \u0111\u1eb7t mua App VIP Pro.</strong></p>' +
+    dongSdt +
+    '<p><strong>C\u00e1c app kh\u00e1ch ch\u1ecdn (' + ds.length + '):</strong></p>' +
+    '<ul>' + dongApp + '</ul>' +
+    ghiChu +
+    '<p>Vui l\u00f2ng ch\u1ee7 \u0111\u1ed9ng nh\u1eafn tin t\u01b0 v\u1ea5n v\u00e0 ch\u1ed1t gi\u00e1 v\u1edbi kh\u00e1ch \u2014 module n\u00e0y kh\u00f4ng thu ti\u1ec1n tr\u01b0\u1edbc.</p>';
+}
+
+function xuLyYeuCauAppVip(emailShop) {
+  var danhSach = layYeuCauAppVipChoBao();
+  if (!danhSach.length) return;
+  Logger.log('C\u00f3 ' + danhSach.length + ' y\u00eau c\u1ea7u Mua App VIP Pro ch\u1edd b\u00e1o.');
+  danhSach.forEach(function (yc) {
+    try {
+      guiThu(emailShop, '[App VIP Pro] Kh\u00e1ch m\u1edbi \u0111\u1eb7t mua \u2014 ' + (yc.soDienThoai || 'ch\u01b0a \u0111\u1ec3 s\u1ed1'),
+        soanThuYeuCauAppVip(yc));
+      capNhatYeuCauAppVip(yc.__ma, { daBao: true, baoLuc: Date.now() });
+    } catch (loi) {
+      Logger.log('L\u1ed7i khi b\u00e1o y\u00eau c\u1ea7u App VIP Pro ' + yc.__ma + ': ' + loi.message);
+    }
+  });
+}
 
 /* ------------------------------------------------------------ VIỆC CHÍNH */
 
@@ -503,6 +571,12 @@ function guiHangChoDonDaXacNhan() {
 
   try {
     var emailShop = docThietLap('EMAIL_SHOP');
+
+    // Báo yêu cầu "Mua App VIP Pro" TRƯỚC — module đó không có đơn hàng nào ở
+    // layDonChoGui() nên phải xử lý riêng, và đặt ở đây để return sớm bên
+    // dưới (không có đơn nào chờ gửi) không bao giờ bỏ sót nó.
+    xuLyYeuCauAppVip(emailShop);
+
     var danhSach = layDonChoGui();
     if (!danhSach.length) return;
 

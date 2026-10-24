@@ -555,6 +555,9 @@
     if (hanhDong === 'xuong-qua-tang') { xuongKhuQuaTang(); return; }
     if (hanhDong === 'cuon-len-dau') { cuonLenDauTrang(); return; }
     if (hanhDong === 'mua-hang') { moModalDonHang(); return; }
+    if (hanhDong === 'chon-app-vip') { chonAppVip(nutHanhDong.getAttribute('data-ma')); return; }
+    if (hanhDong === 'dat-mua-app-vip') { moModalDatMuaAppVip(); return; }
+    if (hanhDong === 'gui-yeu-cau-app-vip') { guiYeuCauAppVip(); return; }
     if (hanhDong === 'dong-modal') { dongModal(); return; }
     if (hanhDong === 'tien-hanh-thanh-toan') { moModalThanhToan(); return; }
     if (hanhDong === 'sao-chep') { xuLySaoChep(nutHanhDong); return; }
@@ -637,6 +640,8 @@
     if (adminGoKhoaHoc(dich)) return;
     if (adminGoKhoaHocMayTinh(dich)) return;
     if (adminDonGoTim(dich)) return;
+    const truongAppVip = dich.getAttribute('data-truong-app-vip');
+    if (truongAppVip) { capNhatTruongAppVip(truongAppVip, dich.value); return; }
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);

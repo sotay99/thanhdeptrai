@@ -145,7 +145,21 @@ input { font: inherit; color: inherit; }
   transition: border-color .15s, box-shadow .15s;
 }
 
-.truong input:focus {
+.truong textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--vien-sang);
+  border-radius: var(--bo);
+  background: var(--nen-sau);
+  color: inherit;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.truong input:focus, .truong textarea:focus {
   outline: none;
   border-color: var(--xanh);
   box-shadow: 0 0 0 3px var(--xanh-mo);
