@@ -395,9 +395,26 @@
   // duy nhất xác nhận được — máy chủ đã cấp phát link thật cho thiết bị này).
   const QUA_TANG_KEM_SP1 = ['qt-remini', 'qt-xingtu'];
 
+  // Cổng khoá dựa vào state.nhanHang.ketQuaTep (bộ nhớ trong phiên) là CHƯA
+  // ĐỦ: khiDong của modal "Nhận sản phẩm" (PHẦN 03B) xoá sạch ketQuaTep mỗi
+  // lần đóng bảng — khách đóng rồi mở lại là cổng khoá lại, dù máy NÀY đã
+  // được máy chủ xác nhận hợp lệ. Ghi thêm một cờ vào localStorage NGAY LÚC
+  // được cấp phép lần đầu (ganCoDaXacNhanSp1(), gọi từ xacNhanTai()) — cổng
+  // khoá đọc CẢ hai nguồn, nên mở modal lại bao nhiêu lần trong CÙNG máy này
+  // vẫn tải được Remini/XingTu, dù dòng Lightroom tự nó phải xác nhận lại.
+  const KHOA_SP1_XAC_NHAN = 'tdt-sp1-xacnhan';
+
+  function ganCoDaXacNhanSp1(){
+    try { window.localStorage.setItem(KHOA_SP1_XAC_NHAN, '1'); } catch (e) { /* không lưu được thì thôi */ }
+  }
+
+  function coDaXacNhanSp1(){
+    try { return window.localStorage.getItem(KHOA_SP1_XAC_NHAN) === '1'; } catch (e) { return false; }
+  }
+
   function daTaiLightroomThanhCong(){
     const kq = state.nhanHang.ketQuaTep || {};
-    return Object.keys(kq).some(function(i){ return kq[i] && kq[i].duoc; });
+    return Object.keys(kq).some(function(i){ return kq[i] && kq[i].duoc; }) || coDaXacNhanSp1();
   }
 
   function veKhoiQuaTangKemSp1(){
@@ -784,6 +801,11 @@
     xinDuongDanTai(nh.maSanPham, nh.maNhanHang, f.tep).then(function(kq){
       nh.dangHoiTep = '';
       nh.ketQuaTep[i] = kq || { duoc: false, lyDo: '' };
+      // Máy chủ VỪA cấp phép một tệp của sp1 — đánh dấu máy này hợp lệ,
+      // LƯU LÂU DÀI (không chỉ trong phiên), để quà tặng kèm (Remini/XingTu,
+      // xem daTaiLightroomThanhCong() trên) không bị khoá lại mỗi lần đóng
+      // rồi mở lại modal "Nhận sản phẩm".
+      if (nh.maSanPham === 'sp1' && nh.ketQuaTep[i] && nh.ketQuaTep[i].duoc) ganCoDaXacNhanSp1();
       capNhatVungTep(i);
     });
   }

@@ -2268,12 +2268,19 @@
 .tc-hero h1 .cham-xanh { color: var(--xanh); }
 .tc-hero p { color: var(--chu-diu); font-size: 13.5px; max-width: 560px; margin: 0 auto; }
 
+/* Hai câu mô tả — .rong cho màn hình thường, .hep cho màn hình hẹp (HTML
+   luôn dựng cả hai, PHẦN 05B — CSS quyết định câu nào hiện, đổi cỡ màn hình
+   là đổi câu ngay không cần vẽ lại trang). Mặc định ẩn .hep, hiện .rong. */
+.tc-hero p.hep { display: none; }
+
 /* Màn hình hẹp: ẩn dòng tiêu đề "Shop Thànhđẹptrai.vn" NGAY TRONG khối hero
    của Trang chủ (không phải thanh tiêu đề chung của cả web — thanh đó vẫn
-   hiện đủ ở MỌI module, MỌI cỡ màn hình, không đụng tới). Đoạn giới thiệu
-   bên dưới (.tc-hero p) vẫn hiện như thường. */
+   hiện đủ ở MỌI module, MỌI cỡ màn hình, không đụng tới). Đổi hẳn sang câu
+   mô tả ngắn, thân thiện hơn thay cho câu giới thiệu đầy đủ. */
 @media (max-width: 560px) {
   .tc-hero h1 { display: none; }
+  .tc-hero p.rong { display: none; }
+  .tc-hero p.hep { display: block; }
 }
 
 /* Toàn bộ Trang chủ căn GIỮA — tiêu đề, mô tả, cả các khối bên trong từng
@@ -2451,6 +2458,16 @@ body.trang-chu-nen {
   background-repeat: repeat-y;
   background-size: 1000px 1400px;
   background-position: top center;
+}
+
+/* Màn hình hẹp: GẤP ĐÔI số chấm tròn (20 → 40) so với bản dùng chung ở
+   trên — CHỈ ở màn hình hẹp, màn hình thường/rộng giữ nguyên 20 chấm. 20
+   chấm ban đầu + 20 chấm mới xen kẽ, cùng dải độ mờ (30–60%) và kích cỡ
+   (1,5–4) để hoà chung một kiểu, không nổi riêng lẻ. */
+@media (max-width: 560px) {
+  body.trang-chu-nen {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1400'%3E%3Cg stroke='%2331a8ff' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M120 60 L160 180 L100 220 L170 360' stroke-width='3' opacity='.5'/%3E%3Cpath d='M860 240 L900 330 L840 370 L910 480' stroke-width='3' opacity='.42'/%3E%3Cpath d='M60 820 L100 900 L50 940 L120 1060' stroke-width='3' opacity='.46'/%3E%3Cpath d='M50 620 C250 560 350 760 550 700 C750 640 800 820 950 760' stroke-width='2' opacity='.36'/%3E%3Cpath d='M30 1180 C200 1120 300 1300 500 1240 C700 1180 780 1340 970 1280' stroke-width='2' opacity='.32'/%3E%3C/g%3E%3Cg fill='%2331a8ff'%3E%3Ccircle cx='200' cy='120' r='3' opacity='.5'/%3E%3Ccircle cx='760' cy='90' r='4' opacity='.35'/%3E%3Ccircle cx='920' cy='520' r='2.5' opacity='.6'/%3E%3Ccircle cx='140' cy='460' r='3.5' opacity='.3'/%3E%3Ccircle cx='480' cy='300' r='2' opacity='.45'/%3E%3Ccircle cx='620' cy='920' r='3' opacity='.4'/%3E%3Ccircle cx='260' cy='1020' r='2.5' opacity='.55'/%3E%3Ccircle cx='820' cy='1100' r='4' opacity='.3'/%3E%3Ccircle cx='400' cy='1340' r='3' opacity='.45'/%3E%3Ccircle cx='60' cy='1300' r='2' opacity='.35'/%3E%3Ccircle cx='340' cy='180' r='2' opacity='.4'/%3E%3Ccircle cx='600' cy='60' r='1.5' opacity='.3'/%3E%3Ccircle cx='980' cy='250' r='3' opacity='.5'/%3E%3Ccircle cx='40' cy='560' r='2.5' opacity='.35'/%3E%3Ccircle cx='300' cy='680' r='4' opacity='.45'/%3E%3Ccircle cx='700' cy='500' r='1.5' opacity='.3'/%3E%3Ccircle cx='860' cy='760' r='2.5' opacity='.55'/%3E%3Ccircle cx='180' cy='880' r='3.5' opacity='.4'/%3E%3Ccircle cx='540' cy='1180' r='2' opacity='.3'/%3E%3Ccircle cx='940' cy='1380' r='3' opacity='.5'/%3E%3Ccircle cx='120' cy='320' r='2' opacity='.45'/%3E%3Ccircle cx='450' cy='420' r='3' opacity='.35'/%3E%3Ccircle cx='780' cy='380' r='2.5' opacity='.5'/%3E%3Ccircle cx='920' cy='140' r='2' opacity='.3'/%3E%3Ccircle cx='60' cy='680' r='3.5' opacity='.4'/%3E%3Ccircle cx='560' cy='780' r='2' opacity='.55'/%3E%3Ccircle cx='240' cy='560' r='1.5' opacity='.3'/%3E%3Ccircle cx='900' cy='620' r='3' opacity='.45'/%3E%3Ccircle cx='380' cy='840' r='2.5' opacity='.35'/%3E%3Ccircle cx='660' cy='920' r='4' opacity='.3'/%3E%3Ccircle cx='120' cy='980' r='2' opacity='.5'/%3E%3Ccircle cx='820' cy='980' r='2.5' opacity='.4'/%3E%3Ccircle cx='480' cy='1060' r='3' opacity='.35'/%3E%3Ccircle cx='40' cy='1180' r='2' opacity='.45'/%3E%3Ccircle cx='720' cy='1060' r='1.5' opacity='.3'/%3E%3Ccircle cx='960' cy='1200' r='2.5' opacity='.5'/%3E%3Ccircle cx='280' cy='1260' r='3' opacity='.35'/%3E%3Ccircle cx='580' cy='1340' r='2' opacity='.4'/%3E%3Ccircle cx='840' cy='60' r='2.5' opacity='.35'/%3E%3Ccircle cx='160' cy='40' r='1.5' opacity='.3'/%3E%3C/g%3E%3C/svg%3E");
+  }
 }
 
 /* Khung nội dung Trang chủ nới RỘNG SÁT HAI MÉP MÀN HÌNH — khác mọi module

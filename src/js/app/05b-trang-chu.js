@@ -197,10 +197,15 @@
     const cuoiKhoi = TRANG_CHU_KHOI.slice(giua);
     return '' +
       '<div class="tc-landing">' +
+        // Hai câu mô tả khác nhau tuỳ bề rộng màn hình — CSS quyết định câu
+        // nào hiện (.tc-hero .rong / .tc-hero .hep, PHẦN "TRANG CHỦ" trong
+        // app.css), không phải JS: đổi cỡ màn hình là đổi câu ngay, không
+        // cần vẽ lại trang.
         '<section class="tc-hero cho-troi-len" data-khoi="hero">' +
           '<h1>Shop Thànhđẹptrai<span class="cham-xanh">.vn</span></h1>' +
-          '<p>Lightroom, Photoshop và trọn bộ công cụ chỉnh ảnh chuyên nghiệp — giá tốt, giao ngay, ' +
+          '<p class="rong">Lightroom, Photoshop và trọn bộ công cụ chỉnh ảnh chuyên nghiệp — giá tốt, giao ngay, ' +
             'hoàn tiền 100% nếu không hài lòng trong 15 ngày.</p>' +
+          '<p class="hep">Chào mừng bạn, hãy dạo chơi ở đây và nhận những món quà miễn phí</p>' +
         '</section>' +
         dauKhoi.map(veKhoiTrangChu).join('') +
         veThanhChayModule('tc-marquee-giua') +
