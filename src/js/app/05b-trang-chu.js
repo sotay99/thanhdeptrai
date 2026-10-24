@@ -170,7 +170,10 @@
   // hàm gắn thêm đầu/cuối MỌI module khác, nên id ở đây phải khác id những
   // nơi đó dùng để không trùng trong cùng một DOM.
   function veModuleTrangChu(){
-    const giua = Math.ceil(TRANG_CHU_KHOI.length / 2);
+    // Cố định ngay SAU khối "goi-vip" (chỉ số 2: khoa-hoc-mien-phi, qua-tang-
+    // android, goi-vip) và TRƯỚC "app-vip-pro" — không chia đôi theo số lượng
+    // khối như trước, vì vị trí này đã được chốt rõ.
+    const giua = 3;
     const dauKhoi = TRANG_CHU_KHOI.slice(0, giua);
     const cuoiKhoi = TRANG_CHU_KHOI.slice(giua);
     return '' +

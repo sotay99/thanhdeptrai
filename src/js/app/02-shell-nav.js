@@ -86,11 +86,19 @@
   // -------------------------------------------- "NHẤP NHÁY GỢI Ý" MỤC MENU
   //
   // Dùng ở Trang chủ (PHẦN 05B) và ở 3 nút quà tặng trong module "Trọn bộ sản
-  // phẩm VIP" (PHẦN 03) — và ở MỌI thanh chạy chữ gắn thêm đầu/cuối các
-  // module khác (xem veNoiDungModule() dưới đây). Mở khung menu (không đóng
-  // nếu đã mở), cuộn tới đúng mục trong khung đó rồi cho nó nhấp nháy để
-  // khách TỰ bấm — CỐ Ý không nhảy module, khác hẳn moModule().
+  // phẩm VIP" (PHẦN 03) — và ở MỌI thanh chạy chữ gắn thêm cuối các module
+  // khác (xem veNoiDungModule() dưới đây). Mở khung menu (không đóng nếu đã
+  // mở), cuộn tới đúng mục trong khung đó rồi cho nó nhấp nháy để khách TỰ
+  // bấm — CỐ Ý không nhảy module, khác hẳn moModule().
+  //
+  // NGOẠI LỆ: module kieu 'modal' (Sự công nhận, Liên hệ, Hoàn tiền, Đặc
+  // quyền, Điều khoản, Bảo mật) không hề "nhảy module" — bấm vào chỉ mở một
+  // bảng phụ NỔI LÊN TRÊN, không đổi trang đang đứng. Nhấp nháy gợi ý vì vậy
+  // vô nghĩa ở đây: mở thẳng bảng đó luôn, y hệt hành vi cũ (mo-module).
   function goiYMoModule(ma){
+    const m = timModule(ma);
+    if (m && m.kieu === 'modal') { moModule(ma); return; }
+
     const dangMoRoi = state.menuMo;
     moMenu();
     // Khung vừa trượt ra mất .3s (CSS .menu-trai) — đợi gần xong rồi mới tìm
@@ -654,12 +662,12 @@
       '</div>';
   }
 
-  // Module dạng "trang" (một màn hình riêng hoàn chỉnh) được gắn thêm 2 thanh
-  // chạy chữ ở đầu và cuối — TRỪ "Trang chủ" (tự nó đã có hai thanh y hệt,
-  // xen giữa các khối, PHẦN 05B) và TRỪ "Image Editor Pro" (công cụ toàn màn
+  // Module dạng "trang" (một màn hình riêng hoàn chỉnh) được gắn thêm MỘT
+  // thanh chạy chữ ở CUỐI — TRỪ "Trang chủ" (tự nó đã có hai thanh y hệt, xen
+  // giữa các khối, PHẦN 05B) và TRỪ "Image Editor Pro" (công cụ toàn màn
   // hình riêng, thêm thanh vào phá bố cục công cụ). Module kieu "modal"
   // (Liên hệ, Hoàn tiền, Đặc quyền...) không phải màn hình riêng nên cũng
-  // không có.
+  // không có. CHỈ ở cuối, không còn ở đầu nữa (đã bỏ theo yêu cầu).
   function canhThanhChayModule(m){
     return !!m && m.kieu === 'trang' && m.ma !== 'trang-chu' && m.ma !== 'image-editor-pro';
   }
@@ -686,7 +694,7 @@
     else noiDung = veManNangCap(m ? m.ten : '');
 
     if (canhThanhChayModule(m)) {
-      return veThanhChayModule('tc-dau-' + m.ma) + noiDung + veThanhChayModule('tc-cuoi-' + m.ma);
+      return noiDung + veThanhChayModule('tc-cuoi-' + m.ma);
     }
     return noiDung;
   }
