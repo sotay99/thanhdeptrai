@@ -141,8 +141,10 @@
       '</article>';
   }
 
-  // Ba món quà tặng nằm ở cuối module — đều là module có sẵn trong MODULE, chỉ
-  // dẫn sang chứ không mở bảng phụ nào.
+  // Ba món quà tặng nằm ở cuối module — đều là module có sẵn trong MODULE.
+  // Bấm vào KHÔNG rời khỏi "goi-vip" nữa — goiYMoModule() (PHẦN 02) mở khung
+  // menu rồi cuộn-tới-và-nhấp-nháy đúng mục đó, khách tự bấm mục trong khung
+  // menu nếu thật sự muốn qua module khác (đúng y logic ở Trang chủ, PHẦN 05B).
   const QUA_TANG = [
     { module: 'qua-tang-android',  ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁' },
     { module: 'khoa-hoc-mobile',   ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '📱' },
@@ -151,7 +153,7 @@
 
   function veKhuQuaTang(){
     const nut = QUA_TANG.map(function(q){
-      return '<button type="button" class="nut nut-vien nut-rong nut-qua" data-hanh-dong="mo-module" data-module="' +
+      return '<button type="button" class="nut nut-vien nut-rong nut-qua" data-hanh-dong="nhap-nhay-module" data-module="' +
         escapeHtml(q.module) + '">' +
         '<span class="bieu-tuong" aria-hidden="true">' + q.bieuTuong + '</span>' +
         '<span class="chu">' + escapeHtml(q.ten) + '</span>' +
@@ -190,6 +192,10 @@
       // luôn mở ra y hệt một bảng.
       '<button type="button" class="nut nut-rong nut-hoan-tien" data-hanh-dong="mo-module" data-module="hoan-tien">' +
         '<span aria-hidden="true">↩</span> Yêu cầu hoàn tiền 100% với sản phẩm đã mua</button>' +
+      // Cùng dẫn tới module 'cong-nhan' như mục ở menu bên trái. Nút này mở
+      // THẲNG modal (không qua goiYMoModule) — khác 3 nút quà tặng bên dưới.
+      '<button type="button" class="nut nut-rong nut-cong-nhan" data-hanh-dong="mo-module" data-module="cong-nhan">' +
+        '<span aria-hidden="true">★</span> Sự công nhận của khách hàng</button>' +
       // Bắt buộc đã chọn ít nhất một sản phẩm — bamTuVan() (PHẦN 03K) tự kiểm
       // và chỉ hiện lời nhắc nếu chưa chọn gì, không mở modal.
       '<button type="button" class="nut nut-rong nut-tu-van" data-hanh-dong="bam-tu-van">' +

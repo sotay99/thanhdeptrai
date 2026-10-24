@@ -77,29 +77,45 @@
   // Danh sách module trong menu bên trái.
   //   kieu 'trang'  — mở ra một trang nội dung, đổi địa chỉ #hash
   //   kieu 'modal'  — không đổi trang, chỉ bật một bảng phụ lên
+  //   tenNgan       — tên RÚT GỌN, CHỈ dùng ở hai thanh chạy chữ (PHẦN 02,
+  //                   veThanhChayModule) vì tên đầy đủ quá dài làm thanh chạy
+  //                   lê thê. Module nào tên đã ngắn sẵn thì không khai —
+  //                   nơi hiển thị tự lấy "tenNgan || ten".
   const MODULE = [
     { ma: 'trang-chu',        ten: 'Trang chủ',                        bieuTuong: '⌂', kieu: 'trang', sanSang: true  },
-    { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế', bieuTuong: '★', kieu: 'trang', sanSang: true  },
+    { ma: 'goi-vip',          ten: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế',
+      tenNgan: 'Trọn bộ sản phẩm VIP',    bieuTuong: '★', kieu: 'trang', sanSang: true  },
     { ma: 'app-vip-pro',      ten: 'Mua App VIP pro giá rẻ',            bieuTuong: '◆', kieu: 'trang', sanSang: true  },
-    { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: true  },
-    { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: true  },
-    { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: true  },
-    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: true  },
-    { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
+    { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android',
+      tenNgan: 'Quà tặng Android',        bieuTuong: '🎁', kieu: 'trang', sanSang: true  },
+    { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)',
+      tenNgan: 'Khoá học Lightroom điện thoại', bieuTuong: '▤', kieu: 'trang', sanSang: true  },
+    { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)',
+      tenNgan: 'Khoá học Lightroom PC',   bieuTuong: '▣', kieu: 'trang', sanSang: true  },
+    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)',
+      tenNgan: 'Khoá học Photoshop',      bieuTuong: '✦', kieu: 'trang', sanSang: true  },
+    { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop',
+      tenNgan: 'Đặc quyền khách cũ',      bieuTuong: '👑', kieu: 'modal', sanSang: true  },
     { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: true  },
-    { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: true  },
-    { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: true  },
+    { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',
+      tenNgan: 'Liên hệ Shop',            bieuTuong: '☎', kieu: 'modal', sanSang: true  },
+    { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',
+      tenNgan: 'Công nhận khách hàng',    bieuTuong: '★', kieu: 'modal', sanSang: true  },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: true  },
-    { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: true  },
+    { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',
+      tenNgan: 'Điều khoản sử dụng',      bieuTuong: '§', kieu: 'modal', sanSang: true  },
     { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: true  },
-    // Trang AI Image Editor Pro - Layers trước đây là nội dung của module
-    // "Trang chủ" (ma: 'trang-chu') — nay "Trang chủ" trống (đang nâng cấp),
-    // còn nguyên trang trình chỉnh sửa chuyển sang module riêng này, đứng
-    // CUỐI danh sách menu. Xem veModuleImageEditorPro() ở PHẦN 06.
+    // Trang AI Image Editor Pro - Layers TRƯỚC ĐÂY là nội dung của module
+    // "Trang chủ" (ma: 'trang-chu') — nay "Trang chủ" là landingpage thật
+    // (PHẦN 05B), còn nguyên trang trình chỉnh sửa đứng CUỐI danh sách menu ở
+    // module riêng này. Xem veModuleImageEditorPro() ở PHẦN 06.
     { ma: 'image-editor-pro', ten: 'Image Editor Pro',                 bieuTuong: '🖼️', kieu: 'trang', sanSang: true  }
   ];
 
-  const MODULE_MAC_DINH = 'goi-vip';
+  // Khách vào thẳng "/" không kèm #hash thì rơi vào MODULE này — Trang chủ
+  // (landingpage, PHẦN 05B), không còn là "goi-vip" như trước khi Trang chủ
+  // còn trống.
+  const MODULE_MAC_DINH = 'trang-chu';
 
   // Bản dự phòng khi CHƯA đọc được thông tin chuyển khoản từ Firebase (mất
   // mạng, hoặc chưa dán firebaseConfig). Cố ý KHÔNG chứa số tài khoản thật —

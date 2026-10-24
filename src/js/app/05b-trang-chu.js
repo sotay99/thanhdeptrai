@@ -22,9 +22,13 @@
           .anh-dai-dien), chỉ thêm selector mới trong CSS, không viết lại
           keyframe.
 
-     Bấm vào bất kỳ thẻ/mục nào ở đây → moMenu() rồi moModule(ma): CHỦ ĐỘNG
-     MỞ khung menu bên phải trước khi nhảy module (moModule() sẵn KHÔNG tự
-     đóng menu — xem PHẦN 02), để khách thấy hết các mục còn lại ở menu.
+     Bấm vào bất kỳ thẻ/mục nào ở đây (kể cả hai thanh chạy chữ, xen giữa các
+     khối) → goiYMoModule(ma) (PHẦN 02): mở khung menu rồi cuộn-tới-và-nhấp-
+     nháy đúng mục trong khung đó, CỐ Ý KHÔNG nhảy module — khách tự bấm mục
+     đã nhấp nháy để thật sự vào đó. Hàm này còn dùng ở 3 nút quà tặng trong
+     module "Trọn bộ sản phẩm VIP" (PHẦN 03) và ở hai thanh chạy chữ gắn thêm
+     đầu/cuối MỌI module khác (xem veNoiDungModule(), PHẦN 02) — không viết
+     riêng ở đây nữa.
      =========================================================================== */
 
   // "Khối" = một mảng nội dung trên trang chủ. kieu 'luoi' vẽ nhiều thẻ nhỏ
@@ -62,8 +66,13 @@
       tieuDe: 'Trọn bộ sản phẩm VIP cho Lightroom, Photoshop và Thiết kế',
       moTa: 'Chọn càng nhiều càng rẻ — mỗi sản phẩm được giảm thêm ' + GIAM_MOI_SAN_PHAM + '% ở bước chốt đơn.',
       kieu: 'luoi',
+      // Bỏ sp4/sp5 (hai "khoá học" trong SAN_PHAM, giá 0) — đã có mặt riêng ở
+      // khối "3 khoá học miễn phí" phía trên, liệt kê lại ở đây là trùng.
+      // Chỉ bỏ ở bản tóm tắt Trang chủ; module "goi-vip" THẬT vẫn đủ 9 sản
+      // phẩm, không đụng tới.
       layMuc: function(){
-        return SAN_PHAM.map(function(sp){ return { ten: sp.ten, anh: ANH_DAI_DIEN[sp.ma], module: 'goi-vip' }; });
+        return SAN_PHAM.filter(function(sp){ return sp.ma !== 'sp4' && sp.ma !== 'sp5'; })
+          .map(function(sp){ return { ten: sp.ten, anh: ANH_DAI_DIEN[sp.ma], module: 'goi-vip' }; });
       }
     },
     {
@@ -86,6 +95,7 @@
       id: 'video-ngan',
       tieuDe: 'Xem video ngắn',
       moTa: 'Mẹo chỉnh ảnh, review preset và hướng dẫn nhanh — xem lướt qua trong vài chục giây mỗi video.',
+      nhan: 'Miễn phí',
       kieu: 'don',
       module: 'video-ngan',
       anh: '/assets/anh/dd-video-ngan.svg'
@@ -112,7 +122,7 @@
 
   function veTheTrangChu(muc){
     return '' +
-      '<article class="tc-the cho-troi-len" data-hanh-dong="tc-vao-module" data-module="' +
+      '<article class="tc-the cho-troi-len" data-hanh-dong="nhap-nhay-module" data-module="' +
         escapeHtml(muc.module) + '">' +
         '<figure class="tc-anh"><img src="' + muc.anh + '" width="84" height="84" loading="lazy" decoding="async"' +
           ' alt="Ảnh đại diện: ' + escapeHtml(muc.ten) + '"></figure>' +
@@ -131,7 +141,7 @@
       return '<p class="tc-nhom-app"><strong>' + escapeHtml(n.ten) + ':</strong> ' + escapeHtml(n.apps) + '</p>';
     }).join('') : '';
     return '' +
-      '<article class="tc-the tc-the-don cho-troi-len" data-hanh-dong="tc-vao-module" data-module="' +
+      '<article class="tc-the tc-the-don cho-troi-len" data-hanh-dong="nhap-nhay-module" data-module="' +
         escapeHtml(khoi.module) + '">' +
         '<figure class="tc-anh">' + anhHoacIcon + '</figure>' +
         '<div class="tc-than-don">' +
@@ -156,54 +166,28 @@
       '</section>';
   }
 
-  // Danh sách tên module cho hai thanh chạy chữ — TOÀN BỘ menu bên trái, trừ
-  // chính "Trang chủ" (bấm vào tên mình thì chẳng dẫn đi đâu).
-  function dsModuleChayChu(){
-    return MODULE.filter(function(m){ return m.sanSang && m.ma !== 'trang-chu'; });
-  }
-
-  function veMarqueeTrangChu(id){
-    const ds = dsModuleChayChu();
-    const veMuc = function(m){
-      return '<span class="tc-marquee-item" data-hanh-dong="tc-vao-module" data-module="' + escapeHtml(m.ma) + '">' +
-        '<span aria-hidden="true">' + m.bieuTuong + '</span> ' + escapeHtml(m.ten) + '</span>';
-    };
-    // Lặp lại nguyên danh sách MỘT lần nữa, nối liền — mẹo cuộn vô hạn không
-    // giật: animation chỉ cần trượt đúng 50% chiều ngang rồi lặp lại, lúc đó
-    // nửa sau đã trùng khít nửa đầu của lượt kế tiếp.
-    return '' +
-      '<div class="tc-marquee" aria-hidden="true" id="' + id + '">' +
-        '<div class="tc-marquee-track">' +
-          ds.map(veMuc).join('') + ds.map(veMuc).join('') +
-        '</div>' +
-      '</div>';
-  }
-
+  // Hai thanh chạy chữ dùng chung veThanhChayModule() (PHẦN 02) — cũng là
+  // hàm gắn thêm đầu/cuối MỌI module khác, nên id ở đây phải khác id những
+  // nơi đó dùng để không trùng trong cùng một DOM.
   function veModuleTrangChu(){
     const giua = Math.ceil(TRANG_CHU_KHOI.length / 2);
     const dauKhoi = TRANG_CHU_KHOI.slice(0, giua);
     const cuoiKhoi = TRANG_CHU_KHOI.slice(giua);
     return '' +
-      '<section class="tc-hero cho-troi-len" data-khoi="hero">' +
-        '<h1>Shop Thànhđẹptrai<span class="cham-xanh">.vn</span></h1>' +
-        '<p>Lightroom, Photoshop và trọn bộ công cụ chỉnh ảnh chuyên nghiệp — giá tốt, giao ngay, ' +
-          'hoàn tiền 100% nếu không hài lòng trong 15 ngày.</p>' +
-      '</section>' +
-      dauKhoi.map(veKhoiTrangChu).join('') +
-      veMarqueeTrangChu('tc-marquee-giua') +
-      cuoiKhoi.map(veKhoiTrangChu).join('') +
-      veMarqueeTrangChu('tc-marquee-cuoi');
+      '<div class="tc-landing">' +
+        '<section class="tc-hero cho-troi-len" data-khoi="hero">' +
+          '<h1>Shop Thànhđẹptrai<span class="cham-xanh">.vn</span></h1>' +
+          '<p>Lightroom, Photoshop và trọn bộ công cụ chỉnh ảnh chuyên nghiệp — giá tốt, giao ngay, ' +
+            'hoàn tiền 100% nếu không hài lòng trong 15 ngày.</p>' +
+        '</section>' +
+        dauKhoi.map(veKhoiTrangChu).join('') +
+        veThanhChayModule('tc-marquee-giua') +
+        cuoiKhoi.map(veKhoiTrangChu).join('') +
+        veThanhChayModule('tc-marquee-cuoi') +
+      '</div>';
   }
 
-  // --------------------------------------------------------- HÀNH ĐỘNG & HIỆU ỨNG
-
-  // Bấm vào BẤT KỲ thành phần nào ở trang chủ: mở khung menu bên phải TRƯỚC
-  // (moMenu(), không phải doiMenu() — không được đóng nếu đang mở), rồi mới
-  // nhảy module. moModule() đã sẵn không tự đóng menu (PHẦN 02).
-  function vaoModuleTuTrangChu(ma){
-    moMenu();
-    moModule(ma);
-  }
+  // --------------------------------------------------------- HIỆU ỨNG CUỘN
 
   // IntersectionObserver: mỗi khối/thẻ có class cho-troi-len, đỉnh vừa chạm
   // viewport lúc cuộn là thêm dang-troi-len (CSS lo phần chuyển động), rồi

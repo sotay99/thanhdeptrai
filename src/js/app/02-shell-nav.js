@@ -83,6 +83,38 @@
     else moMenu();
   }
 
+  // -------------------------------------------- "NHẤP NHÁY GỢI Ý" MỤC MENU
+  //
+  // Dùng ở Trang chủ (PHẦN 05B) và ở 3 nút quà tặng trong module "Trọn bộ sản
+  // phẩm VIP" (PHẦN 03) — và ở MỌI thanh chạy chữ gắn thêm đầu/cuối các
+  // module khác (xem veNoiDungModule() dưới đây). Mở khung menu (không đóng
+  // nếu đã mở), cuộn tới đúng mục trong khung đó rồi cho nó nhấp nháy để
+  // khách TỰ bấm — CỐ Ý không nhảy module, khác hẳn moModule().
+  function goiYMoModule(ma){
+    const dangMoRoi = state.menuMo;
+    moMenu();
+    // Khung vừa trượt ra mất .3s (CSS .menu-trai) — đợi gần xong rồi mới tìm
+    // phần tử, nếu không scrollIntoView() tính toán trên vị trí CHƯA trượt
+    // tới, cuộn sai chỗ. Khung đã mở sẵn thì không cần đợi.
+    setTimeout(function(){
+      const muc = document.querySelector('.menu-trai .muc-menu[data-module="' + ma + '"]');
+      if (!muc) return;
+      muc.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const cu = document.querySelector('.muc-menu.nhap-nhay');
+      if (cu && cu !== muc) cu.classList.remove('nhap-nhay');
+      // Gỡ rồi gắn lại ngay — nếu bấm lại đúng mục đang nhấp nháy dở thì
+      // animation phải CHẠY LẠI TỪ ĐẦU chứ không đứng yên (đã có class rồi
+      // thì gắn thêm lần nữa trình duyệt coi như không đổi gì).
+      muc.classList.remove('nhap-nhay');
+      void muc.offsetWidth;   // ép trình duyệt tính lại style trước khi gắn lại
+      muc.classList.add('nhap-nhay');
+      muc.addEventListener('animationend', function xong(){
+        muc.classList.remove('nhap-nhay');
+        muc.removeEventListener('animationend', xong);
+      });
+    }, dangMoRoi ? 30 : 340);
+  }
+
   // Khoá cuộn nền khi menu hoặc modal đang che màn hình.
   function capNhatKhoaCuon(){
     const can = state.menuMo || state.modal.length > 0;
@@ -594,6 +626,44 @@
 
   // ---------------------------------------------------- VẼ TOÀN BỘ GIAO DIỆN
 
+  // Danh sách tên module cho các thanh chạy chữ — TOÀN BỘ menu, trừ chính
+  // "Trang chủ" (bấm vào tên mình thì chẳng dẫn đi đâu). Dùng chung cho thanh
+  // ở Trang chủ (PHẦN 05B) lẫn thanh gắn đầu/cuối các module khác dưới đây.
+  function dsModuleChayChu(){
+    return MODULE.filter(function(m){ return m.sanSang && m.ma !== 'trang-chu'; });
+  }
+
+  // id: để phân biệt nhiều thanh trên cùng một trang (mỗi id phải DUY NHẤT
+  // trong DOM — không thật sự cần thiết cho việc chạy, chỉ để dễ dò khi cần).
+  // Bấm vào tên nào: goiYMoModule() (mở menu + cuộn + nhấp nháy), KHÔNG nhảy
+  // module — xem lý do ở hàm đó.
+  function veThanhChayModule(id){
+    const ds = dsModuleChayChu();
+    const veMuc = function(m){
+      return '<span class="tc-marquee-item" data-hanh-dong="nhap-nhay-module" data-module="' + escapeHtml(m.ma) + '">' +
+        '<span aria-hidden="true">' + m.bieuTuong + '</span> ' + escapeHtml(m.tenNgan || m.ten) + '</span>';
+    };
+    // Lặp lại nguyên danh sách MỘT lần nữa, nối liền — mẹo cuộn vô hạn không
+    // giật: animation chỉ cần trượt đúng 50% chiều ngang rồi lặp lại, lúc đó
+    // nửa sau đã trùng khít nửa đầu của lượt kế tiếp.
+    return '' +
+      '<div class="tc-marquee" aria-hidden="true" id="' + id + '">' +
+        '<div class="tc-marquee-track">' +
+          ds.map(veMuc).join('') + ds.map(veMuc).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  // Module dạng "trang" (một màn hình riêng hoàn chỉnh) được gắn thêm 2 thanh
+  // chạy chữ ở đầu và cuối — TRỪ "Trang chủ" (tự nó đã có hai thanh y hệt,
+  // xen giữa các khối, PHẦN 05B) và TRỪ "Image Editor Pro" (công cụ toàn màn
+  // hình riêng, thêm thanh vào phá bố cục công cụ). Module kieu "modal"
+  // (Liên hệ, Hoàn tiền, Đặc quyền...) không phải màn hình riêng nên cũng
+  // không có.
+  function canhThanhChayModule(m){
+    return !!m && m.kieu === 'trang' && m.ma !== 'trang-chu' && m.ma !== 'image-editor-pro';
+  }
+
   function veNoiDungModule(){
     // Hai trang có địa chỉ riêng, đứng ngoài hệ thống module: trang nhận hàng
     // (gửi cho khách qua email và Zalo) và trang quản trị của chủ shop.
@@ -601,18 +671,24 @@
     if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
     if (m && m.ma === 'trang-chu') return veModuleTrangChu();
-    if (m && m.ma === 'goi-vip') return veModuleGoiVip();
-    if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
-    if (m && m.ma === 'khoa-hoc-may-tinh') return veModuleKhoaHocMayTinh();
-    if (m && m.ma === 'app-vip-pro') return veModuleAppVipPro();
-    if (m && m.ma === 'qua-tang-android') return veModuleQuaTangAndroid();
-    if (m && m.ma === 'video-ngan') return veModuleVideoNgan();
-    if (m && m.ma === 'khoa-photoshop') return veModuleKhoaPhotoshop();
-    if (m && m.ma === 'image-editor-pro') return veModuleImageEditorPro();
-    // "Trang chủ" KHÔNG còn nội dung riêng — trang AI Image Editor Pro cũ đã
-    // chuyển hẳn sang module "image-editor-pro" (PHẦN 06). Để trống rơi vào
-    // khung "đang nâng cấp" chung bên dưới.
-    return veManNangCap(m ? m.ten : '');
+
+    let noiDung;
+    if (m && m.ma === 'goi-vip') noiDung = veModuleGoiVip();
+    else if (m && m.ma === 'khoa-hoc-mobile') noiDung = veModuleKhoaHocMobile();
+    else if (m && m.ma === 'khoa-hoc-may-tinh') noiDung = veModuleKhoaHocMayTinh();
+    else if (m && m.ma === 'app-vip-pro') noiDung = veModuleAppVipPro();
+    else if (m && m.ma === 'qua-tang-android') noiDung = veModuleQuaTangAndroid();
+    else if (m && m.ma === 'video-ngan') noiDung = veModuleVideoNgan();
+    else if (m && m.ma === 'khoa-photoshop') noiDung = veModuleKhoaPhotoshop();
+    else if (m && m.ma === 'image-editor-pro') noiDung = veModuleImageEditorPro();
+    // Module "trang" nào đó CHƯA có hàm vẽ riêng (sanSang: false trong tương
+    // lai) rơi vào khung "đang nâng cấp" chung bên dưới.
+    else noiDung = veManNangCap(m ? m.ten : '');
+
+    if (canhThanhChayModule(m)) {
+      return veThanhChayModule('tc-dau-' + m.ma) + noiDung + veThanhChayModule('tc-cuoi-' + m.ma);
+    }
+    return noiDung;
   }
 
   function veManNangCap(ten){
@@ -635,6 +711,12 @@
     const laGoiVip = state.trang === 'chinh' && !!(m && m.ma === 'goi-vip');
     const laAppVip = state.trang === 'chinh' && !!(m && m.ma === 'app-vip-pro');
     const coThanhDay = laGoiVip || laAppVip;
+    // Nền đen thuần + hoạ tiết xanh thương hiệu CHỈ ở Trang chủ (PHẦN 05B,
+    // CSS .trang-chu-nen trong base.css) — gắn lên <body> vì .khung-noi-dung
+    // bị giới hạn max-width, không phủ hết bề ngang màn hình.
+    if (document.body && document.body.classList) {
+      document.body.classList.toggle('trang-chu-nen', state.trang === 'chinh' && !!(m && m.ma === 'trang-chu'));
+    }
 
     // Trang quản trị có vỏ riêng: không nút nổi, không menu của khách, không
     // thanh tiêu đề shop. Nó là chỗ làm việc, không phải chỗ mua hàng.

@@ -336,7 +336,7 @@ SAN_PHAM_CHOT.forEach((_, i) => {
   [/function\s+moZaloShop\s*\(/, "hàm mở Zalo của shop"],
   [/window\.open\('https:\/\/zalo\.me\/'\s*\+\s*so/, "địa chỉ Zalo dựng lúc bấm, không in sẵn vào HTML"],
   [/ma:\s*'dac-quyen'[\s\S]{0,140}?kieu:\s*'modal'/, "mục Đặc quyền trong menu bên trái"],
-  [/ma:\s*'lien-he'[\s\S]{0,80}?kieu:\s*'modal'/, "mục Liên hệ shop trong menu bên trái"],
+  [/ma:\s*'lien-he'[\s\S]{0,160}?kieu:\s*'modal'/, "mục Liên hệ shop trong menu bên trái"],
 ].forEach(([mau, ten]) => {
   if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
 });
@@ -988,8 +988,10 @@ if (/<a[^>]*zalo\.me/.test(banNoi)) {
       fail('Tên module cũ "Gói hàng VIP Lightroom" vẫn còn sót — phải đổi hết thành tên mới.');
     }
   });
-  // Mã module là địa chỉ #hash khách đã lưu, đổi là gãy mọi liên kết cũ.
-  if (!/MODULE_MAC_DINH\s*=\s*'goi-vip'/.test(banNoi)) {
+  // Mã module 'goi-vip' là địa chỉ #hash khách đã lưu — vẫn phải tồn tại
+  // nguyên trong MODULE, dù từ nay MODULE_MAC_DINH trỏ sang 'trang-chu'
+  // (Trang chủ, PHẦN 05B) thay vì thẳng vào module bán hàng như trước.
+  if (!/ma:\s*'goi-vip'/.test(banNoi)) {
     fail("Mã module bán hàng phải giữ nguyên là 'goi-vip' — đổi sẽ làm gãy các liên kết #hash cũ.");
   }
 }
@@ -1067,7 +1069,7 @@ if (!fs.existsSync(path.join(root, "src/anh/dac-quyen.jpg"))) {
   [/bỏ qua nếu chưa có email/, "câu mời nói rõ có thể bỏ qua"],
   [/class="nhan-phu"/, "chỗ hiện câu mời cạnh tên trường"],
   [/function\s+veOTruong\(ten, nhan, giaTri, goiY, kieu, nhanPhu\)/, "tham số nhãn phụ của ô nhập liệu"],
-  [/ma:\s*'cong-nhan'[\s\S]{0,90}?kieu:\s*'modal'/, "mục Sự công nhận của khách hàng trong menu"],
+  [/ma:\s*'cong-nhan'[\s\S]{0,170}?kieu:\s*'modal'/, "mục Sự công nhận của khách hàng trong menu"],
   [/Sự công nhận của khách hàng/, "tên mục menu mới"],
   [/m\.ma === 'cong-nhan'/, "bảng Sự công nhận báo đang được thiết kế"],
 ].forEach(([mau, ten]) => {
@@ -1088,7 +1090,7 @@ if (!/\.truong label \.nhan-phu\s*\{/.test(cssApp)) {
 // ---------------------------------------------------------------------------
 [
   [/ma:\s*'video-ngan'[\s\S]{0,90}?kieu:\s*'trang'/, "module Xem video ngắn"],
-  [/ma:\s*'khoa-photoshop'[\s\S]{0,110}?kieu:\s*'trang'/, "module Khoá Photoshop"],
+  [/ma:\s*'khoa-photoshop'[\s\S]{0,190}?kieu:\s*'trang'/, "module Khoá Photoshop"],
   [/ten:\s*'Khoá Photoshop - edit ảnh bằng điện thoại \(miễn phí\)'/, "tên mới của module Khoá Photoshop"],
   [/ma:\s*'app-vip-pro'[\s\S]{0,90}?kieu:\s*'trang'/, "module Mua App VIP pro giá rẻ"],
   [/ten:\s*'Liên hệ và Thông tin về Shop'/, "tên mới của mục Liên hệ"],
@@ -2361,12 +2363,20 @@ if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
     [/m\s*&&\s*m\.ma === 'trang-chu'\)\s*return\s+veModuleTrangChu\(\)/, "module trang-chu dẫn đúng tới veModuleTrangChu()"],
     [/function\s+veModuleTrangChu\s*\(/, "hàm vẽ nội dung Trang chủ"],
     [/function\s+ganHieuUngTrangChu\s*\(/, "hàm gắn hiệu ứng trôi-khi-cuộn (IntersectionObserver)"],
-    [/function\s+vaoModuleTuTrangChu\s*\(/, "hàm xử lý bấm vào thành phần ở Trang chủ (mở menu rồi nhảy module)"],
-    [/function\s+veMarqueeTrangChu\s*\(/, "hàm vẽ thanh chạy chữ"],
-    [/moMenu\(\);\s*\n\s*moModule\(ma\);/, "bấm vào thành phần Trang chủ: mở menu TRƯỚC rồi mới nhảy module"],
+    [/function\s+goiYMoModule\s*\(/, "hàm goiYMoModule() — mở menu + cuộn tới + nhấp nháy, KHÔNG nhảy module"],
+    [/function\s+veThanhChayModule\s*\(/, "hàm vẽ thanh chạy chữ (dùng chung Trang chủ + module khác)"],
+    [/\.muc-menu\.nhap-nhay/, "lớp nhấp-nháy gắn lên đúng mục trong khung menu"],
+    [/data-hanh-dong="nhap-nhay-module"/, "các thành phần ở Trang chủ bấm vào dùng hành động nhấp-nháy, không nhảy module thẳng"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
   });
+
+  // goiYMoModule() phải KHÔNG gọi moModule() — nhấp nháy để khách tự bấm,
+  // không tự nhảy module (khác hẳn hành vi cũ, lúc còn tên vaoModuleTuTrangChu).
+  const khoiGoiY = banNoi.match(/function\s+goiYMoModule\s*\([\s\S]{0,900}?\n  \}/);
+  if (khoiGoiY && /moModule\(/.test(khoiGoiY[0])) {
+    fail('goiYMoModule() không được gọi moModule() — chỉ mở menu, cuộn tới và nhấp nháy, để khách TỰ bấm.');
+  }
 
   // Đủ 7 khối theo đúng thứ tự đã chốt.
   ['khoa-hoc-mien-phi', 'qua-tang-android', 'goi-vip', 'app-vip-pro', 'video-ngan', 'cong-nhan', 'lien-he']
@@ -2374,12 +2384,25 @@ if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
       if (!banNoi.includes(`id: '${id}'`)) fail(`Thiếu khối "${id}" (hoặc sai thứ tự) ở Trang chủ.`);
     });
 
-  // Hai khối đầu phải ghi rõ "Miễn phí".
+  // Ba khối phải ghi rõ "Miễn phí" — to gấp đôi thẻ nhãn thường (.tc-nhan).
   if (!/id:\s*'khoa-hoc-mien-phi'[\s\S]{0,200}nhan:\s*'Miễn phí'/.test(banNoi)) {
     fail('Khối "3 khoá học miễn phí" phải ghi rõ nhãn "Miễn phí".');
   }
   if (!/id:\s*'qua-tang-android'[\s\S]{0,200}nhan:\s*'Miễn phí'/.test(banNoi)) {
     fail('Khối "Quà tặng Android" phải ghi rõ nhãn "Miễn phí".');
+  }
+  if (!/id:\s*'video-ngan'[\s\S]{0,200}nhan:\s*'Miễn phí'/.test(banNoi)) {
+    fail('Khối "Xem video ngắn" phải ghi rõ nhãn "Miễn phí".');
+  }
+  if (!/\.tc-nhan\s*\{[\s\S]{0,200}font-size:\s*22px/.test(doc("src/css/app.css"))) {
+    fail('Thẻ "Miễn phí" (.tc-nhan) phải to gấp đôi cỡ chữ thường (22px).');
+  }
+
+  // Khối "Trọn bộ sản phẩm VIP" ở Trang chủ KHÔNG được liệt kê sp4/sp5 (hai
+  // "khoá học" giá 0) — đã có mặt riêng ở khối "3 khoá học miễn phí".
+  const khoiGoiVipTC = banNoi.match(/id:\s*'goi-vip',[\s\S]{0,700}?layMuc:\s*function\(\)\{[\s\S]{0,300}?\}\n\s*\},/);
+  if (!khoiGoiVipTC || !/sp\.ma !== 'sp4' && sp\.ma !== 'sp5'/.test(khoiGoiVipTC[0].replace(/\s+/g, ' '))) {
+    fail("Khối \"Trọn bộ sản phẩm VIP\" ở Trang chủ phải lọc bỏ sp4 và sp5.");
   }
 
   // Thanh chạy chữ phải chứa toàn bộ MODULE (trừ chính "trang-chu"), không
@@ -2398,6 +2421,60 @@ if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
   if (!/thanh-tieu-de" data-hanh-dong="mo-module" data-module="trang-chu"/.test(banNoi)) {
     fail('Thanh tiêu đề phải gắn data-hanh-dong="mo-module" data-module="trang-chu" để bấm về Trang chủ.');
   }
+
+  // Nền đen thuần riêng cho Trang chủ, gắn/gỡ qua lớp body.trang-chu-nen.
+  if (!/document\.body\.classList\.toggle\('trang-chu-nen'/.test(banNoi)) {
+    fail("Thiếu đoạn gắn/gỡ lớp body.trang-chu-nen cho nền đen riêng của Trang chủ.");
+  }
+  if (!/body\.trang-chu-nen\s*\{[\s\S]{0,80}background-color:\s*#000/.test(doc("src/css/app.css"))) {
+    fail("CSS body.trang-chu-nen phải có nền đen thuần (#000).");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 41) MODULE "TRỌN BỘ SẢN PHẨM VIP" là nơi khách vào MẶC ĐỊNH sau Trang chủ —
+//     nút "Sự công nhận của khách hàng" mới, 3 nút quà tặng đổi sang hành vi
+//     "nhấp nháy gợi ý", và 2 thanh chạy chữ gắn thêm đầu/cuối mọi module
+//     "trang" khác (trừ Trang chủ, trừ Image Editor Pro).
+// ---------------------------------------------------------------------------
+{
+  if (!/MODULE_MAC_DINH\s*=\s*'trang-chu'/.test(banNoi)) {
+    fail("MODULE_MAC_DINH phải là 'trang-chu' — khách vào web lần đầu (chưa có #hash) phải thấy Trang chủ.");
+  }
+  if (!/data-hanh-dong="mo-module" data-module="cong-nhan">/.test(banNoi)) {
+    fail('Module "Trọn bộ sản phẩm VIP" phải có nút mở thẳng "Sự công nhận của khách hàng".');
+  }
+  if (!/Sự công nhận của khách hàng<\/button>/.test(banNoi)) {
+    fail('Thiếu đúng chữ "Sự công nhận của khách hàng" trên nút mới.');
+  }
+  // Ba nút quà tặng (QUA_TANG) không còn nhảy module thẳng.
+  if (/nut-qua" data-hanh-dong="mo-module"/.test(banNoi)) {
+    fail('Ba nút quà tặng trong "Trọn bộ sản phẩm VIP" phải đổi sang data-hanh-dong="nhap-nhay-module", không còn "mo-module".');
+  }
+  if (!/nut-qua" data-hanh-dong="nhap-nhay-module"/.test(banNoi)) {
+    fail('Ba nút quà tặng phải dùng data-hanh-dong="nhap-nhay-module".');
+  }
+
+  // Hai thanh chạy chữ gắn thêm đầu/cuối mọi module "trang", trừ trang-chu và
+  // image-editor-pro.
+  if (!/function\s+canhThanhChayModule\s*\(/.test(banNoi)) {
+    fail("Thiếu hàm canhThanhChayModule() quyết định module nào có 2 thanh chạy chữ.");
+  }
+  const khoiCanh = banNoi.match(/function\s+canhThanhChayModule\s*\([\s\S]{0,260}?\n  \}/);
+  if (!khoiCanh || !/'trang-chu'/.test(khoiCanh[0]) || !/'image-editor-pro'/.test(khoiCanh[0])) {
+    fail('canhThanhChayModule() phải loại trừ cả "trang-chu" lẫn "image-editor-pro".');
+  }
+
+  // Tên module rút gọn (tenNgan) chỉ dùng ở thanh chạy chữ, không đổi tên
+  // đầy đủ hiển thị ở menu/tiêu đề mọi nơi khác.
+  if (!/m\.tenNgan \|\| m\.ten/.test(banNoi)) {
+    fail('Thanh chạy chữ phải ưu tiên hiển thị tenNgan (tên rút gọn) khi module có khai.');
+  }
+  ['goi-vip', 'qua-tang-android', 'khoa-hoc-mobile', 'khoa-hoc-may-tinh', 'khoa-photoshop'].forEach((ma) => {
+    if (!new RegExp(`ma:\\s*'${ma}'[\\s\\S]{0,160}tenNgan:`).test(banNoi)) {
+      fail(`Module "${ma}" tên đầy đủ dài nên phải khai tenNgan (tên rút gọn cho thanh chạy chữ).`);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

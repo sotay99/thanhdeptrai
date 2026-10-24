@@ -222,6 +222,25 @@
 .muc-menu .bieu-tuong { flex: 0 0 auto; width: 18px; text-align: center; font-size: 13px; opacity: .85; }
 .muc-menu.dang-xem .bieu-tuong { color: var(--xanh); opacity: 1; }
 
+/* "NHẤP NHÁY GỢI Ý" — goiYMoModule() (PHẦN 02) gắn lớp này sau khi cuộn tới
+   đúng mục, để khách TỰ bấm. Phóng to 1,3 lần rồi thu về thật nhanh (snap),
+   lặp đúng 5 lần (animation-iteration-count, KHÔNG infinite) rồi đứng im hẳn
+   — animationend ở goiYMoModule() gỡ lớp này ngay khi hết. Viền + nền xanh
+   thoáng qua mỗi nhịp để nổi bật rõ hơn chỉ co giãn không thôi. */
+.muc-menu.nhap-nhay {
+  animation: tc-nhap-nhay .55s ease-in-out 5;
+  transform-origin: center left;
+}
+@keyframes tc-nhap-nhay {
+  0%   { transform: scale(1);    background: var(--the-2); box-shadow: none; }
+  40%  { transform: scale(1.3);  background: var(--xanh-nen); box-shadow: 0 0 0 1px rgba(49, 168, 255, .5); }
+  55%  { transform: scale(1);    background: var(--the-2); box-shadow: none; }
+  100% { transform: scale(1);    background: var(--the-2); box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .muc-menu.nhap-nhay { animation: none; background: var(--xanh-nen); }
+}
+
 .menu-trai .menu-day {
   padding: 11px 16px 14px;
   border-top: 1px solid var(--vien);
@@ -2226,20 +2245,23 @@
 .tc-dau-khoi h2 {
   font-size: 18px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 5px;
 }
 .tc-dau-khoi p { color: var(--chu-diu); font-size: 13px; }
 
+/* To gấp đôi so với một thẻ nhãn bình thường (11px/2px 10px) — mấy khối
+   "miễn phí" phải đập ngay vào mắt, đúng việc nó được sinh ra để làm. */
 .tc-nhan {
-  font-size: 11px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--la-dam-net);
   background: var(--xanh-nen);
-  border: 1px solid rgba(45, 157, 95, .35);
+  border: 2px solid rgba(45, 157, 95, .35);
   border-radius: 999px;
-  padding: 2px 10px;
+  padding: 4px 20px;
 }
 
 .tc-luoi {
@@ -2358,5 +2380,22 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .tc-marquee-track { animation: none; }
+}
+
+/* NỀN ĐEN THUẦN RIÊNG CHO TRANG CHỦ — gắn lên <body> ở render() (PHẦN 02),
+   gỡ ngay khi rời Trang chủ nên không ảnh hưởng module khác (những nơi đó
+   vẫn dùng var(--nen) như cũ). Hoạ tiết: vài "tia sét" ngoằn ngoèo, hai
+   đường lượn sóng, và rải vài chấm tròn đậm nhạt khác nhau — TẤT CẢ cùng một
+   màu xanh thương hiệu (#31a8ff), độ mờ rất thấp (6–15%) để chìm hẳn xuống,
+   không giành sự chú ý với các khối nội dung bên trên. Vẽ bằng SVG nội tuyến
+   (data URI) — không thêm tệp ảnh nào, nhẹ và sắc nét ở mọi độ phân giải.
+   "%23" = ký tự "#" đã mã hoá (data URI không cho "#" trần, trình duyệt tự
+   giải mã lại thành "#31a8ff" khi dựng SVG). */
+body.trang-chu-nen {
+  background-color: #000;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1400'%3E%3Cg stroke='%2331a8ff' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M120 60 L160 180 L100 220 L170 360' stroke-width='3' opacity='.1'/%3E%3Cpath d='M860 240 L900 330 L840 370 L910 480' stroke-width='3' opacity='.08'/%3E%3Cpath d='M60 820 L100 900 L50 940 L120 1060' stroke-width='3' opacity='.09'/%3E%3Cpath d='M50 620 C250 560 350 760 550 700 C750 640 800 820 950 760' stroke-width='2' opacity='.07'/%3E%3Cpath d='M30 1180 C200 1120 300 1300 500 1240 C700 1180 780 1340 970 1280' stroke-width='2' opacity='.06'/%3E%3C/g%3E%3Cg fill='%2331a8ff'%3E%3Ccircle cx='200' cy='120' r='3' opacity='.12'/%3E%3Ccircle cx='760' cy='90' r='4' opacity='.08'/%3E%3Ccircle cx='920' cy='520' r='2.5' opacity='.15'/%3E%3Ccircle cx='140' cy='460' r='3.5' opacity='.07'/%3E%3Ccircle cx='480' cy='300' r='2' opacity='.1'/%3E%3Ccircle cx='620' cy='920' r='3' opacity='.09'/%3E%3Ccircle cx='260' cy='1020' r='2.5' opacity='.13'/%3E%3Ccircle cx='820' cy='1100' r='4' opacity='.06'/%3E%3Ccircle cx='400' cy='1340' r='3' opacity='.1'/%3E%3Ccircle cx='60' cy='1300' r='2' opacity='.08'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat-y;
+  background-size: 1000px 1400px;
+  background-position: top center;
 }
 

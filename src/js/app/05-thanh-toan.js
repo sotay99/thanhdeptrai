@@ -676,7 +676,7 @@
     if (hanhDong === 'cn-luu-tat-ca') { adminCnLuuTatCa(); return; }
     if (hanhDong === 'tk-app-vip-tai-lai') { adminThongKeAppVipTaiLai(); return; }
     if (hanhDong === 'tv-tai-lai') { adminTuVanTaiLai(); return; }
-    if (hanhDong === 'tc-vao-module') { vaoModuleTuTrangChu(nutHanhDong.getAttribute('data-module')); return; }
+    if (hanhDong === 'nhap-nhay-module') { goiYMoModule(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'gui-yeu-cau-hoan-tien') { guiYeuCauHoanTien(); return; }
     if (hanhDong === 'bam-tu-van') { bamTuVan(); return; }
     if (hanhDong === 'tiep-tuc-tu-van') { guiYeuCauTuVan(); return; }
