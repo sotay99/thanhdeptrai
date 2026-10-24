@@ -160,6 +160,9 @@
     "quaTangAndroid": {
       ".read": true,
       ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      "linkPreset500": {
+        ".validate": "newData.isString() && newData.val().length <= 300"
+      },
       "linkPicsart": {
         ".validate": "newData.isString() && newData.val().length <= 300"
       },

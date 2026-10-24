@@ -1946,7 +1946,7 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   if (!/"quaTangAndroid":\s*\{/.test(rulesQT)) {
     fail('Thiếu nhánh "quaTangAndroid" trong database.rules.json.');
   }
-  ['linkPicsart', 'linkRemini', 'linkSnapedit', 'linkXingtu'].forEach((truong) => {
+  ['linkPreset500', 'linkPicsart', 'linkRemini', 'linkSnapedit', 'linkXingtu'].forEach((truong) => {
     if (!new RegExp(`"${truong}"\\s*:\\s*\\{`).test(rulesQT)) {
       fail(`database.rules.json thiếu trường ${truong} trong nhánh quaTangAndroid.`);
     }
@@ -1960,6 +1960,21 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   if (/mediafire\.com\/file\/[a-z0-9]{6,}/i.test(banNoi)) {
     fail("Link MediaFire thật không được nằm cứng trong mã nguồn — chỉ admin khai qua Firebase.");
   }
+
+  // "Bộ Preset 500 màu" (qt-preset500) — bản quà tặng của sp2, tên THẺ không
+  // có hậu tố "VIP Đã có bản quyền trọn đời" (hậu tố đó chỉ dành cho 4 app
+  // APK), tái dùng ảnh sp2, có bài hướng dẫn riêng (veHuongDan) và chữ nút
+  // tải riêng (chuNutTai), KHÔNG dùng bài hướng dẫn cài APK chung.
+  [
+    [/ma:\s*'qt-preset500',/, "sản phẩm qt-preset500 (Bộ Preset 500 màu)"],
+    [/ten:\s*'Bộ Preset 500 màu cao cấp cài sẵn cho Lightroom điện thoại'/, "tên thẻ Bộ Preset 500 màu (không hậu tố VIP)"],
+    [/anh:\s*ANH_DAI_DIEN\.sp2,\s*anhChiTiet:\s*ANH_SAN_PHAM\.sp2/, "tái dùng ảnh sp2 cho Bộ Preset 500 màu"],
+    [/veHuongDan:\s*function\s*\(dm\)/, "bài hướng dẫn riêng (veHuongDan) của Bộ Preset 500 màu"],
+    [/chuNutTai:\s*'Tải Preset về máy'/, "chữ nút tải riêng 'Tải Preset về máy'"],
+    [/gói 500 preset Lightroom Mobile/, "nội dung hướng dẫn đã đổi 10.000 → 500"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
 }
 
 // ---------------------------------------------------------------------------

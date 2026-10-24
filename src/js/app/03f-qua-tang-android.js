@@ -1,7 +1,7 @@
   /* ===========================================================================
      PHẦN 03F — MODULE "QUÀ TẶNG DÀNH CHO THIẾT BỊ ANDROID"
 
-     Lưới 5 sản phẩm, thẻ LỚN y khuôn thẻ sản phẩm ở module "Trọn bộ sản phẩm
+     Lưới 6 sản phẩm, thẻ LỚN y khuôn thẻ sản phẩm ở module "Trọn bộ sản phẩm
      VIP" (PHẦN 03):
 
        1. Lightroom — CHÍNH LÀ sp1 của module kia, nhúng lại NGUYÊN
@@ -11,7 +11,17 @@
           mua–giao hàng–email có sẵn của sp1. Mã sản phẩm, giá, QR, email admin
           và khách hàng đều y hệt bên module gốc.
 
-       2-5. PicsArt, Remini, SnapEdit, XingTu — KHÔNG có mã sản phẩm riêng,
+       2. Bộ Preset 500 màu — bản quà tặng của sp2 ("Bộ Preset 10.000 màu..."),
+          y chang thiết kế sp2 (ảnh, nội dung chi tiết), chỉ đổi 10.000 → 500
+          ở những chỗ liên quan, KHÔNG có mã sản phẩm riêng, KHÔNG giá, KHÔNG
+          đơn hàng. Nút "Sử dụng sản phẩm này" mở modal "Hướng dẫn sử dụng"
+          RIÊNG (nội dung nhập preset vào Lightroom, không phải cài APK —
+          xem veHuongDan trong khai báo qt-preset500 bên dưới), dùng CHUNG
+          video hướng dẫn với sp2 (đọc danhmuc/sp2/linkHuongDan, PHẦN 03B).
+          Nút tải đổi chữ thành "Tải Preset về máy" (chuNutTai), dẫn tới link
+          riêng (linkPreset500) admin khai trong /admin.
+
+       3-6. PicsArt, Remini, SnapEdit, XingTu — KHÔNG có mã sản phẩm riêng,
           KHÔNG giá, KHÔNG đơn hàng, KHÔNG email nào cả. Tên hiện trên thẻ
           LUÔN theo mẫu "<Tên app> - VIP Đã có bản quyền trọn đời". Dòng giá
           vẫn giữ, hiện chữ "MIỄN PHÍ" (giống cách sp4/sp5 — hai khoá học —
@@ -48,6 +58,45 @@
   // ngang hàng với anhChiTiet), các khối sau dựng thường, KHÔNG có khối cam
   // kết ở cuối (khác sp1 — sp1 có mua bán thật nên giữ cam kết).
   const QUA_TANG_ANDROID = [
+    // Bản quà tặng của sp2 ("Bộ Preset 10.000 màu...") — y chang thiết kế sp2,
+    // chỉ đổi 10.000 → 500 ở những chỗ liên quan. Tái dùng NGUYÊN ảnh của sp2
+    // (ANH_DAI_DIEN/ANH_SAN_PHAM, PHẦN 01B) — không cắt ảnh mới. veHuongDan +
+    // chuNutTai ghi đè nội dung/nút mặc định của moModalHuongDanQuaTang (xem
+    // bên dưới) vì đây là hướng dẫn NHẬP PRESET, không phải cài APK.
+    { ma: 'qt-preset500', ten: 'Bộ Preset 500 màu cao cấp cài sẵn cho Lightroom điện thoại',
+      tenPhienBan: 'Bộ Preset 500 màu cao cấp cài sẵn cho Lightroom điện thoại',
+      anh: ANH_DAI_DIEN.sp2, anhChiTiet: ANH_SAN_PHAM.sp2, chuNutTai: 'Tải Preset về máy',
+      khoi: [
+        { kieu: 'khau-hieu',
+          chu: '500 màu cao cấp, cài sẵn thẳng vào tài khoản của bạn. Mở app lên là có, không phải nhập tay tấm nào. 🎨' },
+        { kieu: 'doan', chu: 'Preset trôi nổi trên mạng thì nhiều, nhưng phần lớn là màu rác: nạp vào ảnh cháy sáng, da người xám ngoét, hoặc lỗi không hiện. Bộ này <strong>được tuyển chọn kỹ từng bộ một</strong> và <strong>đã test thành công</strong> trước khi giao cho bạn.' },
+        { kieu: 'muc', tieuDe: '💎 Vì sao bộ màu này khác', y: [
+          '🔍 <strong>Tuyển chọn kỹ lưỡng:</strong> mỗi bộ màu đều được kiểm thử trên ảnh thật, loại thẳng những màu hỏng, màu trùng, màu vô dụng.',
+          '📦 <strong>Cài trực tiếp vào tài khoản cá nhân của bạn</strong> — không phải mò import từng file, mở Lightroom là màu đã nằm sẵn trong danh sách.',
+          '🛡️ <strong>An toàn và riêng tư:</strong> thao tác trên chính tài khoản của bạn, shop không giữ, không dùng chung, không đụng vào ảnh của bạn.',
+          '♾️ <strong>Sử dụng trọn đời:</strong> màu nằm trong tài khoản, đổi điện thoại vẫn còn nguyên.'
+        ] },
+        { kieu: 'noi-bat', chu: '⏱️ Làm phép tính nhanh: mỗi tấm ảnh bạn dò màu mất 5 phút. Có sẵn 500 màu, bạn chỉ lướt và chọn — 30 giây là xong. Một buổi chụp 20 tấm tiết kiệm gần 1,5 tiếng ngồi máy.' },
+        { kieu: 'doan', chu: 'Từ tông phim hoài cổ, tông Hàn Quốc trong trẻo, tông cưới sang trọng, tông du lịch rực nắng cho tới tông đường phố xám lạnh — bạn luôn có sẵn một dải màu để bắt đầu, thay vì ngồi trước tấm ảnh thô và không biết kéo thanh nào trước.' }
+      ],
+      veHuongDan: function(dm){
+        return '' +
+          veKhungVideo(dm && dm.linkHuongDan, 'doc') +
+          '<h4 class="hd-buoc">Bộ preset này gồm những gì?</h4>' +
+          '<p>Đây là <strong>gói 500 preset Lightroom Mobile</strong> tổng hợp, máy yếu vẫn nhập được mượt mà.</p>' +
+          '<h4 class="hd-buoc">Nên cài gói nào?</h4>' +
+          '<p>· Cài <strong>gói 500 màu 1 lần duy nhất</strong>. Muốn có thêm nhiều preset nữa, hãy tham khảo thêm ' +
+            'các sản phẩm preset giá rẻ của shop.</p>' +
+          '<h4 class="hd-buoc">Các bước cài đặt chi tiết</h4>' +
+          '<p>1. Tải file <strong>.zip</strong> preset về máy điện thoại từ nút bên dưới.</p>' +
+          '<p>2. Mở app <strong>Lightroom</strong> → bấm vào <strong>Thiết đặt sẵn (Presets)</strong> ở thanh dưới.</p>' +
+          '<p>3. Chọn mục <strong>“Của bạn” (Yours)</strong>.</p>' +
+          '<p>4. Nhìn lên góc trên bên phải màn hình, bấm vào dấu ba chấm dọc <strong>“⋮”</strong>.</p>' +
+          '<p>5. Chọn <strong>“Nhập thiết đặt sẵn” (Import Presets)</strong>.</p>' +
+          '<p>6. Bấm <strong>“Tải file lên”</strong>, rồi chọn đúng file <strong>.zip</strong> preset vừa tải.</p>' +
+          '<p>7. Ngồi chờ vài chục giây để Lightroom tải preset lên và tự đồng bộ vào bộ nhớ đám mây Adobe ' +
+            'của bạn — xong là preset xuất hiện ngay trong mục “Của bạn”, dùng được cho mọi tấm ảnh.</p>';
+      } },
     { ma: 'qt-picsart', tenApp: 'PicsArt', ten: 'PicsArt - VIP Đã có bản quyền trọn đời', tenPhienBan: 'PicsArt_v29.1.4',
       anh: '/assets/anh/app-vip-picsart.jpg', anhChiTiet: '/assets/anh/qt-antoan-picsart.jpg',
       khoi: [
@@ -111,6 +160,8 @@
   // "một ô, một nút Lưu" (veMotO/luuCaiDat ở PHẦN 04B). Trường ở đây khớp
   // ĐÚNG tên trường trong database.rules.json nhánh quaTangAndroid.
   const O_QUA_TANG_ANDROID = [
+    { truong: 'linkPreset500', ten: 'Link tải — Bộ Preset 500 màu', kieu: 'link',
+      goi: 'https://drive.google.com/.../Preset500.zip' },
     { truong: 'linkPicsart',  ten: 'Link MediaFire — PicsArt',  kieu: 'link',
       goi: 'https://www.mediafire.com/file/.../PicsArt.apk/file' },
     { truong: 'linkRemini',   ten: 'Link MediaFire — Remini',   kieu: 'link',
@@ -123,6 +174,7 @@
 
   // Tra trường Firebase đúng của một mã quà tặng (qt-picsart → linkPicsart).
   const TRUONG_LINK_QUA_TANG = {
+    'qt-preset500': 'linkPreset500',
     'qt-picsart':  'linkPicsart',
     'qt-remini':   'linkRemini',
     'qt-snapedit': 'linkSnapedit',
@@ -146,10 +198,21 @@
     });
   }
 
+  // Bộ Preset 500 màu (qt-preset500) dùng CHUNG video hướng dẫn với sp2 —
+  // đọc nhánh công khai danhmuc (PHẦN 03B) để lấy danhmuc/sp2/linkHuongDan.
+  function taiDanhMucChoQuaTang(){
+    // state.danhMuc khởi tạo sẵn là {} (PHẦN 01) nên KHÔNG dùng được làm cờ
+    // "đã tải" — phải có cờ riêng, giống quaTangAndroidDaTai ở trên.
+    if (state.danhMucChoQuaTangDaTai) return;
+    state.danhMucChoQuaTangDaTai = true;
+    taiDanhMuc().then(function(){ if (state.module === 'qua-tang-android') render(); });
+  }
+
   // ------------------------------------------------------------------ VẼ
 
   function veModuleQuaTangAndroid(){
     taiLinkQuaTangAndroid();
+    taiDanhMucChoQuaTang();
     const sp1 = timSanPham('sp1');
     return '' +
       '<section class="gioi-thieu">' +
@@ -226,16 +289,21 @@
     if (!q) return;
     const truongLink = TRUONG_LINK_QUA_TANG[ma];
     const link = String(state.quaTangAndroidLink[truongLink] || '');
+    // qt-preset500 ghi đè nội dung (hướng dẫn nhập preset, không phải cài
+    // APK) và chữ nút tải — các app khác dùng bài hướng dẫn chung bên dưới.
+    const noiDung = q.veHuongDan ? q.veHuongDan(danhMucCua('sp2')) : noiDungHuongDanQuaTang(q.tenApp);
+    const chuNutTai = q.chuNutTai || 'Tải file APK về máy và cài đặt';
     moModal({
       ma: 'qt-huong-dan-' + ma,
       tieuDe: 'Hướng dẫn sử dụng',
-      than: '<div class="noi-dung-huong-dan">' + noiDungHuongDanQuaTang(q.tenApp) + '</div>',
+      than: '<div class="noi-dung-huong-dan">' + noiDung + '</div>',
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
         (link
           ? '<a class="nut nut-chinh" href="' + escapeHtml(link) + '" target="_blank" rel="noopener">' +
-            'Tải file APK về máy và cài đặt</a>'
-          : '<button type="button" class="nut nut-chinh" disabled>Link đang được cập nhật</button>')
+            escapeHtml(chuNutTai) + '</a>'
+          : '<button type="button" class="nut nut-chinh" disabled>Link đang được cập nhật</button>'),
+      khiVe: function(){ initKhungVideo(); hienMuiTenTruot(); }
     });
   }
 

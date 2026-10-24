@@ -132,6 +132,7 @@
     // lần lúc vào module rồi giữ lại đây.
     quaTangAndroidLink: {},
     quaTangAndroidDaTai: false,
+    danhMucChoQuaTangDaTai: false,
     khachHang: { email: '', zalo: '', dienThoai: '', whatsapp: '', telegram: '' },
     // Ghi nhớ trường nào đang được TỰ ĐỘNG điền theo trường kia. Khách tự gõ
     // vào trường nào thì trường đó thoát khỏi cơ chế đồng bộ.
