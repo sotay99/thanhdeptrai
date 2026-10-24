@@ -350,12 +350,88 @@
     });
   }
 
+  // Mỗi mục liên hệ: trường đọc từ /thongtinlienhe, nhãn hiện ra, và loại để
+  // dựng đúng địa chỉ "Mở" (xem diaChiMoLienHe bên dưới). Mục nào admin để
+  // trống thì veDongLienHe() tự bỏ qua, không hiện dòng nào.
+  const MUC_LIEN_HE = [
+    { truong: 'zalo',        nhan: 'Zalo',                           loai: 'zalo' },
+    { truong: 'zaloLienKet', nhan: 'Zalo liên kết (shop đối tác)',    loai: 'zalo' },
+    { truong: 'whatsapp',    nhan: 'WhatsApp',                       loai: 'whatsapp' },
+    { truong: 'telegram',    nhan: 'Telegram',                       loai: 'telegram' },
+    { truong: 'emailShop',   nhan: 'Email',                          loai: 'email' },
+    { truong: 'tiktok',      nhan: 'TikTok',                         loai: 'link' },
+    { truong: 'youtube',     nhan: 'YouTube',                        loai: 'link' },
+    { truong: 'fanpage',     nhan: 'Fanpage Facebook',                loai: 'link' },
+    { truong: 'groupFB',     nhan: 'Group Facebook',                 loai: 'link' }
+  ];
+
+  function diaChiMoLienHe(loai, giaTri){
+    const g = String(giaTri || '').trim();
+    if (!g) return '';
+    if (loai === 'zalo') return 'https://zalo.me/' + g.replace(/\D/g, '');
+    if (loai === 'whatsapp') return 'https://wa.me/' + g.replace(/\D/g, '');
+    if (loai === 'email') return 'mailto:' + g;
+    if (loai === 'telegram') {
+      if (/^https?:\/\//i.test(g)) return g;
+      return 'https://t.me/' + g.replace(/^@/, '');
+    }
+    // loai === 'link' (TikTok/YouTube/Fanpage/Group) — admin dán link đầy đủ,
+    // chỉ thêm https:// nếu lỡ gõ thiếu.
+    return /^https?:\/\//i.test(g) ? g : 'https://' + g;
+  }
+
+  function veDongLienHe(muc){
+    const gia = String((state.thongTinLienHe || {})[muc.truong] || '').trim();
+    if (!gia) return '';
+    const diaChi = diaChiMoLienHe(muc.loai, gia);
+    return '' +
+      '<div class="dong-lien-he">' +
+        '<span class="nhan-lien-he">' + escapeHtml(muc.nhan) + '</span>' +
+        '<span class="gia-tri-lien-he">' + escapeHtml(gia) + '</span>' +
+        '<div class="hang-nut-lien-he">' +
+          '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="sao-chep" data-chuoi="' +
+            escapeHtml(gia) + '">📋 Sao chép</button>' +
+          (diaChi
+            ? '<a class="nut nut-nho nut-chinh" href="' + escapeHtml(diaChi) + '" target="_blank" rel="noopener">↗ Mở</a>'
+            : '') +
+        '</div>' +
+      '</div>';
+  }
+
+  function moModalLienHe(m){
+    // Dữ liệu thường đã đọc sẵn từ lúc boot (xem taiThongTinLienHe ở PHẦN 05),
+    // nhưng phòng khi bảng mở ra trước khi kịp tải xong thì tải lại rồi vẽ lại
+    // ĐÚNG bảng này một lần nữa — chỉ khi bảng vẫn còn đang mở.
+    if (!state.thongTinLienHeDaTai) {
+      taiThongTinLienHe().then(function(){
+        const dangMo = state.modal.some(function(x){ return x.ma === 'lien-he'; });
+        if (dangMo) { dongModal(); moModalLienHe(m); }
+      });
+    }
+    const du = state.thongTinLienHe || {};
+    const coDuLieu = MUC_LIEN_HE.some(function(muc){ return String(du[muc.truong] || '').trim(); });
+    const dangTai = !state.thongTinLienHeDaTai;
+    moModal({
+      ma: 'lien-he',
+      tieuDe: m.ten,
+      than: coDuLieu
+        ? '<div class="danh-sach-lien-he">' + MUC_LIEN_HE.map(veDongLienHe).join('') + '</div>'
+        : '' +
+          '<div class="noi-dung-van-ban" style="text-align:center">' +
+            '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">' + (dangTai ? '⏳' : '🛠️') + '</p>' +
+            '<p><strong>' + (dangTai ? 'Đang tải thông tin liên hệ…' : 'Thông tin liên hệ đang được cập nhật.') + '</strong></p>' +
+            (dangTai ? '' : '<p style="color:var(--chu-diu);margin-bottom:0">Mời bạn quay lại bảng này sau nhé.</p>') +
+          '</div>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
+    });
+  }
+
   function moModalVanBan(m){
     if (m.ma === 'dac-quyen') { moModalDacQuyen(m); return; }
-    // "Yêu cầu hoàn tiền" và "Liên hệ shop" là chức năng sắp làm, còn hai mục
-    // kia là văn bản sắp viết — nói đúng việc đang diễn ra thay vì dùng chung
-    // một câu cho tất cả.
-    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'lien-he' || m.ma === 'cong-nhan';
+    if (m.ma === 'lien-he') { moModalLienHe(m); return; }
+    // "Yêu cầu hoàn tiền" là chức năng sắp làm, còn mục kia là văn bản sắp
+    // viết — nói đúng việc đang diễn ra thay vì dùng chung một câu cho tất cả.
+    const dangThietKe = m.ma === 'hoan-tien' || m.ma === 'cong-nhan';
     moModal({
       ma: 'van-ban-' + m.ma,
       tieuDe: m.ten,
@@ -439,6 +515,7 @@
     if (m && m.ma === 'app-vip-pro') return veModuleAppVipPro();
     if (m && m.ma === 'qua-tang-android') return veModuleQuaTangAndroid();
     if (m && m.ma === 'video-ngan') return veModuleVideoNgan();
+    if (m && m.ma === 'khoa-photoshop') return veModuleKhoaPhotoshop();
     return veManNangCap(m ? m.ten : '');
   }
 

@@ -2027,6 +2027,78 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 }
 
 // ---------------------------------------------------------------------------
+// 32) MODULE "LIÊN HỆ VÀ THÔNG TIN VỀ SHOP" — liệt kê toàn bộ O_LIEN_HE, mỗi
+//     mục có nút Sao chép + nút Mở (dựng đúng địa chỉ theo loại).
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'lien-he',[\s\S]{0,200}sanSang:\s*true/, "module Liên hệ đã bật (sanSang: true)"],
+    [/function\s+moModalLienHe\s*\(/, "hàm mở modal Liên hệ"],
+    [/function\s+diaChiMoLienHe\s*\(/, "hàm dựng địa chỉ cho nút Mở"],
+    [/function\s+veDongLienHe\s*\(/, "hàm vẽ một dòng liên hệ"],
+    [/state\.thongTinLienHe\s*=\s*du;/, "lưu NGUYÊN object /thongtinlienhe (không chỉ riêng Zalo)"],
+    [/'https:\/\/zalo\.me\/'\s*\+/, "Zalo mở đúng zalo.me/<số>"],
+    [/'https:\/\/wa\.me\/'\s*\+/, "WhatsApp mở đúng wa.me/<số>"],
+    [/'mailto:'\s*\+\s*g/, "Email dùng mailto:"],
+    [/'https:\/\/t\.me\/'\s*\+\s*g\.replace\(\/\^@\//, "Telegram tự ghép @handle thành t.me/..."],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Đủ 9 mục, đúng trường — sửa trường thì cập nhật mẫu dưới đây theo
+  // CLAUDE.md, đừng xoá mục.
+  ['zalo', 'zaloLienKet', 'whatsapp', 'telegram', 'emailShop', 'tiktok', 'youtube', 'fanpage', 'groupFB']
+    .forEach((truong) => {
+      if (!new RegExp(`truong:\\s*'${truong}'`).test(banNoi)) {
+        fail(`Thiếu mục "${truong}" trong MUC_LIEN_HE.`);
+      }
+    });
+
+  // Mỗi dòng phải có cả nút Sao chép (tái dùng xuLySaoChep có sẵn) lẫn nút Mở.
+  if (!/data-hanh-dong="sao-chep" data-chuoi="/.test(banNoi)) {
+    fail('Dòng liên hệ thiếu nút "Sao chép" (data-hanh-dong="sao-chep").');
+  }
+  if (!/<a class="nut nut-nho nut-chinh" href="'\s*\+\s*escapeHtml\(diaChi\)/.test(banNoi)) {
+    fail('Dòng liên hệ thiếu nút "Mở" (thẻ <a> dẫn tới diaChi).');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 33) MODULE "KHOÁ PHOTOSHOP - EDIT ẢNH BẰNG ĐIỆN THOẠI" — y khuôn khoá học
+//     Lightroom mobile (chương/bài thật, video dọc), KHÔNG có nút "Xem chi
+//     tiết thông tin khoá học này".
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'khoa-photoshop',[\s\S]{0,200}sanSang:\s*true/, "module Khoá Photoshop đã bật (sanSang: true)"],
+    [/function\s+veModuleKhoaPhotoshop\s*\(/, "hàm vẽ module Khoá Photoshop"],
+    [/function\s+taiKhoaPhotoshop\s*\(/, "hàm tải chương/bài từ Firebase"],
+    [/function\s+moModalBaiHocPhotoshop\s*\(/, "hàm mở modal xem video bài học"],
+    [/function\s+chuyenBaiHocPhotoshop\s*\(/, "hàm chuyển Bài trước/tiếp theo"],
+    [/function\s+doiChuongKhoaPhotoshop\s*\(/, "hàm sổ ra/khép lại chương"],
+    [/function\s+veAdminKhoaPhotoshop\s*\(/, "hàm vẽ trang quản lý Khoá Photoshop trong /admin"],
+    [/function\s+adminPsLuuTatCa\s*\(/, "hàm lưu tất cả (bản nháp, một nút Lưu) của Khoá Photoshop"],
+    [/function\s+adminPsThemChuong\s*\(/, "nút '+ Thêm chương' CÓ trong trang quản lý (khác module Video ngắn)"],
+    [/rtdb\.ref\('khoahoc\/photoshop\/muc'\)\.once\('value'\)/, "đọc đúng nhánh khoahoc/photoshop/muc"],
+    [/rtdb\.ref\(NHANH_KHOA_PHOTOSHOP\)\.set\(goi\)/, "ghi đúng nhánh khoahoc/photoshop/muc khi Lưu tất cả"],
+    [/ma:\s*'bai-hoc-ps-'\s*\+\s*id/, "modal xem video dùng tiền tố bai-hoc-ps- (khớp CSS [data-ma-modal^=\"bai-hoc-\"])"],
+    [/veKhungVideo\(bai\.linkVideo,\s*'doc'\)/, "video bài học dạng DỌC (quay lại thao tác trên điện thoại)"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // KHÔNG được có nút "Xem chi tiết thông tin khoá học này" trong module này.
+  if (/veModuleKhoaPhotoshop[\s\S]{0,3000}Xem chi tiết thông tin khoá học này/.test(banNoi)) {
+    fail('Module "Khoá Photoshop" không được có nút "Xem chi tiết thông tin khoá học này".');
+  }
+
+  // Ảnh đại diện phải TỰ VẼ riêng (không tái dùng ảnh của module khác).
+  if (!banNoi.includes('/assets/anh/dd-khoa-photoshop.svg')) {
+    fail('Thiếu ảnh đại diện riêng /assets/anh/dd-khoa-photoshop.svg cho module Khoá Photoshop.');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23) SỐ TÀI KHOẢN VÀ SỐ ZALO KHÔNG ĐƯỢC LỌT VÀO MÃ NGUỒN.
 //    Thông tin chuyển khoản chỉ nằm trong Realtime Database, đọc lúc chạy.
 //    Quét toàn bộ tệp trong kho (trừ .git, public/, node_modules).

@@ -1062,6 +1062,28 @@
 }
 .nut-zalo:hover { background: #0055d4; border-color: #0055d4; }
 
+/* Module "Liên hệ và thông tin về Shop" — mỗi mục một dòng: nhãn, giá trị,
+   rồi hai nút Sao chép/Mở xuống hàng riêng trên màn hình hẹp. */
+.danh-sach-lien-he { display: flex; flex-direction: column; gap: 12px; }
+.dong-lien-he {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  background: var(--the-2);
+}
+.nhan-lien-he { flex: 0 0 auto; font-weight: 600; color: var(--chu-diu); font-size: 13px; }
+.gia-tri-lien-he { flex: 1 1 auto; min-width: 140px; word-break: break-all; }
+.hang-nut-lien-he { display: flex; gap: 8px; margin-left: auto; }
+@media (max-width: 480px) {
+  .nhan-lien-he, .gia-tri-lien-he { flex: 1 1 100%; }
+  .hang-nut-lien-he { margin-left: 0; width: 100%; }
+  .hang-nut-lien-he .nut { flex: 1 1 auto; }
+}
+
 /* Nút mở bảng Đặc quyền, đặt ngay trên khung quà tặng cuối module — tông vàng
    để tách khỏi cả mảng xanh lá của khu quà lẫn mảng xanh dương của lưới hàng. */
 .nut-dac-quyen {

@@ -77,9 +77,14 @@
       const du = anh && anh.val();
       if (!du) return false;
       state.zaloShop = String(du.zalo || '').replace(/\D/g, '');
+      // Giữ nguyên object đầy đủ — module "Liên hệ và thông tin về Shop"
+      // (PHẦN 02) liệt kê TOÀN BỘ các mục, không chỉ riêng số Zalo.
+      state.thongTinLienHe = du;
+      state.thongTinLienHeDaTai = true;
       return !!state.zaloShop;
     }).catch(function(e){
       console.error('Không đọc được thông tin liên hệ từ Firebase:', e);
+      state.thongTinLienHeDaTai = true;
       return false;
     });
   }
@@ -645,6 +650,19 @@
     if (hanhDong === 'vn-xuong') { adminVnDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'vn-xem-truoc') { adminVnXemTruocVideo(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'vn-luu-tat-ca') { adminVnLuuTatCa(); return; }
+    if (hanhDong === 'mo-bai-hoc-ps') { moModalBaiHocPhotoshop(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'chuong-doi-ps') { doiChuongKhoaPhotoshop(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'bai-hoc-chuyen-ps') {
+      chuyenBaiHocPhotoshop(nutHanhDong.getAttribute('data-id'), nutHanhDong.getAttribute('data-huong'));
+      return;
+    }
+    if (hanhDong === 'ps-them-bai') { adminPsThemBai(); return; }
+    if (hanhDong === 'ps-them-chuong') { adminPsThemChuong(); return; }
+    if (hanhDong === 'ps-xoa') { adminPsXoaDong(nutHanhDong.getAttribute('data-dong')); return; }
+    if (hanhDong === 'ps-len') { adminPsDoiCho(nutHanhDong.getAttribute('data-dong'), -1); return; }
+    if (hanhDong === 'ps-xuong') { adminPsDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
+    if (hanhDong === 'ps-xem-truoc') { adminPsXemTruocVideo(nutHanhDong.getAttribute('data-id')); return; }
+    if (hanhDong === 'ps-luu-tat-ca') { adminPsLuuTatCa(); return; }
   }
 
   function xuLyGoPhim(su){
@@ -653,6 +671,7 @@
     if (adminGoDanhMuc(dich)) return;
     if (adminGoKhoaHoc(dich)) return;
     if (adminGoVideoNgan(dich)) return;
+    if (adminGoKhoaPhotoshop(dich)) return;
     if (adminGoKhoaHocMayTinh(dich)) return;
     if (adminDonGoTim(dich)) return;
     const truongAppVip = dich.getAttribute('data-truong-app-vip');

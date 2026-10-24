@@ -84,10 +84,10 @@
     { ma: 'qua-tang-android', ten: 'Quà tặng cho người dùng điện thoại android', bieuTuong: '🎁', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-hoc-mobile',  ten: 'Khoá học chỉnh màu Lightroom điện thoại (miễn phí)', bieuTuong: '▤', kieu: 'trang', sanSang: true  },
     { ma: 'khoa-hoc-may-tinh',ten: 'Khoá học Lightroom máy tính PC (miễn phí)', bieuTuong: '▣', kieu: 'trang', sanSang: true  },
-    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: false },
+    { ma: 'khoa-photoshop',   ten: 'Khoá Photoshop - edit ảnh bằng điện thoại (miễn phí)', bieuTuong: '✦', kieu: 'trang', sanSang: true  },
     { ma: 'dac-quyen',        ten: 'Đặc quyền dành cho khách hàng đã từng mua hàng của shop', bieuTuong: '👑', kieu: 'modal', sanSang: true  },
     { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: true  },
-    { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: false },
+    { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: true  },
     { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: false },
     { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
     { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
@@ -142,6 +142,11 @@
     // Số Zalo của shop — GIỐNG HỆT số tài khoản, nó KHÔNG nằm trong mã nguồn
     // mà đọc từ Realtime Database lúc chạy. Xem chú thích ở nút "Liên hệ Zalo".
     zaloShop: '',
+    // Toàn bộ nhánh /thongtinlienhe — module "Liên hệ và thông tin về Shop"
+    // (PHẦN 02) dùng để liệt kê đủ các mục (Zalo, Telegram, WhatsApp, Email,
+    // TikTok, YouTube, Fanpage, Group Facebook…), không chỉ riêng số Zalo.
+    thongTinLienHe: null,
+    thongTinLienHeDaTai: false,
     maDonHienTai: null,
     // Mã đơn NGẮN do web tự sinh, dùng làm nội dung chuyển khoản. Khác với
     // maDonHienTai (khoá dài do Firebase cấp) — cái đó để tra cứu trong Console,
@@ -220,6 +225,15 @@
     // videoNgan/muc, nhưng mảng chỉ TOÀN "bai" (không tạo "chuong" bao giờ) nên
     // xepKhoaHoc() tự trả về danh sách phẳng, không có khối sổ ra nào.
     videoNgan: {
+      muc: [],
+      daTai: false,
+      dangTai: false,
+      chuongMo: {},
+      baiDangMo: ''
+    },
+    // Y hệt state.khoaHoc, nhưng cho module "Khoá Photoshop - edit ảnh bằng
+    // điện thoại" (đọc từ nhánh khoahoc/photoshop/muc).
+    khoaHocPhotoshop: {
       muc: [],
       daTai: false,
       dangTai: false,

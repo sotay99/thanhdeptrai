@@ -45,7 +45,8 @@
     { ma: 'khoa-hoc',    ten: 'Khoá học Lightroom mobile', bieuTuong: '🎬' },
     { ma: 'khoa-hoc-pc', ten: 'Khoá học Lightroom máy tính', bieuTuong: '🖥️' },
     { ma: 'qua-tang-android', ten: 'Quà tặng Android (link APK)', bieuTuong: '🎁' },
-    { ma: 'video-ngan', ten: 'Video ngắn', bieuTuong: '▶' }
+    { ma: 'video-ngan', ten: 'Video ngắn', bieuTuong: '▶' },
+    { ma: 'khoa-photoshop', ten: 'Khoá Photoshop', bieuTuong: '✦' }
   ];
 
   // --------------------------------------------------------- KHAI BÁO CÁC Ô
@@ -186,7 +187,8 @@
     'khoa-hoc':  'khoahoc/lrMobile',
     'khoa-hoc-pc': 'khoahoc/lrPC',
     'qua-tang-android': 'quaTangAndroid',
-    'video-ngan': 'videoNgan'
+    'video-ngan': 'videoNgan',
+    'khoa-photoshop': 'khoahoc/photoshop'
   };
 
   function taiCaiDatAdmin(){
@@ -366,6 +368,7 @@
       'Link MediaFire của 4 app PicsArt/Remini/SnapEdit/XingTu ở module "Quà tặng dành cho thiết bị Android" — sửa ở đây là ngoài web đổi theo ngay, không phải deploy lại. Riêng Lightroom (sản phẩm 1) dùng chung hạ tầng của sp1 nên không cần khai lại ở đây.',
       O_QUA_TANG_ANDROID);
     if (ma === 'video-ngan') return veAdminVideoNgan();
+    if (ma === 'khoa-photoshop') return veAdminKhoaPhotoshop();
     return veAdminChuaLam(ma);
   }
 
