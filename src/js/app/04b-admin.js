@@ -47,7 +47,8 @@
     { ma: 'qua-tang-android', ten: 'Quà tặng Android (link APK)', bieuTuong: '🎁' },
     { ma: 'video-ngan', ten: 'Video ngắn', bieuTuong: '▶' },
     { ma: 'khoa-photoshop', ten: 'Khoá Photoshop', bieuTuong: '✦' },
-    { ma: 'cong-nhan', ten: 'Sự công nhận của khách hàng', bieuTuong: '★' }
+    { ma: 'cong-nhan', ten: 'Sự công nhận của khách hàng', bieuTuong: '★' },
+    { ma: 'thong-ke-app-vip', ten: 'Thống kê đặt mua App VIP', bieuTuong: '📊' }
   ];
 
   // --------------------------------------------------------- KHAI BÁO CÁC Ô
@@ -372,6 +373,7 @@
     if (ma === 'video-ngan') return veAdminVideoNgan();
     if (ma === 'khoa-photoshop') return veAdminKhoaPhotoshop();
     if (ma === 'cong-nhan') return veAdminCongNhan();
+    if (ma === 'thong-ke-app-vip') return veAdminThongKeAppVip();
     return veAdminChuaLam(ma);
   }
 
@@ -519,6 +521,9 @@
     // Danh sách đơn chỉ tải khi thật sự mở mục Đơn hàng, và chỉ tải lần đầu.
     // Đơn hàng là dữ liệu nặng và nhạy cảm nhất trong kho, không đọc sẵn.
     if (ma === 'don-hang' && !khoDon().daTai && !khoDon().dangTai) taiDanhSachDon();
+    if (ma === 'thong-ke-app-vip' && !state.admin.thongKeAppVip.daTai && !state.admin.thongKeAppVip.dangTai) {
+      taiThongKeAppVip();
+    }
   }
 
   function adminHienBiMat(khoaTruong){

@@ -89,9 +89,14 @@
     { ma: 'video-ngan',       ten: 'Xem video ngắn',                   bieuTuong: '▶', kieu: 'trang', sanSang: true  },
     { ma: 'lien-he',          ten: 'Liên hệ và Thông tin về Shop',     bieuTuong: '☎', kieu: 'modal', sanSang: true  },
     { ma: 'cong-nhan',        ten: 'Sự công nhận của khách hàng',      bieuTuong: '★', kieu: 'modal', sanSang: true  },
-    { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: false },
+    { ma: 'hoan-tien',        ten: 'Yêu cầu hoàn tiền',                bieuTuong: '↩', kieu: 'modal', sanSang: true  },
     { ma: 'dieu-khoan',       ten: 'Điều khoản sử dụng và điều kiện',  bieuTuong: '§', kieu: 'modal', sanSang: false },
-    { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false }
+    { ma: 'bao-mat',          ten: 'Bảo mật và quyền riêng tư',        bieuTuong: '☗', kieu: 'modal', sanSang: false },
+    // Trang AI Image Editor Pro - Layers trước đây là nội dung của module
+    // "Trang chủ" (ma: 'trang-chu') — nay "Trang chủ" trống (đang nâng cấp),
+    // còn nguyên trang trình chỉnh sửa chuyển sang module riêng này, đứng
+    // CUỐI danh sách menu. Xem veModuleImageEditorPro() ở PHẦN 06.
+    { ma: 'image-editor-pro', ten: 'Image Editor Pro',                 bieuTuong: '🖼️', kieu: 'trang', sanSang: true  }
   ];
 
   const MODULE_MAC_DINH = 'goi-vip';
@@ -122,11 +127,11 @@
     module: MODULE_MAC_DINH,     // module đang xem
     menuMo: false,               // thanh menu bên trái đang mở hay không
     daChon: [],                  // mảng mã sản phẩm khách đã chọn
-    // Module "Mua App VIP Pro giá rẻ" (PHẦN 03E) — lựa chọn và thông tin liên
-    // hệ TÁCH HẲN khỏi daChon/khachHang ở trên vì đây là luồng không giá,
-    // không thanh toán, không liên quan gì tới tinhTien()/sanPhamDaChon().
+    // Module "Mua App VIP Pro giá rẻ" (PHẦN 03E) — lựa chọn TÁCH HẲN khỏi
+    // daChon ở trên vì đây là luồng không giá, không thanh toán, không liên
+    // quan gì tới tinhTien()/sanPhamDaChon(). Không còn thu thập thông tin
+    // liên hệ của khách — chỉ mời khách tự nhắn Zalo liên kết của shop.
     appVipChon: [],
-    yeuCauAppVip: { soDienThoai: '', ghiChu: '', dangGui: false },
     // Module "Quà tặng dành cho thiết bị Android" (PHẦN 03F) — 4 link APK do
     // admin khai trong Firebase (nhánh quaTangAndroid, công khai đọc), tải một
     // lần lúc vào module rồi giữ lại đây.
@@ -200,8 +205,11 @@
       xemTruocBaiHocPC: '',  // id bài học đang mở bảng "Xem trước link" (module Khoá học máy tính)
       khoaHocNhap: null,     // bản nháp chương/bài khoá điện thoại đang sửa, phần 04E tự dựng khi cần tới
       khoaHocMayTinhNhap: null, // bản nháp chương/bài khoá máy tính đang sửa, phần 04F tự dựng khi cần tới
-      menuMo: false          // menu mục quản trị đang mở hay không — chỉ có tác dụng ở màn hình hẹp
+      menuMo: false,          // menu mục quản trị đang mở hay không — chỉ có tác dụng ở màn hình hẹp
       // donHang — kho tạm của mục Đơn hàng, phần 04D tự dựng khi cần tới
+      // congNhanNhap — bản nháp ảnh công nhận khách hàng, phần 04I tự dựng khi cần tới
+      // khoaPhotoshopNhap — bản nháp chương/bài khoá Photoshop, phần 04H tự dựng khi cần tới
+      thongKeAppVip: { daTai: false, dangTai: false, hang: [] }  // mục "Thống kê đặt mua App VIP", phần 04J
     },
     // Module "Khoá học chỉnh màu Lightroom điện thoại" ở trang bán hàng — đọc
     // công khai từ Realtime Database, không cần đăng nhập.
@@ -248,6 +256,9 @@
       dangTai: false,
       anhDangMo: ''
     },
+    // Module "Yêu cầu hoàn tiền" (PHẦN 03J) — 5 câu y chang biểu mẫu gốc,
+    // không cần đăng nhập, không có trang xem ở /admin (chỉ email).
+    yeuCauHoanTien: { hoTen: '', tenSanPham: '', lyDo: '', maSanPham: '', soTaiKhoan: '', dangGui: false },
     // Bật khi VỪA vào module bán hàng, để 7 thẻ sản phẩm trôi lên. Tắt ngay sau
     // khi hiệu ứng được gắn, nên bấm chọn/bỏ chọn sản phẩm (cũng vẽ lại trang)
     // không làm cả lưới nhấp nháy trôi lại từ đầu.

@@ -564,8 +564,9 @@
     if (hanhDong === 'qt-xem-chi-tiet') { moModalChiTietQuaTang(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'qt-su-dung') { moModalHuongDanQuaTang(nutHanhDong.getAttribute('data-ma')); return; }
     if (hanhDong === 'chon-app-vip') { chonAppVip(nutHanhDong.getAttribute('data-ma')); return; }
-    if (hanhDong === 'dat-mua-app-vip') { moModalDatMuaAppVip(); return; }
-    if (hanhDong === 'gui-yeu-cau-app-vip') { guiYeuCauAppVip(); return; }
+    if (hanhDong === 'dat-mua-app-vip') { batDauDatMuaAppVip(); return; }
+    if (hanhDong === 'mo-qua-tang-tu-canh-bao') { moQuaTangTuCanhBao(); return; }
+    if (hanhDong === 'tiep-tuc-dat-mua-app-vip') { tiepTucDatMuaAppVip(); return; }
     if (hanhDong === 'dong-modal') { dongModal(); return; }
     if (hanhDong === 'tien-hanh-thanh-toan') { moModalThanhToan(); return; }
     if (hanhDong === 'sao-chep') { xuLySaoChep(nutHanhDong); return; }
@@ -673,6 +674,8 @@
     if (hanhDong === 'cn-len') { adminCnDoiCho(nutHanhDong.getAttribute('data-dong'), -1); return; }
     if (hanhDong === 'cn-xuong') { adminCnDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'cn-luu-tat-ca') { adminCnLuuTatCa(); return; }
+    if (hanhDong === 'tk-app-vip-tai-lai') { adminThongKeAppVipTaiLai(); return; }
+    if (hanhDong === 'gui-yeu-cau-hoan-tien') { guiYeuCauHoanTien(); return; }
   }
 
   function xuLyGoPhim(su){
@@ -685,8 +688,8 @@
     if (adminGoCongNhan(dich)) return;
     if (adminGoKhoaHocMayTinh(dich)) return;
     if (adminDonGoTim(dich)) return;
-    const truongAppVip = dich.getAttribute('data-truong-app-vip');
-    if (truongAppVip) { capNhatTruongAppVip(truongAppVip, dich.value); return; }
+    const truongHoanTien = dich.getAttribute('data-truong-hoan-tien');
+    if (truongHoanTien) { capNhatTruongHoanTien(truongHoanTien, dich.value); return; }
     const ten = dich.getAttribute('data-truong');
     if (!ten) return;
     capNhatTruong(ten, dich.value);
@@ -712,6 +715,7 @@
       if (ma === state.module) return;
       state.module = ma;
       state.hieuUngVaoModule = true;   // quay lại bằng nút Back cũng trôi lại
+      if (ma === 'image-editor-pro') hienCanhBaoImageEditorPro();
       render();
     });
     // Nút Back / Forward của trình duyệt: đường dẫn đổi thì trang đổi theo.
@@ -727,6 +731,7 @@
       state.trang = trang;
       state.module = docHash();
       state.hieuUngVaoModule = true;
+      if (state.module === 'image-editor-pro') hienCanhBaoImageEditorPro();
       dongHetModal();
       render();
       if (trang === 'admin') chuanBiAdmin();

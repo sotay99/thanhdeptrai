@@ -11,6 +11,7 @@
   "03g-video-ngan.js",
   "03h-khoa-photoshop.js",
   "03i-cong-nhan.js",
+  "03j-hoan-tien.js",
   "04-thong-tin-khach.js",
   "04b-admin.js",
   "04c-admin-danh-muc.js",
@@ -20,6 +21,7 @@
   "04g-admin-video-ngan.js",
   "04h-admin-khoa-photoshop.js",
   "04i-admin-cong-nhan.js",
+  "04j-admin-thong-ke-app-vip.js",
   "05-thanh-toan.js",
   "06-trang-chu.js"
 ]

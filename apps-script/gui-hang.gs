@@ -64,7 +64,7 @@ var WEB_SHOP = 'thanhdeptrai.vn';
  * ĐỔI MÃ THÌ ĐỔI LUÔN DẤU NÀY, rồi Deploy → Manage deployments → ✏️ →
  * Version: New version → Deploy.
  */
-var PHIEN_BAN = '2026-10-24 · LR21 + AppVipPro';
+var PHIEN_BAN = '2026-10-24 · LR21 + HoanTien';
 
 // SỐ ZALO VÀ EMAIL LIÊN HỆ CỦA SHOP KHÔNG NẰM Ở ĐÂY. Cả hai đọc từ nhánh
 // 'thongtinlienhe' của Realtime Database lúc chạy — cùng một chỗ mà trang quản
@@ -486,21 +486,21 @@ function soanThuBaoShop(don, ketQua) {
   return html;
 }
 
-/* ------------------------------------------------- YÊU CẦU "MUA APP VIP PRO" */
+/* --------------------------------------------------- YÊU CẦU "HOÀN TIỀN" */
 //
-// Module không giá, không thanh toán (xem PHẦN 03E của web) — khách chọn app
-// rồi để lại số điện thoại/Zalo, ghi vào nhánh yeuCauAppVip (KHÔNG PHẢI
-// donhang — không lẫn với khâu lọc trangThai='daXacNhan' ở trên). Chủ shop tự
-// nhắn tin tư vấn giá sau, script chỉ có việc BÁO qua email ngay khi có yêu
-// cầu mới, chạy chung nhịp với hàm gửi hàng bên trên.
+// Module "Yêu cầu hoàn tiền" (xem PHẦN 03J của web) — khách điền biểu mẫu,
+// ghi vào nhánh yeuCauHoanTien (KHÔNG PHẢI donhang — không lẫn với khâu lọc
+// trangThai='daXacNhan' ở trên). KHÔNG có trang xem ở /admin cho mục này —
+// chủ shop chỉ nhận qua email, script chỉ có việc BÁO qua email ngay khi có
+// yêu cầu mới, chạy chung nhịp với hàm gửi hàng bên trên.
 
 /** Lấy các yêu cầu CHƯA báo qua email (daBao chưa phải true). */
-function layYeuCauAppVipChoBao() {
-  var traLoi = goiFirebase('yeuCauAppVip',
+function layYeuCauHoanTienChoBao() {
+  var traLoi = goiFirebase('yeuCauHoanTien',
     'orderBy=' + encodeURIComponent('"daBao"') + '&equalTo=false&limitToFirst=' + SO_DON_MOI_LAN);
   if (traLoi.getResponseCode() !== 200) {
     throw new Error('Firebase trả về mã ' + traLoi.getResponseCode() +
-      ' khi đọc yeuCauAppVip: ' + traLoi.getContentText().slice(0, 300));
+      ' khi đọc yeuCauHoanTien: ' + traLoi.getContentText().slice(0, 300));
   }
   var du = JSON.parse(traLoi.getContentText());
   if (!du) return [];
@@ -511,46 +511,38 @@ function layYeuCauAppVipChoBao() {
   });
 }
 
-function capNhatYeuCauAppVip(maYc, thayDoi) {
-  var traLoi = goiFirebase('yeuCauAppVip/' + maYc, '', {
+function capNhatYeuCauHoanTien(maYc, thayDoi) {
+  var traLoi = goiFirebase('yeuCauHoanTien/' + maYc, '', {
     method: 'patch',
     contentType: 'application/json',
     payload: JSON.stringify(thayDoi)
   });
   if (traLoi.getResponseCode() !== 200) {
-    throw new Error('Không cập nhật được yêu cầu App VIP Pro ' + maYc + ': ' + traLoi.getContentText().slice(0, 200));
+    throw new Error('Không cập nhật được yêu cầu hoàn tiền ' + maYc + ': ' + traLoi.getContentText().slice(0, 200));
   }
 }
 
-function soanThuYeuCauAppVip(yc) {
-  var ds = Array.isArray(yc.dsApp) ? yc.dsApp : Object.keys(yc.dsApp || {}).map(function (k) { return yc.dsApp[k]; });
-  var dongApp = ds.map(function (ten) { return '<li>' + thoatHtml(ten) + '</li>'; }).join('');
-  var sdt = thoatHtml(yc.soDienThoai || '(không có)');
-  var duongZalo = linkZalo(String(yc.soDienThoai || '').trim());
-  var dongSdt = duongZalo
-    ? '<p><strong>Số điện thoại/Zalo:</strong> ' + sdt + ' — <a href="' + duongZalo + '">nhắn Zalo ngay</a></p>'
-    : '<p><strong>Số điện thoại/Zalo:</strong> ' + sdt + '</p>';
-  var ghiChu = yc.ghiChu ? '<p><strong>Lời nhắn của khách:</strong> ' + thoatHtml(yc.ghiChu) + '</p>' : '';
+function soanThuYeuCauHoanTien(yc) {
   return '' +
-    '<p><strong>Có khách vừa gửi yêu cầu đặt mua App VIP Pro.</strong></p>' +
-    dongSdt +
-    '<p><strong>Các app khách chọn (' + ds.length + '):</strong></p>' +
-    '<ul>' + dongApp + '</ul>' +
-    ghiChu +
-    '<p>Vui lòng chủ động nhắn tin tư vấn và chốt giá với khách — module này không thu tiền trước.</p>';
+    '<p><strong>Có khách vừa gửi yêu cầu hoàn tiền.</strong></p>' +
+    '<p><strong>Họ và tên:</strong> ' + thoatHtml(yc.hoTen || '') + '</p>' +
+    '<p><strong>Tên sản phẩm:</strong> ' + thoatHtml(yc.tenSanPham || '') + '</p>' +
+    '<p><strong>Lý do hoàn tiền:</strong> ' + thoatHtml(yc.lyDo || '').replace(/\n/g, '<br>') + '</p>' +
+    '<p><strong>Mã sản phẩm (hoặc link sản phẩm):</strong> ' + thoatHtml(yc.maSanPham || '') + '</p>' +
+    '<p><strong>Số tài khoản nhận hoàn tiền:</strong> ' + thoatHtml(yc.soTaiKhoan || '') + '</p>';
 }
 
-function xuLyYeuCauAppVip(emailShop) {
-  var danhSach = layYeuCauAppVipChoBao();
+function xuLyYeuCauHoanTien(emailShop) {
+  var danhSach = layYeuCauHoanTienChoBao();
   if (!danhSach.length) return;
-  Logger.log('Có ' + danhSach.length + ' yêu cầu Mua App VIP Pro chờ báo.');
+  Logger.log('Có ' + danhSach.length + ' yêu cầu hoàn tiền chờ báo.');
   danhSach.forEach(function (yc) {
     try {
-      guiThu(emailShop, '[App VIP Pro] Khách mới đặt mua — ' + (yc.soDienThoai || 'chưa để số'),
-        soanThuYeuCauAppVip(yc));
-      capNhatYeuCauAppVip(yc.__ma, { daBao: true, baoLuc: Date.now() });
+      guiThu(emailShop, '[Hoàn tiền] Khách mới gửi yêu cầu — ' + (yc.hoTen || 'chưa để tên'),
+        soanThuYeuCauHoanTien(yc));
+      capNhatYeuCauHoanTien(yc.__ma, { daBao: true, baoLuc: Date.now() });
     } catch (loi) {
-      Logger.log('Lỗi khi báo yêu cầu App VIP Pro ' + yc.__ma + ': ' + loi.message);
+      Logger.log('Lỗi khi báo yêu cầu hoàn tiền ' + yc.__ma + ': ' + loi.message);
     }
   });
 }
@@ -572,10 +564,10 @@ function guiHangChoDonDaXacNhan() {
   try {
     var emailShop = docThietLap('EMAIL_SHOP');
 
-    // Báo yêu cầu "Mua App VIP Pro" TRƯỚC — module đó không có đơn hàng nào ở
+    // Báo yêu cầu "Hoàn tiền" TRƯỚC — module đó không có đơn hàng nào ở
     // layDonChoGui() nên phải xử lý riêng, và đặt ở đây để return sớm bên
     // dưới (không có đơn nào chờ gửi) không bao giờ bỏ sót nó.
-    xuLyYeuCauAppVip(emailShop);
+    xuLyYeuCauHoanTien(emailShop);
 
     var danhSach = layDonChoGui();
     if (!danhSach.length) return;

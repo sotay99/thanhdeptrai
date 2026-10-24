@@ -13,13 +13,13 @@
      va chạm), chỉ đổi nội dung bên trong: không có tổng tiền/giảm giá, chỉ có
      số app đã chọn + nút "Đặt mua".
 
-     Bấm "Đặt mua" mở modal nhập Số điện thoại/Zalo (tái dùng NGUYÊN
-     chuanHoaSo()/loiSo() của PHẦN 04 — không viết lại luật kiểm số) + một ô
-     Lời nhắn không bắt buộc. Gửi xong ghi vào nhánh yeuCauAppVip của Realtime
-     Database (KHÔNG phải donhang — đây không phải một đơn hàng có giá, gộp
-     chung sẽ làm hỏng khâu lọc 'trangThai' của gui-hang.gs); apps-script đọc
-     nhánh này mỗi phút rồi email cho chủ shop, xem guiYeuCauAppVip() trong
-     apps-script/gui-hang.gs.
+     Bấm "Đặt mua": nếu trong lựa chọn có app thuộc 5 app đã có bản miễn phí ở
+     module "Quà tặng dành cho thiết bị Android" (PHẦN 03F) thì cảnh báo trước
+     mời khách qua module đó; "Tiếp tục đặt mua hàng" thì ghi thống kê theo
+     thiết bị (nhánh thongKeDatMuaApp, xem /admin PHẦN 04J) rồi mời khách tự
+     liên hệ Zalo LIÊN KẾT của shop (không phải Zalo chính) — KHÔNG còn thu
+     thập số điện thoại/email/ghi chú của khách, không có đơn hàng nào được
+     tạo ra ở module này.
      =========================================================================== */
 
   // Đường dẫn ẢNH PHẢI là chuỗi TRẦN đầy đủ, không được ghép bằng dấu + lúc
@@ -142,119 +142,106 @@
     capNhatThanhAppVip();
   }
 
-  // --------------------------------------------------- MODAL ĐẶT MUA
+  // --------------------------------------------------- LUỒNG "ĐẶT MUA"
+  //
+  // KHÔNG còn thu thập số điện thoại/Zalo của khách — shop chỉ mời khách tự
+  // liên hệ Zalo liên kết. Bấm "Đặt mua":
+  //   1. Nếu trong lựa chọn có ÍT NHẤT MỘT app thuộc 5 app có bản miễn phí
+  //      cho Android (APP_MIEN_PHI_ANDROID) → hiện modal cảnh báo trước, mời
+  //      xem module "Quà tặng cho người dùng điện thoại android".
+  //   2. Mọi trường hợp khác (hoặc bấm "Tiếp tục đặt mua hàng" ở bước 1) →
+  //      ghi thống kê theo thiết bị rồi mở modal mời liên hệ Zalo liên kết.
 
-  function veOTruongAppVip(id, truong, nhan, giaTri, goiY){
-    return '' +
-      '<div class="truong">' +
-        '<label for="o-' + id + '">' + escapeHtml(nhan) + '</label>' +
-        '<input id="o-' + id + '" type="text" data-truong-app-vip="' + truong + '" value="' + escapeHtml(giaTri) +
-          '" autocomplete="off" inputmode="tel">' +
-        '<p class="goi-y">' + escapeHtml(goiY) + '</p>' +
-        '<p class="loi" data-loi-app-vip="' + truong + '"></p>' +
-      '</div>';
+  // 5 app đã có mặt (miễn phí) trong module "Quà tặng dành cho thiết bị
+  // Android" (PHẦN 03F) — mã phải khớp ĐÚNG với mã trong APP_VIP_PRO.
+  const APP_MIEN_PHI_ANDROID = ['lightroom', 'picsart', 'remini', 'snapedit', 'hypic'];
+
+  function coAppMienPhiDangChon(){
+    return state.appVipChon.some(function(ma){ return APP_MIEN_PHI_ANDROID.indexOf(ma) !== -1; });
   }
 
-  function veOGhiChuAppVip(giaTri){
-    return '' +
-      '<div class="truong">' +
-        '<label for="o-ghiChuAppVip">Lời nhắn thêm của bạn (không bắt buộc)</label>' +
-        '<textarea id="o-ghiChuAppVip" class="o-ghi-chu-app-vip" data-truong-app-vip="ghiChu" rows="3" autocomplete="off">' +
-          escapeHtml(giaTri) + '</textarea>' +
-      '</div>';
-  }
-
-  function moModalDatMuaAppVip(){
+  function batDauDatMuaAppVip(){
     if (!state.appVipChon.length) return;
-    const y = state.yeuCauAppVip;
-    const ds = appVipDaChonDanhSach();
+    if (coAppMienPhiDangChon()) moModalCanhBaoAppMienPhi();
+    else tiepTucDatMuaAppVip();
+  }
+
+  function moModalCanhBaoAppMienPhi(){
     moModal({
-      ma: 'dat-mua-app-vip',
-      tieuDe: 'Đặt mua App VIP Pro',
+      ma: 'canh-bao-app-mien-phi',
+      tieuDe: 'Có bản miễn phí dành cho Android',
       than: '' +
-        '<p class="dan-nhap-modal">Bạn đã chọn ' + ds.length + ' app:</p>' +
-        '<ul class="ds-app-da-chon">' + ds.map(function(a){ return '<li>' + escapeHtml(a.ten) + '</li>'; }).join('') + '</ul>' +
-        '<div class="khung-cam-ket-giao">' +
-          '<p>Shop sẽ nhắn tin để tư vấn và chốt giá cụ thể cho từng app, với cam kết mức giá rẻ nhất thị trường hiện nay ' +
-            '(90K - 149K/app).</p>' +
-        '</div>' +
-        veOTruongAppVip('sdtAppVip', 'soDienThoai', 'Số điện thoại (hoặc số Zalo của bạn)', y.soDienThoai,
-          'Nếu Zalo của bạn chặn tin nhắn người lạ, shop sẽ nhắn tin qua SMS.') +
-        veOGhiChuAppVip(y.ghiChu) +
-        '<p class="loi loi-chung" data-loi="chungAppVip"></p>',
+        '<p>Nếu bạn dùng điện thoại Android, có thể sử dụng các app này (Lightroom, PicsArt, Remini, SnapEdit, ' +
+          'Hypic) một cách <strong>miễn phí</strong> mà không cần phải mua hàng, vui lòng xem tại ' +
+          '<button type="button" class="nut-lien-ket-module" data-hanh-dong="mo-qua-tang-tu-canh-bao">' +
+          'module Quà tặng cho người dùng điện thoại android</button>.</p>',
       day: '' +
-        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
-        '<button type="button" class="nut nut-chinh" data-hanh-dong="gui-yeu-cau-app-vip" disabled>' +
-          'Gửi yêu cầu đặt mua</button>',
-      khiVe: function(){ capNhatFormAppVip(); }
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Quay lại</button>' +
+        '<button type="button" class="nut nut-chinh" data-hanh-dong="tiep-tuc-dat-mua-app-vip">Tiếp tục đặt mua hàng</button>'
     });
   }
 
-  function capNhatTruongAppVip(truong, giaTri){
-    const y = state.yeuCauAppVip;
-    if (truong === 'soDienThoai') y.soDienThoai = chuanHoaSo(giaTri);
-    else if (truong === 'ghiChu') y.ghiChu = String(giaTri == null ? '' : giaTri).slice(0, 500);
-    capNhatFormAppVip();
+  function moQuaTangTuCanhBao(){
+    dongHetModal();
+    moModule('qua-tang-android');
   }
 
-  // Cập nhật TẠI CHỖ (không vẽ lại cả modal) để con trỏ nhập không bị nhảy —
-  // cùng lý do với capNhatFormKhachHang() ở PHẦN 04.
-  function capNhatFormAppVip(){
-    const y = state.yeuCauAppVip;
-    const oSdt = document.querySelector('[data-truong-app-vip="soDienThoai"]');
-    if (oSdt && oSdt.value !== y.soDienThoai) oSdt.value = y.soDienThoai;
-    const loi = loiSo(y.soDienThoai, 'Số điện thoại/Zalo');
-    const oLoi = document.querySelector('[data-loi-app-vip="soDienThoai"]');
-    if (oLoi) oLoi.textContent = loi;
-    if (oSdt) oSdt.classList.toggle('sai', !!loi);
-
-    const hopLe = !!y.soDienThoai && !loi;
-    const canhBao = document.querySelector('[data-loi="chungAppVip"]');
-    if (canhBao) canhBao.textContent = hopLe ? '' : 'Vui lòng nhập số điện thoại hoặc Zalo hợp lệ để shop liên hệ.';
-
-    const nutGui = document.querySelector('[data-hanh-dong="gui-yeu-cau-app-vip"]');
-    if (nutGui) {
-      nutGui.disabled = !hopLe || y.dangGui;
-      nutGui.textContent = y.dangGui ? 'Đang gửi…' : 'Gửi yêu cầu đặt mua';
-    }
-  }
-
-  function guiYeuCauAppVip(){
-    const y = state.yeuCauAppVip;
-    if (!y.soDienThoai || loiSo(y.soDienThoai, 'Số điện thoại') || y.dangGui) return;
-    if (!firebaseSanSang || !rtdb) { alert('Mất kết nối, vui lòng thử lại.'); return; }
+  // Ghi NHẬN DIỆN theo thiết bị (tái dùng NGUYÊN maThietBi() của PHẦN 03B) —
+  // mỗi lượt bấm "Tiếp tục đặt mua hàng" ghi THÊM một dòng (push), KHÔNG đọc
+  // lại rồi gộp ở phía khách: ghi public chỉ cần quyền WRITE, việc gộp theo
+  // thiết bị/khử trùng app để hiện "một thiết bị một dòng" làm ở /admin lúc
+  // HIỂN THỊ (xem veAdminThongKeAppVip ở PHẦN 04J) — vừa đơn giản vừa không
+  // cần cấp quyền ĐỌC công khai cho nhánh thống kê này.
+  function ghiThongKeDatMuaAppVip(){
+    if (!firebaseSanSang || !rtdb) return;
     const ds = appVipDaChonDanhSach();
     if (!ds.length) return;
-
-    y.dangGui = true;
-    capNhatFormAppVip();
-
-    rtdb.ref('yeuCauAppVip').push().set({
-      dsApp: ds.map(function(a){ return a.ten; }),
-      maApp: ds.map(function(a){ return a.ma; }),
-      soDienThoai: y.soDienThoai,
-      ghiChu: y.ghiChu,
-      taoLuc: Date.now(),
-      daBao: false
-    }).then(function(){
-      state.appVipChon = [];
-      state.yeuCauAppVip = { soDienThoai: '', ghiChu: '', dangGui: false };
-      render();
-      moModalCamOnAppVip();
+    rtdb.ref('thongKeDatMuaApp').push().set({
+      thietBi: maThietBi(),
+      dsApp: ds.map(function(a){ return a.ma; }),
+      taoLuc: Date.now()
     }).catch(function(e){
-      console.error('Không gửi được yêu cầu Mua App VIP Pro:', e);
-      y.dangGui = false;
-      capNhatFormAppVip();
-      alert('Không gửi được. Vui lòng kiểm tra mạng rồi thử lại.');
+      console.error('Không ghi được thống kê đặt mua App VIP:', e);
     });
   }
 
-  function moModalCamOnAppVip(){
-    dongModal();
+  function tiepTucDatMuaAppVip(){
+    if (!state.appVipChon.length) return;
+    ghiThongKeDatMuaAppVip();
+    moModalLienHeAppVip();
+  }
+
+  function moModalLienHeAppVip(){
+    dongHetModal();
+    if (!state.thongTinLienHeDaTai) {
+      taiThongTinLienHe().then(function(){
+        const dangMo = state.modal.some(function(x){ return x.ma === 'lien-he-app-vip'; });
+        if (dangMo) { dongModal(); moModalLienHeAppVip(); }
+      });
+    }
+    const so = String((state.thongTinLienHe && state.thongTinLienHe.zaloLienKet) || '').trim();
+    // Tái dùng NGUYÊN diaChiMoLienHe() (PHẦN 02) để dựng địa chỉ "Mở" — tránh
+    // viết thẳng chuỗi "https://zalo.me/" cạnh href trong mã nguồn (quy tắc
+    // chung: không in sẵn thành phần nhận dạng số Zalo như một thẻ <a> tĩnh).
+    const diaChi = so ? diaChiMoLienHe('zalo', so) : '';
     moModal({
-      ma: 'cam-on-app-vip',
-      tieuDe: 'Đã gửi yêu cầu',
-      than: '<p>Cảm ơn bạn đã gửi yêu cầu đặt mua! Shop sẽ nhắn tin tư vấn và chốt giá trong thời gian sớm nhất.</p>',
+      ma: 'lien-he-app-vip',
+      tieuDe: 'Liên hệ Zalo để được hỗ trợ',
+      than: '' +
+        '<p>Vui lòng liên hệ trực tiếp Zalo của shop để được hỗ trợ cài app một cách nhanh nhất, kể cả trên điện ' +
+          'thoại Android và iPhone, với mức giá chỉ từ <strong>90K - 149K</strong> cho mỗi app.</p>' +
+        (so
+          ? '<div class="dong-lien-he">' +
+              '<span class="nhan-lien-he">Zalo</span>' +
+              '<span class="gia-tri-lien-he">' + escapeHtml(so) + '</span>' +
+              '<div class="hang-nut-lien-he">' +
+                '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="sao-chep" data-chuoi="' +
+                  escapeHtml(so) + '">📋 Sao chép</button>' +
+                '<a class="nut nut-nho nut-chinh" href="' + escapeHtml(diaChi) +
+                  '" target="_blank" rel="noopener">↗ Mở</a>' +
+              '</div>' +
+            '</div>'
+          : '<p class="loi-nhan-hang">Số Zalo liên kết đang được cập nhật, vui lòng quay lại sau.</p>'),
       day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
     });
   }

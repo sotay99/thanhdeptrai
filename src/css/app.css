@@ -2164,23 +2164,45 @@
 
 .ghi-chu-cuoi-app-vip { margin: 4px 0 0; font-size: 12.5px; color: var(--chu-mo); line-height: 1.6; }
 
-.ds-app-da-chon {
-  margin: 0 0 14px;
+/* Dòng chữ "module Quà tặng cho người dùng điện thoại android" bấm được,
+   nằm lồng trong một đoạn văn — dáng như link chứ không như nút. */
+.nut-lien-ket-module {
+  background: none;
+  border: 0;
   padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  margin: 0;
+  font: inherit;
+  color: var(--xanh);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
-.ds-app-da-chon li {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--the-2);
-  border: 1px solid var(--vien);
-  font-size: 12.5px;
-  color: var(--chu);
+/* Thông báo nổi giữa màn hình của module "Image Editor Pro" — KHÔNG phải
+   modal (không nền phủ chặn thao tác, không nút đóng), tự ẩn sau 5 giây.
+   z-index cao hơn cả lớp phủ modal (.lop-modal) để luôn đè lên trên cùng. */
+.canh-bao-ieditor-pro {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  max-width: min(92vw, 420px);
+  padding: 16px 20px;
+  border-radius: var(--bo-the);
+  background: rgba(20, 20, 24, .92);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+  pointer-events: none;
+  animation: ieditor-canh-bao-mo-dan .25s ease-out;
+}
+@keyframes ieditor-canh-bao-mo-dan {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.95); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-.dan-nhap-modal { margin: 0 0 8px; font-size: 13px; color: var(--chu-diu); }
+/* Dấu * đỏ đánh dấu câu bắt buộc ở module "Yêu cầu hoàn tiền". */
+.dau-bat-buoc { color: #e5484d; }
 

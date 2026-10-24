@@ -48,6 +48,43 @@
       ".read": true,
       ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     },
+    "yeuCauHoanTien": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      ".indexOn": [
+        "daBao"
+      ],
+      "$ma": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['hoTen', 'tenSanPham', 'lyDo', 'maSanPham', 'soTaiKhoan', 'taoLuc'])",
+        "hoTen": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "tenSanPham": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "lyDo": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "maSanPham": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "soTaiKhoan": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "taoLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "daBao": {
+          ".validate": "newData.isBoolean()"
+        },
+        "baoLuc": {
+          ".validate": "newData.isNumber()"
+        },
+        "$khac": {
+          ".validate": false
+        }
+      }
+    },
     "donhang": {
       ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
       ".indexOn": [
@@ -131,33 +168,18 @@
       ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
       ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     },
-    "yeuCauAppVip": {
+    "thongKeDatMuaApp": {
       ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
-      ".indexOn": [
-        "daBao"
-      ],
       "$ma": {
         ".write": true,
-        ".validate": "newData.hasChildren(['dsApp', 'soDienThoai', 'taoLuc'])",
+        ".validate": "newData.hasChildren(['thietBi', 'dsApp', 'taoLuc'])",
+        "thietBi": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
         "dsApp": {
           ".validate": "newData.hasChildren()"
         },
-        "maApp": {
-          ".validate": "newData.hasChildren()"
-        },
-        "soDienThoai": {
-          ".validate": "newData.isString() && newData.val().length <= 13"
-        },
-        "ghiChu": {
-          ".validate": "newData.isString() && newData.val().length <= 500"
-        },
         "taoLuc": {
-          ".validate": "newData.isNumber()"
-        },
-        "daBao": {
-          ".validate": "newData.isBoolean()"
-        },
-        "baoLuc": {
           ".validate": "newData.isNumber()"
         },
         "$khac": {

@@ -912,7 +912,11 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     else if (/"\.read"\s*:\s*true/.test(khoi[0]) || /"\.write"\s*:\s*true/.test(khoi[0])) {
       fail('Nhánh "thietbi" không được mở cho khách — chỉ Worker (qua khoá dịch vụ) và chủ shop.');
     }
-    if (!/"maNhanHang"/.test((rules.match(/"\.indexOn"[\s\S]{0,120}/) || [""])[0])) {
+    // Scope vào ĐÚNG khối "donhang" — không lấy .indexOn đầu tiên trong cả
+    // tệp, vì các nhánh "yêu cầu" khác (yeuCauHoanTien…) cũng có .indexOn
+    // riêng và có thể đứng TRƯỚC donhang trong tệp.
+    const khoiDonHang = rules.match(/"donhang"\s*:\s*\{[\s\S]*?"\.indexOn"\s*:\s*\[[\s\S]*?\]/);
+    if (!khoiDonHang || !/"maNhanHang"/.test(khoiDonHang[0])) {
       fail('donhang phải có .indexOn "maNhanHang" — Worker tra đơn theo mã đó.');
     }
   }
@@ -1828,22 +1832,49 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
 
 // ---------------------------------------------------------------------------
 // 29) MODULE "MUA APP VIP PRO GIÁ RẺ" — lưới 20 app không giá, không xem chi
-//     tiết, gửi yêu cầu (KHÔNG phải đơn hàng) kèm số điện thoại/Zalo.
+//     tiết. Bấm "Đặt mua": có app thuộc 5 app miễn phí Android thì cảnh báo
+//     trước; "Tiếp tục đặt mua hàng" thì ghi thống kê thiết bị rồi mời liên
+//     hệ Zalo LIÊN KẾT — KHÔNG còn thu thập số điện thoại/email của khách.
 // ---------------------------------------------------------------------------
 {
   [
     [/ma:\s*'app-vip-pro',[\s\S]{0,200}sanSang:\s*true/, "module Mua App VIP Pro đã bật (sanSang: true)"],
     [/function\s+veModuleAppVipPro\s*\(/, "hàm vẽ module Mua App VIP Pro"],
     [/function\s+chonAppVip\s*\(/, "hành động chọn/bỏ chọn một app"],
-    [/function\s+moModalDatMuaAppVip\s*\(/, "hàm mở modal Đặt mua"],
-    [/function\s+guiYeuCauAppVip\s*\(/, "hàm gửi yêu cầu lên Firebase"],
-    [/rtdb\.ref\('yeuCauAppVip'\)\.push\(\)/, "ghi yêu cầu vào ĐÚNG nhánh yeuCauAppVip (không lẫn vào donhang)"],
+    [/function\s+batDauDatMuaAppVip\s*\(/, "hàm bắt đầu luồng Đặt mua (quyết định có cảnh báo hay không)"],
+    [/function\s+coAppMienPhiDangChon\s*\(/, "hàm kiểm tra có app thuộc 5 app miễn phí Android đang chọn"],
+    [/function\s+moModalCanhBaoAppMienPhi\s*\(/, "hàm mở modal cảnh báo có bản miễn phí Android"],
+    [/function\s+moQuaTangTuCanhBao\s*\(/, "hàm chuyển sang module Quà tặng Android từ trong modal cảnh báo"],
+    [/function\s+tiepTucDatMuaAppVip\s*\(/, "hàm xử lý 'Tiếp tục đặt mua hàng'"],
+    [/function\s+ghiThongKeDatMuaAppVip\s*\(/, "hàm ghi thống kê theo thiết bị"],
+    [/function\s+moModalLienHeAppVip\s*\(/, "hàm mở modal mời liên hệ Zalo liên kết"],
+    [/rtdb\.ref\('thongKeDatMuaApp'\)\.push\(\)/, "ghi thống kê vào ĐÚNG nhánh thongKeDatMuaApp (không lẫn vào donhang)"],
+    [/\.zaloLienKet\b/, "đọc ĐÚNG trường zaloLienKet (không phải zalo chính) để mời liên hệ"],
     [/KHÔNG được kèm theo<\/strong> bộ quà tặng/i, "cảnh báo không kèm quà tặng"],
     [/App bán chạy nhất/, "tên nhóm 1"],
     [/App Selfie hot/, "tên nhóm 2"],
     [/App thiết kế/, "tên nhóm 3"],
   ].forEach(([mau, ten]) => {
     if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // KHÔNG còn thu thập thông tin liên hệ của khách ở module này — xác nhận
+  // các hàm/trường của luồng cũ đã bị gỡ sạch, không phải chỉ "không gọi tới".
+  ['guiYeuCauAppVip', 'moModalDatMuaAppVip', 'capNhatTruongAppVip', 'veOTruongAppVip', 'moModalCamOnAppVip']
+    .forEach((ten) => {
+      if (new RegExp(`function\\s+${ten}\\s*\\(`).test(banNoi)) {
+        fail(`Hàm ${ten}() của luồng thu thập SĐT/email cũ phải được GỠ BỎ, không chỉ ngừng gọi.`);
+      }
+    });
+  if (/rtdb\.ref\('yeuCauAppVip'\)/.test(banNoi)) {
+    fail("Không được ghi vào nhánh yeuCauAppVip nữa — module này không còn thu thập thông tin liên hệ.");
+  }
+
+  // 5 app có bản miễn phí phải khớp ĐÚNG mã với APP_VIP_PRO.
+  ['lightroom', 'picsart', 'remini', 'snapedit', 'hypic'].forEach((ma) => {
+    if (!new RegExp(`APP_MIEN_PHI_ANDROID[\\s\\S]{0,200}'${ma}'`).test(banNoi)) {
+      fail(`Thiếu mã "${ma}" trong APP_MIEN_PHI_ANDROID.`);
+    }
   });
 
   // Đủ 20 app, đúng tên — sửa chữ thì cập nhật mẫu dưới đây theo CLAUDE.md,
@@ -1876,21 +1907,29 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   });
 
   // Rules Firebase: ghi công khai (khách không đăng nhập vẫn gửi được), chỉ
-  // chủ shop đọc được — giống hệt nguyên tắc của nhánh donhang.
+  // chủ shop đọc được — giống hệt nguyên tắc của nhánh donhang. Nhánh
+  // yeuCauAppVip (luồng thu thập SĐT cũ) phải đã bị GỠ hẳn khỏi rules.
   const rules = doc("database.rules.json");
-  if (!/"yeuCauAppVip":\s*\{/.test(rules)) {
-    fail('Thiếu nhánh "yeuCauAppVip" trong database.rules.json.');
+  if (!/"thongKeDatMuaApp":\s*\{/.test(rules)) {
+    fail('Thiếu nhánh "thongKeDatMuaApp" trong database.rules.json.');
+  }
+  if (/"yeuCauAppVip":\s*\{/.test(rules)) {
+    fail('Nhánh "yeuCauAppVip" phải được GỠ khỏi database.rules.json — module không còn ghi vào đó.');
   }
 
-  // apps-script phải tự báo email cho chủ shop khi có yêu cầu mới — không bắt
-  // chủ shop tự vào /admin xem (module này không có trang quản lý trong
-  // /admin, theo đúng yêu cầu ban đầu).
+  // apps-script KHÔNG còn xử lý "Mua App VIP Pro" (không thu thập liên hệ nên
+  // không có gì để báo email) — hàm cũ phải đã bị gỡ hẳn, không chỉ ngừng gọi.
   const appsScript = doc("apps-script/gui-hang.gs");
-  if (!/function\s+xuLyYeuCauAppVip\s*\(/.test(appsScript)) {
-    fail("Thiếu hàm xuLyYeuCauAppVip() trong apps-script/gui-hang.gs.");
+  if (/function\s+xuLyYeuCauAppVip\s*\(/.test(appsScript)) {
+    fail("Hàm xuLyYeuCauAppVip() phải được GỠ BỎ khỏi apps-script/gui-hang.gs, không chỉ ngừng gọi.");
   }
-  if (!/xuLyYeuCauAppVip\(emailShop\);/.test(appsScript)) {
-    fail("guiHangChoDonDaXacNhan() phải gọi xuLyYeuCauAppVip() mỗi lượt chạy định kỳ.");
+
+  // Trang admin phải có mục thống kê (gộp theo thiết bị, không đếm trùng app).
+  if (!/function\s+veAdminThongKeAppVip\s*\(/.test(banNoi)) {
+    fail("Thiếu hàm veAdminThongKeAppVip() ở trang quản lý.");
+  }
+  if (!/function\s+gopThongKeAppVip\s*\(/.test(banNoi)) {
+    fail("Thiếu hàm gopThongKeAppVip() gộp theo thiết bị, khử trùng app.");
   }
 }
 
@@ -2133,6 +2172,95 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   if (!/\.luoi-cong-nhan\s*\{[^}]*repeat\(auto-fill/.test(cssApp)) {
     fail('Lưới ảnh .luoi-cong-nhan phải dùng grid-template-columns: repeat(auto-fill, …) để tự co giãn.');
   }
+}
+
+// ---------------------------------------------------------------------------
+// 35) MODULE "YÊU CẦU HOÀN TIỀN" — 5 câu y chang biểu mẫu gốc, mỗi ô tối đa
+//     1000 ký tự, cả 5 câu đều bắt buộc, không có trang xem ở /admin.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'hoan-tien',[\s\S]{0,200}sanSang:\s*true/, "module Yêu cầu hoàn tiền đã bật (sanSang: true)"],
+    [/function\s+moModalHoanTien\s*\(/, "hàm mở modal Yêu cầu hoàn tiền"],
+    [/function\s+guiYeuCauHoanTien\s*\(/, "hàm gửi yêu cầu lên Firebase"],
+    [/function\s+moModalCamOnHoanTien\s*\(/, "hàm mở modal cảm ơn sau khi gửi"],
+    [/rtdb\.ref\('yeuCauHoanTien'\)\.push\(\)/, "ghi yêu cầu vào ĐÚNG nhánh yeuCauHoanTien (không lẫn vào donhang)"],
+    [/GIOI_HAN_HOAN_TIEN\s*=\s*1000/, "giới hạn 1000 ký tự mỗi ô"],
+    [/maxlength="'\s*\+\s*GIOI_HAN_HOAN_TIEN/, "ô nhập có thuộc tính maxlength giới hạn thật trên trình duyệt"],
+    [/BẠN SẼ ĐƯỢC HOÀN TIỀN 100%/, "modal cảm ơn dùng đúng nguyên văn lời cảm ơn của biểu mẫu gốc"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  // Đủ 5 câu hỏi, đúng trường — sửa câu chữ thì cập nhật mẫu dưới đây theo
+  // CLAUDE.md, đừng xoá mục.
+  ['hoTen', 'tenSanPham', 'lyDo', 'maSanPham', 'soTaiKhoan'].forEach((truong) => {
+    if (!banNoi.includes(`truong: '${truong}'`)) fail(`Thiếu câu hỏi "${truong}" trong O_HOAN_TIEN.`);
+  });
+
+  // Rules Firebase: ghi công khai, chỉ chủ shop đọc được, mỗi trường chữ giới
+  // hạn đúng 1000 ký tự — khớp với maxlength phía khách.
+  const rulesHT = doc("database.rules.json");
+  const khoiHT = rulesHT.match(/"yeuCauHoanTien"\s*:\s*\{[\s\S]*?\n    \},?\n/);
+  if (!khoiHT) fail('Thiếu nhánh "yeuCauHoanTien" trong database.rules.json.');
+  else {
+    ['hoTen', 'tenSanPham', 'lyDo', 'maSanPham', 'soTaiKhoan'].forEach((truong) => {
+      if (!new RegExp(`"${truong}"[\\s\\S]{0,80}length <= 1000`).test(khoiHT[0])) {
+        fail(`database.rules.json thiếu giới hạn 1000 ký tự cho trường ${truong} trong yeuCauHoanTien.`);
+      }
+    });
+  }
+
+  // apps-script phải tự báo email cho chủ shop — KHÔNG có trang xem ở /admin
+  // cho mục này, đúng yêu cầu ban đầu.
+  const appsScriptHT = doc("apps-script/gui-hang.gs");
+  if (!/function\s+xuLyYeuCauHoanTien\s*\(/.test(appsScriptHT)) {
+    fail("Thiếu hàm xuLyYeuCauHoanTien() trong apps-script/gui-hang.gs.");
+  }
+  if (!/xuLyYeuCauHoanTien\(emailShop\);/.test(appsScriptHT)) {
+    fail("guiHangChoDonDaXacNhan() phải gọi xuLyYeuCauHoanTien() mỗi lượt chạy định kỳ.");
+  }
+  if (/function\s+veAdminHoanTien\s*\(/.test(banNoi)) {
+    fail("Module Yêu cầu hoàn tiền KHÔNG được có trang xem ở /admin (đúng yêu cầu ban đầu).");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 36) "TRANG CHỦ" trống (đang nâng cấp) — trang AI Image Editor Pro cũ chuyển
+//     hẳn sang module "image-editor-pro" đứng CUỐI menu, hiện cảnh báo nổi tự
+//     ẩn sau 5 giây mỗi lần vào module.
+// ---------------------------------------------------------------------------
+{
+  [
+    [/ma:\s*'image-editor-pro',[\s\S]{0,200}sanSang:\s*true/, "module Image Editor Pro đã bật, đứng cuối MODULE"],
+    [/function\s+veModuleImageEditorPro\s*\(/, "hàm vẽ module Image Editor Pro (trang trình chỉnh sửa cũ)"],
+    [/function\s+hienCanhBaoImageEditorPro\s*\(/, "hàm hiện cảnh báo nổi giữa màn hình"],
+    [/Công cụ chỉnh sửa Ảnh đang được nâng cấp/, "đúng nguyên văn lời cảnh báo"],
+    [/GIAY_HIEN_CANH_BAO_EDITOR\s*\*\s*1000\)/, "cảnh báo tự ẩn sau GIAY_HIEN_CANH_BAO_EDITOR giây"],
+  ].forEach(([mau, ten]) => {
+    if (!mau.test(banNoi)) fail(`Thiếu ${ten}.`);
+  });
+
+  if (/function\s+veModuleTrangChu\s*\(/.test(banNoi)) {
+    fail('Hàm veModuleTrangChu() phải đã đổi tên thành veModuleImageEditorPro() — không còn gắn với module "trang-chu".');
+  }
+  // Module "trang-chu" phải là module CUỐI CÙNG trong MODULE không khớp hàm vẽ
+  // riêng nào — rơi vào veManNangCap() chung ("đang nâng cấp").
+  if (/m\.ma === 'trang-chu'\)\s*return\s+veModule/.test(banNoi)) {
+    fail('Module "trang-chu" không được có hàm vẽ nội dung riêng — phải trống/đang nâng cấp.');
+  }
+  // GIAY_HIEN_CANH_BAO_EDITOR phải đúng 5 giây.
+  if (!/GIAY_HIEN_CANH_BAO_EDITOR\s*=\s*5;/.test(banNoi)) {
+    fail('GIAY_HIEN_CANH_BAO_EDITOR phải bằng 5 (giây).');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 37) Module "Liên hệ và thông tin về Shop" KHÔNG được hiện trường Zalo liên
+//     kết — trường đó chỉ dùng nội bộ cho luồng Đặt mua App VIP Pro.
+// ---------------------------------------------------------------------------
+if (/MUC_LIEN_HE\s*=\s*\[[\s\S]{0,600}'zaloLienKet'/.test(banNoi)) {
+  fail('MUC_LIEN_HE không được liệt kê "zaloLienKet" — trường này chỉ dùng nội bộ, không công khai.');
 }
 
 // ---------------------------------------------------------------------------

@@ -114,6 +114,7 @@
     const roiTrangNhanHang = state.trang === 'sanpham';
     state.module = m.ma;
     state.hieuUngVaoModule = true;   // vào lại module bao nhiêu lần cũng trôi lại
+    if (m.ma === 'image-editor-pro') hienCanhBaoImageEditorPro();
     if (roiTrangNhanHang) {
       state.trang = 'chinh';
       dongHetModal();
@@ -353,9 +354,12 @@
   // Mỗi mục liên hệ: trường đọc từ /thongtinlienhe, nhãn hiện ra, và loại để
   // dựng đúng địa chỉ "Mở" (xem diaChiMoLienHe bên dưới). Mục nào admin để
   // trống thì veDongLienHe() tự bỏ qua, không hiện dòng nào.
+  //
+  // CỐ Ý KHÔNG liệt kê 'zaloLienKet' ở đây dù admin có ô nhập riêng cho nó
+  // (O_LIEN_HE, PHẦN 04B) — số Zalo liên kết chỉ dùng NỘI BỘ cho luồng "Đặt
+  // mua App VIP Pro" (PHẦN 03E), không công khai ở module Liên hệ.
   const MUC_LIEN_HE = [
     { truong: 'zalo',        nhan: 'Zalo',                           loai: 'zalo' },
-    { truong: 'zaloLienKet', nhan: 'Zalo liên kết (shop đối tác)',    loai: 'zalo' },
     { truong: 'whatsapp',    nhan: 'WhatsApp',                       loai: 'whatsapp' },
     { truong: 'telegram',    nhan: 'Telegram',                       loai: 'telegram' },
     { truong: 'emailShop',   nhan: 'Email',                          loai: 'email' },
@@ -430,15 +434,15 @@
     if (m.ma === 'dac-quyen') { moModalDacQuyen(m); return; }
     if (m.ma === 'lien-he') { moModalLienHe(m); return; }
     if (m.ma === 'cong-nhan') { moModalCongNhan(m); return; }
-    // "Yêu cầu hoàn tiền" là chức năng sắp làm.
-    const dangThietKe = m.ma === 'hoan-tien';
+    if (m.ma === 'hoan-tien') { moModalHoanTien(m); return; }
+    // Hai mục còn lại ("Điều khoản sử dụng", "Bảo mật") là văn bản sắp viết.
     moModal({
       ma: 'van-ban-' + m.ma,
       tieuDe: m.ten,
       than: '' +
         '<div class="noi-dung-van-ban" style="text-align:center">' +
           '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">🛠️</p>' +
-          '<p><strong>' + (dangThietKe ? 'Tính năng đang được thiết kế.' : 'Nội dung đang được nâng cấp.') + '</strong></p>' +
+          '<p><strong>Nội dung đang được nâng cấp.</strong></p>' +
           '<p style="color:var(--chu-diu);margin-bottom:0">Phần “' + escapeHtml(m.ten) +
           '” sẽ sớm sẵn sàng. Trong lúc chờ, mọi thắc mắc xin liên hệ trực tiếp với shop.</p>' +
         '</div>',
@@ -509,13 +513,16 @@
     if (state.trang === 'sanpham') return veTrangNhanHang();
     const m = timModule(state.module);
     if (m && m.ma === 'goi-vip') return veModuleGoiVip();
-    if (m && m.ma === 'trang-chu') return veModuleTrangChu();
     if (m && m.ma === 'khoa-hoc-mobile') return veModuleKhoaHocMobile();
     if (m && m.ma === 'khoa-hoc-may-tinh') return veModuleKhoaHocMayTinh();
     if (m && m.ma === 'app-vip-pro') return veModuleAppVipPro();
     if (m && m.ma === 'qua-tang-android') return veModuleQuaTangAndroid();
     if (m && m.ma === 'video-ngan') return veModuleVideoNgan();
     if (m && m.ma === 'khoa-photoshop') return veModuleKhoaPhotoshop();
+    if (m && m.ma === 'image-editor-pro') return veModuleImageEditorPro();
+    // "Trang chủ" KHÔNG còn nội dung riêng — trang AI Image Editor Pro cũ đã
+    // chuyển hẳn sang module "image-editor-pro" (PHẦN 06). Để trống rơi vào
+    // khung "đang nâng cấp" chung bên dưới.
     return veManNangCap(m ? m.ten : '');
   }
 

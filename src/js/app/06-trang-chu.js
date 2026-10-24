@@ -1,7 +1,16 @@
 
   /* ===========================================================================
-     PHẦN 06 — MODULE "TRANG CHỦ": trình chỉnh sửa ảnh AI Image Editor Pro
-     (mang nguyên khối từ kho thu-nghiem-01, nhánh gon-panel-layer, sang đây).
+     PHẦN 06 — MODULE "IMAGE EDITOR PRO": trình chỉnh sửa ảnh AI Image Editor
+     Pro (mang nguyên khối từ kho thu-nghiem-01, nhánh gon-panel-layer).
+
+     TRƯỚC ĐÂY đây là nội dung module "Trang chủ" (ma: 'trang-chu') — nay
+     "Trang chủ" đã trống (đang nâng cấp, xem veManNangCap ở PHẦN 02), còn
+     nguyên trang này chuyển hẳn sang module riêng "Image Editor Pro"
+     (ma: 'image-editor-pro'), đứng CUỐI danh sách menu. Mỗi lần vào module
+     này đều hiện một thông báo nổi giữa màn hình (KHÔNG phải modal, không
+     nút đóng) cảnh báo công cụ đang nâng cấp, tự ẩn sau 5 giây — xem
+     hienCanhBaoImageEditorPro() cuối tệp này, gọi từ mọi nơi set
+     state.hieuUngVaoModule (PHẦN 02/05/06).
 
      Đây là PHẦN CUỐI CÙNG trong manifest — hàm bọc chung của cả app đóng ở
      cuối chính tệp này (boot() + "})();"), không còn ở 05-thanh-toan.js như
@@ -11,7 +20,7 @@
 
      CSS riêng (src/css/trang-chu.css) và mã JS của trình chỉnh sửa
      (src/js/trang-chu-editor.js) đều nạp ĐỘNG — chỉ khi khách mở module
-     "Trang chủ" — hệt cách admin.css/firebase-auth-compat.js chỉ nạp ở
+     "Image Editor Pro" — hệt cách admin.css/firebase-auth-compat.js chỉ nạp ở
      "/admin" (xem napMotLan() ở 04b-admin.js, dùng lại tại đây vì cùng nằm
      trong hàm bọc chung). Khách vào thẳng module mặc định "Trọn bộ sản phẩm
      VIP..." không tải một byte nào của trình chỉnh sửa này.
@@ -495,7 +504,24 @@
     });
   }
 
-  function veModuleTrangChu(){
+  // Thông báo nổi GIỮA MÀN HÌNH — KHÔNG phải modal (không nút đóng, không
+  // chặn thao tác bên dưới), tự ẩn sau đúng 5 giây. Gắn vào document.body
+  // (ngoài .trang-chu-editor) để không đụng .toast-container nội bộ của
+  // chính trình chỉnh sửa. Gọi lại bao nhiêu lần cũng được — lần sau thay
+  // lần trước, không chồng hai thông báo cùng lúc.
+  const GIAY_HIEN_CANH_BAO_EDITOR = 5;
+  function hienCanhBaoImageEditorPro(){
+    const cu = document.querySelector('.canh-bao-ieditor-pro');
+    if (cu) cu.remove();
+    const el = document.createElement('div');
+    el.className = 'canh-bao-ieditor-pro';
+    el.setAttribute('role', 'status');
+    el.textContent = 'Công cụ chỉnh sửa Ảnh đang được nâng cấp nên sẽ có nhiều lỗi, vui lòng quay lại sau';
+    document.body.appendChild(el);
+    window.setTimeout(function(){ el.remove(); }, GIAY_HIEN_CANH_BAO_EDITOR * 1000);
+  }
+
+  function veModuleImageEditorPro(){
     // render() chèn xong innerHTML của <main> rồi mới trả quyền điều khiển
     // (đồng bộ); chuanBiTrangChu() chạy bất đồng bộ (Promise) nên
     // initTrangChuEditor() luôn được gọi SAU khi HTML này đã thật sự nằm
@@ -511,6 +537,7 @@
     state.nhanHang.maNhanHang = docMaNhanHangTrenDuongDan();
     state.module = docHash();
     state.hieuUngVaoModule = true;   // lần mở trang đầu tiên cũng có hiệu ứng trôi
+    if (state.module === 'image-editor-pro') hienCanhBaoImageEditorPro();
     ganSuKien();
     theoDoiNutCuonModal();   // mọi bảng phụ, kể cả bảng viết sau này, tự có 2 nút cuộn
     render();
