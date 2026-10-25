@@ -80,7 +80,19 @@
     { truong: 'tiktok',      ten: 'Link TikTok',            kieu: 'link', goi: 'https://tiktok.com/@...' },
     { truong: 'youtube',     ten: 'Link YouTube',           kieu: 'link', goi: 'https://youtube.com/@...' },
     { truong: 'fanpage',     ten: 'Link Fanpage Facebook',  kieu: 'link', goi: 'https://facebook.com/...' },
-    { truong: 'groupFB',     ten: 'Link Group Facebook',    kieu: 'link', goi: 'https://facebook.com/groups/...' }
+    { truong: 'groupFB',     ten: 'Link Group Facebook',    kieu: 'link', goi: 'https://facebook.com/groups/...' },
+    // Thông tin giảng viên — cùng nhánh 'thongtinlienhe' nên trang chính đọc
+    // được luôn không cần tải thêm gì. Hiện ở CUỐI bảng "Liên hệ và thông tin
+    // về Shop" ngoài web (xem veDongLienHe/moModalLienHe, PHẦN 02).
+    { truong: 'giangVienTen', ten: 'Tên giảng viên', kieu: 'chu',
+      goi: 'Nguyễn Văn A',
+      ghiChu: 'Để trống thì cả khối "Thông tin giảng viên" ngoài web tự ẩn đi.' },
+    { truong: 'giangVienChucDanh', ten: 'Chức danh / kinh nghiệm giảng viên', kieu: 'chu',
+      goi: 'Chuyên gia chỉnh màu Lightroom, 5 năm kinh nghiệm' },
+    { truong: 'giangVienMoTa', ten: 'Mô tả giảng viên', kieu: 'van-ban',
+      goi: 'Vài dòng giới thiệu về giảng viên...' },
+    { truong: 'giangVienAnh', ten: 'Link ảnh giảng viên', kieu: 'link',
+      goi: 'https://...', ghiChu: 'Để trống thì không hiện ảnh, chỉ hiện chữ.' }
   ];
 
   const O_NHAN_TIEN = [
@@ -462,18 +474,23 @@
     const dangLuu = state.admin.dangLuu === o.truong;
     const vuaLuu = state.admin.vuaLuu === o.truong;
     const biMat = o.kieu === 'bimat';
+    const laVanBan = o.kieu === 'van-ban';
     const kieuInput = (o.kieu === 'so') ? 'tel' : 'text';
 
     return '' +
       '<div class="admin-o" data-o="' + escapeHtml(khoa + ':' + o.truong) + '">' +
         '<label class="admin-nhan" for="o-' + escapeHtml(o.truong) + '">' + escapeHtml(o.ten) + '</label>' +
         (o.ghiChu ? '<p class="admin-ghi-chu">' + escapeHtml(o.ghiChu) + '</p>' : '') +
-        '<div class="admin-hang-nhap">' +
-          '<input type="' + kieuInput + '" id="o-' + escapeHtml(o.truong) + '" class="admin-nhap' +
-            (biMat ? ' bi-mat' : '') + '" data-admin-truong="' + escapeHtml(khoa + ':' + o.truong) + '"' +
-            ' autocomplete="off" spellcheck="false" placeholder="' + escapeHtml(o.goi || '') + '"' +
-            ' value="' + escapeHtml(biMat ? cheBiMat(gia) : gia) + '"' +
-            (biMat ? ' data-che="1" readonly' : '') + '>' +
+        '<div class="admin-hang-nhap' + (laVanBan ? ' admin-hang-nhap-van-ban' : '') + '">' +
+          (laVanBan
+            ? '<textarea id="o-' + escapeHtml(o.truong) + '" class="admin-nhap admin-nhap-van-ban"' +
+              ' data-admin-truong="' + escapeHtml(khoa + ':' + o.truong) + '" rows="4" spellcheck="false"' +
+              ' placeholder="' + escapeHtml(o.goi || '') + '">' + escapeHtml(gia) + '</textarea>'
+            : '<input type="' + kieuInput + '" id="o-' + escapeHtml(o.truong) + '" class="admin-nhap' +
+              (biMat ? ' bi-mat' : '') + '" data-admin-truong="' + escapeHtml(khoa + ':' + o.truong) + '"' +
+              ' autocomplete="off" spellcheck="false" placeholder="' + escapeHtml(o.goi || '') + '"' +
+              ' value="' + escapeHtml(biMat ? cheBiMat(gia) : gia) + '"' +
+              (biMat ? ' data-che="1" readonly' : '') + '>') +
           (biMat
             ? '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="admin-hien-bi-mat"' +
               ' data-o="' + escapeHtml(khoa + ':' + o.truong) + '">Sửa</button>'

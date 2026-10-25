@@ -458,16 +458,42 @@
     moModal({
       ma: 'lien-he',
       tieuDe: m.ten,
-      than: coDuLieu
+      than: (coDuLieu
         ? '<div class="danh-sach-lien-he">' + MUC_LIEN_HE.map(veDongLienHe).join('') + '</div>'
         : '' +
           '<div class="noi-dung-van-ban" style="text-align:center">' +
             '<p style="font-size:28px;margin-bottom:8px" aria-hidden="true">' + (dangTai ? '⏳' : '🛠️') + '</p>' +
             '<p><strong>' + (dangTai ? 'Đang tải thông tin liên hệ…' : 'Thông tin liên hệ đang được cập nhật.') + '</strong></p>' +
             (dangTai ? '' : '<p style="color:var(--chu-diu);margin-bottom:0">Mời bạn quay lại bảng này sau nhé.</p>') +
-          '</div>',
+          '</div>') +
+        veKhoiGiangVien(du),
       day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>'
     });
+  }
+
+  // Khối "Thông tin giảng viên" ở cuối bảng Liên hệ — admin nhập ở mục Liên
+  // hệ và mạng xã hội trong trang quản trị (cùng nhánh 'thongtinlienhe' nên
+  // không cần tải thêm gì ở đây), PHẦN 04B. Để trống tên là ẩn hẳn khối này.
+  function veKhoiGiangVien(du){
+    const ten = String(du.giangVienTen || '').trim();
+    if (!ten) return '';
+    const chucDanh = String(du.giangVienChucDanh || '').trim();
+    const moTa = String(du.giangVienMoTa || '').trim();
+    const anh = String(du.giangVienAnh || '').trim();
+    return '' +
+      '<div class="khoi-giang-vien">' +
+        '<h3 class="khoi-giang-vien-tieu-de">Thông tin giảng viên</h3>' +
+        '<div class="khoi-giang-vien-than">' +
+          (anh
+            ? '<img class="khoi-giang-vien-anh" src="' + escapeHtml(anh) + '" alt="Ảnh giảng viên ' + escapeHtml(ten) + '" loading="lazy">'
+            : '') +
+          '<div class="khoi-giang-vien-chu">' +
+            '<p class="khoi-giang-vien-ten">' + escapeHtml(ten) + '</p>' +
+            (chucDanh ? '<p class="khoi-giang-vien-chuc-danh">' + escapeHtml(chucDanh) + '</p>' : '') +
+            (moTa ? '<p class="khoi-giang-vien-mo-ta">' + escapeHtml(moTa).replace(/\n/g, '<br>') + '</p>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
   }
 
   // Dòng "Liên hệ" đứng cuối cả hai bảng văn bản — bấm là mở module Liên hệ
@@ -753,5 +779,9 @@
     // Gắn hiệu ứng NGAY SAU khi HTML mới đã nằm trong trang.
     ganHieuUngTroiLen();
     ganHieuUngTrangChu();   // vô hại ở module khác — không tìm thấy phần tử nào
+    // Video 1 và 2 của module "Xem video ngắn" chèn khung xem NGAY tại trang
+    // chính (không qua modal) — khung đó cần initKhungVideo() canh tỷ lệ y
+    // như mọi khung video khác trong web (xem PHẦN 03G).
+    if (m && m.ma === 'video-ngan') initKhungVideo();
     doChoThanhDay();   // chừa đúng chiều cao thật của thanh neo đáy
   }

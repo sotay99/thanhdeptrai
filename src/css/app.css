@@ -1105,6 +1105,40 @@
   .hang-nut-lien-he .nut { flex: 1 1 auto; }
 }
 
+/* Khối "Thông tin giảng viên" ở cuối bảng Liên hệ — xem veKhoiGiangVien()
+   PHẦN 02. Khung riêng, viền xanh mảnh để tách khỏi danh sách liên hệ phía
+   trên dù không có hay có dữ liệu liên hệ nào. */
+.khoi-giang-vien {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vien);
+}
+.khoi-giang-vien-tieu-de { font-size: 15px; margin-bottom: 10px; }
+.khoi-giang-vien-than {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  background: var(--the-2);
+}
+.khoi-giang-vien-anh {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--vien-sang);
+}
+.khoi-giang-vien-chu { flex: 1 1 auto; min-width: 0; }
+.khoi-giang-vien-ten { font-weight: 700; margin: 0; }
+.khoi-giang-vien-chuc-danh { color: var(--xanh); font-size: 12.5px; margin: 3px 0 0; }
+.khoi-giang-vien-mo-ta { color: var(--chu-diu); font-size: 13px; line-height: 1.6; margin: 8px 0 0; }
+@media (max-width: 480px) {
+  .khoi-giang-vien-than { flex-direction: column; align-items: center; text-align: center; }
+}
+
 /* Nút mở bảng Đặc quyền, đặt ngay trên khung quà tặng cuối module — tông vàng
    để tách khỏi cả mảng xanh lá của khu quà lẫn mảng xanh dương của lưới hàng. */
 .nut-dac-quyen {
@@ -1119,6 +1153,18 @@
 
 /* Khung quà tặng đứng ngay dưới nút Đặc quyền nên không cần chừa thêm ở trên */
 .nut-dac-quyen + .khu-qua-tang { margin-top: 10px; }
+
+/* Nút "Sự công nhận của khách hàng" — tông xanh thương hiệu, tách khỏi
+   mảng vàng (Đặc quyền) và mảng đỏ (Hoàn tiền) đứng ngay trên/dưới nó. */
+.nut-cong-nhan {
+  margin-top: 9px;
+  border-color: rgba(49, 168, 255, .5);
+  background: linear-gradient(180deg, rgba(49, 168, 255, .17), rgba(49, 168, 255, .06));
+  color: var(--xanh);
+  font-weight: 700;
+  min-height: 44px;
+}
+.nut-cong-nhan:hover { border-color: var(--xanh); background: rgba(49, 168, 255, .26); }
 
 /* Khung cam kết giao hàng trong bảng "Xác nhận đơn hàng" — nền đỏ nhạt để bật
    hẳn khỏi phần còn lại của bảng, và nhún nhảy theo đúng kiểu nút Mua hàng
@@ -2032,6 +2078,10 @@
    ngoài khối sổ — vẫn cần khoảng cách với thẻ phía trên/dưới. */
 .danh-sach-chuong > .the-bai-hoc { margin-bottom: 0; }
 
+/* Video 1 và 2 của module "Xem video ngắn" — khung xem đặt NGAY dưới nút tên
+   video, không cần bấm mở modal (xem PHẦN 03G). */
+.video-ngan-xem-ngay { margin-top: -2px; padding: 0 2px; }
+
 /* Modal xem video bài học — BAO TRỌN màn hình, khác hẳn mọi modal khác của
    web (vốn có viền và chừa lề). Chọn theo tiền tố mã modal thay vì thêm một
    tham số riêng cho moModal() — không đụng gì tới hệ thống modal dùng chung. */
@@ -2268,19 +2318,12 @@
 .tc-hero h1 .cham-xanh { color: var(--xanh); }
 .tc-hero p { color: var(--chu-diu); font-size: 13.5px; max-width: 560px; margin: 0 auto; }
 
-/* Hai câu mô tả — .rong cho màn hình thường, .hep cho màn hình hẹp (HTML
-   luôn dựng cả hai, PHẦN 05B — CSS quyết định câu nào hiện, đổi cỡ màn hình
-   là đổi câu ngay không cần vẽ lại trang). Mặc định ẩn .hep, hiện .rong. */
-.tc-hero p.hep { display: none; }
-
 /* Màn hình hẹp: ẩn dòng tiêu đề "Shop Thànhđẹptrai.vn" NGAY TRONG khối hero
    của Trang chủ (không phải thanh tiêu đề chung của cả web — thanh đó vẫn
-   hiện đủ ở MỌI module, MỌI cỡ màn hình, không đụng tới). Đổi hẳn sang câu
-   mô tả ngắn, thân thiện hơn thay cho câu giới thiệu đầy đủ. */
+   hiện đủ ở MỌI module, MỌI cỡ màn hình, không đụng tới). Đoạn giới thiệu
+   bên dưới (.tc-hero p) vẫn hiện như thường. */
 @media (max-width: 560px) {
   .tc-hero h1 { display: none; }
-  .tc-hero p.rong { display: none; }
-  .tc-hero p.hep { display: block; }
 }
 
 /* Toàn bộ Trang chủ căn GIỮA — tiêu đề, mô tả, cả các khối bên trong từng
@@ -2310,27 +2353,17 @@
   padding: 4px 20px;
 }
 
-/* Màn hình hẹp: ÉP CỨNG đúng 2 cột — auto-fit/auto-fill tự đoán số cột theo
-   bề rộng còn trống KHÔNG đáng tin cậy ở ngưỡng biên (lỗi thật đã xảy ra:
-   máy này ra 2 cột, máy kia ra 1 cột, chỉ lệch vài pixel). Từ 480px trở lên
-   mới chuyển sang auto-fit + bề rộng cột CÓ TRẦN (170px, không phải 1fr vô
-   hạn) + justify-content: center — khi số thẻ ít hơn số cột vừa màn hình (3
-   hay 5 thẻ, khối "3 khoá học miễn phí"/"Quà tặng Android"), cả NHÓM thẻ co
-   về đúng bề rộng thật rồi nằm giữa hàng, không dồn lệch trái bỏ trống bên
-   phải. Khối nhiều thẻ (khối "Trọn bộ sản phẩm VIP", 7 thẻ) tự lấp đầy một
-   hàng duy nhất ở màn hình rộng — xem thêm khung Trang chủ nới sát mép
-   (body.trang-chu-nen .khung-noi-dung) bên dưới, nhường thêm chỗ cho đúng
-   việc này. */
+/* auto-fit + bề rộng cột CÓ TRẦN (170px, không phải 1fr vô hạn) + justify-
+   content: center — khi số thẻ ít hơn số cột vừa màn hình (3 hay 5 thẻ, ví
+   dụ khối "3 khoá học miễn phí"/"Quà tặng Android"), cả NHÓM thẻ co về đúng
+   bề rộng thật của nó rồi nằm giữa hàng, không còn dồn lệch trái bỏ trống
+   bên phải. Khối nhiều thẻ (ví dụ "Trọn bộ sản phẩm VIP", 7 thẻ) tự lấp đầy
+   nhiều hàng như cũ, chỉ khác mỗi thẻ có trần 170px thay vì giãn vô hạn. */
 .tc-luoi {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 170px));
   justify-content: center;
   gap: 12px;
-}
-@media (min-width: 480px) {
-  .tc-luoi {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 170px));
-  }
 }
 
 .tc-the {
@@ -2460,23 +2493,100 @@ body.trang-chu-nen {
   background-position: top center;
 }
 
-/* Màn hình hẹp: GẤP ĐÔI số chấm tròn (20 → 40) so với bản dùng chung ở
-   trên — CHỈ ở màn hình hẹp, màn hình thường/rộng giữ nguyên 20 chấm. 20
-   chấm ban đầu + 20 chấm mới xen kẽ, cùng dải độ mờ (30–60%) và kích cỡ
-   (1,5–4) để hoà chung một kiểu, không nổi riêng lẻ. */
-@media (max-width: 560px) {
-  body.trang-chu-nen {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1400'%3E%3Cg stroke='%2331a8ff' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M120 60 L160 180 L100 220 L170 360' stroke-width='3' opacity='.5'/%3E%3Cpath d='M860 240 L900 330 L840 370 L910 480' stroke-width='3' opacity='.42'/%3E%3Cpath d='M60 820 L100 900 L50 940 L120 1060' stroke-width='3' opacity='.46'/%3E%3Cpath d='M50 620 C250 560 350 760 550 700 C750 640 800 820 950 760' stroke-width='2' opacity='.36'/%3E%3Cpath d='M30 1180 C200 1120 300 1300 500 1240 C700 1180 780 1340 970 1280' stroke-width='2' opacity='.32'/%3E%3C/g%3E%3Cg fill='%2331a8ff'%3E%3Ccircle cx='200' cy='120' r='3' opacity='.5'/%3E%3Ccircle cx='760' cy='90' r='4' opacity='.35'/%3E%3Ccircle cx='920' cy='520' r='2.5' opacity='.6'/%3E%3Ccircle cx='140' cy='460' r='3.5' opacity='.3'/%3E%3Ccircle cx='480' cy='300' r='2' opacity='.45'/%3E%3Ccircle cx='620' cy='920' r='3' opacity='.4'/%3E%3Ccircle cx='260' cy='1020' r='2.5' opacity='.55'/%3E%3Ccircle cx='820' cy='1100' r='4' opacity='.3'/%3E%3Ccircle cx='400' cy='1340' r='3' opacity='.45'/%3E%3Ccircle cx='60' cy='1300' r='2' opacity='.35'/%3E%3Ccircle cx='340' cy='180' r='2' opacity='.4'/%3E%3Ccircle cx='600' cy='60' r='1.5' opacity='.3'/%3E%3Ccircle cx='980' cy='250' r='3' opacity='.5'/%3E%3Ccircle cx='40' cy='560' r='2.5' opacity='.35'/%3E%3Ccircle cx='300' cy='680' r='4' opacity='.45'/%3E%3Ccircle cx='700' cy='500' r='1.5' opacity='.3'/%3E%3Ccircle cx='860' cy='760' r='2.5' opacity='.55'/%3E%3Ccircle cx='180' cy='880' r='3.5' opacity='.4'/%3E%3Ccircle cx='540' cy='1180' r='2' opacity='.3'/%3E%3Ccircle cx='940' cy='1380' r='3' opacity='.5'/%3E%3Ccircle cx='120' cy='320' r='2' opacity='.45'/%3E%3Ccircle cx='450' cy='420' r='3' opacity='.35'/%3E%3Ccircle cx='780' cy='380' r='2.5' opacity='.5'/%3E%3Ccircle cx='920' cy='140' r='2' opacity='.3'/%3E%3Ccircle cx='60' cy='680' r='3.5' opacity='.4'/%3E%3Ccircle cx='560' cy='780' r='2' opacity='.55'/%3E%3Ccircle cx='240' cy='560' r='1.5' opacity='.3'/%3E%3Ccircle cx='900' cy='620' r='3' opacity='.45'/%3E%3Ccircle cx='380' cy='840' r='2.5' opacity='.35'/%3E%3Ccircle cx='660' cy='920' r='4' opacity='.3'/%3E%3Ccircle cx='120' cy='980' r='2' opacity='.5'/%3E%3Ccircle cx='820' cy='980' r='2.5' opacity='.4'/%3E%3Ccircle cx='480' cy='1060' r='3' opacity='.35'/%3E%3Ccircle cx='40' cy='1180' r='2' opacity='.45'/%3E%3Ccircle cx='720' cy='1060' r='1.5' opacity='.3'/%3E%3Ccircle cx='960' cy='1200' r='2.5' opacity='.5'/%3E%3Ccircle cx='280' cy='1260' r='3' opacity='.35'/%3E%3Ccircle cx='580' cy='1340' r='2' opacity='.4'/%3E%3Ccircle cx='840' cy='60' r='2.5' opacity='.35'/%3E%3Ccircle cx='160' cy='40' r='1.5' opacity='.3'/%3E%3C/g%3E%3C/svg%3E");
-  }
+/* ================= TRỢ LÝ AI "SHOP" (PHẦN 07, src/js/app/07-ai-chat.js) =================
+   Nút nổi bồng bềnh + chớp mờ-rõ LẤY NGUYÊN hai hiệu ứng của repo Hội nông
+   dân (fabBob + toggleBtnFade, xem app.css/base.css repo đó) — gộp lại trên
+   cùng một nút theo đúng yêu cầu "y chang". */
+@keyframes aiChatFabBob {
+  0%, 55% { transform: translateY(0) rotate(0deg); }
+  65% { transform: translateY(-7px) rotate(-4deg); }
+  75% { transform: translateY(0) rotate(0deg); }
+  85% { transform: translateY(-3px) rotate(3deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes aiChatFabFade {
+  0%, 25% { opacity: 1; }
+  50%, 75% { opacity: .3; }
+  100% { opacity: 1; }
+}
+.fab-chat-ai {
+  position: fixed !important;
+  right: 14px;
+  left: auto !important;
+  top: 0;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--xanh), var(--xanh-dam));
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px rgba(6, 8, 11, .45);
+  cursor: pointer;
+  z-index: 400;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: aiChatFabBob 4.5s ease-in-out infinite, aiChatFabFade 4s linear infinite;
+  transition: filter .2s ease;
+}
+.fab-chat-ai:hover { filter: brightness(1.12); }
+@media (max-width: 640px) {
+  .fab-chat-ai { right: 10px; width: 52px; height: 52px; font-size: 22px; }
 }
 
-/* Khung nội dung Trang chủ nới RỘNG SÁT HAI MÉP MÀN HÌNH — khác mọi module
-   khác (vẫn giữ nguyên trần 1120px cho dễ đọc). Chỉ riêng Trang chủ cần rộng
-   hơn hẳn để các khối nhiều thẻ (ví dụ "Trọn bộ sản phẩm VIP", 7 thẻ) có đủ
-   chỗ xếp vừa MỘT HÀNG ở màn hình lớn, không bị ép xuống hàng vì vướng trần
-   cũ. Vẫn chừa padding ngang như .khung-noi-dung gốc — không cho nội dung
-   dính sát hẳn vào viền màn hình, chỉ bỏ cái TRẦN 1120px thôi. */
-body.trang-chu-nen .khung-noi-dung {
-  max-width: 1800px;
+/* Bảng chat: tái dùng khung .modal-lop/.modal dùng chung, chỉ chỉnh thân
+   bảng thành cột (danh sách tin nhắn co giãn + khung nhập cố định ở đáy). */
+.modal-lop[data-ma-modal="ai-chat"] .modal { max-width: 440px; }
+.modal-lop[data-ma-modal="ai-chat"] .modal-than {
+  display: flex;
+  flex-direction: column;
+  height: 62vh;
+  padding: 0;
 }
+.ai-chat-doan {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-chat-dong { display: flex; }
+.ai-chat-dong.nguoi { justify-content: flex-end; }
+.ai-chat-dong.ai { justify-content: flex-start; }
+.ai-chat-bong { max-width: 82%; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.ai-chat-bong.nguoi {
+  background: var(--xanh-dam);
+  color: #fff;
+  border-radius: 14px 14px 2px 14px;
+  padding: 9px 13px;
+  outline: none;
+}
+.ai-chat-bong.nguoi:focus { box-shadow: 0 0 0 2px var(--xanh-mo); }
+.ai-chat-bong.ai { color: var(--chu); padding: 2px 0; }
+.ai-chat-nhap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--vien);
+  background: var(--the-2);
+}
+.ai-chat-textarea {
+  flex: 1 1 auto;
+  resize: none;
+  min-height: 38px;
+  max-height: 120px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--vien-sang);
+  background: var(--nen);
+  color: var(--chu);
+}
+.ai-chat-textarea:focus { outline: none; border-color: var(--xanh); }
 
