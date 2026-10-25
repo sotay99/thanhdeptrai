@@ -34,6 +34,9 @@
   const AI_CHAT_KHOA_VI_TRI = 'aiChatFabTop';
   const AI_CHAT_KHOA_THIET_BI = 'aiChatThietBiId';
   const AI_CHAT_GIOI_HAN_KY_TU = 500;
+  // Ô nhập tự giãn chiều cao theo nội dung, nhưng không vượt quá mức này
+  // (px) — sau đó tự cuộn bên trong ô thay vì giãn mãi đẩy nút Gửi ra ngoài.
+  const AI_CHAT_O_NHAP_CAO_TOI_DA = 120;
 
   // Site key reCAPTCHA v3 của Firebase App Check — để TRỐNG thì chat vẫn
   // chạy bình thường, chỉ là không gửi kèm token App Check (server khi đó
@@ -207,6 +210,17 @@
       '</div>';
   }
 
+  // Ô nhập tự giãn chiều cao theo nội dung đang soạn, tới một trần nhất định
+  // (AI_CHAT_O_NHAP_CAO_TOI_DA) rồi tự cuộn bên trong thay vì giãn mãi, tránh
+  // đẩy khung nhập/nút Gửi ra ngoài màn hình.
+  function aiChatTuGianOnhap(o){
+    o.style.height = 'auto';
+    const caoToiDa = AI_CHAT_O_NHAP_CAO_TOI_DA;
+    const caoCanDung = Math.min(o.scrollHeight, caoToiDa);
+    o.style.height = caoCanDung + 'px';
+    o.style.overflowY = o.scrollHeight > caoToiDa ? 'auto' : 'hidden';
+  }
+
   function aiChatCuonXuongCuoi(){
     const doan = document.getElementById('ai-chat-doan');
     if (doan) doan.scrollTop = doan.scrollHeight;
@@ -231,6 +245,8 @@
             }
             // Enter thường: để trình duyệt tự xuống dòng trong textarea, không chặn.
           });
+          o.addEventListener('input', function(){ aiChatTuGianOnhap(o); });
+          aiChatTuGianOnhap(o);
         }
         // Nút xoá toàn bộ trò chuyện — đặt đối xứng với nút X (PHẦN chung,
         // 02-shell-nav.js) ở góc trên bên trái, chèn thẳng vào DOM vì moModal()
@@ -304,6 +320,7 @@
     // giá trị bị đặt bằng cách khác — giới hạn THẬT nằm ở server.
     if (chu.length > AI_CHAT_GIOI_HAN_KY_TU) chu = chu.slice(0, AI_CHAT_GIOI_HAN_KY_TU);
     o.value = '';
+    aiChatTuGianOnhap(o);
 
     const tinNguoi = { vai: 'nguoi', noiDung: chu };
     aiChatState.lichSu.push(tinNguoi);
