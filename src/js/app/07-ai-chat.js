@@ -16,11 +16,33 @@
      - Khoá API KHÔNG nằm ở đây: hàm goiAIChatBot() gọi tới một địa chỉ Cloud
        Run (project thanhdeptrai-shop, dịch vụ "ai-chat-shop", dùng Gemini),
        không gọi trực tiếp tới hãng AI nào từ trình duyệt.
+
+     CHỐNG LẠM DỤNG (vá lỗ hổng tốn tiền API) — lớp thật sự chặn được nằm ở
+     SERVER (Cloud Run index.js), những gì ở ĐÂY chỉ là tiện cho khách dùng
+     bình thường, không phải hàng rào bảo mật:
+       - maxlength trên ô nhập + cắt bớt phòng hờ trong aiChatGuiTinNhan().
+       - Mã thiết bị (aiChatThietBiId, lưu localStorage) gửi kèm mỗi lần gọi
+         để server đếm số ký tự/ngày — DỄ GIẢ MẠO (xoá localStorage là có mã
+         mới), chỉ chặn được người dùng thường, không chặn được kẻ cố tình.
+       - Token Firebase App Check (nếu đã điền AI_CHAT_RECAPTCHA_SITE_KEY) —
+         đây mới là lớp chặn THẬT kẻ gọi thẳng API bằng script/curl, vì phải
+         vượt qua reCAPTCHA thật gắn với đúng trang web này.
      =========================================================================== */
 
   const AI_CHAT_DIA_CHI_MAY_CHU = 'https://ai-chat-shop-588471551838.asia-southeast1.run.app';
   const AI_CHAT_KHOA_LUU_TRU = 'aiChatLichSu';
   const AI_CHAT_KHOA_VI_TRI = 'aiChatFabTop';
+  const AI_CHAT_KHOA_THIET_BI = 'aiChatThietBiId';
+  const AI_CHAT_GIOI_HAN_KY_TU = 500;
+
+  // Site key reCAPTCHA v3 của Firebase App Check — để TRỐNG thì chat vẫn
+  // chạy bình thường, chỉ là không gửi kèm token App Check (server khi đó
+  // cũng phải để APP_CHECK_ENFORCE=false thì mới không chặn nhầm khách
+  // thật). Điền vào sau khi bật App Check trong Firebase Console > App
+  // Check > Apps > thêm reCAPTCHA v3 cho đúng web app này, rồi build lại.
+  const AI_CHAT_RECAPTCHA_SITE_KEY = '';
+  const AI_CHAT_APP_CHECK_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js';
+  let aiChatAppCheckSanSang = false;
 
   const aiChatState = {
     lichSu: [],          // [{ vai: 'nguoi'|'ai', noiDung: '...' }]
@@ -39,6 +61,40 @@
   function aiChatLuuLichSuPhien(){
     try { window.sessionStorage.setItem(AI_CHAT_KHOA_LUU_TRU, JSON.stringify(aiChatState.lichSu)); }
     catch (loi) { /* sessionStorage đầy hoặc bị chặn — không sao, chỉ mất khi đổi tab */ }
+  }
+
+  // Mã ngẫu nhiên riêng cho thiết bị này, sống qua F5 (localStorage, khác
+  // lịch sử trò chuyện) — server dùng để đếm số ký tự khách nhắn mỗi ngày.
+  // taoIdKhoaHoc() tái dùng NGUYÊN từ PHẦN 04E, chỉ là hàm sinh chuỗi ngẫu
+  // nhiên chung, dùng làm phương án dự phòng khi trình duyệt không có
+  // crypto.randomUUID (Safari cũ, trình duyệt trong webview cũ...).
+  function aiChatThietBiId(){
+    try {
+      let id = window.localStorage.getItem(AI_CHAT_KHOA_THIET_BI);
+      if (!id) {
+        id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : taoIdKhoaHoc();
+        window.localStorage.setItem(AI_CHAT_KHOA_THIET_BI, id);
+      }
+      return id;
+    } catch (loi) { return ''; }
+  }
+
+  // Bật Firebase App Check một lần lúc trang tải xong — KHÔNG chặn gì nếu
+  // chưa điền site key hoặc nạp lỗi, chat vẫn dùng được bình thường (server
+  // tự quyết định có đòi token hay không qua biến môi trường
+  // APP_CHECK_ENFORCE, không phụ thuộc vào việc client có gửi được hay không).
+  function aiChatChuanBiAppCheck(){
+    if (!AI_CHAT_RECAPTCHA_SITE_KEY || !firebaseSanSang) return;
+    napMotLan(AI_CHAT_APP_CHECK_SDK, 'js').then(function(){
+      firebase.appCheck().activate(AI_CHAT_RECAPTCHA_SITE_KEY, true);
+      aiChatAppCheckSanSang = true;
+    }).catch(function(e){ console.error('Không bật được Firebase App Check:', e); });
+  }
+
+  function aiChatLayAppCheckToken(){
+    if (!aiChatAppCheckSanSang) return Promise.resolve('');
+    return firebase.appCheck().getToken(false).then(function(kq){ return kq.token; })
+      .catch(function(){ return ''; });
   }
 
   // --------------------------------------------------------------- NÚT NỔI
@@ -136,8 +192,8 @@
     return '' +
       '<div class="ai-chat-doan" id="ai-chat-doan">' + dong + '</div>' +
       '<div class="ai-chat-nhap">' +
-        '<textarea id="ai-chat-o-nhap" class="ai-chat-textarea" rows="1" ' +
-          'placeholder="Nhắn với Shop... (Enter xuống dòng, Ctrl+Enter để gửi)"></textarea>' +
+        '<textarea id="ai-chat-o-nhap" class="ai-chat-textarea" rows="1" maxlength="' + AI_CHAT_GIOI_HAN_KY_TU + '" ' +
+          'placeholder="Nhắn với Shop... (Enter xuống dòng, Ctrl+Enter để gửi, tối đa ' + AI_CHAT_GIOI_HAN_KY_TU + ' ký tự)"></textarea>' +
         '<button type="button" class="nut nut-chinh nut-nho" data-hanh-dong="ai-chat-gui">Gửi</button>' +
       '</div>';
   }
@@ -206,8 +262,11 @@
   function aiChatGuiTinNhan(){
     const o = document.getElementById('ai-chat-o-nhap');
     if (!o) return;
-    const chu = o.value.trim();
+    let chu = o.value.trim();
     if (!chu) return;
+    // maxlength trên ô nhập đã chặn gõ/dán quá dài, đây chỉ là phòng hờ nếu
+    // giá trị bị đặt bằng cách khác — giới hạn THẬT nằm ở server.
+    if (chu.length > AI_CHAT_GIOI_HAN_KY_TU) chu = chu.slice(0, AI_CHAT_GIOI_HAN_KY_TU);
     o.value = '';
 
     const tinNguoi = { vai: 'nguoi', noiDung: chu };
@@ -256,7 +315,11 @@
         return;
       }
       if (bongAi) {
-        bongAi.innerHTML = 'Xin lỗi, Shop chưa trả lời được lúc này. Bạn thử gửi lại sau nhé.';
+        // Lỗi giới hạn (400/429 từ server — vượt ký tự/ngày, tin nhắn quá dài...)
+        // có sẵn lời nhắn rõ ràng cho khách, không phải lỗi kỹ thuật chung chung.
+        bongAi.textContent = (loi && loi.laLoiGioiHan && loi.message)
+          ? loi.message
+          : 'Xin lỗi, Shop chưa trả lời được lúc này. Bạn thử gửi lại sau nhé.';
       }
       aiChatState.dangGui = false;
       aiChatState.dieuKhien = null;
@@ -273,13 +336,27 @@
         onDelta('Shop chưa kết nối máy chủ AI — phần này sẽ gắn sau.');
       });
     }
-    return fetch(AI_CHAT_DIA_CHI_MAY_CHU, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tinNhan: lichSu }),
-      signal: signal
+    return aiChatLayAppCheckToken().then(function(token){
+      const tieuDe = { 'Content-Type': 'application/json' };
+      if (token) tieuDe['X-Firebase-AppCheck'] = token;
+      return fetch(AI_CHAT_DIA_CHI_MAY_CHU, {
+        method: 'POST',
+        headers: tieuDe,
+        body: JSON.stringify({ tinNhan: lichSu, thietBiId: aiChatThietBiId() }),
+        signal: signal
+      });
     }).then(function(phanHoi){
-      if (!phanHoi.ok || !phanHoi.body) throw new Error('Máy chủ AI trả lỗi ' + phanHoi.status);
+      if (!phanHoi.ok) {
+        return phanHoi.text().then(function(vanBan){
+          const loi = new Error(vanBan || ('Máy chủ AI trả lỗi ' + phanHoi.status));
+          // 400 (tin nhắn/ cuộc trò chuyện không hợp lệ) và 429 (vượt giới hạn
+          // ký tự/ngày) đều có sẵn lời nhắn tiếng Việt rõ ràng từ server —
+          // hiện thẳng cho khách thay vì câu lỗi chung chung.
+          loi.laLoiGioiHan = phanHoi.status === 400 || phanHoi.status === 429;
+          throw loi;
+        });
+      }
+      if (!phanHoi.body) throw new Error('Máy chủ AI trả lỗi — không có nội dung.');
       const doc = phanHoi.body.getReader();
       const giaiMa = new TextDecoder('utf-8');
       function doc1Doan(){
@@ -317,6 +394,7 @@
     if (state.trang === 'admin') return;
     aiChatChenNutNoi();
     aiChatGanSuKien();
+    aiChatChuanBiAppCheck();
   }
 
   function boot(){
