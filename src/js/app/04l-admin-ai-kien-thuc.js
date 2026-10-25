@@ -234,7 +234,7 @@
     // (sp1), nên mỗi app có riêng trường "Điều kiện mở khoá" nói rõ điều đó.
     { id: 'mathangmienphi', loai: 'thu-muc', ten: 'Mặt hàng miễn phí' },
 
-    { id: 'preset500', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'Bộ Preset 500 màu cao cấp (Android & iPhone) - MIỄN PHÍ' },
+    { id: 'preset500', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'Bộ Preset 500 màu cao cấp Lightroom điện thoại Android và Iphone - MIỄN PHÍ' },
     { id: 'preset500-1', cha: 'preset500', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
       '500 màu cao cấp, cài sẵn thẳng vào tài khoản Adobe của khách — mở app Lightroom lên là có, không phải ' +
       'nhập tay tấm nào. Dành cho CẢ điện thoại Android lẫn iPhone (preset lưu trong tài khoản Adobe, đồng ' +

@@ -63,8 +63,8 @@
     // (ANH_DAI_DIEN/ANH_SAN_PHAM, PHẦN 01B) — không cắt ảnh mới. veHuongDan +
     // chuNutTai ghi đè nội dung/nút mặc định của moModalHuongDanQuaTang (xem
     // bên dưới) vì đây là hướng dẫn NHẬP PRESET, không phải cài APK.
-    { ma: 'qt-preset500', ten: 'Bộ Preset 500 màu cao cấp cài sẵn cho Lightroom điện thoại',
-      tenPhienBan: 'Bộ Preset 500 màu cao cấp cài sẵn cho Lightroom điện thoại',
+    { ma: 'qt-preset500', ten: 'Bộ Preset 500 màu cao cấp Lightroom điện thoại Android và Iphone',
+      tenPhienBan: 'Bộ Preset 500 màu cao cấp Lightroom điện thoại Android và Iphone',
       anh: ANH_DAI_DIEN.sp2, anhChiTiet: ANH_SAN_PHAM.sp2, chuNutTai: 'Tải Preset về máy',
       khoi: [
         { kieu: 'khau-hieu',

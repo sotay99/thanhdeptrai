@@ -82,13 +82,53 @@
 
   // ------------------------------------------------------------- BẢNG CHAT
 
+  // Dịch Markdown CƠ BẢN mà AI hay trả về (***đậm nghiêng***, **đậm**,
+  // *nghiêng*, `code`, # tiêu đề, dòng bắt đầu bằng "- "/"* " là danh sách)
+  // sang HTML — CHỈ dùng cho bong bóng AI. Bong bóng người dùng giữ nguyên
+  // văn bản thô (còn phải sửa được tại chỗ), không qua hàm này.
+  //
+  // Văn bản đã escapeHtml() trước nên các ký tự Markdown (*, #, -, `) không
+  // đụng hàng với ký tự HTML đặc biệt (&, <, >, ") — an toàn áp regex sau đó.
+  function aiChatDinhDangMarkdown(chu){
+    function dinhDangTrongDong(s){
+      return s
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/`([^`]+?)`/g, '<code>$1</code>');
+    }
+    const dongList = escapeHtml(chu).split('\n');
+    let html = '';
+    let dangMoList = false;
+    dongList.forEach(function(dong){
+      const moTieuDe = dong.match(/^(#{1,6})\s+(.*)$/);
+      const moDanhSach = dong.match(/^[-*]\s+(.*)$/);
+      if (moTieuDe) {
+        if (dangMoList) { html += '</ul>'; dangMoList = false; }
+        const cap = Math.min(moTieuDe[1].length + 2, 6);
+        html += '<h' + cap + ' class="ai-chat-tieu-de">' + dinhDangTrongDong(moTieuDe[2]) + '</h' + cap + '>';
+        return;
+      }
+      if (moDanhSach) {
+        if (!dangMoList) { html += '<ul>'; dangMoList = true; }
+        html += '<li>' + dinhDangTrongDong(moDanhSach[1]) + '</li>';
+        return;
+      }
+      if (dangMoList) { html += '</ul>'; dangMoList = false; }
+      if (dong.trim() === '') { html += '<br>'; return; }
+      html += '<p>' + dinhDangTrongDong(dong) + '</p>';
+    });
+    if (dangMoList) html += '</ul>';
+    return html;
+  }
+
   function aiChatVeMotDong(tin){
-    const noiDungAn = escapeHtml(tin.noiDung).replace(/\n/g, '<br>');
     if (tin.vai === 'nguoi') {
+      const noiDungAn = escapeHtml(tin.noiDung).replace(/\n/g, '<br>');
       return '<div class="ai-chat-dong nguoi"><div class="ai-chat-bong nguoi" contenteditable="true" spellcheck="false">' +
         noiDungAn + '</div></div>';
     }
-    return '<div class="ai-chat-dong ai"><div class="ai-chat-bong ai">' + noiDungAn + '</div></div>';
+    return '<div class="ai-chat-dong ai"><div class="ai-chat-bong ai">' + aiChatDinhDangMarkdown(tin.noiDung) + '</div></div>';
   }
 
   function aiChatVeThan(){
@@ -195,7 +235,7 @@
     goiAIChatBot(aiChatState.lichSu.slice(), dieuKhien.signal, function(doanMoi){
       tinAi.noiDung += doanMoi;
       if (bongAi) {
-        bongAi.innerHTML = escapeHtml(tinAi.noiDung).replace(/\n/g, '<br>');
+        bongAi.innerHTML = aiChatDinhDangMarkdown(tinAi.noiDung);
         aiChatCuonXuongCuoi();
       }
     }).then(function(){

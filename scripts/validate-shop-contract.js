@@ -2010,7 +2010,7 @@ if (!/\.khung-xac-nhan\s*\{/.test(cssApp)) {
   // tải riêng (chuNutTai), KHÔNG dùng bài hướng dẫn cài APK chung.
   [
     [/ma:\s*'qt-preset500',/, "sản phẩm qt-preset500 (Bộ Preset 500 màu)"],
-    [/ten:\s*'Bộ Preset 500 màu cao cấp cài sẵn cho Lightroom điện thoại'/, "tên thẻ Bộ Preset 500 màu (không hậu tố VIP)"],
+    [/ten:\s*'Bộ Preset 500 màu cao cấp Lightroom điện thoại Android và Iphone'/, "tên thẻ Bộ Preset 500 màu (không hậu tố VIP)"],
     [/anh:\s*ANH_DAI_DIEN\.sp2,\s*anhChiTiet:\s*ANH_SAN_PHAM\.sp2/, "tái dùng ảnh sp2 cho Bộ Preset 500 màu"],
     [/veHuongDan:\s*function\s*\(dm\)/, "bài hướng dẫn riêng (veHuongDan) của Bộ Preset 500 màu"],
     [/chuNutTai:\s*'Tải Preset về máy'/, "chữ nút tải riêng 'Tải Preset về máy'"],
