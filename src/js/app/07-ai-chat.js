@@ -14,10 +14,11 @@
        nằm sẵn trong đó) — AI tự nhiên trả lời gộp một lần cho tất cả, không
        cần một hàng đợi riêng.
      - Khoá API KHÔNG nằm ở đây: hàm goiAIChatBot() gọi tới một địa chỉ Cloud
-       Run (điền sau), không gọi trực tiếp tới hãng AI nào từ trình duyệt.
+       Run (project thanhdeptrai-shop, dịch vụ "ai-chat-shop", dùng Gemini),
+       không gọi trực tiếp tới hãng AI nào từ trình duyệt.
      =========================================================================== */
 
-  const AI_CHAT_DIA_CHI_MAY_CHU = ''; // TODO: điền địa chỉ Cloud Run (project thanhdeptrai-shop) sau.
+  const AI_CHAT_DIA_CHI_MAY_CHU = 'https://ai-chat-shop-588471551838.asia-southeast1.run.app';
   const AI_CHAT_KHOA_LUU_TRU = 'aiChatLichSu';
   const AI_CHAT_KHOA_VI_TRI = 'aiChatFabTop';
 
