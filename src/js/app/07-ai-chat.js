@@ -178,13 +178,22 @@
     return html;
   }
 
+  // Hiện lúc AI chưa trả về chữ nào — biến mất ngay khi đoạn đầu tiên tới
+  // (xem aiChatBatDauTraLoi(), onDelta ghi đè innerHTML là mất luôn).
+  const AI_CHAT_DANG_SOAN_HTML = '' +
+    '<span class="ai-chat-dang-soan">' +
+      '<span class="ai-chat-dang-soan-chu">Shop đang soạn</span>' +
+      '<span class="ai-chat-cham"></span><span class="ai-chat-cham"></span><span class="ai-chat-cham"></span>' +
+    '</span>';
+
   function aiChatVeMotDong(tin){
     if (tin.vai === 'nguoi') {
       const noiDungAn = escapeHtml(tin.noiDung).replace(/\n/g, '<br>');
       return '<div class="ai-chat-dong nguoi"><div class="ai-chat-bong nguoi" contenteditable="true" spellcheck="false">' +
         noiDungAn + '</div></div>';
     }
-    return '<div class="ai-chat-dong ai"><div class="ai-chat-bong ai">' + aiChatDinhDangMarkdown(tin.noiDung) + '</div></div>';
+    const than = tin.noiDung ? aiChatDinhDangMarkdown(tin.noiDung) : AI_CHAT_DANG_SOAN_HTML;
+    return '<div class="ai-chat-dong ai"><div class="ai-chat-bong ai">' + than + '</div></div>';
   }
 
   function aiChatVeThan(){

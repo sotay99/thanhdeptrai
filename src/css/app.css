@@ -2583,6 +2583,31 @@ body.trang-chu-nen {
   font-size: 12.5px;
   font-family: ui-monospace, Menlo, Consolas, monospace;
 }
+
+/* "Shop đang soạn" — hiện trong lúc chờ AI trả về đoạn chữ ĐẦU TIÊN, mất
+   ngay khi có (xem aiChatVeMotDong()/aiChatBatDauTraLoi(), PHẦN 07). Ba
+   chấm nhún lần lượt, giống kiểu "đang gõ" quen thuộc của các app chat. */
+.ai-chat-dang-soan {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--chu-diu);
+  font-size: 13.5px;
+  font-style: italic;
+}
+.ai-chat-cham {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--chu-diu);
+  animation: aiChatNhunCham 1.1s ease-in-out infinite;
+}
+.ai-chat-cham:nth-child(3) { animation-delay: .15s; }
+.ai-chat-cham:nth-child(4) { animation-delay: .3s; }
+@keyframes aiChatNhunCham {
+  0%, 60%, 100% { transform: translateY(0); opacity: .5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
 .ai-chat-nhap {
   flex: 0 0 auto;
   display: flex;
