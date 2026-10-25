@@ -95,7 +95,139 @@
       'Thời gian xử lý: thường chỉ trong ít phút sau khi shop xác nhận tiền đã về, không hẹn ngày giao như ' +
       'hàng vật lý.' },
 
+    // Mặt hàng có phí — mỗi sản phẩm một THƯ MỤC CON riêng (y như nút "Xem
+    // chi tiết sản phẩm" + nút "Hướng dẫn sử dụng" ở từng thẻ sản phẩm trên
+    // trang chính, PHẦN 01B/03B) — giá lấy đúng SAN_PHAM (PHẦN 01). Hai sản
+    // phẩm miễn phí sp4/sp5 trong SAN_PHAM (hai khoá học) KHÔNG để ở đây —
+    // chúng là quà tặng, thuộc thư mục "Mặt hàng miễn phí" bên dưới.
     { id: 'mathangcophi', loai: 'thu-muc', ten: 'Mặt hàng có phí' },
+
+    { id: 'sp1', cha: 'mathangcophi', loai: 'thu-muc', ten: 'App Lightroom điện thoại Android - bản quyền trọn đời (299.000đ, giá bán 99.000đ)' },
+    { id: 'sp1-1', cha: 'sp1', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Lightroom Tiếng Việt dễ sử dụng - Premium. Mở toàn bộ kho vũ khí của Lightroom ngay trên điện thoại ' +
+      '— mua một lần, dùng mãi mãi.\n' +
+      'LƯU Ý TRƯỚC KHI MUA: app chỉ dành cho điện thoại Android, KHÔNG dành cho iPhone. Chỉ đăng nhập được ' +
+      'bằng tài khoản Adobe (tạo được ngay trong app, shop hướng dẫn từng bước) — KHÔNG đăng nhập được bằng ' +
+      'Google dù app có hiện nút đó.\n' +
+      'Gói này mở khoá toàn bộ tính năng nâng cao của Lightroom trên điện thoại — thứ đa số người dùng phải ' +
+      'trả phí hằng tháng mới có. Những tính năng được mở khoá: chỉnh màu cho Video, xử lý ảnh RAW ngay trên ' +
+      'điện thoại, chỉnh màu hàng loạt (chép công thức màu từ 1 tấm sang hàng trăm tấm), công cụ Xoá (xoá ' +
+      'người lạ/dây điện/vết rác trong ảnh), công cụ Mặt nạ — Masking (tách vùng để chỉnh riêng bầu trời/chủ ' +
+      'thể/hậu cảnh), Phối cảnh (kéo thẳng nhà nghiêng/đường chân trời lệch), dùng và nhập preset màu cao cấp ' +
+      'hàng loạt, chỉnh sửa nhanh, chỉnh bằng AI, chỉnh bầu trời, xoá nhám da mặt tự nhiên. Kèm hướng dẫn ' +
+      'đăng nhập và kích hoạt Premium từ A-Z.' },
+    { id: 'sp1-2', cha: 'sp1', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Cài đặt chỉ mất khoảng 2-3 phút.\n' +
+      'Bước 1 — nếu máy đã có Lightroom tải từ CH Play thì gỡ nó ra trước (preset/ảnh không mất vì đồng bộ ' +
+      'trên tài khoản Adobe).\n' +
+      'Bước 2 (có thể bỏ qua, chỉ cần khi Bước 3 trục trặc) — vào Cài đặt → An toàn và bảo mật, bật "Không ' +
+      'rõ nguồn gốc" / "Cài đặt ứng dụng không rõ nguồn gốc" để cho phép cài file .apk ngoài CH Play.\n' +
+      'Bước 3 — mở file .apk vừa tải trong Quản lý tệp/Downloads, chọn "Mở bằng" → Trình cài đặt → Cài đặt.\n' +
+      'Bước 4 — nếu Google Play Protect cảnh báo "Đã chặn ứng dụng để bảo vệ thiết bị của bạn" (cảnh báo tự ' +
+      'động cho MỌI app cài ngoài, không phải app lỗi) thì bấm "Chi tiết khác" → "Vẫn cài đặt"/"Cài đặt bằng ' +
+      'mọi cách".\n' +
+      'Xong: mở Lightroom, đăng nhập (hoặc dùng luôn không cần đăng nhập) là có bản đầy đủ, không giới hạn ' +
+      'tính năng.' },
+
+    { id: 'sp2', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Bộ Preset 10.000 màu cao cấp cho Lightroom điện thoại (99.000đ, giá bán 79.000đ)' },
+    { id: 'sp2-1', cha: 'sp2', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      '10.000 màu cao cấp cài sẵn thẳng vào tài khoản Adobe của khách — mở app lên là có, không phải nhập ' +
+      'tay từng tấm. Mỗi bộ màu được tuyển chọn và test kỹ trên ảnh thật, loại bỏ màu hỏng/trùng/vô dụng. ' +
+      'Cài trực tiếp vào tài khoản cá nhân khách (không phải import từng file thủ công). An toàn, riêng tư ' +
+      '— shop không giữ, không đụng vào ảnh của khách. Dùng trọn đời, đổi điện thoại vẫn còn nguyên trong ' +
+      'tài khoản. Dùng được cả trên Lightroom máy tính và Photoshop máy tính — mua 1 lần xài cả 3 nơi. Đủ ' +
+      'tông: phim hoài cổ, Hàn Quốc trong trẻo, cưới sang trọng, du lịch rực nắng, đường phố xám lạnh...' },
+    { id: 'sp2-2', cha: 'sp2', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Bộ 9.500 preset được chia nhỏ thành nhiều gói con, mỗi gói 1.000 preset (gói 1: preset 1-1.000, gói ' +
+      '2: 1.001-2.000, cứ thế nối tiếp). Máy yếu/đời cũ: nên cài từng gói nhỏ một lần. Máy mạnh/đời mới/' +
+      'iPhone: cài luôn gói tổng hợp 9.500 preset.\n' +
+      'Các bước: 1) Tải file .zip preset về điện thoại. 2) Mở app Lightroom → Thiết đặt sẵn (Presets). ' +
+      '3) Chọn "Của bạn" (Yours). 4) Bấm dấu ba chấm dọc (⋮) góc trên phải. 5) Chọn "Nhập thiết đặt sẵn" ' +
+      '(Import Presets). 6) Bấm "Tải file lên", chọn đúng file .zip vừa tải. 7) Đợi vài chục giây để ' +
+      'Lightroom tải lên và tự đồng bộ vào tài khoản Adobe — xong preset hiện ngay trong mục "Của bạn". ' +
+      'Muốn cài thêm gói khác thì lặp lại bước 4-7 với file .zip của gói đó, preset các gói không đè nhau.' },
+
+    { id: 'sp3', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Bộ Preset 650 màu cao cấp cho Lightroom và Photoshop máy tính (359.000đ, giá bán 125.000đ)' },
+    { id: 'sp3-1', cha: 'sp3', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Dành cho dân làm nghề — chuẩn thương mại. Ít hơn về số lượng so với bộ 10.000 màu nhưng mỗi màu được ' +
+      'dựng để chịu được yêu cầu khắt khe của khách trả tiền.\n' +
+      'Dành cho: nhiếp ảnh gia nhận job cưới/kỷ yếu/sự kiện (cần màu ổn định đồng nhất cả bộ ảnh), người làm ' +
+      'nghề thương mại (ảnh sản phẩm/quảng cáo/thương hiệu), người mới lên máy tính (có điểm xuất phát tốt ' +
+      'để học cách dựng màu).\n' +
+      'Nhận được: 650 preset màu cao cấp tối ưu cho ảnh RAW độ phân giải lớn, không vỡ màu khi in; cài được ' +
+      'cho cả Lightroom máy tính và Photoshop/Camera Raw — 1 bộ file dùng 2 phần mềm; chuyển sang Lightroom ' +
+      'điện thoại dễ dàng (shop hướng dẫn đồng bộ); phân nhóm rõ theo chủ đề, tìm màu nhanh.' },
+    { id: 'sp3-2', cha: 'sp3', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Cài vào Lightroom Classic (máy tính): 1) Tải file .zip preset về máy tính, giải nén ra một thư mục. ' +
+      '2) Mở Lightroom Classic, vào khu vực Develop (Chỉnh sửa). 3) Bảng bên trái, mục Presets, bấm dấu "+" ' +
+      '→ "Import Presets…". 4) Trỏ tới thư mục đã giải nén, chọn hết file preset (.zip/.xmp/.lrtemplate), ' +
+      'bấm Import. 5) Preset xuất hiện ngay trong bảng Presets, áp dụng được cho mọi ảnh RAW.\n' +
+      'Cài vào Photoshop (Camera Raw): 1) Mở một ảnh trong Photoshop, vào Filter → Camera Raw Filter (hoặc ' +
+      'mở trực tiếp file RAW). 2) Cột bên phải, chọn tab Presets. 3) Bấm "…" hoặc "+" góc bảng Presets → ' +
+      '"Import Presets…". 4) Trỏ tới thư mục đã giải nén, chọn file preset, bấm Import. Camera Raw dùng ' +
+      'chung kho preset cho cả Photoshop lẫn Bridge, nhập 1 lần dùng được cả hai nơi.' },
+
+    { id: 'sp6', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Phần mềm Lightroom Classic Windows - bản quyền trọn đời (599.000đ, giá bán 179.000đ)' },
+    { id: 'sp6-1', cha: 'sp6', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Phần mềm Lightroom Classic dành cho máy tính Windows - bản quyền trọn đời. Cài một lần, chạy êm, ' +
+      'không lo hết hạn.\n' +
+      'Điểm mạnh: hỗ trợ thiết lập nhanh (shop đồng hành từ lúc tải tới khi chỉnh được tấm ảnh đầu tiên); ' +
+      'suất đăng nhập ưu đãi từ nhà sản xuất, số lượng có hạn; hoạt động mượt mà, phù hợp mọi cấu hình PC từ ' +
+      'thấp đến cao; phiên bản đã kiểm thử thành công trên hơn 1.000 máy tính; có video hướng dẫn chi tiết; ' +
+      'phiên bản chuẩn định danh Lightroom Classic V10.0.\n' +
+      'Đây là bản Classic — bản giới nhiếp ảnh chuyên nghiệp toàn thế giới vẫn dùng để xử lý bộ ảnh nặng ' +
+      'nhất: catalog hàng chục nghìn tấm, chỉnh sửa hàng loạt, xuất file theo lô, kiểm soát màu chi tiết. ' +
+      'Trả 1 lần duy nhất, dùng mãi, không như thuê bao hằng tháng.' },
+    { id: 'sp6-2', cha: 'sp6', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Tải file cài đặt về máy tính Windows, chạy file, bấm Next tới khi thấy Install, đợi thanh chạy đầy ' +
+      'là xong — phần lớn máy cài trót lọt ngay lần đầu, không cần xử lý gì thêm. Lưu ý: nếu quá trình cài ' +
+      'bị lỗi/chặn giữa chừng thì xem video hướng dẫn tắt Tường lửa (Firewall) của Windows trước khi cài lại.' },
+
+    { id: 'sp7', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Phần mềm Photoshop Windows - bản quyền trọn đời (599.000đ, giá bán 179.000đ)' },
+    { id: 'sp7-1', cha: 'sp7', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Phần mềm Photoshop dành cho máy tính Windows - bản quyền trọn đời. Công cụ mạnh nhất ngành hình ảnh.\n' +
+      'Điểm mạnh: hỗ trợ thiết lập nhanh; suất đăng nhập ưu đãi từ nhà sản xuất, số lượng có hạn; hoạt động ' +
+      'mượt mà, phù hợp mọi cấu hình PC; có video hướng dẫn chi tiết từng bước; phiên bản chuẩn định danh ' +
+      'Photoshop 2021 v22.0.0.35 x64.\n' +
+      'Photoshop mở ra: ghép ảnh và chỉnh sửa sâu (thay nền, ghép người, dựng cảnh không có thật mà nhìn vẫn ' +
+      'thật); retouch chân dung chuyên nghiệp (làm mịn da giữ kết cấu, tạo khối gương mặt, chỉnh dáng); ' +
+      'thiết kế đồ hoạ (poster, banner, bìa sách, bao bì, nhận diện thương hiệu); Camera Raw ngay trong ' +
+      'Photoshop (dùng chung được preset màu đang có); action và xử lý theo lô. Lightroom lo màu, Photoshop ' +
+      'lo chi tiết — có cả hai gần như không còn yêu cầu nào của khách khiến phải từ chối.' },
+    { id: 'sp7-2', cha: 'sp7', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Giống cách cài sp6: tải file cài đặt về máy tính Windows, chạy và làm theo hướng dẫn trên màn hình — ' +
+      'bấm Next tới khi thấy Install. Lưu ý: video hướng dẫn sẽ chỉ cách tắt Tường lửa (Firewall) của ' +
+      'Windows trước khi cài phần mềm nếu quá trình cài bị chặn.' },
+
+    { id: 'sp8', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Kho tài nguyên thiết kế - 1000+ ảnh RAW, Mockup, PSD (159.000đ, giá bán 39.000đ)' },
+    { id: 'sp8-1', cha: 'sp8', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Gồm 3 phần:\n' +
+      '1) Bộ 100 ảnh RAW chất lượng cao — đủ định dạng gốc DNG/NEF/CR2 (đúng file máy ảnh xuất ra, không ' +
+      'phải JPG chuyển ngược), đa dạng thể loại (cưới, người mẫu, mẫu điện ảnh, phong cảnh, film, du lịch, ' +
+      'kỷ yếu) — dùng để luyện chỉnh sửa như ảnh thật.\n' +
+      '2) Bộ 1000+ file Mockup — bảng hiệu, bộ nhận diện thương hiệu, book, card, catalogue, chai lọ, cốc... ' +
+      'chỉ cần thả thiết kế vào là ra ảnh sản phẩm như chụp thật.\n' +
+      '3) Bộ 1000+ file PSD đa dạng chủ đề (Tết, du lịch và nhiều chủ đề khác quanh năm) — file nhiều lớp, ' +
+      'mở ra sửa được ngay (đổi chữ/ảnh/màu, xuất bài kịp việc gấp).' },
+    { id: 'sp8-2', cha: 'sp8', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Không có hướng dẫn cài đặt riêng trên web — đây là file tải về dùng trực tiếp: ảnh RAW mở bằng ' +
+      'Lightroom/Camera Raw như ảnh chụp bình thường; file Mockup và PSD mở bằng Photoshop (PSD có nhiều ' +
+      'lớp, sửa trực tiếp được ngay). Cách dùng quen thuộc với người đã biết Lightroom/Photoshop, không cần ' +
+      'bước cài đặt đặc biệt nào.' },
+
+    { id: 'sp9', cha: 'mathangcophi', loai: 'thu-muc', ten: '1000+ font chữ Việt hoá cao cấp cho máy tính (159.000đ, giá bán 39.000đ)' },
+    { id: 'sp9-1', cha: 'sp9', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Đã Việt hoá hoàn chỉnh — gõ tiếng Việt có dấu chuẩn đẹp, không lỗi, không vỡ dấu, không biến thành ô ' +
+      'vuông (khác với font nước ngoài thông thường).\n' +
+      'Trong bộ font có: chữ thư pháp (hợp thiệp cưới, câu đối, ấn phẩm Tết), chữ mảnh (thanh thoát, hợp ' +
+      'thương hiệu cao cấp/mỹ phẩm), chữ cao hẹp (mạnh mẽ, hợp tiêu đề/poster), chữ viết tay (gần gũi, hợp ' +
+      'nội dung đời thường/quà tặng), chữ vuông (chắc chắn, hợp thể thao/công nghệ), và nhiều nhóm phong ' +
+      'cách khác — tuyển chọn đầy đủ, bắt mắt, không lỗi gõ dấu.' },
+    { id: 'sp9-2', cha: 'sp9', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Không có hướng dẫn cài đặt riêng trên web — font tải về cài như font Windows thông thường (copy vào ' +
+      'thư mục Fonts, hoặc bấm đúp vào file font rồi bấm Install), dùng được ngay trong mọi phần mềm thiết ' +
+      'kế (Photoshop, Illustrator, Word...).' },
+
     { id: 'mathangmienphi', loai: 'thu-muc', ten: 'Mặt hàng miễn phí' },
 
     { id: 'faq', loai: 'thu-muc', ten: 'Câu hỏi thường gặp' },
