@@ -228,7 +228,153 @@
       'thư mục Fonts, hoặc bấm đúp vào file font rồi bấm Install), dùng được ngay trong mọi phần mềm thiết ' +
       'kế (Photoshop, Illustrator, Word...).' },
 
+    // Mặt hàng miễn phí — module "Quà tặng dành cho thiết bị Android" (PHẦN
+    // 03F) + 3 khoá học miễn phí. Remini/XingTu KHÔNG còn tải trực tiếp được
+    // nữa (MA_CHAN_TAI_QUA_TANG, PHẦN 03F) — chỉ tặng kèm khi mua Lightroom
+    // (sp1), nên mỗi app có riêng trường "Điều kiện mở khoá" nói rõ điều đó.
     { id: 'mathangmienphi', loai: 'thu-muc', ten: 'Mặt hàng miễn phí' },
+
+    { id: 'preset500', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'Bộ Preset 500 màu cao cấp (Android & iPhone) - MIỄN PHÍ' },
+    { id: 'preset500-1', cha: 'preset500', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      '500 màu cao cấp, cài sẵn thẳng vào tài khoản Adobe của khách — mở app Lightroom lên là có, không phải ' +
+      'nhập tay tấm nào. Dành cho CẢ điện thoại Android lẫn iPhone (preset lưu trong tài khoản Adobe, đồng ' +
+      'bộ qua đám mây nên dùng được trên bất kỳ thiết bị nào có cài app Lightroom, không phân biệt hệ điều ' +
+      'hành).\n' +
+      'Mỗi bộ màu được tuyển chọn kỹ và test thành công trên ảnh thật trước khi giao, loại bỏ màu hỏng/trùng/' +
+      'vô dụng. Cài trực tiếp vào tài khoản cá nhân — không phải import từng file. An toàn, riêng tư: thao ' +
+      'tác trên chính tài khoản của khách, shop không giữ, không đụng ảnh. Dùng trọn đời, đổi điện thoại vẫn ' +
+      'còn nguyên. Đủ tông: phim hoài cổ, Hàn Quốc trong trẻo, cưới sang trọng, du lịch rực nắng, đường phố ' +
+      'xám lạnh.\n' +
+      'Đây là bản quà TẶNG MIỄN PHÍ 500 màu của sản phẩm trả phí "Bộ Preset 10.000 màu" — không có mã sản ' +
+      'phẩm riêng, không giá, không đơn hàng, tải trực tiếp ngay tại module "Quà tặng dành cho thiết bị ' +
+      'Android", không điều kiện gì.' },
+    { id: 'preset500-2', cha: 'preset500', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'KHÁC cách cài APK của 4 app bên dưới — đây là NHẬP PRESET vào Lightroom, không phải cài ứng dụng:\n' +
+      '1. Tải file .zip preset về máy (nút "Tải Preset về máy"). 2. Mở app Lightroom → bấm "Thiết đặt sẵn" ' +
+      '(Presets) ở thanh dưới. 3. Chọn mục "Của bạn" (Yours). 4. Bấm dấu ba chấm dọc (⋮) góc trên phải. ' +
+      '5. Chọn "Nhập thiết đặt sẵn" (Import Presets). 6. Bấm "Tải file lên", chọn đúng file .zip vừa tải. ' +
+      '7. Đợi vài chục giây để Lightroom tải lên và đồng bộ vào tài khoản Adobe — preset hiện ngay trong mục ' +
+      '"Của bạn", dùng được cho mọi tấm ảnh. Chỉ cần cài 1 lần duy nhất.' },
+
+    { id: 'qtpicsart', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'PicsArt VIP (bản quyền trọn đời) - MIỄN PHÍ' },
+    { id: 'qtpicsart-1', cha: 'qtpicsart', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Studio chỉnh ảnh AI mạnh nhất trong túi bạn — không quảng cáo, không watermark, không giới hạn.\n' +
+      'Tính năng VIP mở khoá: xoá sạch quảng cáo và watermark khi xuất ảnh; bộ công cụ AI cao cấp (xoá/thay ' +
+      'thế vật thể bằng AI - Magic Replace, mở rộng khung ảnh bằng AI - Magic Expand, tạo phông nền bằng AI); ' +
+      'tách nền tự động không giới hạn lượt, độ chính xác cao; mở khoá toàn bộ kho sticker/phông nền/font ' +
+      'chữ cao cấp (hàng chục nghìn mẫu); xuất ảnh độ phân giải gốc, không nén.\n' +
+      'Miễn phí hoàn toàn, tải trực tiếp ngay tại module "Quà tặng dành cho thiết bị Android", không điều ' +
+      'kiện gì.' },
+
+    { id: 'qtremini', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'Remini VIP (bản quyền trọn đời) - MIỄN PHÍ (kèm điều kiện)' },
+    { id: 'qtremini-1', cha: 'qtremini', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Phục chế ảnh mờ, cũ, vỡ nét thành ảnh sắc nét như chụp bằng máy ảnh chuyên nghiệp, chỉ trong một chạm.\n' +
+      'Tính năng VIP mở khoá: xoá sạch quảng cáo và watermark trên mọi ảnh/video xuất ra; nâng cấp chất ' +
+      'lượng ảnh bằng AI (AI Photo Enhancer) không giới hạn lượt, không chờ quảng cáo; Video Enhancer AI ' +
+      '(làm nét video cũ/mờ/vỡ khung hình); mở khoá toàn bộ bộ lọc AI cao cấp (AI Avatar, Hollywood Filter, ' +
+      'AI Filter thế hệ mới); xuất ảnh/video độ phân giải tối đa.' },
+    { id: 'qtremini-2', cha: 'qtremini', loai: 'truong', ten: 'Điều kiện mở khoá (QUAN TRỌNG)', noiDung:
+      'Remini VIP KHÔNG còn tải trực tiếp được từ module "Quà tặng dành cho thiết bị Android" nữa. App này ' +
+      'giờ CHỈ được tặng kèm khi khách mua "App Lightroom VIP Pro" (sản phẩm Lightroom). Nếu khách bấm nút ' +
+      'tải Remini ở module Quà tặng Android, web hiện đúng thông báo: "Sản phẩm miễn phí này được đính kèm ' +
+      'khi mua sản phẩm App Lightroom VIP Pro, nếu bạn đã mua sản phẩm APP Lightroom, hãy vào link sản phẩm ' +
+      'mà Shop đã bàn giao cho bạn, bấm vào sản phẩm app Lightroom, ở đó có đính kèm App Remini và XingTu ' +
+      'Việt hoá Vip Pro được tặng kèm theo". Nếu khách hỏi cách lấy Remini mà CHƯA mua Lightroom, hãy hướng ' +
+      'dẫn khách mua App Lightroom VIP Pro trước (99.000đ) — Remini tự mở khoá trên trang nhận hàng ngay sau ' +
+      'khi khách tải Lightroom thành công.' },
+
+    { id: 'qtsnapedit', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'SnapEdit VIP (bản quyền trọn đời) - MIỄN PHÍ' },
+    { id: 'qtsnapedit-1', cha: 'qtsnapedit', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'Xoá nền, xoá người thừa, chỉnh ảnh bằng AI chỉ trong vài giây, không cần biết Photoshop.\n' +
+      'Tính năng VIP mở khoá: xoá sạch quảng cáo và watermark khi xuất ảnh; xoá nền ảnh (Remove Background) ' +
+      'không giới hạn lượt, độ chính xác cao, tách cả tóc và chi tiết nhỏ; công cụ AI xoá vật thể/người lạ/ ' +
+      'rác trong ảnh (Remove Object) không giới hạn; AI Photo Enhancer nâng cấp ảnh mờ/cũ; xuất ảnh full độ ' +
+      'phân giải gốc, không giới hạn số lượt mỗi ngày.\n' +
+      'Miễn phí hoàn toàn, tải trực tiếp ngay tại module "Quà tặng dành cho thiết bị Android", không điều ' +
+      'kiện gì.' },
+
+    { id: 'qtxingtu', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'XingTu VIP Việt hoá (bản quyền trọn đời) - MIỄN PHÍ (kèm điều kiện)' },
+    { id: 'qtxingtu-1', cha: 'qtxingtu', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
+      'App làm đẹp ảnh chân dung hàng đầu Trung Quốc (cùng nhà phát triển với CapCut) — bản Việt hoá đầy đủ, ' +
+      'dễ dùng. Lưu ý: đây là phiên bản đã ra mắt được một thời gian (không phải bản mới nhất) nhưng vẫn ' +
+      'dùng ổn định cho mọi nhu cầu chỉnh sửa quen thuộc, app chạy mượt, không lỗi vặt.\n' +
+      'Tính năng VIP mở khoá: trang điểm AI (tô son, kẻ mắt, làm mịn da tự nhiên); chỉnh dáng người - ' +
+      'Bodyedit (thon gọn, cao ráo, chỉnh tỷ lệ cơ thể tự nhiên, không méo nền); chỉnh mặt chi tiết (mắt to ' +
+      'hơn, mũi cao hơn, cằm V-line...); mở khoá kho filter/phông nền/bộ lọc thời trang cao cấp cập nhật ' +
+      'liên tục; xoá quảng cáo, mở khoá toàn bộ công cụ chỉnh sửa nâng cao.' },
+    { id: 'qtxingtu-2', cha: 'qtxingtu', loai: 'truong', ten: 'Điều kiện mở khoá (QUAN TRỌNG)', noiDung:
+      'Giống hệt Remini: XingTu VIP KHÔNG còn tải trực tiếp được từ module "Quà tặng dành cho thiết bị ' +
+      'Android" nữa, CHỈ được tặng kèm khi khách mua "App Lightroom VIP Pro" (sản phẩm Lightroom). Hướng dẫn ' +
+      'khách giống hệt Remini: mua Lightroom trước, XingTu sẽ tự mở khoá trên trang nhận hàng ngay sau khi ' +
+      'khách tải Lightroom thành công.' },
+
+    { id: 'qthuongdanchung', cha: 'mathangmienphi', loai: 'thu-muc', ten: 'Hướng dẫn sử dụng chung (PicsArt / Remini / SnapEdit / XingTu)' },
+    { id: 'qthuongdanchung-1', cha: 'qthuongdanchung', loai: 'truong', ten: 'Cách cài đặt (giống nhau cho cả 4 app)', noiDung:
+      'Cả 4 app (PicsArt, Remini, SnapEdit, XingTu) đều là file .apk cài ngoài CH Play, các bước giống hệt ' +
+      'nhau, chỉ đổi tên app, mất khoảng 2-3 phút:\n' +
+      'Bước 1 — nếu máy đã có sẵn một bản khác của app đó thì gỡ ra trước (giữ icon app → Gỡ cài đặt) để ' +
+      'tránh xung đột.\n' +
+      'Bước 2 (có thể bỏ qua, chỉ cần khi Bước 3 trục trặc) — vào Cài đặt → An toàn và bảo mật, bật "Không ' +
+      'rõ nguồn gốc" / "Cài đặt ứng dụng không rõ nguồn gốc".\n' +
+      'Bước 3 — mở file .apk vừa tải trong Quản lý tệp/Downloads, chọn "Mở bằng" → Trình cài đặt → Cài đặt.\n' +
+      'Bước 4 — nếu Google Play Protect cảnh báo thì bấm "Chi tiết khác" → "Vẫn cài đặt"/"Cài đặt bằng mọi ' +
+      'cách" (cảnh báo tự động cho mọi app cài ngoài CH Play, không phải app lỗi).\n' +
+      'Riêng Bộ Preset 500 màu KHÔNG theo cách này — xem hướng dẫn riêng ở thư mục preset (đó là nhập preset ' +
+      'vào Lightroom, không phải cài app).' },
+
+    { id: 'khoahocmienphi', cha: 'mathangmienphi', loai: 'thu-muc', ten: '3 khoá học miễn phí' },
+
+    { id: 'khoasp4', cha: 'khoahocmienphi', loai: 'thu-muc', ten: 'Khoá học Lightroom điện thoại (sp4) - MIỄN PHÍ' },
+    { id: 'khoasp4-1', cha: 'khoasp4', loai: 'truong', ten: 'Nội dung khoá học', noiDung:
+      'Khoá học biến chiếc điện thoại thành phòng lab màu chuyên nghiệp — rèn cho bạn đôi mắt biết nhìn ra ' +
+      'màu đúng.\n' +
+      'Admin cam kết: rèn luyện đôi mắt để tự đánh giá và thẩm định màu sắc từng bức ảnh, biết blend màu cho ' +
+      'từng kiểu ảnh; kết hợp Lightroom với chỉnh màu bằng AI để ra ảnh đúng màu và nhanh nhất; hiểu sâu mọi ' +
+      'thông số ánh sáng/màu sắc/hiệu ứng/chi tiết trên Lightroom điện thoại; hướng dẫn mở khoá tính năng cao ' +
+      'cấp trong Lightroom và cách bắt tay Lightroom với Photoshop; nắm vững cả Lightroom MÁY TÍNH và Camera ' +
+      'Raw của Photoshop — học 1 khoá làm chủ 3 mặt trận.\n' +
+      'Hỗ trợ sử dụng tính năng cao cấp: Masking (mặt nạ - chỉnh riêng từng vùng), xoá vật thể, làm mờ hậu ' +
+      'cảnh, chỉnh sửa hàng loạt, và nhiều tính năng khác mở ra dần qua từng bài học.\n' +
+      'Học được: rèn "đôi mắt thần sầu" đánh giá màu sắc; kết hợp AI chỉnh màu siêu tốc; hiểu sâu mọi thông ' +
+      'số trong Lightroom; tự tạo phong cách màu và preset riêng; nắm vững kỹ thuật chỉnh ảnh RAW chuyên ' +
+      'nghiệp trên cả điện thoại lẫn máy tính. Hoàn toàn miễn phí.' },
+    { id: 'khoasp4-2', cha: 'khoasp4', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Chỉ cần vào đúng module "Khoá học Lightroom điện thoại" ở menu bên trái và học theo từng bài — không ' +
+      'cần cài đặt hay tải gì thêm, xem video bài học ngay trong trang.' },
+
+    { id: 'khoasp5', cha: 'khoahocmienphi', loai: 'thu-muc', ten: 'Khoá học Lightroom máy tính PC (sp5) - MIỄN PHÍ' },
+    { id: 'khoasp5-1', cha: 'khoasp5', loai: 'truong', ten: 'Nội dung khoá học', noiDung:
+      'Từ người biết dùng Lightroom máy tính, thành người làm chủ nó — có quy trình, có tốc độ, có phong ' +
+      'cách riêng.\n' +
+      'Lộ trình học: nhập và quản lý thư viện ảnh (catalog, thư mục, gắn cờ/sao, từ khoá); nền tảng ánh sáng ' +
+      'và màu sắc (histogram, phơi sáng, tương phản, vùng sáng/tối, trắng/đen); làm chủ màu sắc (HSL, Color ' +
+      'Grading, Calibration, Tone Curve); mặt nạ nâng cao (chọn chủ thể/bầu trời/người/nền, giao-trừ vùng ' +
+      'chọn); sửa chữa và làm sạch (xoá vật thể, khử nhiễu, làm nét, sửa quang sai/méo ống kính); chỉnh sửa ' +
+      'hàng loạt và tự động hoá (đồng bộ, preset, profile, xuất file theo lô); bắt tay với Photoshop (khi ' +
+      'nào chuyển sang, cách chuyển không mất chất lượng); xuất file đúng chuẩn cho từng mục đích (khách, ' +
+      'mạng xã hội, in ấn).\n' +
+      'Đạt được sau khoá học: có quy trình xử lý ảnh riêng, nhanh gấp nhiều lần; đồng nhất màu trên cả bộ ' +
+      'ảnh; tự dựng preset mang phong cách riêng; xử lý được cả file khó (ngược sáng, thiếu sáng, ánh sáng ' +
+      'đèn màu lộn xộn); đủ tự tin nhận job và giao ảnh đúng hẹn. Hoàn toàn miễn phí.' },
+    { id: 'khoasp5-2', cha: 'khoasp5', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Chỉ cần vào đúng module "Khoá học Lightroom máy tính PC" ở menu bên trái và học theo từng bài — không ' +
+      'cần cài đặt hay tải gì thêm.' },
+
+    { id: 'khoaphotoshop', cha: 'khoahocmienphi', loai: 'thu-muc', ten: 'Khoá Photoshop - edit ảnh bằng điện thoại - MIỄN PHÍ' },
+    { id: 'khoaphotoshop-1', cha: 'khoaphotoshop', loai: 'truong', ten: 'Nội dung khoá học', noiDung:
+      'Kết hợp Photoshop với chỉnh màu bằng AI để cho ra bức ảnh đúng ý muốn và nhanh nhất — học và làm ngay ' +
+      'trên điện thoại, hoàn toàn miễn phí.\n' +
+      'Học được: ghép ảnh bằng công cụ Photoshop trên điện thoại; cách cài đặt miễn phí ứng dụng edit hình ' +
+      'ảnh và Photoshop trên điện thoại (hướng dẫn cụ thể ngay trong khoá); tương thích mọi hệ điều hành, ' +
+      'mọi cấu hình điện thoại kể cả máy yếu; biến ảnh chụp điện thoại trở nên lung linh; đầy đủ kỹ năng ' +
+      'Photoshop (công cụ, filter, adjustments, transform, vùng chọn, chỉnh màu, Blending Option...); chỉnh ' +
+      'màu chuyên nghiệp ngay trên điện thoại.\n' +
+      'Lưu ý: đây KHÔNG phải bán ứng dụng — đây là khoá học, phù hợp người chưa am hiểu Photoshop muốn thao ' +
+      'tác ngay trên điện thoại. Người đang dùng Photoshop máy tính nên tiếp tục dùng máy tính (nhanh hơn vì ' +
+      'có bàn phím), vẫn áp dụng được kiến thức khoá này.' },
+    { id: 'khoaphotoshop-2', cha: 'khoaphotoshop', loai: 'truong', ten: 'Hướng dẫn sử dụng', noiDung:
+      'Chỉ cần vào đúng module "Khoá Photoshop - edit ảnh bằng điện thoại" ở menu bên trái và học theo từng ' +
+      'bài — không cần cài đặt hay tải gì thêm.' },
 
     { id: 'faq', loai: 'thu-muc', ten: 'Câu hỏi thường gặp' },
     { id: 'faq-1', cha: 'faq', loai: 'truong', ten: 'Mua xong bao lâu có hàng?', noiDung:
