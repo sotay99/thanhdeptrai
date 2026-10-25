@@ -936,3 +936,32 @@
 
 /* ---------------------------------------------------- MODULE "HUẤN LUYỆN AI" */
 .dong-truong-aikt .admin-nhap-van-ban { flex: 1 1 100%; }
+.nut-mo-thu-muc-aikt { flex: 0 0 auto; }
+
+/* "Đường dẫn" (breadcrumb) hiện cấp thư mục đang mở — giống thanh địa chỉ
+   trình quản lý tệp, bấm vào một mẩu là quay lại đúng cấp đó. */
+.aikt-duong-dan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--vien);
+  border-radius: 8px;
+  background: var(--the-2);
+}
+.aikt-mau-duong-dan {
+  border: none;
+  background: none;
+  color: var(--xanh);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 5px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.aikt-mau-duong-dan:hover { background: var(--xanh-nen); }
+.aikt-mau-duong-dan:last-child { color: var(--chu); cursor: default; }
+.aikt-mau-duong-dan:last-child:hover { background: none; }
+.aikt-ngan-cach { color: var(--chu-mo); font-size: 12px; margin: 0 1px; }
