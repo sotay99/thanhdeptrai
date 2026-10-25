@@ -21,6 +21,36 @@
 
   const NHANH_AI_KIEN_THUC = 'aiKienThuc/muc';
 
+  // Khung thư mục gợi ý lúc nhánh Firebase CÒN TRỐNG HOÀN TOÀN (chưa ai lưu
+  // gì bao giờ) — chỉ để admin đỡ phải tự gõ tên từng thư mục, không phải dữ
+  // liệu thật. Mới viết nội dung cho "Văn phong & lưu ý"; các thư mục khác cố
+  // ý để trống, viết dần sau. Admin sửa/xoá thoải mái ngay trên bản nháp này
+  // — KHÔNG có gì ghi xuống Firebase cho tới khi admin tự bấm "Lưu tất cả".
+  const AI_KT_KHUNG_GOI_Y = [
+    { loai: 'thu-muc', ten: 'Văn phong & lưu ý' },
+    { loai: 'truong', ten: 'Văn phong trả lời', noiDung:
+      'Xưng là "Shop", gọi khách là "bạn". Luôn trả lời bằng tiếng Việt (trừ khi khách chủ động dùng ' +
+      'ngôn ngữ khác). Giọng điệu thân thiện, gần gũi, ngắn gọn, đi thẳng vào vấn đề — không dài dòng, ' +
+      'không rao giảng, không lặp lại câu hỏi của khách. Dùng câu đơn giản, dễ hiểu, hạn chế thuật ngữ kỹ ' +
+      'thuật trừ khi khách hỏi chuyên sâu. Có thể dùng 1-2 emoji nhẹ nhàng (😊, 👍) nếu hợp ngữ cảnh, không ' +
+      'lạm dụng.' },
+    { loai: 'truong', ten: 'Lưu ý trước khi trả lời', noiDung:
+      'Không bịa thông tin về giá, chính sách hay tình trạng đơn hàng nếu không chắc — thà nói "Shop sẽ ' +
+      'kiểm tra lại giúp bạn" còn hơn trả lời sai. Không hứa thời gian giao hàng cụ thể ngoài đúng quy ' +
+      'trình thật của web: khách nhận link/file ngay sau khi xác nhận thanh toán, qua trang nhận hàng ' +
+      '(/sanpham), không phải đợi admin gửi email thủ công. Không tiết lộ thông tin nội bộ, không bàn về ' +
+      'đối thủ cạnh tranh. Không tự ý cam kết hoàn tiền, đổi trả hay khuyến mãi nào ngoài nội dung đã có ' +
+      'trong các thư mục kiến thức khác. Gặp câu hỏi ngoài phạm vi sản phẩm/dịch vụ của shop, hoặc câu hỏi ' +
+      'nhạy cảm cần người thật xử lý, trả lời ngắn gọn rồi mời khách bấm nút "Liên hệ Zalo" trên web.' },
+    { loai: 'thu-muc', ten: 'Thông tin shop' },
+    { loai: 'thu-muc', ten: 'Giao hàng' },
+    { loai: 'thu-muc', ten: 'Mặt hàng có phí' },
+    { loai: 'thu-muc', ten: 'Mặt hàng miễn phí' },
+    { loai: 'thu-muc', ten: 'Câu hỏi thường gặp' },
+    { loai: 'thu-muc', ten: 'Chính sách hoàn tiền / bảo hành' },
+    { loai: 'thu-muc', ten: 'Khuyến mãi đang chạy' }
+  ];
+
   // Bản nháp lấy từ nhánh đã đọc sẵn lúc vào trang admin (xem NHANH_ADMIN ở
   // 04B). Chỉ dựng MỘT LẦN — gõ/thêm/xoá/đổi chỗ sau đó chỉ sửa mảng này.
   // taoIdKhoaHoc() tái dùng NGUYÊN từ PHẦN 04E — chỉ là hàm sinh id ngẫu
@@ -30,7 +60,8 @@
     if (!a.aiKtNhap) {
       const goc = (a.duLieu['ai-kien-thuc'] || {}).muc;
       const mang = Array.isArray(goc) ? goc : (goc ? Object.keys(goc).map(function(k){ return goc[k]; }) : []);
-      a.aiKtNhap = mang.map(function(m){
+      const nguon = mang.length ? mang : AI_KT_KHUNG_GOI_Y;
+      a.aiKtNhap = nguon.map(function(m){
         return { id: m.id || taoIdKhoaHoc(), loai: m.loai === 'thu-muc' ? 'thu-muc' : 'truong',
           ten: m.ten || '', noiDung: m.noiDung || '' };
       });
@@ -52,7 +83,8 @@
           'phong & lưu ý", "Thông tin shop", "Giao hàng", "Mặt hàng có phí/miễn phí", "Câu hỏi thường ' +
           'gặp"...). Một TRƯỜNG thuộc về THƯ MỤC GẦN NHẤT đứng phía trên nó — kéo một trường lên/xuống qua ' +
           'ranh giới thư mục là chuyển nó sang thư mục khác luôn, không cần thao tác gì thêm. Trường bỏ ' +
-          'trống thì AI bỏ qua, không đưa vào.</p>' +
+          'trống thì AI bỏ qua, không đưa vào. Danh sách dưới đây đang là KHUNG GỢI Ý (nếu chưa từng lưu gì) ' +
+          '— sửa tên, sửa nội dung, hoặc xoá thoải mái, chỉ thật sự áp dụng khi bấm "Lưu tất cả".</p>' +
         '<div class="hang-luu-kh">' +
           '<button type="button" class="nut nut-chinh" data-hanh-dong="aikt-luu-tat-ca"' + (dangLuu ? ' disabled' : '') + '>' +
             (dangLuu ? 'Đang lưu…' : 'Lưu tất cả') + '</button>' +

@@ -37,7 +37,6 @@
 
   const MODULE_ADMIN = [
     { ma: 'tong-quan',   ten: 'Tổng quan',              bieuTuong: '◉' },
-    { ma: 'khoa-ai',     ten: 'Khoá AI',                bieuTuong: '🔑' },
     { ma: 'lien-he',     ten: 'Liên hệ và mạng xã hội', bieuTuong: '💬' },
     { ma: 'nhan-tien',   ten: 'Thông tin nhận tiền',    bieuTuong: '🏦' },
     { ma: 'danh-muc',    ten: 'Danh mục sản phẩm',      bieuTuong: '📦' },
@@ -106,13 +105,6 @@
     { truong: 'loiNhanQR',      ten: 'Lời nhắn hiện dưới mã QR', kieu: 'chu',
       goi: 'Chuyển xong chờ khoảng 1 phút nhé',
       ghiChu: 'Để trống thì không hiện gì thêm.' }
-  ];
-
-  const O_KHOA_AI = [
-    { truong: 'khoa',      ten: 'Khoá API', kieu: 'bimat', goi: 'Dán khoá vào đây',
-      ghiChu: 'Khoá này KHÔNG bao giờ đi qua trình duyệt khách. Chỉ máy chủ trung gian đọc nó để gọi AI.' },
-    { truong: 'nhaCungCap', ten: 'Nhà cung cấp', kieu: 'chu', goi: 'anthropic' },
-    { truong: 'model',      ten: 'Tên model',    kieu: 'chu', goi: 'claude-...' }
   ];
 
   // ------------------------------------------------------------- ĐĂNG NHẬP
@@ -197,7 +189,6 @@
   const NHANH_ADMIN = {
     'lien-he':   'thongtinlienhe',
     'nhan-tien': 'thongtinthanhtoan',
-    'khoa-ai':   'admin/khoaAI',
     'kho':       'thongtinkho',
     'danh-muc':  'danhmuc',
     'khoa-hoc':  'khoahoc/lrMobile',
@@ -377,7 +368,6 @@
       'Sửa ở đây là ngoài web đổi theo ngay, không phải deploy lại. Ô nào để trống thì nút tương ứng ngoài web tự ẩn đi.',
       O_LIEN_HE);
     if (ma === 'nhan-tien') return veAdminNhanTien();
-    if (ma === 'khoa-ai')   return veAdminKhoaAI();
     if (ma === 'danh-muc')  return veAdminDanhMuc();
     if (ma === 'don-hang')  return veAdminDonHang();
     if (ma === 'khoa-hoc')  return veAdminKhoaHoc();
@@ -439,13 +429,6 @@
     return veAdminNhomO('nhan-tien', 'Thông tin nhận tiền',
       'Đây là số tài khoản mã QR sẽ trỏ tới. Sửa sai một chữ số là tiền của khách đi lạc, nên soát kỹ trước khi lưu.',
       O_NHAN_TIEN);
-  }
-
-  function veAdminKhoaAI(){
-    return veAdminNhomO('khoa-ai', 'Khoá AI',
-      'Khoá này chỉ máy chủ trung gian đọc để gọi AI. Chatbot ngoài web KHÔNG bao giờ chạm vào nó — ' +
-      'web tĩnh mà gọi thẳng API bằng khoá là biếu khoá cho bất kỳ ai mở tab Network của trình duyệt.',
-      O_KHOA_AI);
   }
 
   // Một nhóm ô cài đặt. Mỗi ô tự lo phần hiển thị, nút Lưu và lời báo của nó.
@@ -515,7 +498,7 @@
     if (khoa === 'nhan-tien') return O_NHAN_TIEN;
     if (khoa === 'khoa-hoc-pc') return O_KHOA_HOC_PC_YOUTUBE;
     if (khoa === 'qua-tang-android') return O_QUA_TANG_ANDROID;
-    return O_KHOA_AI;
+    return [];
   }
 
   // Vẽ lại đúng MỘT ô, không dựng lại cả trang — dựng lại cả trang thì con trỏ

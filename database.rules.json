@@ -10,24 +10,6 @@
       ".read": true,
       ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"
     },
-    "admin": {
-      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
-      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
-      "khoaAI": {
-        "khoa": {
-          ".validate": "newData.isString() && newData.val().length <= 300"
-        },
-        "nhaCungCap": {
-          ".validate": "newData.isString() && newData.val().length <= 40"
-        },
-        "model": {
-          ".validate": "newData.isString() && newData.val().length <= 80"
-        },
-        "$khac": {
-          ".validate": false
-        }
-      }
-    },
     "danhmuc": {
       ".read": true,
       ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')"

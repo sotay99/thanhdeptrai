@@ -656,14 +656,11 @@ if (/o-ma-kich-hoat|data-truong-kich-hoat|Mã kích hoạt/.test(banNoi)) {
     fail('database.rules.json không được có khoá "//" — Firebase hiểu đó là dấu mở chú thích và từ chối cả bộ luật.');
   }
 
-  // Nhánh giữ khoá AI TUYỆT ĐỐI không được cho đọc công khai.
-  {
-    const khoiAdmin = rules.match(/"admin"\s*:\s*\{[\s\S]*?\n    \},?\n/);
-    if (!khoiAdmin) {
-      fail('database.rules.json thiếu nhánh "admin" — nơi giữ khoá API của AI.');
-    } else if (/"\.read"\s*:\s*true/.test(khoiAdmin[0])) {
-      fail('Nhánh "admin" đang cho ĐỌC CÔNG KHAI — khoá API của AI sẽ lộ cho bất kỳ ai.');
-    }
+  // Khoá API của AI KHÔNG được nằm trong Firebase (trang quản trị không còn
+  // mục "Khoá AI" — khoá nạp thẳng vào biến môi trường của máy chủ Cloud Run,
+  // xem 07-ai-chat.js). Rules tuyệt đối không được có một nhánh tên "khoaAI".
+  if (/"khoaAI"\s*:/.test(rules)) {
+    fail('database.rules.json còn nhánh "khoaAI" — khoá API của AI không được lưu trong Firebase nữa.');
   }
 
   // Ba nhánh web khách cần đọc thì phải còn đọc công khai, nếu không nút Zalo

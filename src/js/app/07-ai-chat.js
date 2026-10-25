@@ -111,7 +111,7 @@
     aiChatDocLichSuPhien();
     moModal({
       ma: 'ai-chat',
-      tieuDe: 'Shop',
+      tieuDe: 'Nhắn tin với Shop - giải đáp thắc mắc',
       than: aiChatVeThan(),
       day: '',
       khiVe: function(){
