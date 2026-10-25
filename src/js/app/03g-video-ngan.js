@@ -52,12 +52,19 @@
 
   // ------------------------------------------------------------------ VẼ
 
+  // Video 1 và Video 2 — theo đúng yêu cầu — xem được NGAY tại trang chính
+  // của module, không phải bấm vào tên mới mở modal như các video còn lại:
+  // chèn thẳng khung trình chiếu (veKhungVideo, PHẦN 03B) ngay dưới nút tên
+  // video, dùng NGUYÊN khung đó nên initKhungVideo() nhận diện và canh tỷ lệ
+  // được luôn (xem render(), PHẦN 02, nơi gọi initKhungVideo() cho module này).
   function veModuleVideoNgan(){
     const vn = state.videoNgan;
     if (!vn.daTai && !vn.dangTai) taiVideoNgan();
     const so = soThuTuKhoaHoc(vn.muc);
     const dsHtml = vn.muc.map(function(m, i){
-      return veTheBaiHoc(Object.assign({}, m, { soThuTu: so[i] }), 'mo-video-ngan', 'Video');
+      const the = veTheBaiHoc(Object.assign({}, m, { soThuTu: so[i] }), 'mo-video-ngan', 'Video');
+      if (i >= 2) return the;
+      return the + '<div class="video-ngan-xem-ngay">' + veKhungVideo(m.linkVideo, 'doc') + '</div>';
     }).join('');
     return '' +
       '<div class="khoa-hoc-mobile video-ngan">' +

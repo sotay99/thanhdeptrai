@@ -212,6 +212,11 @@
 .admin-nhap.bi-mat { letter-spacing: .06em; color: var(--chu-diu); }
 .admin-nhap[readonly] { background: var(--nen); cursor: default; }
 
+/* Ô "văn bản" nhiều dòng (ví dụ Mô tả giảng viên) — chiếm cả hàng, không co
+   lại 200px như ô một dòng. */
+.admin-hang-nhap-van-ban { align-items: flex-start; }
+.admin-nhap-van-ban { flex: 1 1 100%; min-height: 90px; resize: vertical; line-height: 1.5; }
+
 .admin-bao {
   display: block;
   margin-top: 8px;

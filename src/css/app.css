@@ -1105,6 +1105,40 @@
   .hang-nut-lien-he .nut { flex: 1 1 auto; }
 }
 
+/* Khối "Thông tin giảng viên" ở cuối bảng Liên hệ — xem veKhoiGiangVien()
+   PHẦN 02. Khung riêng, viền xanh mảnh để tách khỏi danh sách liên hệ phía
+   trên dù không có hay có dữ liệu liên hệ nào. */
+.khoi-giang-vien {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vien);
+}
+.khoi-giang-vien-tieu-de { font-size: 15px; margin-bottom: 10px; }
+.khoi-giang-vien-than {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--vien);
+  border-radius: var(--bo-the);
+  background: var(--the-2);
+}
+.khoi-giang-vien-anh {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--vien-sang);
+}
+.khoi-giang-vien-chu { flex: 1 1 auto; min-width: 0; }
+.khoi-giang-vien-ten { font-weight: 700; margin: 0; }
+.khoi-giang-vien-chuc-danh { color: var(--xanh); font-size: 12.5px; margin: 3px 0 0; }
+.khoi-giang-vien-mo-ta { color: var(--chu-diu); font-size: 13px; line-height: 1.6; margin: 8px 0 0; }
+@media (max-width: 480px) {
+  .khoi-giang-vien-than { flex-direction: column; align-items: center; text-align: center; }
+}
+
 /* Nút mở bảng Đặc quyền, đặt ngay trên khung quà tặng cuối module — tông vàng
    để tách khỏi cả mảng xanh lá của khu quà lẫn mảng xanh dương của lưới hàng. */
 .nut-dac-quyen {
@@ -1119,6 +1153,18 @@
 
 /* Khung quà tặng đứng ngay dưới nút Đặc quyền nên không cần chừa thêm ở trên */
 .nut-dac-quyen + .khu-qua-tang { margin-top: 10px; }
+
+/* Nút "Sự công nhận của khách hàng" — tông xanh thương hiệu, tách khỏi
+   mảng vàng (Đặc quyền) và mảng đỏ (Hoàn tiền) đứng ngay trên/dưới nó. */
+.nut-cong-nhan {
+  margin-top: 9px;
+  border-color: rgba(49, 168, 255, .5);
+  background: linear-gradient(180deg, rgba(49, 168, 255, .17), rgba(49, 168, 255, .06));
+  color: var(--xanh);
+  font-weight: 700;
+  min-height: 44px;
+}
+.nut-cong-nhan:hover { border-color: var(--xanh); background: rgba(49, 168, 255, .26); }
 
 /* Khung cam kết giao hàng trong bảng "Xác nhận đơn hàng" — nền đỏ nhạt để bật
    hẳn khỏi phần còn lại của bảng, và nhún nhảy theo đúng kiểu nút Mua hàng
@@ -2031,6 +2077,10 @@
 /* Bài đứng trước chương đầu tiên (không thuộc chương nào) hiện thẳng ra
    ngoài khối sổ — vẫn cần khoảng cách với thẻ phía trên/dưới. */
 .danh-sach-chuong > .the-bai-hoc { margin-bottom: 0; }
+
+/* Video 1 và 2 của module "Xem video ngắn" — khung xem đặt NGAY dưới nút tên
+   video, không cần bấm mở modal (xem PHẦN 03G). */
+.video-ngan-xem-ngay { margin-top: -2px; padding: 0 2px; }
 
 /* Modal xem video bài học — BAO TRỌN màn hình, khác hẳn mọi modal khác của
    web (vốn có viền và chừa lề). Chọn theo tiền tố mã modal thay vì thêm một
