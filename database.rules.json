@@ -216,6 +216,31 @@
         }
       }
     },
+    "thongKeTruyCap": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
+      "luot": {
+        ".indexOn": ["ngay", "thietBi"],
+        "$ma": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['thietBi', 'ngay', 'luc'])",
+          "thietBi": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "ngay": {
+            ".validate": "newData.isString() && newData.val().length === 10"
+          },
+          "td": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "luc": {
+            ".validate": "newData.isNumber()"
+          },
+          "$khac": {
+            ".validate": false
+          }
+        }
+      }
+    },
     "quaTangAndroid": {
       ".read": true,
       ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",

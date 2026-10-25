@@ -48,6 +48,7 @@
     { ma: 'khoa-photoshop', ten: 'Khoá Photoshop', bieuTuong: '✦' },
     { ma: 'cong-nhan', ten: 'Sự công nhận của khách hàng', bieuTuong: '★' },
     { ma: 'thong-ke-app-vip', ten: 'Thống kê đặt mua App VIP', bieuTuong: '📊' },
+    { ma: 'thong-ke-truy-cap', ten: 'Thống kê truy cập', bieuTuong: '📈' },
     { ma: 'yeu-cau-tu-van', ten: 'Yêu cầu tư vấn', bieuTuong: '💬' },
     { ma: 'ai-kien-thuc', ten: 'Huấn luyện AI', bieuTuong: '🧠' }
   ];
@@ -379,6 +380,7 @@
     if (ma === 'khoa-photoshop') return veAdminKhoaPhotoshop();
     if (ma === 'cong-nhan') return veAdminCongNhan();
     if (ma === 'thong-ke-app-vip') return veAdminThongKeAppVip();
+    if (ma === 'thong-ke-truy-cap') return veAdminThongKeTruyCap();
     if (ma === 'yeu-cau-tu-van') return veAdminYeuCauTuVan();
     if (ma === 'ai-kien-thuc') return veAdminAiKienThuc();
     return veAdminChuaLam(ma);
@@ -528,6 +530,9 @@
     if (ma === 'don-hang' && !khoDon().daTai && !khoDon().dangTai) taiDanhSachDon();
     if (ma === 'thong-ke-app-vip' && !state.admin.thongKeAppVip.daTai && !state.admin.thongKeAppVip.dangTai) {
       taiThongKeAppVip();
+    }
+    if (ma === 'thong-ke-truy-cap' && !state.admin.thongKeTruyCap.daTai && !state.admin.thongKeTruyCap.dangTai) {
+      taiThongKeTruyCap();
     }
     if (ma === 'yeu-cau-tu-van' && !state.admin.yeuCauTuVan.daTai && !state.admin.yeuCauTuVan.dangTai) {
       taiYeuCauTuVan();

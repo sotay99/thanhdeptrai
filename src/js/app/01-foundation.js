@@ -233,6 +233,11 @@
       // congNhanNhap — bản nháp ảnh công nhận khách hàng, phần 04I tự dựng khi cần tới
       // khoaPhotoshopNhap — bản nháp chương/bài khoá Photoshop, phần 04H tự dựng khi cần tới
       thongKeAppVip: { daTai: false, dangTai: false, hang: [] },  // mục "Thống kê đặt mua App VIP", phần 04J
+      // mục "Thống kê truy cập", phần 04M — ngayChon mặc định là hôm nay (giờ
+      // máy khách). ngayHomNayDiaPhuong() tái dùng NGUYÊN từ PHẦN 08 — hàm
+      // khai báo được "cất" lên đầu cả bản nối (hoisting) nên gọi được từ
+      // đây dù vị trí vật lý nằm ở phần cuối file.
+      thongKeTruyCap: { daTai: false, dangTai: false, luot: [], ngayChon: ngayHomNayDiaPhuong() },
       yeuCauTuVan: { daTai: false, dangTai: false, ds: [] }  // mục "Yêu cầu tư vấn", phần 04K
     },
     // Module "Khoá học chỉnh màu Lightroom điện thoại" ở trang bán hàng — đọc

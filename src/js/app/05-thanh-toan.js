@@ -719,6 +719,7 @@
     if (hanhDong === 'cn-xuong') { adminCnDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'cn-luu-tat-ca') { adminCnLuuTatCa(); return; }
     if (hanhDong === 'tk-app-vip-tai-lai') { adminThongKeAppVipTaiLai(); return; }
+    if (hanhDong === 'tk-truy-cap-tai-lai') { adminThongKeTruyCapTaiLai(); return; }
     if (hanhDong === 'tv-tai-lai') { adminTuVanTaiLai(); return; }
     if (hanhDong === 'nhap-nhay-module') { goiYMoModule(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'gui-yeu-cau-hoan-tien') { guiYeuCauHoanTien(); return; }
@@ -737,6 +738,7 @@
     if (adminGoCongNhan(dich)) return;
     if (adminGoKhoaHocMayTinh(dich)) return;
     if (adminDonGoTim(dich)) return;
+    if (dich.getAttribute('data-tk-truy-cap-ngay') !== null) { adminThongKeTruyCapDoiNgay(dich.value); return; }
     const truongHoanTien = dich.getAttribute('data-truong-hoan-tien');
     if (truongHoanTien) { capNhatTruongHoanTien(truongHoanTien, dich.value); return; }
     const truongTuVan = dich.getAttribute('data-truong-tu-van');

@@ -72,6 +72,54 @@ const LOTTIE_CHAO_DU_LIEU =
     });
   }
 
+  // ------------------------- THỐNG KÊ TRUY CẬP (PHẦN 04M trong /admin) -----
+  //
+  // Mỗi lượt tải trang (web tĩnh — mọi trang, kể cả /admin) ghi THÊM một
+  // dòng thô {thietBi, ngay, td, luc} vào thongKeTruyCap/luot — PUSH, không
+  // đọc lại rồi gộp ở phía khách (đúng kiểu ghiThongKeDatMuaAppVip, PHẦN
+  // 03E): khách chỉ cần quyền GHI, không cần quyền ĐỌC công khai. Việc gộp
+  // "ngày nào có bao nhiêu thiết bị, mỗi thiết bị bao nhiêu lần" làm ở admin
+  // lúc hiển thị. maThietBi() tái dùng NGUYÊN từ PHẦN 03B — mã ngẫu nhiên lưu
+  // localStorage, DÙNG CHUNG cho cả thống kê đặt mua App VIP lẫn thống kê
+  // truy cập này, một thiết bị một mã xuyên suốt cả web.
+  function ngayHomNayDiaPhuong(){
+    const d = new Date();
+    const bu = function(n){ return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + bu(d.getMonth() + 1) + '-' + bu(d.getDate());
+  }
+
+  // Gợi ý hệ điều hành/trình duyệt từ User-Agent — CHỈ để admin dễ nhận ra
+  // thiết bị hơn một mã ngẫu nhiên trần trụi, không chính xác tuyệt đối.
+  function doanTrinhDuyet(){
+    const ua = (navigator && navigator.userAgent) || '';
+    let heDieuHanh = 'Khác';
+    if (/iphone/i.test(ua)) heDieuHanh = 'iPhone';
+    else if (/ipad/i.test(ua)) heDieuHanh = 'iPad';
+    else if (/android/i.test(ua)) heDieuHanh = 'Android';
+    else if (/windows/i.test(ua)) heDieuHanh = 'Windows';
+    else if (/macintosh|mac os/i.test(ua)) heDieuHanh = 'Mac';
+    else if (/linux/i.test(ua)) heDieuHanh = 'Linux';
+    let trinhDuyet = 'Khác';
+    if (/edg\//i.test(ua)) trinhDuyet = 'Edge';
+    else if (/opr\/|opera/i.test(ua)) trinhDuyet = 'Opera';
+    else if (/chrome\//i.test(ua)) trinhDuyet = 'Chrome';
+    else if (/firefox\//i.test(ua)) trinhDuyet = 'Firefox';
+    else if (/safari\//i.test(ua)) trinhDuyet = 'Safari';
+    return heDieuHanh + ' · ' + trinhDuyet;
+  }
+
+  function ghiNhanTruyCap(){
+    if (!firebaseSanSang || !rtdb) return;
+    rtdb.ref('thongKeTruyCap/luot').push().set({
+      thietBi: maThietBi(),
+      ngay: ngayHomNayDiaPhuong(),
+      td: doanTrinhDuyet(),
+      luc: Date.now()
+    }).catch(function(e){
+      console.error('Không ghi được thống kê truy cập:', e);
+    });
+  }
+
   function boot(){
     ganFavicon();
     state.trang = docDuongDan();
@@ -100,6 +148,7 @@ const LOTTIE_CHAO_DU_LIEU =
     if (state.trang === 'admin') chuanBiAdmin();
     initAiChat();
     veLottieChao();
+    ghiNhanTruyCap();
   }
 
   boot();
