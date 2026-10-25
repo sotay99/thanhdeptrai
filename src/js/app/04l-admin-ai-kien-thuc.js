@@ -485,8 +485,14 @@
         '<div class="hang-luu-kh">' +
           '<button type="button" class="nut nut-chinh" data-hanh-dong="aikt-luu-tat-ca"' + (dangLuu ? ' disabled' : '') + '>' +
             (dangLuu ? 'Đang lưu…' : 'Lưu tất cả') + '</button>' +
+          '<button type="button" class="nut nut-vien" data-hanh-dong="aikt-nap-khung-goi-y">' +
+            'Nạp khung gợi ý mới nhất</button>' +
           '<span class="admin-bao' + (vuaLuu ? ' hien' : '') + '">' + (vuaLuu ? '✓ Đã lưu' : '') + '</span>' +
         '</div>' +
+        '<p class="admin-ghi-chu" style="margin-top:6px">Nút "Nạp khung gợi ý mới nhất" thay TOÀN BỘ bản nháp ' +
+          'đang xem bằng khung đề xuất mới nhất (dùng khi Claude vừa soạn thêm nội dung nhưng bạn đã lưu dữ ' +
+          'liệu cũ từ trước nên không tự hiện) — KHÔNG đụng gì tới dữ liệu thật trên Firebase cho tới khi bạn ' +
+          'tự bấm "Lưu tất cả" lần nữa. Bấm nhầm thì cứ tải lại trang là về đúng dữ liệu đã lưu.</p>' +
       '</header>' +
       '<div class="quan-ly-ai-kt" data-quan-ly-aikt>' + veDanhSachAiKt(n, state.admin.aiKtMoThuMuc || null) + '</div>';
   }
@@ -580,6 +586,22 @@
   }
 
   // ---------------------------------------------------------------- HÀNH ĐỘNG
+
+  // Nạp khung gợi ý mới nhất ĐÈ LÊN bản nháp đang xem — dùng khi admin đã
+  // "Lưu tất cả" một lần với khung cũ trước đó nên khung gợi ý mới (Claude
+  // vừa soạn thêm) không tự hiện nữa (aiKtNhap() chỉ dùng khung gợi ý lúc
+  // Firebase CÒN TRỐNG). KHÔNG ghi gì xuống Firebase — chỉ thay bản nháp
+  // trong bộ nhớ, admin vẫn phải tự bấm "Lưu tất cả" mới áp dụng thật.
+  function adminAiKtNapKhungGoiY(){
+    if (!window.confirm('Thay TOÀN BỘ bản nháp đang xem bằng khung gợi ý mới nhất? ' +
+      'Chưa lưu gì xuống Firebase — chỉ áp dụng thật khi bạn bấm "Lưu tất cả" sau đó.')) return;
+    state.admin.aiKtNhap = AI_KT_KHUNG_GOI_Y.map(function(m){
+      return { id: m.id || taoIdKhoaHoc(), loai: m.loai === 'thu-muc' ? 'thu-muc' : 'truong',
+        ten: m.ten || '', noiDung: m.noiDung || '', cha: m.cha || null };
+    });
+    state.admin.aiKtMoThuMuc = null;
+    capNhatQuanLyAiKt();
+  }
 
   // Mở xem bên trong một thư mục (id rỗng = quay về gốc). Thư mục/trường
   // thêm mới sau đó sẽ là CON của đúng thư mục đang mở này.

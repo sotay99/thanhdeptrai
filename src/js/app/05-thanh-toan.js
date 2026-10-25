@@ -651,6 +651,7 @@
     if (hanhDong === 'aikt-len') { adminAiKtDoiCho(nutHanhDong.getAttribute('data-dong'), -1); return; }
     if (hanhDong === 'aikt-xuong') { adminAiKtDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'aikt-luu-tat-ca') { adminAiKtLuuTatCa(); return; }
+    if (hanhDong === 'aikt-nap-khung-goi-y') { adminAiKtNapKhungGoiY(); return; }
     if (hanhDong === 'aikt-mo-thu-muc') { adminAiKtMoThuMuc(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'chuong-doi-pc') { doiChuongKhoaHocMayTinh(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'mo-bai-hoc-pc') { moModalBaiHocMayTinh(nutHanhDong.getAttribute('data-id')); return; }
