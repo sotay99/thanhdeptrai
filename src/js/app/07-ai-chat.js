@@ -250,7 +250,8 @@
         aiChatCuonXuongCuoi();
         const o = document.getElementById('ai-chat-o-nhap');
         if (o) {
-          o.focus();
+          // KHÔNG tự focus lúc mở modal — khách bấm vào ô nhập mới hiện con
+          // trỏ nhấp nháy, theo đúng yêu cầu.
           o.addEventListener('keydown', function(su){
             if (su.key === 'Enter' && (su.ctrlKey || su.metaKey)) {
               su.preventDefault();
