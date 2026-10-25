@@ -232,8 +232,35 @@
             // Enter thường: để trình duyệt tự xuống dòng trong textarea, không chặn.
           });
         }
+        // Nút xoá toàn bộ trò chuyện — đặt đối xứng với nút X (PHẦN chung,
+        // 02-shell-nav.js) ở góc trên bên trái, chèn thẳng vào DOM vì moModal()
+        // dùng chung không có chỗ khai riêng cho nút phụ ở đầu bảng.
+        const khungModal = document.querySelector('.modal-lop[data-ma-modal="ai-chat"] .modal');
+        if (khungModal && !khungModal.querySelector('.ai-chat-nut-xoa')) {
+          const nutXoa = document.createElement('button');
+          nutXoa.type = 'button';
+          nutXoa.className = 'ai-chat-nut-xoa';
+          nutXoa.setAttribute('data-hanh-dong', 'ai-chat-xoa-lich-su');
+          nutXoa.setAttribute('aria-label', 'Xoá toàn bộ trò chuyện');
+          nutXoa.innerHTML = '🗑';
+          khungModal.insertBefore(nutXoa, khungModal.firstChild);
+        }
       }
     });
+  }
+
+  // Xoá sạch lịch sử trò chuyện — cả màn hình (bong bóng) lẫn sessionStorage.
+  // AI mất hết ngữ cảnh cũ, coi như cuộc trò chuyện mới hoàn toàn vì lần gọi
+  // kế tiếp gửi lên server một mảng lịch sử RỖNG.
+  function aiChatXoaLichSu(){
+    if (!aiChatState.lichSu.length) return; // không có gì để xoá, khỏi hỏi
+    if (!window.confirm('Xoá toàn bộ cuộc trò chuyện này? AI sẽ không còn nhớ gì đã nói trước đó.')) return;
+    if (aiChatState.dieuKhien) { aiChatState.dieuKhien.abort(); aiChatState.dieuKhien = null; }
+    aiChatState.dangGui = false;
+    aiChatState.lichSu = [];
+    aiChatLuuLichSuPhien();
+    const doan = document.getElementById('ai-chat-doan');
+    if (doan) doan.innerHTML = '';
   }
 
   // Bong bóng của người dùng cho phép sửa trực tiếp (contenteditable) — sửa
@@ -388,6 +415,7 @@
       const hanhDong = nut.getAttribute('data-hanh-dong');
       if (hanhDong === 'ai-chat-mo') { aiChatMo(); return; }
       if (hanhDong === 'ai-chat-gui') { aiChatGuiTinNhan(); return; }
+      if (hanhDong === 'ai-chat-xoa-lich-su') { aiChatXoaLichSu(); return; }
     });
     // Lưu lại câu đã sửa khi khách bấm ra ngoài bong bóng người dùng.
     document.addEventListener('focusout', function(su){

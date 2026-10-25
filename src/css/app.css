@@ -2544,6 +2544,29 @@ body.trang-chu-nen {
   height: 62vh;
   padding: 0;
 }
+/* Tiêu đề bảng chat chừa thêm chỗ bên trái cho nút thùng rác, đối xứng với
+   padding-right có sẵn chừa chỗ cho nút X (modal-x, dùng chung mọi bảng). */
+.modal-lop[data-ma-modal="ai-chat"] .modal-dau { padding-left: 56px; }
+.ai-chat-nut-xoa {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 14px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--bo);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--chu-mo);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: .15s;
+}
+.ai-chat-nut-xoa:hover { background: var(--do); border-color: var(--do); color: #fff; }
 .ai-chat-doan {
   flex: 1 1 auto;
   overflow-y: auto;
