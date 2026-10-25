@@ -451,34 +451,3 @@
     aiChatChuanBiAppCheck();
   }
 
-  function boot(){
-    ganFavicon();
-    state.trang = docDuongDan();
-    state.nhanHang.maNhanHang = docMaNhanHangTrenDuongDan();
-    state.module = docHash();
-    state.hieuUngVaoModule = true;   // lần mở trang đầu tiên cũng có hiệu ứng trôi
-    if (state.module === 'image-editor-pro') hienCanhBaoImageEditorPro();
-    ganSuKien();
-    theoDoiNutCuonModal();   // mọi bảng phụ, kể cả bảng viết sau này, tự có 2 nút cuộn
-    render();
-    doChoThanhDay();
-    // Nạp trước thông tin chuyển khoản để lúc khách mở modal thanh toán là có
-    // sẵn. Hỏng thì bỏ qua — modal vẫn mở được, chỉ báo chưa lấy được thông tin.
-    taiThongTinCK();
-    taiThongTinLienHe();
-    // Nạp trước link Remini/XingTu (nhánh quaTangAndroid) — cần ở CẢ trang
-    // /sanpham (quà tặng kèm theo sp1, PHẦN 03B) lẫn module "Quà tặng
-    // Android" (PHẦN 03F), nên nạp chung một lần ở đây thay vì đợi vào đúng
-    // module kia mới nạp.
-    taiLinkQuaTangAndroid();
-    // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
-    // không hỏi tới nên không phải tải.
-    if (state.trang === 'sanpham') moTrangNhanHang();
-    // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
-    // khách mua hàng không phải tải một byte nào của phần quản trị.
-    if (state.trang === 'admin') chuanBiAdmin();
-    initAiChat();
-  }
-
-  boot();
-})();
