@@ -42,12 +42,79 @@
       'đối thủ cạnh tranh. Không tự ý cam kết hoàn tiền, đổi trả hay khuyến mãi nào ngoài nội dung đã có ' +
       'trong các thư mục kiến thức khác. Gặp câu hỏi ngoài phạm vi sản phẩm/dịch vụ của shop, hoặc câu hỏi ' +
       'nhạy cảm cần người thật xử lý, trả lời ngắn gọn rồi mời khách bấm nút "Liên hệ Zalo" trên web.' },
+    { loai: 'thu-muc', ten: 'Tổng quan về trang web' },
+    { loai: 'truong', ten: 'Bố cục và UI/UX', noiDung:
+      'thanhdeptrai.vn là một ứng dụng một trang (SPA) — chuyển module bằng #hash trên URL, không tải lại ' +
+      'trang. Bố cục chung: góc trên bên trái là nút ba gạch (☰) mở/đóng menu — menu liệt kê toàn bộ module ' +
+      'của web; giữa đầu trang là thanh tiêu đề "Shop Thànhđẹptrai.vn", bấm vào đưa về Trang chủ; thân trang ' +
+      'là nội dung module đang mở; góc dưới bên phải là nút nổi hình bong bóng chat 💬 (bồng bềnh, chớp mờ-rõ) ' +
+      '— chính là nút mở cuộc trò chuyện với AI "Shop" (chatbot này), khách kéo được nút này lên/xuống dọc ' +
+      'mép phải màn hình. Riêng hai module "Trọn bộ sản phẩm VIP" và "Mua App VIP Pro" có thêm thanh neo đáy ' +
+      'màn hình hiện số sản phẩm đã chọn/giá và nút "Mua hàng".' },
+    { loai: 'truong', ten: 'Danh sách module', noiDung:
+      'Module kiểu "trang" (chiếm cả màn hình, đổi hẳn nội dung): Trang chủ (landing page) · Trọn bộ sản phẩm ' +
+      'VIP cho Lightroom, Photoshop và Thiết kế (lưới thẻ sản phẩm, chọn nhiều món mua gộp) · Mua App VIP Pro ' +
+      'giá rẻ (chọn app, không qua giỏ hàng tính giá, mời khách tự nhắn Zalo) · Quà tặng cho người dùng ' +
+      'Android (4 link tải app miễn phí: Remini, XingTu, PicsArt, SnapEdit) · Khoá học Lightroom điện thoại · ' +
+      'Khoá học Lightroom máy tính · Khoá học Photoshop (đều miễn phí, xem video bài học qua modal) · Xem ' +
+      'video ngắn (dạng TikTok, video 1 và 2 xem được ngay tại trang, các video sau phải bấm mở modal) · ' +
+      'Image Editor Pro (công cụ chỉnh ảnh ngay trên web). Module kiểu "modal" (bấm vào hiện bảng nổi giữa ' +
+      'màn hình, không rời trang đang xem): Liên hệ và Thông tin về Shop · Sự công nhận của khách hàng · Yêu ' +
+      'cầu hoàn tiền · Đặc quyền dành cho khách đã từng mua hàng · Điều khoản sử dụng và điều kiện · Bảo mật ' +
+      'và quyền riêng tư.' },
+    { loai: 'truong', ten: 'Hai trang riêng ngoài hệ thống module', noiDung:
+      'Trang nhận hàng (địa chỉ /sanpham): KHÔNG phải nơi bán hàng — đây là địa chỉ riêng gửi cho khách qua ' +
+      'email/Zalo SAU KHI đã mua, nơi khách bấm nhận link/file sản phẩm thật. Trang quản trị (địa chỉ /admin): ' +
+      'chỉ chủ shop đăng nhập Google mới vào được, dùng để sửa thông tin liên hệ, giá, danh mục sản phẩm, đơn ' +
+      'hàng, nội dung khoá học và chính mục "Huấn luyện AI" này — khách mua hàng không có quyền vào trang này.' },
     { loai: 'thu-muc', ten: 'Thông tin shop' },
+    { loai: 'truong', ten: 'Giới thiệu chung', noiDung:
+      'Thànhđẹptrai.vn là shop bán sản phẩm số: preset/phần mềm chỉnh ảnh Lightroom, Photoshop, các khoá học ' +
+      'chỉnh ảnh (Lightroom điện thoại, Lightroom máy tính, Photoshop), các gói "Trọn bộ sản phẩm VIP" và ' +
+      '"App VIP Pro giá rẻ". Ngoài ra còn có quà tặng hoàn toàn miễn phí cho người dùng Android (Remini, ' +
+      'XingTu, PicsArt, SnapEdit). Khách muốn liên hệ shop (email, Zalo, Telegram, WhatsApp, Fanpage...) thì ' +
+      'bấm vào nút "☎ Liên hệ và Thông tin về Shop" ở thanh menu bên trái của web — ở đó có đầy đủ thông tin ' +
+      'liên hệ thật của shop. AI không tự đưa ra số điện thoại/email cụ thể, luôn hướng khách bấm đúng nút đó.' },
     { loai: 'thu-muc', ten: 'Giao hàng' },
     { loai: 'thu-muc', ten: 'Mặt hàng có phí' },
     { loai: 'thu-muc', ten: 'Mặt hàng miễn phí' },
     { loai: 'thu-muc', ten: 'Câu hỏi thường gặp' },
     { loai: 'thu-muc', ten: 'Chính sách hoàn tiền / bảo hành' },
+    { loai: 'thu-muc', ten: 'Điều khoản sử dụng và điều kiện' },
+    { loai: 'truong', ten: 'Nội dung điều khoản', noiDung:
+      'Việc khách truy cập và mua hàng tại thanhdeptrai.vn đồng nghĩa đã đọc, hiểu và đồng ý các điều khoản ' +
+      'sau (đây là bản tóm tắt — bản đầy đủ luôn hiển thị tại mục "Điều khoản sử dụng và điều kiện" trên web):\n' +
+      '1. Sản phẩm số và hình thức giao hàng — toàn bộ sản phẩm (preset, phần mềm, khoá học...) đều là sản ' +
+      'phẩm số, giao tự động qua email ngay sau khi nhận được thanh toán, hoặc qua Zalo/SMS nếu khách không ' +
+      'để lại email. Mỗi khách nhận một đường dẫn lấy hàng riêng, không dùng chung với ai khác.\n' +
+      '2. Giá bán và thanh toán — giá hiển thị trên web là giá cuối cùng. Thanh toán qua chuyển khoản bằng mã ' +
+      'QR; shop không lưu và không yêu cầu thông tin thẻ hay tài khoản ngân hàng của khách.\n' +
+      '3. Chính sách hoàn tiền — hoàn 100% nếu khách không hài lòng trong 15 ngày đầu sử dụng, không hỏi lý ' +
+      'do dài dòng. Khách gửi yêu cầu qua mục "Yêu cầu hoàn tiền" ở menu bên trái.\n' +
+      '4. Quyền sử dụng sản phẩm — chỉ dùng cho mục đích cá nhân, tuyệt đối không chia sẻ, bán lại hay phân ' +
+      'phối cho bên thứ ba.\n' +
+      '5. Giới hạn trách nhiệm — một số sản phẩm liên quan phần mềm bên thứ ba (Adobe Lightroom, Photoshop...); ' +
+      'shop không chịu trách nhiệm về lỗi phát sinh từ chính các ứng dụng gốc đó, chỉ chịu trách nhiệm về ' +
+      'preset/khoá học do shop cung cấp.\n' +
+      '6. Shop có quyền cập nhật điều khoản bất cứ lúc nào, bản mới nhất luôn hiển thị tại đúng mục đó trên web.' },
+    { loai: 'thu-muc', ten: 'Bảo mật và quyền riêng tư' },
+    { loai: 'truong', ten: 'Nội dung chính sách bảo mật', noiDung:
+      'Shop tôn trọng quyền riêng tư của khách hàng (bản đầy đủ luôn hiển thị tại mục "Bảo mật và quyền riêng ' +
+      'tư" trên web):\n' +
+      '1. Thông tin thu thập — chỉ khi khách chủ động đặt mua hàng hoặc gửi yêu cầu hoàn tiền, shop mới ghi ' +
+      'nhận: email, số Zalo/điện thoại, và nội dung khách tự nhập vào biểu mẫu. Trình duyệt khách tự sinh một ' +
+      'mã thiết bị ngẫu nhiên (lưu cục bộ, không định danh cá nhân) để nhận đúng hàng đã mua. Shop không bao ' +
+      'giờ thu thập mật khẩu hay thông tin thẻ/tài khoản ngân hàng của khách.\n' +
+      '2. Mục đích sử dụng — chỉ dùng để giao sản phẩm, hỗ trợ và liên hệ khi cần thiết, không dùng vào mục ' +
+      'đích nào khác.\n' +
+      '3. Lưu trữ và bảo mật — dữ liệu lưu trên Firebase Realtime Database của Google, chỉ tài khoản đã xác ' +
+      'thực của chủ shop mới truy cập được.\n' +
+      '4. Chia sẻ với bên thứ ba — shop không bán, không chia sẻ thông tin khách cho bất kỳ bên nào, trừ khi ' +
+      'pháp luật yêu cầu.\n' +
+      '5. Quyền của khách hàng — khách có quyền yêu cầu xem, chỉnh sửa hoặc xoá thông tin của mình bất cứ lúc ' +
+      'nào, chỉ cần liên hệ trực tiếp với shop.\n' +
+      '6. Lưu trữ cục bộ trên trình duyệt — web chỉ lưu đúng một mã thiết bị ngẫu nhiên để nhận đúng sản phẩm ' +
+      'đã mua, không phải cookie theo dõi quảng cáo hay thu thập hành vi duyệt web.' },
     { loai: 'thu-muc', ten: 'Khuyến mãi đang chạy' }
   ];
 
