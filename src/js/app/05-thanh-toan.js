@@ -645,6 +645,12 @@
     if (hanhDong === 'kh-xuong') { adminKhDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
     if (hanhDong === 'kh-xem-truoc') { adminKhXemTruocVideo(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'kh-luu-tat-ca') { adminKhLuuTatCa(); return; }
+    if (hanhDong === 'aikt-them-thu-muc') { adminAiKtThemThuMuc(); return; }
+    if (hanhDong === 'aikt-them-truong') { adminAiKtThemTruong(); return; }
+    if (hanhDong === 'aikt-xoa') { adminAiKtXoaDong(nutHanhDong.getAttribute('data-dong')); return; }
+    if (hanhDong === 'aikt-len') { adminAiKtDoiCho(nutHanhDong.getAttribute('data-dong'), -1); return; }
+    if (hanhDong === 'aikt-xuong') { adminAiKtDoiCho(nutHanhDong.getAttribute('data-dong'), 1); return; }
+    if (hanhDong === 'aikt-luu-tat-ca') { adminAiKtLuuTatCa(); return; }
     if (hanhDong === 'chuong-doi-pc') { doiChuongKhoaHocMayTinh(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'mo-bai-hoc-pc') { moModalBaiHocMayTinh(nutHanhDong.getAttribute('data-id')); return; }
     if (hanhDong === 'bai-hoc-chuyen-pc') {
@@ -723,6 +729,7 @@
     if (!dich || !dich.getAttribute) return;
     if (adminGoDanhMuc(dich)) return;
     if (adminGoKhoaHoc(dich)) return;
+    if (adminGoAiKt(dich)) return;
     if (adminGoVideoNgan(dich)) return;
     if (adminGoKhoaPhotoshop(dich)) return;
     if (adminGoCongNhan(dich)) return;

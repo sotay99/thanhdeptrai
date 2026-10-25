@@ -49,7 +49,8 @@
     { ma: 'khoa-photoshop', ten: 'Khoá Photoshop', bieuTuong: '✦' },
     { ma: 'cong-nhan', ten: 'Sự công nhận của khách hàng', bieuTuong: '★' },
     { ma: 'thong-ke-app-vip', ten: 'Thống kê đặt mua App VIP', bieuTuong: '📊' },
-    { ma: 'yeu-cau-tu-van', ten: 'Yêu cầu tư vấn', bieuTuong: '💬' }
+    { ma: 'yeu-cau-tu-van', ten: 'Yêu cầu tư vấn', bieuTuong: '💬' },
+    { ma: 'ai-kien-thuc', ten: 'Huấn luyện AI', bieuTuong: '🧠' }
   ];
 
   // --------------------------------------------------------- KHAI BÁO CÁC Ô
@@ -204,7 +205,8 @@
     'qua-tang-android': 'quaTangAndroid',
     'video-ngan': 'videoNgan',
     'khoa-photoshop': 'khoahoc/photoshop',
-    'cong-nhan': 'congNhan'
+    'cong-nhan': 'congNhan',
+    'ai-kien-thuc': 'aiKienThuc'
   };
 
   function taiCaiDatAdmin(){
@@ -388,6 +390,7 @@
     if (ma === 'cong-nhan') return veAdminCongNhan();
     if (ma === 'thong-ke-app-vip') return veAdminThongKeAppVip();
     if (ma === 'yeu-cau-tu-van') return veAdminYeuCauTuVan();
+    if (ma === 'ai-kien-thuc') return veAdminAiKienThuc();
     return veAdminChuaLam(ma);
   }
 

@@ -933,3 +933,6 @@
 .dong-khoa-hoc .nut-xoa-dong { flex: 0 0 auto; align-self: flex-start; }
 
 .hang-them-kh { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+
+/* ---------------------------------------------------- MODULE "HUẤN LUYỆN AI" */
+.dong-truong-aikt .admin-nhap-van-ban { flex: 1 1 100%; }
