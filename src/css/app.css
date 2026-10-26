@@ -2135,6 +2135,24 @@
   justify-content: center;
 }
 
+/* "Xem Toàn màn hình" / "Bỏ Toàn màn hình" (PHẦN 03B) — CHỈ áp dụng modal
+   phát video (bai-hoc-*), KHÔNG đụng anh-cong-nhan-* (xem ảnh, không có vấn
+   đề ghim/không ghim này). Bỏ ghim: .modal chuyển từ flex column CAO ĐÚNG
+   100% VIEWPORT (ghim cứng modal-dau/modal-day) sang khối thường, cao theo
+   ĐÚNG nội dung — video dọc quá dài thì đẩy các thành phần đó ra khỏi khung
+   nhìn, .modal-lop (vốn đã overflow: auto) tự cho cuộn cả bảng. */
+.modal-lop.khong-ghim-video[data-ma-modal^="bai-hoc-"] .modal {
+  height: auto;
+  min-height: 100%;
+  display: block;
+}
+.modal-lop.khong-ghim-video[data-ma-modal^="bai-hoc-"] .modal-than {
+  flex: none;
+  display: block;
+}
+
+.nut-ghim-video.dang-ghim { color: var(--xanh); }
+
 /* ============================================================================
    MODULE "SỰ CÔNG NHẬN CỦA KHÁCH HÀNG" — lưới ảnh tự co giãn (nhiều cột trên
    màn hình rộng, ít cột trên màn hình hẹp, KHÔNG cần media query riêng vì

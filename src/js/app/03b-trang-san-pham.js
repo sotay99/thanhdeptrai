@@ -559,7 +559,7 @@
         veNutPlayTo() +
       '</div>' +
       '<button type="button" class="nut nut-nho nut-vien nut-video-to" data-hanh-dong="video-toan-man-hinh"' +
-        ' data-khung="' + escapeHtml(id) + '">⛶ Xem toàn màn hình</button>';
+        ' data-khung="' + escapeHtml(id) + '">⛶ Phóng to video</button>';
   }
 
   // Chỉ để MẮT NHÌN THẤY đây là video bấm được — trình phát thật của Drive
@@ -609,6 +609,67 @@
     if (!el) return;
     const yeuCau = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
     if (yeuCau) yeuCau.call(el);
+  }
+
+  // --------------------- "XEM TOÀN MÀN HÌNH" / "BỎ TOÀN MÀN HÌNH" (MODAL) ---
+  //
+  // KHÁC HẲN videoToanManHinh() ở trên (gọi requestFullscreen() THẬT của
+  // trình duyệt, video phủ kín màn hình thiết bị) — đây chỉ BỎ GHIM đầu/cuối
+  // bảng (modal-dau/modal-day) của các modal phát video bao trọn màn hình
+  // (bai-hoc-*: khoá Lightroom điện thoại/PC, Photoshop, video ngắn). Ghim
+  // (mặc định): tiêu đề + nút Đóng bảng/Bài trước/Bài tiếp theo LUÔN đứng
+  // yên trên đầu/dưới đáy, video co vừa khoảng trống còn lại. Bỏ ghim: cả
+  // bảng xếp theo luồng tài liệu bình thường — video dọc quá dài thì đẩy các
+  // thành phần đó ra khỏi khung nhìn, khách tự cuộn lên/xuống để thấy.
+  //
+  // Lưu CHUNG MỘT CỜ cho toàn web (không theo riêng từng bài/video) — đúng
+  // yêu cầu: bật ở bài này thì mở bài khác cũng ở đúng chế độ đó.
+  const KHOA_VIDEO_KHONG_GHIM = 'tdt-video-khong-ghim';
+
+  function dangKhongGhimVideo(){
+    try { return window.localStorage.getItem(KHOA_VIDEO_KHONG_GHIM) === '1'; } catch (e) { return false; }
+  }
+
+  function datKhongGhimVideo(bat){
+    try {
+      if (bat) window.localStorage.setItem(KHOA_VIDEO_KHONG_GHIM, '1');
+      else window.localStorage.removeItem(KHOA_VIDEO_KHONG_GHIM);
+    } catch (e) { /* không lưu được (riêng tư/đầy bộ nhớ) thì vẫn áp dụng trong phiên này */ }
+  }
+
+  // Nút đứng Ở HÀNG DƯỚI ĐÁY modal — CÙNG HÀNG với "Đóng bảng"/"Bài trước"/
+  // "Bài tiếp theo" (xem day: ở bốn hàm moModalBaiHoc*/moModalVideoNgan).
+  // "Xem Toàn màn hình" (chưa bật, chữ xanh dương) ↔ "Bỏ Toàn màn hình"
+  // (đã bật, chữ màu thường) — gọi lại hàm này mỗi khi vẽ day: để nhãn luôn
+  // đúng với cờ đã lưu.
+  function veNutGhimVideo(){
+    const khongGhim = dangKhongGhimVideo();
+    return '<button type="button" class="nut nut-vien nut-ghim-video' + (khongGhim ? '' : ' dang-ghim') +
+      '" data-hanh-dong="doi-ghim-video">' + (khongGhim ? 'Bỏ Toàn màn hình' : 'Xem Toàn màn hình') + '</button>';
+  }
+
+  // Áp cờ hiện tại vào MỌI modal video đang mở (luôn chỉ có một cái, nhưng
+  // querySelectorAll cho chắc) — gọi ngay sau khi một modal bai-hoc-* vừa
+  // dựng xong (khiVe), để bảng mở ra đã đúng chế độ khách chọn lần trước.
+  function apDungGhimVideo(){
+    const khongGhim = dangKhongGhimVideo();
+    document.querySelectorAll('.modal-lop[data-ma-modal^="bai-hoc-"]').forEach(function(lop){
+      lop.classList.toggle('khong-ghim-video', khongGhim);
+    });
+  }
+
+  // Bấm nút: đảo cờ, lưu lại, áp ngay vào modal đang mở — KHÔNG vẽ lại cả
+  // modal (giữ nguyên vị trí cuộn, video không bị tải lại từ đầu), chỉ đổi
+  // class của modal-lop và nhãn của chính nút vừa bấm (có thể modal có cả
+  // "Bài trước"/"Bài tiếp theo" ở hàng dưới nhưng chỉ một nút ghim).
+  function doiGhimVideo(){
+    datKhongGhimVideo(!dangKhongGhimVideo());
+    apDungGhimVideo();
+    const khongGhim = dangKhongGhimVideo();
+    document.querySelectorAll('[data-hanh-dong="doi-ghim-video"]').forEach(function(nut){
+      nut.textContent = khongGhim ? 'Bỏ Toàn màn hình' : 'Xem Toàn màn hình';
+      nut.classList.toggle('dang-ghim', !khongGhim);
+    });
   }
 
   // ------------------------------------------ BỘ CÔNG CỤ CỦA TRÌNH PHÁT DRIVE

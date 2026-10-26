@@ -105,8 +105,9 @@
           '" data-huong="-1"' + (idx <= 0 ? ' disabled' : '') + '>← Video trước</button>' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="video-ngan-chuyen" data-id="' + escapeHtml(id) +
           '" data-huong="1"' + (idx >= vn.muc.length - 1 ? ' disabled' : '') + '>Video tiếp theo →</button>' +
+        veNutGhimVideo() +
         '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>',
-      khiVe: function(){ initKhungVideo(); }
+      khiVe: function(){ initKhungVideo(); apDungGhimVideo(); }
     });
   }
 
