@@ -2107,6 +2107,11 @@
    video, không cần bấm mở modal (xem PHẦN 03G). */
 .video-ngan-xem-ngay { margin-top: -2px; padding: 0 2px; }
 
+/* Nút chuyển hướng dự phòng của Khoá 3 (Lightroom máy tính, PHẦN 03D) —
+   chữ tông xanh dương của web cho nổi bật, khác màu chữ mặc định của
+   nut-vien (viền xanh nhưng chữ thường). */
+.nut-chuyen-huong-kh3 { color: var(--xanh); }
+
 /* Modal xem video bài học — BAO TRỌN màn hình, khác hẳn mọi modal khác của
    web (vốn có viền và chừa lề). Chọn theo tiền tố mã modal thay vì thêm một
    tham số riêng cho moModal() — không đụng gì tới hệ thống modal dùng chung. */

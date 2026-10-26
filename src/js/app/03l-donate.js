@@ -192,11 +192,26 @@
         oHienTai.innerHTML = '<img src="' + dataUri + '" alt="Mã QR donate">';
       })
       .catch(function(e){
-        console.error('Không tải được ảnh QR donate:', e);
+        console.error('Không nạp được mã QR donate (fetch CORS):', e);
         const oHienTai = document.querySelector('[data-o-qr-donate]');
         if (!oHienTai) return;
-        oHienTai.classList.add('trong');
-        oHienTai.innerHTML = '<div class="dang-tai">Không tải được mã QR — bạn vui lòng chuyển khoản thủ công theo các dòng bên dưới.</div>';
+        // Dự phòng — Y HỆT napAnhQR() của bảng thanh toán đơn hàng (PHẦN 05):
+        // VietQR không trả header CORS thì fetch() ở trên luôn hỏng, nhưng
+        // trỏ THẲNG ảnh vào <img> (không gắn crossorigin) vẫn hiện được bình
+        // thường trên màn hình — chỉ mất mỗi khả năng chụp lại/tải ảnh, mà
+        // modal donate này vốn không có nút tải ảnh nên không mất gì cả.
+        oHienTai.classList.remove('trong');
+        const anh = document.createElement('img');
+        anh.alt = 'Mã QR donate';
+        anh.onerror = function(){
+          // Cả ảnh trực tiếp cũng không tải được — dịch vụ QR thật sự đang
+          // lỗi/không tới được, không còn cách nào hiện ảnh nữa.
+          oHienTai.classList.add('trong');
+          oHienTai.innerHTML = '<div class="dang-tai">Không tạo được mã QR lúc này. Bạn vui lòng chuyển khoản thủ công theo các dòng bên dưới, hoặc thử lại sau ít phút.</div>';
+        };
+        anh.src = duongDanQRDonate();
+        oHienTai.innerHTML = '';
+        oHienTai.appendChild(anh);
       });
   }
 
