@@ -31,6 +31,11 @@
   // không phải bí mật, chỉ đường tải sản phẩm mới cần giấu.
   const SP_CO_VIDEO = { sp2: true, sp3: true, sp6: true, sp7: true };
 
+  // Chỉ sp7 có thêm quà tặng kèm (2 khoá học Photoshop máy tính) — link Drive
+  // khách mở ở trang /sanpham sau khi đã tải phần mềm Photoshop thành công
+  // (PHẦN 03B, khoá theo cùng cơ chế quà tặng Remini/XingTu của sp1).
+  const SP_CO_QUA_TANG_KEM = { sp7: true };
+
   // Sản phẩm nào có hàng để giao. Hai khoá học đứng ngoài.
   function sanPhamCoHang(){
     return SAN_PHAM.filter(function(sp){ return !MODULE_KHOA_HOC[sp.ma]; });
@@ -47,6 +52,7 @@
         nguon: goc.nguon || 'r2',
         link: goc.link || '',
         linkHuongDan: goc.linkHuongDan || '',
+        linkQuaTangKhoaPhotoshopPC: goc.linkQuaTangKhoaPhotoshopPC || '',
         file: (goc.file || []).map(function(f){
           return { tep: String(f && f.tep || ''), ten: String(f && f.ten || '') };
         })
@@ -90,6 +96,7 @@
         '<div class="hang-nguon">' + chonNguon + '</div>' +
         (laDrive ? veKhoiDrive(sp, n) : veKhoiTep(sp, n)) +
         (SP_CO_VIDEO[sp.ma] ? veKhoiVideoHuongDan(sp, n) : '') +
+        (SP_CO_QUA_TANG_KEM[sp.ma] ? veKhoiQuaTangKemDanhMuc(sp, n) : '') +
         '<div class="day-dm">' +
           '<button type="button" class="nut nut-nho nut-chinh" data-hanh-dong="admin-luu-dm" data-ma="' +
             escapeHtml(sp.ma) + '"' + (dangLuu ? ' disabled' : '') + '>' +
@@ -133,6 +140,22 @@
             ' data-ma="' + escapeHtml(sp.ma) + '">Xem trước link</button>' +
         '</div>' +
         (dangXemTruoc ? veXemTruocVideo(n.linkHuongDan) : '') +
+      '</div>';
+  }
+
+  // Link Drive của quà tặng kèm (chỉ sp7) — khách mở ở trang /sanpham qua nút
+  // "Xem link", khoá cho tới khi đã tải phần mềm Photoshop thành công (PHẦN
+  // 03B). Một ô, không cần "xem trước" như video vì đây chỉ là link Drive
+  // trần, không phải video nhúng được.
+  function veKhoiQuaTangKemDanhMuc(sp, n){
+    return '' +
+      '<div class="khoi-video-hd">' +
+        '<label class="admin-nhan" for="dm-qt-' + escapeHtml(sp.ma) + '">Link Google Drive — Khoá học Photoshop PC (quà tặng kèm theo)</label>' +
+        '<p class="admin-ghi-chu">Link này khách mở khi bấm "Xem link" ở trang /sanpham, sau khi đã tải sản phẩm ' +
+          'chính thành công. Để trống thì nút "Xem link" ngoài web vẫn hiện nhưng chưa có gì để mở.</p>' +
+        '<input type="text" id="dm-qt-' + escapeHtml(sp.ma) + '" class="admin-nhap"' +
+          ' data-dm-qua-tang="' + escapeHtml(sp.ma) + '" autocomplete="off" spellcheck="false"' +
+          ' placeholder="https://drive.google.com/drive/folders/..." value="' + escapeHtml(n.linkQuaTangKhoaPhotoshopPC) + '">' +
       '</div>';
   }
 
@@ -293,8 +316,10 @@
     const oTen = dich.getAttribute('data-dm-ten');
     const oLink = dich.getAttribute('data-dm-link');
     const oVideo = dich.getAttribute('data-dm-video');
+    const oQuaTang = dich.getAttribute('data-dm-qua-tang');
     if (oLink) { nhapDanhMuc(oLink).link = dich.value; return true; }
     if (oVideo) { nhapDanhMuc(oVideo).linkHuongDan = dich.value; return true; }
+    if (oQuaTang) { nhapDanhMuc(oQuaTang).linkQuaTangKhoaPhotoshopPC = dich.value; return true; }
     if (oTep || oTen) {
       const phan = String(oTep || oTen).split(':');
       const n = nhapDanhMuc(phan[0]);
@@ -340,6 +365,15 @@
       let video = String(n.linkHuongDan || '').trim();
       if (video && !/^https?:\/\//i.test(video)) video = 'https://' + video;
       duLieu.linkHuongDan = video;
+    }
+
+    // Link quà tặng kèm (chỉ sp7) — cùng kiểu xử lý: tự thêm https:// nếu
+    // khách dán thiếu, để trống thì lưu rỗng (nút "Xem link" ngoài web vẫn
+    // hiện, chỉ chưa có gì để mở).
+    if (SP_CO_QUA_TANG_KEM[maSP]) {
+      let linkQuaTang = String(n.linkQuaTangKhoaPhotoshopPC || '').trim();
+      if (linkQuaTang && !/^https?:\/\//i.test(linkQuaTang)) linkQuaTang = 'https://' + linkQuaTang;
+      duLieu.linkQuaTangKhoaPhotoshopPC = linkQuaTang;
     }
 
     state.admin.dangLuu = nut;

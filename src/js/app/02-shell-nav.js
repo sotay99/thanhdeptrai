@@ -779,10 +779,12 @@
     // Gắn hiệu ứng NGAY SAU khi HTML mới đã nằm trong trang.
     ganHieuUngTroiLen();
     ganHieuUngTrangChu();   // vô hại ở module khác — không tìm thấy phần tử nào
-    // Video 1 và 2 của module "Xem video ngắn" (PHẦN 03G), và Bài 1 của hai
-    // khoá học "Lightroom điện thoại"/"Photoshop" (PHẦN 03C/03H) chèn khung
-    // xem NGAY tại trang chính (không qua modal) — khung đó cần
-    // initKhungVideo() canh tỷ lệ y như mọi khung video khác trong web.
-    if (m && (m.ma === 'video-ngan' || m.ma === 'khoa-hoc-mobile' || m.ma === 'khoa-photoshop')) initKhungVideo();
+    // Video 1 và 2 của module "Xem video ngắn" (PHẦN 03G), và Bài 1 của ba
+    // khoá học "Lightroom điện thoại"/"Photoshop"/"Lightroom máy tính"
+    // (PHẦN 03C/03H/03D) chèn khung xem NGAY tại trang chính (không qua
+    // modal) — khung đó cần initKhungVideo() canh tỷ lệ y như mọi khung
+    // video khác trong web.
+    if (m && (m.ma === 'video-ngan' || m.ma === 'khoa-hoc-mobile' || m.ma === 'khoa-photoshop' ||
+      m.ma === 'khoa-hoc-may-tinh')) initKhungVideo();
     doChoThanhDay();   // chừa đúng chiều cao thật của thanh neo đáy
   }

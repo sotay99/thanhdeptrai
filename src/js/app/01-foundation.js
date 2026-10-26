@@ -35,7 +35,7 @@
     { ma: 'sp4', ten: 'Khoá học chỉnh màu Lightroom điện thoại', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp5', ten: 'Khoá học Lightroom máy tính PC', giaGoc: 199000, giaChot: 0 },
     { ma: 'sp6', ten: 'Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
-    { ma: 'sp7', ten: 'Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời', giaGoc: 599000, giaChot: 179000 },
+    { ma: 'sp7', ten: 'Phần mềm Photoshop cho máy tính Win - tặng kèm khoá học photoshop PC', giaGoc: 599000, giaChot: 179000 },
     { ma: 'sp8', ten: 'Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)', giaGoc: 159000, giaChot: 39000 },
     { ma: 'sp9', ten: '1000+ font chữ Việt Hoá cao cấp cho máy tính', giaGoc: 159000, giaChot: 39000 }
   ];

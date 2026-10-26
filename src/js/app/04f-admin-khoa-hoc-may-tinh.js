@@ -17,6 +17,7 @@
      =========================================================================== */
 
   const NHANH_KHOA_HOC_MAY_TINH = 'khoahoc/lrPC/muc';
+  const NHANH_KHOA_HOC_PC = 'khoahoc/lrPC';   // gốc — nơi an1/an2 nằm cạnh playlist1/playlist2/muc
 
   const O_KHOA_HOC_PC_YOUTUBE = [
     { truong: 'playlist1', ten: 'Link danh sách phát YouTube — Khoá học 1 (Tự học đồ hoạ)', kieu: 'link',
@@ -40,18 +41,66 @@
     return a.khoaHocMayTinhNhap;
   }
 
+  // Nút "cần gạt" ẩn/hiện khoá 1 hoặc khoá 2 — LƯU THẲNG ngay khi bấm (giống
+  // mọi nút Lưu đơn lẻ khác, không cần bước xác nhận riêng vì gạt lại là
+  // hiện ngay, không mất dữ liệu gì). so: 1 hoặc 2 — ứng với trường an1/an2
+  // trong khoahoc/lrPC, đọc ở trang bán hàng (PHẦN 03D) để ẨN HẲN khối
+  // playlist đó như chưa từng tồn tại.
+  function veNutAnKhoaHocPC(so){
+    const truong = 'an' + so;
+    const dangAn = !!(state.admin.duLieu['khoa-hoc-pc'] || {})[truong];
+    const dangLuu = state.admin.dangLuu === truong;
+    return '' +
+      '<button type="button" class="nut nut-nho' + (dangAn ? ' nut-chinh' : ' nut-vien') +
+        '" data-hanh-dong="khpc-doi-an" data-so="' + so + '"' + (dangLuu ? ' disabled' : '') + '>' +
+        (dangLuu ? 'Đang lưu…' : (dangAn ? 'Hiện khoá học' : 'Ẩn khoá học')) +
+      '</button>' +
+      (dangAn ? '<p class="admin-ghi-chu">Đang ẨN — khoá học này không hiện trên trang bán hàng.</p>' : '');
+  }
+
+  // KHÔNG dùng chung luuCaiDat()/veMotO() — cơ chế đó tự tìm lại đúng DOM
+  // ".admin-o[data-o=...]" để vẽ lại MỘT ô sau khi lưu xong, mà nút gạt
+  // ẩn/hiện này không nằm trong khung đó (nó đứng CẠNH ô Link playlist,
+  // không PHẢI một ô). Tự lưu thẳng rồi render() lại cả trang — trang quản
+  // trị không có ô đang gõ dở ở đây nên vẽ lại cả trang không sao.
+  function adminKhpcDoiAn(so){
+    if (!firebaseSanSang || !rtdb) return;
+    const truong = 'an' + (so === '2' ? '2' : '1');
+    const dangAnHienTai = !!(state.admin.duLieu['khoa-hoc-pc'] || {})[truong];
+    const giaTriMoi = !dangAnHienTai;
+    state.admin.dangLuu = truong;
+    render();
+    const thayDoi = {};
+    thayDoi[truong] = giaTriMoi;
+    rtdb.ref(NHANH_KHOA_HOC_PC).update(thayDoi).then(function(){
+      state.admin.duLieu['khoa-hoc-pc'] = state.admin.duLieu['khoa-hoc-pc'] || {};
+      state.admin.duLieu['khoa-hoc-pc'][truong] = giaTriMoi;
+      state.admin.dangLuu = '';
+      render();
+    }).catch(function(e){
+      console.error('Không lưu được trạng thái ẩn/hiện khoá học PC:', e);
+      state.admin.dangLuu = '';
+      render();
+      alert('Không lưu được. Firebase từ chối hoặc mất mạng.');
+    });
+  }
+
   // ------------------------------------------------------------------ VẼ
 
   function veAdminKhoaHocMayTinh(){
     const n = khoaHocMayTinhNhap();
     const dangLuu = state.admin.dangLuu === 'khpc:tat-ca';
     const vuaLuu = state.admin.vuaLuu === 'khpc:tat-ca';
-    const oPlaylist = O_KHOA_HOC_PC_YOUTUBE.map(function(o){ return veMotO('khoa-hoc-pc', o); }).join('');
+    const oPlaylist = O_KHOA_HOC_PC_YOUTUBE.map(function(o, i){
+      return veMotO('khoa-hoc-pc', o) + veNutAnKhoaHocPC(i + 1);
+    }).join('');
     return '' +
       '<header class="admin-dau">' +
         '<h2>Khoá học Lightroom máy tính</h2>' +
         '<p>Trang bán hàng gộp BA khoá học vào module này: hai khoá đầu chỉ nhúng danh sách phát ' +
-          'YouTube (dán link ngay bên dưới), khoá thứ ba là chương/bài tự quản lý như trước giờ.</p>' +
+          'YouTube (dán link ngay bên dưới), khoá thứ ba là chương/bài tự quản lý như trước giờ. Bấm ' +
+          '"Ẩn khoá học" thì khoá đó biến mất hẳn khỏi trang bán hàng như chưa từng có — gạt lại ' +
+          '"Hiện khoá học" là hiện lại y như cũ, có hiệu lực ngay, không cần deploy lại.</p>' +
       '</header>' +
       '<div class="admin-nhom-o">' + oPlaylist + '</div>' +
       '<header class="admin-dau">' +

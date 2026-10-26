@@ -34,6 +34,8 @@
       kh.muc = Array.isArray(goc) ? goc : (goc ? Object.keys(goc).map(function(k){ return goc[k]; }) : []);
       kh.playlist1 = gia.playlist1 || '';
       kh.playlist2 = gia.playlist2 || '';
+      kh.an1 = !!gia.an1;
+      kh.an2 = !!gia.an2;
       kh.daTai = true;
       kh.dangTai = false;
       if (state.trang === 'chinh' && state.module === 'khoa-hoc-may-tinh') render();
@@ -124,6 +126,20 @@
     if (!kh.daTai && !kh.dangTai) taiKhoaHocMayTinh();
     const phan = xepKhoaHoc(kh.muc);
     const coNoiDung = phan.some(function(p){ return p.chuong || p.baiHoc.length; });
+    // Bài 1 của Khoá 3 (đầu tiên theo đúng thứ tự thật, bất kể cô đơn hay
+    // nằm trong chương nào) được xem NGAY tại đây — không cần bấm vào tên
+    // bài, Y HỆT logic đã áp dụng cho khoá điện thoại (PHẦN 03C) và khoá
+    // Photoshop (PHẦN 03H). Nếu nó nằm trong một chương, chương đó cũng tự
+    // mở sẵn (xem vePhanKhoaHocMayTinh).
+    const baiDau = danhSachBaiPhang(kh.muc)[0];
+    // Khoá 1/2 (nhúng playlist YouTube) có thể bị chủ shop ẨN HẲN ở /admin
+    // (PHẦN 04F, trường an1/an2) — ẩn thì không vẽ khối đó ra luôn, không
+    // chỉ che bằng CSS, đúng ý "biến mất như chưa từng có".
+    const khoiPlaylist = '' +
+      (kh.an1 ? '' : veKhoiPlaylist('KHOÁ HỌC TỰ HỌC LIGHTROOM CẤP TỐC TRÊN YOUTUBE (KÊNH: TỰ HỌC ĐỒ HOẠ)',
+        kh.playlist1, 'mo-ta-kh-pc-1')) +
+      (kh.an2 ? '' : veKhoiPlaylist('HỌC CHỈNH ẢNH VỚI ADOBE LIGHTROOM TRONG 60 PHÚT TRÊN YOUTUBE (KÊNH: TÚ THANH BLOG)',
+        kh.playlist2, 'mo-ta-kh-pc-2'));
     return '' +
       '<div class="khoa-hoc-mobile">' +
         '<header class="khoa-hoc-dau">' +
@@ -136,30 +152,39 @@
           '<button type="button" class="nut nut-vien nut-rong" data-hanh-dong="xem-chi-tiet" data-ma="sp5">' +
             'Xem chi tiết thông tin khoá học này</button>' +
         '</header>' +
-        '<div class="khoi-khoa-hoc-yt">' +
-          veKhoiPlaylist('KHOÁ HỌC TỰ HỌC LIGHTROOM CẤP TỐC TRÊN YOUTUBE (KÊNH: TỰ HỌC ĐỒ HOẠ)',
-            kh.playlist1, 'mo-ta-kh-pc-1') +
-          veKhoiPlaylist('HỌC CHỈNH ẢNH VỚI ADOBE LIGHTROOM TRONG 60 PHÚT TRÊN YOUTUBE (KÊNH: TÚ THANH BLOG)',
-            kh.playlist2, 'mo-ta-kh-pc-2') +
-        '</div>' +
+        (khoiPlaylist ? '<div class="khoi-khoa-hoc-yt">' + khoiPlaylist + '</div>' : '') +
         '<div class="khoa-hoc-con">' +
           '<h3 class="ten-khoa-hoc-con">HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO</h3>' +
           (coNoiDung
-            ? '<div class="danh-sach-chuong">' + phan.map(vePhanKhoaHocMayTinh).join('') + '</div>'
+            ? '<div class="danh-sach-chuong">' +
+                phan.map(function(p){ return vePhanKhoaHocMayTinh(p, baiDau ? baiDau.id : null); }).join('') +
+              '</div>'
             : veKhoaHocDangCapNhat(kh)) +
         '</div>' +
       '</div>';
   }
 
-  function vePhanKhoaHocMayTinh(p){
-    const baiHtml = p.baiHoc.map(function(b){ return veTheBaiHoc(b, 'mo-bai-hoc-pc'); }).join('');
+  // idBaiXemNgay: id của Bài 1 toàn khoá (hoặc null) — bài này được chèn
+  // khung video NGAY sau tên bài, xem ngay tại trang mà không cần bấm vào.
+  function vePhanKhoaHocMayTinh(p, idBaiXemNgay){
+    const baiHtml = p.baiHoc.map(function(b){
+      const the = veTheBaiHoc(b, 'mo-bai-hoc-pc');
+      if (!idBaiXemNgay || b.id !== idBaiXemNgay) return the;
+      // Video NGANG 16:9 — khác duy nhất với khoá điện thoại (dọc 9:16), vì
+      // khoá này quay lại màn hình máy tính (xem chú thích đầu file).
+      return the + '<div class="video-ngan-xem-ngay">' + veKhungVideo(b.linkVideo, 'ngang') + '</div>';
+    }).join('');
     if (!p.chuong) {
       // Bài đứng trước chương đầu tiên: hiện thẳng ra, không bọc trong khối
       // sổ ra vì không có tên chương nào để làm tiêu đề.
       return baiHtml;
     }
     const c = p.chuong;
-    const dangMo = !!kh_chuongDangMoMayTinh(c.id);
+    // Chương CHỨA Bài 1 tự mở sẵn — không thì khung video xem-ngay vừa chèn
+    // ở trên bị giấu sau cú bấm sổ-chương, trái với yêu cầu "không cần bấm
+    // vào tên". Vẫn cho khách tự đóng/mở tay bình thường sau đó.
+    const macDinhMo = !!(idBaiXemNgay && p.baiHoc.some(function(b){ return b.id === idBaiXemNgay; }));
+    const dangMo = kh_chuongDangMoMayTinh(c.id, macDinhMo);
     return '' +
       '<div class="khoi-chuong' + (dangMo ? ' mo' : '') + '" data-khoi-chuong="' + escapeHtml(c.id) + '">' +
         '<button type="button" class="the-chuong" data-hanh-dong="chuong-doi-pc" data-id="' + escapeHtml(c.id) + '"' +
@@ -173,23 +198,37 @@
       '</div>';
   }
 
-  function kh_chuongDangMoMayTinh(id){
-    return !!state.khoaHocMayTinh.chuongMo[id];
+  // macDinh: trạng thái khi khách CHƯA từng tự bấm sổ/đóng chương này (map
+  // chưa có khoá id) — cho vePhanKhoaHocMayTinh tự mở sẵn đúng MỘT chương
+  // (chương chứa Bài 1), mọi chương khác vẫn đóng như cũ. Đã bấm tay một lần
+  // thì giữ đúng ý khách, không ép lại theo mặc định nữa.
+  function kh_chuongDangMoMayTinh(id, macDinh){
+    const gia = state.khoaHocMayTinh.chuongMo[id];
+    return gia === undefined ? !!macDinh : !!gia;
   }
 
   // Đổi trạng thái sổ ra / khép lại của MỘT chương — chỉ vẽ lại đúng khối đó,
   // không dựng lại cả trang.
   function doiChuongKhoaHocMayTinh(id){
     const kh = state.khoaHocMayTinh;
-    if (kh.chuongMo[id]) delete kh.chuongMo[id];
-    else kh.chuongMo[id] = true;
     const khoi = document.querySelector('[data-khoi-chuong="' + id + '"]');
+    // Đọc trạng thái ĐANG HIỆN THẬT SỰ trên màn hình (không phải chỉ dựa vào
+    // map chuongMo) — chương chứa Bài 1 có thể đang mở do MẶC ĐỊNH (không có
+    // khoá trong map) chứ không phải do khách từng bấm; đảo đúng cái đang
+    // thấy rồi LƯU rõ ràng true/false, từ đây về sau khách tự quyết, không
+    // bị mặc định ép lại nữa.
+    const dangMoHienTai = khoi ? khoi.classList.contains('mo') : !!kh.chuongMo[id];
+    kh.chuongMo[id] = !dangMoHienTai;
     if (!khoi) { render(); return; }
     const phan = xepKhoaHoc(kh.muc).filter(function(p){ return p.chuong && p.chuong.id === id; })[0];
     if (!phan) { render(); return; }
+    const baiDau = danhSachBaiPhang(kh.muc)[0];
     const tam = document.createElement('div');
-    tam.innerHTML = vePhanKhoaHocMayTinh(phan);
+    tam.innerHTML = vePhanKhoaHocMayTinh(phan, baiDau ? baiDau.id : null);
     khoi.parentNode.replaceChild(tam.firstChild, khoi);
+    // replaceChild() không đi qua PHẦN 02 (nơi gọi initKhungVideo() sau mỗi
+    // render() bình thường) — tự gọi lại nếu khung Bài 1 vừa được thay mới.
+    if (baiDau && phan.baiHoc.some(function(b){ return b.id === baiDau.id; })) initKhungVideo();
   }
 
   // -------------------------------------------------------- MODAL BÀI HỌC

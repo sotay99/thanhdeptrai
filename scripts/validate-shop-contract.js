@@ -45,7 +45,7 @@ const SAN_PHAM_CHOT = [
   ["Khoá học chỉnh màu Lightroom điện thoại", 199000, 0],
   ["Khoá học Lightroom máy tính PC", 199000, 0],
   ["Phần mềm Lightroom classic dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
-  ["Phần mềm Photoshop dành cho máy tính Win - bản quyền trọn đời", 599000, 179000],
+  ["Phần mềm Photoshop cho máy tính Win - tặng kèm khoá học photoshop PC", 599000, 179000],
   ["Kho tài nguyên thiết kế (1000+ ảnh RAW, file Mockup, file PSD,...)", 159000, 39000],
   ["1000+ font chữ Việt Hoá cao cấp cho máy tính", 159000, 39000],
 ];

@@ -222,6 +222,8 @@
     sp7: {
       khauHieu: 'Photoshop bản quyền trọn đời cho máy tính Windows — công cụ mạnh nhất ngành hình ảnh, nằm gọn trong máy bạn. 🖥️🎨',
       khoi: [
+        { kieu: 'noi-bat', chu: '🎁 Tặng Kèm 2 Khoá Học Photoshop Máy tính từ cơ bản đến nâng cao, được đính kèm ngay ' +
+          'trong Link Bàn giao sản phẩm của Shop.' },
         { kieu: 'muc', tieuDe: '⚙️ Điểm mạnh của gói này', y: [
           '🚀 <strong>Hỗ trợ thiết lập nhanh</strong> — cài đặt xong xuôi rồi mới tính là hoàn thành.',
           '🎟️ <strong>Suất đăng nhập ưu đãi từ nhà sản xuất</strong>, số lượng có hạn.',

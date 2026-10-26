@@ -183,9 +183,11 @@
       'là xong — phần lớn máy cài trót lọt ngay lần đầu, không cần xử lý gì thêm. Lưu ý: nếu quá trình cài ' +
       'bị lỗi/chặn giữa chừng thì xem video hướng dẫn tắt Tường lửa (Firewall) của Windows trước khi cài lại.' },
 
-    { id: 'sp7', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Phần mềm Photoshop Windows - bản quyền trọn đời (599.000đ, giá bán 179.000đ)' },
+    { id: 'sp7', cha: 'mathangcophi', loai: 'thu-muc', ten: 'Phần mềm Photoshop cho máy tính Win - tặng kèm khoá học photoshop PC (599.000đ, giá bán 179.000đ)' },
     { id: 'sp7-1', cha: 'sp7', loai: 'truong', ten: 'Mô tả chi tiết', noiDung:
-      'Phần mềm Photoshop dành cho máy tính Windows - bản quyền trọn đời. Công cụ mạnh nhất ngành hình ảnh.\n' +
+      'Phần mềm Photoshop dành cho máy tính Windows - bản quyền trọn đời. Công cụ mạnh nhất ngành hình ảnh. ' +
+      'Mua là TẶNG KÈM 2 khoá học Photoshop máy tính từ cơ bản đến nâng cao, đính kèm ngay trong link bàn ' +
+      'giao sản phẩm.\n' +
       'Điểm mạnh: hỗ trợ thiết lập nhanh; suất đăng nhập ưu đãi từ nhà sản xuất, số lượng có hạn; hoạt động ' +
       'mượt mà, phù hợp mọi cấu hình PC; có video hướng dẫn chi tiết từng bước; phiên bản chuẩn định danh ' +
       'Photoshop 2021 v22.0.0.35 x64.\n' +

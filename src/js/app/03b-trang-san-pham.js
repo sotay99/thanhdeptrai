@@ -382,6 +382,7 @@
           ? '<div class="danh-sach-tep">' + tep.map(veDongTep).join('') + '</div>'
           : '<p class="loi-nhan-hang">' + escapeHtml(chuLyDo('chua-khai')) + '</p>') +
         (sp.ma === 'sp1' ? veKhoiQuaTangKemSp1() : '') +
+        (sp.ma === 'sp7' ? veKhoiQuaTangKhoaPhotoshopPC() : '') +
       '</div>';
   }
 
@@ -415,6 +416,61 @@
   function daTaiLightroomThanhCong(){
     const kq = state.nhanHang.ketQuaTep || {};
     return Object.keys(kq).some(function(i){ return kq[i] && kq[i].duoc; }) || coDaXacNhanSp1();
+  }
+
+  // -------------------- QUÀ TẶNG KÈM THEO (CHỈ Ở SP7) --------------------
+  //
+  // Mua phần mềm Photoshop máy tính (sp7) được tặng kèm 2 khoá học Photoshop
+  // PC (một link Google Drive duy nhất, khai ở /admin — PHẦN 04C, trường
+  // linkQuaTangKhoaPhotoshopPC). Y HỆT cơ chế quà tặng Remini/XingTu của sp1
+  // phía trên: khoá cho tới khi khách đã bấm "Tôi chắc chắn — tải xuống" và
+  // máy chủ đã cấp phép ÍT NHẤT một tệp của chính sp7, cờ lưu lâu dài vào
+  // localStorage để đóng/mở lại modal "Nhận sản phẩm" bao nhiêu lần cũng
+  // không bị khoá lại.
+  const KHOA_SP7_XAC_NHAN = 'tdt-sp7-xacnhan';
+
+  function ganCoDaXacNhanSp7(){
+    try { window.localStorage.setItem(KHOA_SP7_XAC_NHAN, '1'); } catch (e) { /* không lưu được thì thôi */ }
+  }
+
+  function coDaXacNhanSp7(){
+    try { return window.localStorage.getItem(KHOA_SP7_XAC_NHAN) === '1'; } catch (e) { return false; }
+  }
+
+  function daTaiPhotoshopThanhCong(){
+    const kq = state.nhanHang.ketQuaTep || {};
+    return Object.keys(kq).some(function(i){ return kq[i] && kq[i].duoc; }) || coDaXacNhanSp7();
+  }
+
+  function veKhoiQuaTangKhoaPhotoshopPC(){
+    const duoc = daTaiPhotoshopThanhCong();
+    const link = String((danhMucCua('sp7') || {}).linkQuaTangKhoaPhotoshopPC || '');
+    const nutXem = (duoc && link)
+      ? '<a class="nut nut-nho nut-la nut-tai-ve" href="' + escapeHtml(link) + '" target="_blank" rel="noopener">Xem link</a>'
+      : '<button type="button" class="nut nut-nho nut-vien" data-hanh-dong="qt-chan-xem-link-ps-pc">Xem link</button>';
+    return '' +
+      '<div class="khoi-qua-tang-kem" data-khoi-qua-tang-ps-pc>' +
+        '<p class="tieu-de-qua-tang-kem">Quà Tặng 2 Khoá học Photoshop PC Kèm theo:</p>' +
+        '<div class="dong-qua-tang-kem"><span class="ten">Xem và tải 2 Khoá học Photoshop PC</span>' + nutXem + '</div>' +
+      '</div>';
+  }
+
+  // Chỉ vẽ lại ĐÚNG khối quà tặng kèm (không vẽ lại cả bảng) — gọi lại mỗi
+  // khi một tệp sp7 vừa được máy chủ cấp phép, vì lúc đó cổng khoá có thể
+  // vừa mở ra.
+  function capNhatKhoiQuaTangKhoaPhotoshopPC(){
+    if (state.nhanHang.maSanPham !== 'sp7') return;
+    const khoi = document.querySelector('[data-khoi-qua-tang-ps-pc]');
+    if (khoi) khoi.outerHTML = veKhoiQuaTangKhoaPhotoshopPC();
+  }
+
+  function moModalChanXemLinkPhotoshopPC(){
+    moModal({
+      ma: 'qt-chan-xem-link-ps-pc',
+      tieuDe: 'Cần tải Photoshop trước',
+      than: '<p>Vui lòng tải phần mềm Photoshop trước.</p>',
+      day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đã hiểu</button>'
+    });
   }
 
   function veKhoiQuaTangKemSp1(){
@@ -778,8 +834,9 @@
   function capNhatVungTep(i){
     const vung = document.querySelector('[data-vung-tep="' + i + '"]');
     if (vung) vung.innerHTML = veKetQuaTep(i);
-    // Tệp sp1 vừa được cấp phép có thể vừa mở khoá quà tặng kèm theo.
+    // Tệp sp1/sp7 vừa được cấp phép có thể vừa mở khoá quà tặng kèm theo.
     capNhatKhoiQuaTangKemSp1();
+    capNhatKhoiQuaTangKhoaPhotoshopPC();
   }
 
   function xacNhanTai(chiSo){
@@ -806,6 +863,7 @@
       // xem daTaiLightroomThanhCong() trên) không bị khoá lại mỗi lần đóng
       // rồi mở lại modal "Nhận sản phẩm".
       if (nh.maSanPham === 'sp1' && nh.ketQuaTep[i] && nh.ketQuaTep[i].duoc) ganCoDaXacNhanSp1();
+      if (nh.maSanPham === 'sp7' && nh.ketQuaTep[i] && nh.ketQuaTep[i].duoc) ganCoDaXacNhanSp7();
       capNhatVungTep(i);
     });
   }
