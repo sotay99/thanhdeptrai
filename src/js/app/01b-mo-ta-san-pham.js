@@ -83,6 +83,9 @@
       khauHieu: '<span class="dong-dau">Lightroom Tiếng Việt dễ sử dụng - Premium</span>' +
         'Mở toàn bộ kho vũ khí của Lightroom ngay trên chiếc điện thoại bạn đang cầm trong tay — một lần duy nhất, dùng mãi mãi. 📱✨',
       khoi: [
+        { kieu: 'noi-bat', chu: '✨ App sạch sẽ, Không bắt Cập nhật App thường xuyên, Không Quảng cáo trong App, Không ' +
+          'lỗi như các Mặt hàng App trôi nổi trên internet. Tặng Kèm 2 app REMINI và XingTu Việt hoá VIP Pro (cho ' +
+          'Android) khi mua sản phẩm này.' },
         { kieu: 'luu-y', tieuDe: '⚠️ Lưu ý trước khi mua', y: [
           '🤖 App <strong>chỉ dành cho điện thoại chạy hệ điều hành Android</strong> — <strong>không dành cho iPhone</strong>. Vui lòng kiểm tra máy của bạn trước khi đặt hàng.',
           '🔑 Chỉ có thể <strong>đăng nhập bằng tài khoản Adobe</strong>. Nếu bạn chưa có, tạo được ngay trong app chỉ trong một phút — shop hướng dẫn từng bước.',
