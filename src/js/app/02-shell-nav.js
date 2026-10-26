@@ -485,7 +485,12 @@
         '<h3 class="khoi-giang-vien-tieu-de">Thông tin giảng viên</h3>' +
         '<div class="khoi-giang-vien-than">' +
           (anh
-            ? '<img class="khoi-giang-vien-anh" src="' + escapeHtml(anh) + '" alt="Ảnh giảng viên ' + escapeHtml(ten) + '" loading="lazy">'
+            // srcAnhCongNhan() (PHẦN 03I) tái dùng NGUYÊN — link Drive share
+            // (.../file/d/...) không tự hiện ra được như ảnh, phải tách mã
+            // rồi dựng lại địa chỉ xem trước của Drive. Đây CHÍNH LÀ lỗi
+            // thật đã xảy ra: dán thẳng link Drive vào src thì ảnh không
+            // hiện, trong khi module "Sự công nhận" đã xử lý đúng từ đầu.
+            ? '<img class="khoi-giang-vien-anh" src="' + escapeHtml(srcAnhCongNhan(anh)) + '" alt="Ảnh giảng viên ' + escapeHtml(ten) + '" loading="lazy">'
             : '') +
           '<div class="khoi-giang-vien-chu">' +
             '<p class="khoi-giang-vien-ten">' + escapeHtml(ten) + '</p>' +
