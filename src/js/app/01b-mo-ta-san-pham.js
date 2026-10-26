@@ -36,6 +36,10 @@
   // Ảnh minh hoạ kho khoá học, dùng cho bảng "Đặc quyền".
   const ANH_DAC_QUYEN = '/assets/anh/dac-quyen.jpg';
 
+  // Ảnh poster "9 GÓI QUÀ TẶNG THƯỞNG CAO CẤP" — đứng cùng hàng, bên PHẢI
+  // khối "Yêu cầu học thêm các khoá học..." trong bảng Đặc quyền.
+  const ANH_QUA_TANG_DAC_QUYEN = '/assets/anh/dac-quyen-qua-tang.jpg';
+
   // Ảnh bằng chứng "đã quét an toàn" (Google Play Protect) dán ở CUỐI bảng mô
   // tả — hiện chỉ sp1 (Lightroom) có, dùng chung cho cả module "Trọn bộ sản
   // phẩm VIP" lẫn "Quà tặng dành cho thiết bị Android" vì hai nơi gọi chung
@@ -333,12 +337,23 @@
     // mảng vào tham số thứ ba, rơi đúng chỗ cờ trongHang và tắt mất hiệu ứng.
     // Khối đầu tiên ghép ngang hàng với ảnh kho khoá học, y như bảng mô tả
     // sản phẩm — kể cả nhịp trượt chậm gấp năm của khung ảnh.
+    //
+    // Khối thứ hai ("Yêu cầu học thêm...") ghép ngang hàng với ảnh poster "9
+    // gói quà tặng thưởng" — LẦN NÀY CHỮ ĐỨNG TRƯỚC, ẢNH ĐỨNG SAU trong DOM
+    // nên ảnh nằm BÊN PHẢI (flex theo đúng thứ tự DOM, không cần đảo CSS).
     return '' +
       '<div class="hang-anh-chu troi-ngang" style="animation-delay:0s">' +
         veOAnh(ANH_DAC_QUYEN, 'Ảnh minh hoạ: kho khoá học thiết kế của shop') +
         veKhoiMoTa(NOI_DUNG_DAC_QUYEN[0], 0, true) +
       '</div>' +
-      NOI_DUNG_DAC_QUYEN.slice(1).map(function(k, i){ return veKhoiMoTa(k, i + 1); }).join('');
+      '<div class="hang-anh-chu hang-chu-anh troi-ngang" style="animation-delay:0.33s">' +
+        veKhoiMoTa(NOI_DUNG_DAC_QUYEN[1], 1, true) +
+        '<figure class="anh-qua-tang-dac-quyen">' +
+          '<img src="' + ANH_QUA_TANG_DAC_QUYEN + '" width="600" height="781" loading="lazy" decoding="async"' +
+            ' alt="9 gói quà tặng thưởng cao cấp đi kèm">' +
+        '</figure>' +
+      '</div>' +
+      NOI_DUNG_DAC_QUYEN.slice(2).map(function(k, i){ return veKhoiMoTa(k, i + 2); }).join('');
   }
 
   /* --------------------------------------------------------------- DỰNG HTML

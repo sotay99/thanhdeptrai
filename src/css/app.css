@@ -1235,6 +1235,31 @@
   object-fit: cover;
 }
 
+/* Ảnh poster "9 gói quà tặng thưởng" ở bảng Đặc quyền — khác .anh-san-pham ở
+   trên: đây là ảnh CHỮ NHẬT (infographic nhiều dòng chữ), ép vuông rồi cắt
+   (object-fit: cover) là mất sạch nội dung, nên GIỮ NGUYÊN tỉ lệ thật
+   (object-fit: contain, không ép aspect-ratio). .hang-chu-anh đảo DOM — chữ
+   trước, ảnh sau — nên ảnh tự nằm bên PHẢI mà không cần lật CSS. */
+.anh-qua-tang-dac-quyen {
+  flex: 1 1 200px;
+  max-width: 260px;
+  margin: 0;
+  border-radius: var(--bo-the);
+  overflow: hidden;
+  background: var(--the-2);
+  border: 1px solid var(--vien);
+  box-shadow: var(--bong);
+}
+.anh-qua-tang-dac-quyen img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+@media (max-width: 560px) {
+  .anh-qua-tang-dac-quyen { flex: 1 1 100%; max-width: 100%; }
+}
+
 /* Khối chữ đứng cạnh ảnh: chiếm phần còn lại, và chỉ chịu xuống dòng khi bề
    ngang còn dưới 210px — dưới mức đó thì chữ vỡ vụn, thà cho nó nằm dưới ảnh. */
 .hang-anh-chu > .khoi-mo-ta {
