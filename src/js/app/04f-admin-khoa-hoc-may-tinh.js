@@ -19,11 +19,18 @@
   const NHANH_KHOA_HOC_MAY_TINH = 'khoahoc/lrPC/muc';
   const NHANH_KHOA_HOC_PC = 'khoahoc/lrPC';   // gốc — nơi an1/an2 nằm cạnh playlist1/playlist2/muc
 
+  // playlist3 (đường dự phòng của Khoá 3 — khách bấm nút "chất lượng video
+  // không tốt" ở trang bán hàng, PHẦN 03D, thì chuyển hướng sang đây, mở tab
+  // mới) nằm CHUNG mảng với playlist1/2 để danhSachO('khoa-hoc-pc') ở 04B chỉ
+  // cần khai một chỗ (nút "Lưu" của từng ô tự tra theo đúng mảng này) — vị
+  // trí hiển thị thì TÁCH RA, xem veAdminKhoaHocMayTinh() bên dưới.
   const O_KHOA_HOC_PC_YOUTUBE = [
     { truong: 'playlist1', ten: 'Link danh sách phát YouTube — Khoá học 1 (Tự học đồ hoạ)', kieu: 'link',
       goi: 'https://www.youtube.com/playlist?list=...' },
     { truong: 'playlist2', ten: 'Link danh sách phát YouTube — Khoá học 2 (Tú Thanh Blog)', kieu: 'link',
-      goi: 'https://www.youtube.com/playlist?list=...' }
+      goi: 'https://www.youtube.com/playlist?list=...' },
+    { truong: 'playlist3', ten: 'Link danh sách phát YouTube — Khoá 3 (trang xem dự phòng, khi video chính bị lỗi)',
+      kieu: 'link', goi: 'https://www.youtube.com/playlist?list=...' }
   ];
 
   // Bản nháp lấy từ nhánh đã đọc sẵn lúc vào trang admin (xem NHANH_ADMIN ở
@@ -91,9 +98,10 @@
     const n = khoaHocMayTinhNhap();
     const dangLuu = state.admin.dangLuu === 'khpc:tat-ca';
     const vuaLuu = state.admin.vuaLuu === 'khpc:tat-ca';
-    const oPlaylist = O_KHOA_HOC_PC_YOUTUBE.map(function(o, i){
+    const oPlaylist = O_KHOA_HOC_PC_YOUTUBE.slice(0, 2).map(function(o, i){
       return veMotO('khoa-hoc-pc', o) + veNutAnKhoaHocPC(i + 1);
     }).join('');
+    const oDuPhong = veMotO('khoa-hoc-pc', O_KHOA_HOC_PC_YOUTUBE[2]);
     return '' +
       '<header class="admin-dau">' +
         '<h2>Khoá học Lightroom máy tính</h2>' +
@@ -107,12 +115,13 @@
         '<h2>Khoá 3 — "HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO"</h2>' +
         '<p>Quản lý chương và bài học của khoá thứ ba. Số thứ tự chương/bài do hệ thống tự tính theo ' +
           'vị trí — kéo lên/xuống là số đổi ngay. Một bài học thuộc về CHƯƠNG GẦN NHẤT đứng phía trên nó.</p>' +
-        '<div class="hang-luu-kh">' +
-          '<button type="button" class="nut nut-chinh" data-hanh-dong="khpc-luu-tat-ca"' + (dangLuu ? ' disabled' : '') + '>' +
-            (dangLuu ? 'Đang lưu…' : 'Lưu tất cả') + '</button>' +
-          '<span class="admin-bao' + (vuaLuu ? ' hien' : '') + '">' + (vuaLuu ? '✓ Đã lưu' : '') + '</span>' +
-        '</div>' +
       '</header>' +
+      '<div class="admin-nhom-o">' + oDuPhong + '</div>' +
+      '<div class="hang-luu-kh">' +
+        '<button type="button" class="nut nut-chinh" data-hanh-dong="khpc-luu-tat-ca"' + (dangLuu ? ' disabled' : '') + '>' +
+          (dangLuu ? 'Đang lưu…' : 'Lưu tất cả') + '</button>' +
+        '<span class="admin-bao' + (vuaLuu ? ' hien' : '') + '">' + (vuaLuu ? '✓ Đã lưu' : '') + '</span>' +
+      '</div>' +
       '<div class="quan-ly-khoa-hoc" data-quan-ly-khpc>' + veDanhSachKhoaHocMayTinh(n) + '</div>';
   }
 

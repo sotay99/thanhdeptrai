@@ -84,6 +84,7 @@
               phan.map(function(p){ return vePhanKhoaPhotoshop(p, baiDau ? baiDau.id : null); }).join('') +
             '</div>'
           : veKhoaHocDangCapNhat(kh)) +
+        veKhoiDonateKhoaHoc('khoa-photoshop') +
       '</div>';
   }
 

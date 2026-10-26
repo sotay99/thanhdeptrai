@@ -167,6 +167,11 @@
     tuDongDien: { zalo: false, dienThoai: false },
     thongTinCK: Object.assign({}, THONG_TIN_CK_DU_PHONG),
     daTaiThongTinCK: false,
+    // Luồng "Donate Cảm ơn - Ủng hộ Tác giả" ở hai khoá học miễn phí (PHẦN
+    // 03L) — module: 'khoa-hoc-mobile' hay 'khoa-photoshop', để biết đang
+    // donate cho khoá nào và tự đặt lại khi khách donate khoá KHÁC. KHÔNG
+    // ghi gì vào Firebase — chỉ là luồng hiện mã QR thuần tuý.
+    donate: { module: '', soTien: '', noiDung: '' },
     // Số Zalo của shop — GIỐNG HỆT số tài khoản, nó KHÔNG nằm trong mã nguồn
     // mà đọc từ Realtime Database lúc chạy. Xem chú thích ở nút "Liên hệ Zalo".
     zaloShop: '',
@@ -344,6 +349,24 @@
   function dinhDangTien(so){
     const n = Number(so) || 0;
     return n.toLocaleString('vi-VN') + ' ₫';
+  }
+
+  // Bỏ dấu tiếng Việt — dùng cho nội dung chuyển khoản (module Donate, PHẦN
+  // 03L): ngân hàng không chấp nhận chữ có dấu. NFD tách được mọi dấu thanh/
+  // nguyên âm nhưng KHÔNG tách "đ" (nó không phải "d" + dấu), nên phải thay
+  // tay riêng "đ"/"Đ" trước khi lọc.
+  function boDauTiengViet(chuoi){
+    return String(chuoi || '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  // Nhóm mỗi 3 chữ số (tính từ phải qua trái) cách nhau một dấu cách — dùng
+  // cho dòng xem trước số tiền đang gõ ở modal Donate, KHÁC dinhDangTien() ở
+  // trên (nó dùng dấu chấm và ký hiệu ₫, còn đây theo đúng yêu cầu: dấu cách
+  // và chữ "đ" thường).
+  function nhomBaChuSo(chuoiSo){
+    return String(chuoiSo || '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 
   function timSanPham(ma){

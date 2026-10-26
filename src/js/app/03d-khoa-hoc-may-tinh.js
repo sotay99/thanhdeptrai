@@ -36,6 +36,7 @@
       kh.playlist2 = gia.playlist2 || '';
       kh.an1 = !!gia.an1;
       kh.an2 = !!gia.an2;
+      kh.playlist3 = gia.playlist3 || '';
       kh.daTai = true;
       kh.dangTai = false;
       if (state.trang === 'chinh' && state.module === 'khoa-hoc-may-tinh') render();
@@ -119,6 +120,29 @@
     });
   }
 
+  // Bấm nút "Chất lượng video không tốt" ở Khoá 3: hỏi trước khi rời trang —
+  // KHÔNG nói rõ là YouTube (theo đúng yêu cầu), chỉ nói chung chung "website
+  // khác". Chấp nhận mới mở tab mới sang playlist3 (đường dự phòng, admin
+  // khai ở PHẦN 04F).
+  function moModalCanhBaoChuyenHuongKh3(){
+    const link = state.khoaHocMayTinh.playlist3;
+    if (!link) return;
+    moModal({
+      ma: 'canh-bao-chuyen-huong-kh3',
+      tieuDe: 'Sắp chuyển hướng',
+      than: '<p>Bạn sắp được chuyển hướng sang một website khác để tiếp tục xem khoá học này.</p>',
+      day: '' +
+        '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Huỷ</button>' +
+        '<button type="button" class="nut nut-chinh" data-hanh-dong="chap-nhan-chuyen-huong-kh3">Chấp nhận — tiếp tục</button>'
+    });
+  }
+
+  function chapNhanChuyenHuongKh3(){
+    const link = state.khoaHocMayTinh.playlist3;
+    if (link) window.open(link, '_blank', 'noopener,noreferrer');
+    dongModal();
+  }
+
   // ------------------------------------------------------------------ VẼ
 
   function veModuleKhoaHocMayTinh(){
@@ -155,6 +179,10 @@
         (khoiPlaylist ? '<div class="khoi-khoa-hoc-yt">' + khoiPlaylist + '</div>' : '') +
         '<div class="khoa-hoc-con">' +
           '<h3 class="ten-khoa-hoc-con">HỌC LIGHTROOM MÁY TÍNH CƠ BẢN ĐẾN NÂNG CAO</h3>' +
+          (kh.playlist3
+            ? '<button type="button" class="nut nut-vien nut-rong nut-chuyen-huong-kh3" data-hanh-dong="mo-canh-bao-chuyen-huong-kh3">' +
+                'Nếu Chất Lượng Video không tốt, Hãy bấm vào đây để chuyển hướng, xem khoá học này ở trang khác</button>'
+            : '') +
           (coNoiDung
             ? '<div class="danh-sach-chuong">' +
                 phan.map(function(p){ return vePhanKhoaHocMayTinh(p, baiDau ? baiDau.id : null); }).join('') +
