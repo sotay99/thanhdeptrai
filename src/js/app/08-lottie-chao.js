@@ -72,6 +72,32 @@ const LOTTIE_CHAO_DU_LIEU =
     });
   }
 
+  // Dải thông báo nổi bật nhắc dùng trình duyệt web thật — hiện MỖI LẦN vào
+  // web (tải trang lần đầu, F5, quay lại), bất kể đang ở module nào, đứng
+  // NGAY TRÊN khung hoạt hình robot chào (toạ độ tính theo cùng điểm mốc
+  // 50%/50% của .lottie-chao, PHẦN CSS tương ứng) rồi tự mờ dần, biến mất
+  // sau 6 giây. Không hiện ở trang quản trị — lời nhắc này dành cho khách
+  // học, không phải admin.
+  const TOAST_TRINH_DUYET_VAN_BAN =
+    'Truy cập Thànhđẹptrai.vn bằng Trình duyệt Web (Chrome, Safari,...) để có trải nghiệm học tập tốt nhất bạn nhé!';
+
+  function veToastTrinhDuyet(){
+    if (state.trang === 'admin') return;
+    if (document.getElementById('toast-chao-trinh-duyet')) return;
+    const bao = document.createElement('div');
+    bao.id = 'toast-chao-trinh-duyet';
+    bao.className = 'toast-chao-trinh-duyet';
+    bao.textContent = TOAST_TRINH_DUYET_VAN_BAN;
+    document.body.appendChild(bao);
+    setTimeout(function(){
+      bao.classList.add('toast-chao-trinh-duyet-an-di');
+      setTimeout(function(){
+        const b = document.getElementById('toast-chao-trinh-duyet');
+        if (b) b.remove();
+      }, 400);
+    }, 6000);
+  }
+
   // ------------------------- THỐNG KÊ TRUY CẬP (PHẦN 04M trong /admin) -----
   //
   // Mỗi lượt tải trang (web tĩnh — mọi trang, kể cả /admin) ghi THÊM một
@@ -148,6 +174,7 @@ const LOTTIE_CHAO_DU_LIEU =
     if (state.trang === 'admin') chuanBiAdmin();
     initAiChat();
     veLottieChao();
+    veToastTrinhDuyet();
     ghiNhanTruyCap();
   }
 
