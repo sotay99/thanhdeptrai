@@ -2656,6 +2656,15 @@ body.trang-chu-nen .khung-noi-dung {
   transition: .15s;
 }
 .ai-chat-nut-xoa:hover { background: var(--do); border-color: var(--do); color: #fff; }
+.ai-chat-goi-y-dau {
+  margin: 0;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--vien);
+  color: var(--chu-diu);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
 .ai-chat-doan {
   flex: 1 1 auto;
   overflow-y: auto;

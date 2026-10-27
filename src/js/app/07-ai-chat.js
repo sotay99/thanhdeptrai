@@ -206,9 +206,19 @@
     return '<div class="ai-chat-dong ai"><div class="ai-chat-bong ai">' + than + '</div></div>';
   }
 
+  // Dòng gợi mở — chỉ hiện khi CHƯA có cuộc trò chuyện nào (lịch sử rỗng),
+  // mất ngay khi gửi tin đầu tiên, hiện lại khi xoá sạch trò chuyện.
+  const AI_CHAT_GOI_Y_DAU = 'Bạn cứ hỏi thoải mái, đừng ngại! Shop sẽ trả lời liền tay, không chờ đợi';
+
+  function aiChatVeGoiYDau(){
+    return aiChatState.lichSu.length ? '' :
+      '<p class="ai-chat-goi-y-dau">' + escapeHtml(AI_CHAT_GOI_Y_DAU) + '</p>';
+  }
+
   function aiChatVeThan(){
     const dong = aiChatState.lichSu.map(aiChatVeMotDong).join('');
     return '' +
+      aiChatVeGoiYDau() +
       '<div class="ai-chat-doan" id="ai-chat-doan">' + dong + '</div>' +
       '<div class="ai-chat-nhap">' +
         '<textarea id="ai-chat-o-nhap" class="ai-chat-textarea" rows="1" maxlength="' + AI_CHAT_GIOI_HAN_KY_TU + '" ' +
@@ -291,6 +301,9 @@
     aiChatLuuLichSuPhien();
     const doan = document.getElementById('ai-chat-doan');
     if (doan) doan.innerHTML = '';
+    if (doan && !document.querySelector('.ai-chat-goi-y-dau')) {
+      doan.insertAdjacentHTML('beforebegin', aiChatVeGoiYDau());
+    }
   }
 
   // Bong bóng của người dùng cho phép sửa trực tiếp (contenteditable) — sửa
@@ -335,6 +348,9 @@
     if (chu.length > AI_CHAT_GIOI_HAN_KY_TU) chu = chu.slice(0, AI_CHAT_GIOI_HAN_KY_TU);
     o.value = '';
     aiChatTuGianOnhap(o);
+
+    const goiYDauTruoc = document.querySelector('.ai-chat-goi-y-dau');
+    if (goiYDauTruoc) goiYDauTruoc.remove();
 
     const tinNguoi = { vai: 'nguoi', noiDung: chu };
     aiChatState.lichSu.push(tinNguoi);
