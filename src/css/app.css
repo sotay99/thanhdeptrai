@@ -2802,10 +2802,10 @@ body.trang-chu-nen .khung-noi-dung {
   text-align: center;
   box-shadow: var(--bong-noi);
   opacity: 1;
-  pointer-events: none;
+  cursor: pointer;
   transition: opacity .4s ease;
 }
-.toast-chao-trinh-duyet-an-di { opacity: 0; }
+.toast-chao-trinh-duyet-an-di { opacity: 0; pointer-events: none; }
 @media (max-width: 480px) {
   .toast-chao-trinh-duyet {
     transform: translate(-50%, -50%) translateY(-125px);

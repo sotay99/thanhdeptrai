@@ -76,8 +76,9 @@ const LOTTIE_CHAO_DU_LIEU =
   // web (tải trang lần đầu, F5, quay lại), bất kể đang ở module nào, đứng
   // NGAY TRÊN khung hoạt hình robot chào (toạ độ tính theo cùng điểm mốc
   // 50%/50% của .lottie-chao, PHẦN CSS tương ứng) rồi tự mờ dần, biến mất
-  // sau 6 giây. Không hiện ở trang quản trị — lời nhắc này dành cho khách
-  // học, không phải admin.
+  // sau 6 giây — hoặc NGAY khi khách bấm vào nó, khỏi chờ hết 6 giây.
+  // Không hiện ở trang quản trị — lời nhắc này dành cho khách học, không
+  // phải admin.
   const TOAST_TRINH_DUYET_VAN_BAN =
     'Truy cập Thànhđẹptrai.vn bằng Trình duyệt Web (Chrome, Safari,...) để có trải nghiệm học tập tốt nhất bạn nhé!';
 
@@ -89,13 +90,17 @@ const LOTTIE_CHAO_DU_LIEU =
     bao.className = 'toast-chao-trinh-duyet';
     bao.textContent = TOAST_TRINH_DUYET_VAN_BAN;
     document.body.appendChild(bao);
-    setTimeout(function(){
+    let hetGio = null;
+    function an(){
+      if (hetGio) { clearTimeout(hetGio); hetGio = null; }
       bao.classList.add('toast-chao-trinh-duyet-an-di');
       setTimeout(function(){
         const b = document.getElementById('toast-chao-trinh-duyet');
         if (b) b.remove();
       }, 400);
-    }, 6000);
+    }
+    bao.addEventListener('click', an);
+    hetGio = setTimeout(an, 6000);
   }
 
   // ------------------------- THỐNG KÊ TRUY CẬP (PHẦN 04M trong /admin) -----
