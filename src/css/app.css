@@ -2781,6 +2781,22 @@ body.trang-chu-nen .khung-noi-dung {
   .lottie-chao { width: 170px; height: 170px; padding: 12px; }
 }
 
+/* Mèo đẩy bóng — gắn vào khi goiYMoModule() (PHẦN 02, src/js/app/02-shell-nav.js)
+   nhấp nháy gợi ý một mục trong menu trái (PHẦN 08 tính left/top theo đúng
+   dòng module đó lúc gắn vào). Co giãn theo bề rộng màn hình, giữ nguyên tỉ
+   lệ khung vẽ gốc (1070:456). pointer-events: none để không chặn thao tác;
+   mờ dần rồi biến mất khi PHẦN 08 gắn class -an-di. */
+.meo-chi-module {
+  position: fixed;
+  z-index: 10001;
+  width: clamp(90px, 15vw, 170px);
+  aspect-ratio: 1070 / 456;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .4s ease;
+}
+.meo-chi-module-an-di { opacity: 0; }
+
 /* Bong bóng thoại (khung chữ kiểu truyện tranh) nhắc "mở bằng trình duyệt
    web" — đứng SÁT phía trên khung .lottie-chao (cùng điểm mốc 50%/50%, chỉ
    đẩy lên bằng translateY âm), mũi nhọn ::after chỉ thẳng xuống đúng vào

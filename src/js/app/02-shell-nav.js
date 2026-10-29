@@ -116,6 +116,12 @@
       muc.classList.remove('nhap-nhay');
       void muc.offsetWidth;   // ép trình duyệt tính lại style trước khi gắn lại
       muc.classList.add('nhap-nhay');
+      // Mèo đẩy bóng chỉ vào đúng dòng này (PHẦN 08) — PHẢI đợi scrollIntoView()
+      // mượt ở trên cuộn XONG hẳn rồi mới gọi: gọi ngay thì (1) toạ độ tính
+      // trên vị trí CHƯA cuộn tới, ghim sai chỗ, và (2) chính cú cuộn đang
+      // chạy dở đó sẽ tự kích hoạt luôn "cuộn trang thì ẩn" của PHẦN 08,
+      // mèo vừa hiện đã biến mất ngay.
+      setTimeout(function(){ veMeoChiModule(muc); }, 450);
       muc.addEventListener('animationend', function xong(){
         muc.classList.remove('nhap-nhay');
         muc.removeEventListener('animationend', xong);
