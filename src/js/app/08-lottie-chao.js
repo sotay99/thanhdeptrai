@@ -54,6 +54,51 @@ const LOTTIE_CHAO_DU_LIEU =
     if (i >= 0) dsHoatHinhNoiDangMo.splice(i, 1);
   }
 
+  // ===========================================================================
+  // "CHÀO LẦN ĐẦU VÀO MODULE" — cơ chế DÙNG CHUNG cho mọi module muốn hiện
+  // một animation giữa màn hình đúng LẦN ĐẦU khách vào module đó (một lần
+  // tải trang — F5 lại coi như lần đầu, xem daChaoModuleLanDau bên dưới là
+  // biến JS thường chứ không phải localStorage). Gọi kiemTraChaoModuleLanDau()
+  // từ render() (PHẦN 02) mỗi khi đang ở đúng module đó.
+  //
+  // THÊM ĐIỀU KIỆN: menu trái (state.menuMo) phải ĐANG ẨN thì animation mới
+  // hiện — nếu khách vào module trong lúc menu còn đang mở (thường gặp trên
+  // điện thoại: mở menu, bấm tên module, menu KHÔNG tự đóng theo, xem
+  // moModule() PHẦN 02), animation phải CHỜ, chỉ hiện ra đúng lúc khách tự
+  // đóng menu (dongMenu(), PHẦN 02, gọi khiMenuDongKiemTraChaoModule() ở
+  // dưới) — và chỉ hiện nếu LÚC ĐÓ khách vẫn còn đang ở đúng module đã chờ
+  // (có thể đã chuyển module khác trong lúc menu còn mở).
+  const daChaoModuleLanDau = {};
+  let choHienChaoKhiMenuDong = null;
+
+  function kiemTraChaoModuleLanDau(maModule, idKhung, duLieu){
+    if (daChaoModuleLanDau[maModule]) return;
+    if (state.menuMo) {
+      choHienChaoKhiMenuDong = { maModule: maModule, idKhung: idKhung, duLieu: duLieu };
+      return;
+    }
+    hienChaoModuleLanDau(maModule, idKhung, duLieu);
+  }
+
+  function hienChaoModuleLanDau(maModule, idKhung, duLieu){
+    daChaoModuleLanDau[maModule] = true;
+    choHienChaoKhiMenuDong = null;
+    dongHoatHinhNoiKhac();
+    veHoatHinhLottie(idKhung, 'lottie-chao', duLieu);
+    dangKyHoatHinhNoi(function(){
+      const a = document.getElementById(idKhung);
+      if (a) a.remove();
+    });
+  }
+
+  // Gọi từ dongMenu() (PHẦN 02) NGAY SAU KHI state.menuMo đã chuyển false.
+  function khiMenuDongKiemTraChaoModule(){
+    if (!choHienChaoKhiMenuDong) return;
+    const cho = choHienChaoKhiMenuDong;
+    if (state.module !== cho.maModule) { choHienChaoKhiMenuDong = null; return; }
+    hienChaoModuleLanDau(cho.maModule, cho.idKhung, cho.duLieu);
+  }
+
   // Mèo đẩy bóng, chỉ dùng khi goiYMoModule() (PHẦN 02) nhấp nháy gợi ý một
   // mục trong menu trái — KHÔNG phải mèo chào mừng ở PHẦN trên (khác file
   // .lottie, khác hẳn mục đích). Cắt sẵn từ khung 43 (bỏ đoạn mở đầu, giữ
