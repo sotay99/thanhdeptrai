@@ -2326,12 +2326,15 @@
 
 /* Thông báo nổi giữa màn hình của module "Image Editor Pro" — KHÔNG phải
    modal (không nền phủ chặn thao tác, không nút đóng), tự ẩn sau 5 giây.
-   z-index cao hơn cả lớp phủ modal (.lop-modal) để luôn đè lên trên cùng. */
+   z-index cao hơn cả lớp phủ modal (.lop-modal) để luôn đè lên trên cùng.
+   Dịch LÊN TRÊN khung animation chào lần đầu (#chao-image-editor-lan-dau,
+   PHẦN 08, tái dùng .lottie-chao — vuông 220px/170px, cùng điểm mốc 50%/50%)
+   để hai bên không chồng lấn — xem comment ở .lottie-chao (PHẦN 08). */
 .canh-bao-ieditor-pro {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translateY(-160px);
   z-index: 9999;
   max-width: min(92vw, 420px);
   padding: 16px 20px;
@@ -2345,9 +2348,12 @@
   pointer-events: none;
   animation: ieditor-canh-bao-mo-dan .25s ease-out;
 }
+@media (max-width: 480px) {
+  .canh-bao-ieditor-pro { transform: translate(-50%, -50%) translateY(-125px); }
+}
 @keyframes ieditor-canh-bao-mo-dan {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(.95); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  from { opacity: 0; transform: translate(-50%, -50%) translateY(-160px) scale(.95); }
+  to   { opacity: 1; transform: translate(-50%, -50%) translateY(-160px) scale(1); }
 }
 
 /* Dấu * đỏ đánh dấu câu bắt buộc ở module "Yêu cầu hoàn tiền". */

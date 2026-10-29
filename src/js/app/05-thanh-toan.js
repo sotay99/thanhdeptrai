@@ -674,6 +674,7 @@
     if (hanhDong === 'mo-donate') { moModalDonateBuoc1(nutHanhDong.getAttribute('data-module')); return; }
     if (hanhDong === 'donate-tiep-tuc') { donateTiepTuc(); return; }
     if (hanhDong === 'donate-quay-lai-buoc1') { donateQuayLaiBuoc1(); return; }
+    if (hanhDong === 'donate-quay-lai-buoc2') { donateQuayLaiBuoc2(); return; }
     if (hanhDong === 'donate-xac-nhan') { donateXacNhan(); return; }
     if (hanhDong === 'donate-hoan-tat') { donateHoanTat(); return; }
     if (hanhDong === 'mo-mo-ta-kh-pc') { moModalMoTaKhoaHocPC(nutHanhDong.getAttribute('data-ma-mo-ta')); return; }
