@@ -237,6 +237,8 @@
   }
 
   function aiChatChayChaoTrong(){
+    dongHoatHinhNoiKhac();
+    dangKyHoatHinhNoi(aiChatKetThucChaoTrong);
     napMotLan(LOTTIE_CHAO_SDK, 'js').then(function(){
       const bao = document.getElementById('ai-chat-chao-trong');
       if (!window.lottie || !bao) { aiChatKetThucChaoTrong(); return; }
@@ -260,6 +262,7 @@
     const bao = document.getElementById('ai-chat-chao-trong');
     if (!bao || bao.dataset.dangAn) return;
     bao.dataset.dangAn = '1';
+    huyDangKyHoatHinhNoi(aiChatKetThucChaoTrong);
     bao.classList.add('ai-chat-chao-trong-an-di');
     setTimeout(function(){
       const b = document.getElementById('ai-chat-chao-trong');

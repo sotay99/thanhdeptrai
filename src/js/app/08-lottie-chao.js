@@ -21,6 +21,39 @@ const LOTTIE_CHAO_DU_LIEU =
   // bao nhiêu lần cũng chỉ tải SDK một lần duy nhất.
   const LOTTIE_CHAO_SDK = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
 
+  // ===========================================================================
+  // QUY ƯỚC DÙNG CHUNG — KHÔNG ANIMATION/BONG BÓNG NỔI NÀO ĐƯỢC CHỒNG LẤN
+  // NHAU. "Nổi" = mọi thứ gắn position:fixed độc lập với luồng nội dung bình
+  // thường (mèo chào mừng trang chủ + bong bóng "mở bằng trình duyệt web"
+  // của nó, mèo đẩy bóng chỉ module, cụm 2 mèo + bong bóng khi khung chat
+  // trống, animation chào module VIP...). MỌI animation/bong bóng nổi —
+  // THÊM MỚI SAU NÀY CŨNG PHẢI THEO — khi chuẩn bị tự hiện ra PHẢI:
+  //   1. Gọi dongHoatHinhNoiKhac() NGAY TRƯỚC KHI dựng DOM của chính nó —
+  //      đóng hết mọi animation/bong bóng nổi khác đang mở.
+  //   2. Gọi dangKyHoatHinhNoi(hamDong) NGAY SAU KHI đã hiện — hamDong là
+  //      hàm tự đóng CHÍNH NÓ (và mọi phần đi kèm cùng một cụm, ví dụ bong
+  //      bóng thoại đứng cạnh animation đó).
+  // hamDong nên tự gọi huyDangKyHoatHinhNoi(hamDong) khi ĐÃ đóng (tự nhiên
+  // hay bị đóng ép đều vậy) để không giữ tham chiếu thừa — không bắt buộc,
+  // vì dongHoatHinhNoiKhac() luôn dọn sạch mảng mỗi lần gọi, chỉ là dọn sớm
+  // cho gọn.
+  let dsHoatHinhNoiDangMo = [];
+
+  function dongHoatHinhNoiKhac(){
+    const ds = dsHoatHinhNoiDangMo;
+    dsHoatHinhNoiDangMo = [];
+    ds.forEach(function(hamDong){ try { hamDong(); } catch (e) {} });
+  }
+
+  function dangKyHoatHinhNoi(hamDong){
+    dsHoatHinhNoiDangMo.push(hamDong);
+  }
+
+  function huyDangKyHoatHinhNoi(hamDong){
+    const i = dsHoatHinhNoiDangMo.indexOf(hamDong);
+    if (i >= 0) dsHoatHinhNoiDangMo.splice(i, 1);
+  }
+
   // Mèo đẩy bóng, chỉ dùng khi goiYMoModule() (PHẦN 02) nhấp nháy gợi ý một
   // mục trong menu trái — KHÔNG phải mèo chào mừng ở PHẦN trên (khác file
   // .lottie, khác hẳn mục đích). Cắt sẵn từ khung 43 (bỏ đoạn mở đầu, giữ
@@ -82,6 +115,22 @@ const LOTTIE_CHAO_DU_LIEU =
     });
   }
 
+  // Mèo chào mừng + bong bóng "mở bằng trình duyệt web" (PHẦN CSS tương ứng)
+  // là MỘT CỤM — luôn hiện/đóng cùng nhau, không tự đóng-mở-khác-giờ với
+  // nhau. Bọc chung một lớp đăng ký (PHẦN quy ước ở trên) thay vì gọi
+  // veLottieChao()/veToastTrinhDuyet() rời từng cái ở boot().
+  function veCumChaoMungTrangChu(){
+    dongHoatHinhNoiKhac();
+    veLottieChao();
+    veToastTrinhDuyet();
+    dangKyHoatHinhNoi(function(){
+      const a = document.getElementById('lottie-chao');
+      if (a) a.remove();
+      const b = document.getElementById('toast-chao-trinh-duyet');
+      if (b) b.remove();
+    });
+  }
+
   // Mèo đẩy bóng — gọi từ goiYMoModule() (PHẦN 02) đúng lúc một mục trong
   // menu trái bắt đầu nhấp nháy gợi ý. mucEl: phần tử .muc-menu đang nhấp
   // nháy đó (đã scrollIntoView xong, toạ độ đã ổn định).
@@ -100,11 +149,11 @@ const LOTTIE_CHAO_DU_LIEU =
   // sự kiện 'complete') rồi tự mờ dần biến mất; khách cuộn trang (cuộn cả
   // trang LẪN cuộn riêng danh sách menu) trong lúc đang chạy thì biến mất
   // NGAY, không chờ hết 2 lần.
-  const TY_LE_DAU_MEO = 0.435;
+  const TY_LE_DAU_MEO = 0.34;
 
   function veMeoChiModule(mucEl){
     if (!mucEl) return;
-    if (document.getElementById('meo-chi-module')) return;
+    dongHoatHinhNoiKhac();
     const rMenu = mucEl.getBoundingClientRect();
     const bao = document.createElement('div');
     bao.id = 'meo-chi-module';
@@ -123,10 +172,12 @@ const LOTTIE_CHAO_DU_LIEU =
     function donDep(){
       if (xong) return;
       xong = true;
+      huyDangKyHoatHinhNoi(donDep);
       goChay();
       const b = document.getElementById('meo-chi-module');
       if (b) b.remove();
     }
+    dangKyHoatHinhNoi(donDep);
     function khiCuon(){ donDep(); }
     window.addEventListener('scroll', khiCuon, { passive: true, once: true });
     if (danhSach) danhSach.addEventListener('scroll', khiCuon, { passive: true, once: true });
@@ -240,6 +291,15 @@ const LOTTIE_CHAO_DU_LIEU =
     if (state.module === 'image-editor-pro') hienCanhBaoImageEditorPro();
     ganSuKien();
     theoDoiNutCuonModal();   // mọi bảng phụ, kể cả bảng viết sau này, tự có 2 nút cuộn
+    // initAiChat()/veCumChaoMungTrangChu() PHẢI chạy TRƯỚC render(): nút
+    // chat nổi (.fab-chat-ai, đích bay tới của mèo chào mừng) không phụ
+    // thuộc render() nên tạo trước vô hại — và quan trọng hơn, nếu module
+    // đang vào thẳng (vd /#/app-vip-pro) có animation chào riêng của nó
+    // (PHẦN 03E, gọi trong render()) thì theo đúng quy ước "không chồng
+    // lấn", animation riêng đó phải THẮNG mèo chào mừng chung của cả trang
+    // (đăng ký SAU thì đóng cái đăng ký TRƯỚC) — không phải ngược lại.
+    initAiChat();
+    veCumChaoMungTrangChu();
     render();
     doChoThanhDay();
     // Nạp trước thông tin chuyển khoản để lúc khách mở modal thanh toán là có
@@ -257,9 +317,6 @@ const LOTTIE_CHAO_DU_LIEU =
     // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
     // khách mua hàng không phải tải một byte nào của phần quản trị.
     if (state.trang === 'admin') chuanBiAdmin();
-    initAiChat();
-    veLottieChao();
-    veToastTrinhDuyet();
     ghiNhanTruyCap();
   }
 

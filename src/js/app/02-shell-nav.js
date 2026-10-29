@@ -797,5 +797,10 @@
     // video khác trong web.
     if (m && (m.ma === 'video-ngan' || m.ma === 'khoa-hoc-mobile' || m.ma === 'khoa-photoshop' ||
       m.ma === 'khoa-hoc-may-tinh')) initKhungVideo();
+    // Animation chào LẦN ĐẦU vào module "Mua App VIP Pro" (PHẦN 03E) — cờ
+    // trong biến JS thường (daChaoAppVipLanDau), KHÔNG localStorage: tải lại
+    // trang (F5) là coi như lần đầu lại, vào-ra module nhiều lần trong cùng
+    // một lần tải trang thì chỉ hiện đúng một lần đầu tiên.
+    if (laAppVip) kiemTraChaoAppVipLanDau();
     doChoThanhDay();   // chừa đúng chiều cao thật của thanh neo đáy
   }
