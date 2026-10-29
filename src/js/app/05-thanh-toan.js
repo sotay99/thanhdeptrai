@@ -471,7 +471,9 @@
         '<button type="button" class="nut nut-la" data-hanh-dong="xac-nhan-thanh-toan">Xác nhận đã thanh toán thành công</button>',
       khiVe: function(){
         napAnhQR();
-        kiemTraChaoModalLanDau('thanh-toan', 'chao-thanh-toan-lan-dau', THANH_TOAN_CHAO_DU_LIEU);
+        // Bảng QR — animation chạy nhanh, tổng thời lượng chỉ 1 giây rồi
+        // tự ẩn (toiDaGiay, PHẦN 08), khỏi che mã QR lâu.
+        kiemTraChaoModalLanDau('thanh-toan', 'chao-thanh-toan-lan-dau', THANH_TOAN_CHAO_DU_LIEU, 1);
       }
     });
   }

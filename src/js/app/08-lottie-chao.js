@@ -109,11 +109,11 @@ const LOTTIE_CHAO_DU_LIEU =
   // của modal đó là hai khái niệm khác nhau — PHẦN 01 timModule()).
   const daChaoModalLanDau = {};
 
-  function kiemTraChaoModalLanDau(maKhoa, idKhung, duLieu){
+  function kiemTraChaoModalLanDau(maKhoa, idKhung, duLieu, toiDaGiay){
     if (daChaoModalLanDau[maKhoa]) return;
     daChaoModalLanDau[maKhoa] = true;
     dongHoatHinhNoiKhac();
-    veHoatHinhLottie(idKhung, 'lottie-chao', duLieu);
+    veHoatHinhLottie(idKhung, 'lottie-chao', duLieu, null, toiDaGiay);
     dangKyHoatHinhNoi(function(){
       const a = document.getElementById(idKhung);
       if (a) a.remove();
@@ -138,8 +138,12 @@ const LOTTIE_CHAO_DU_LIEU =
   // id: định danh khung bọc (để không vẽ chồng hai lần). lop: class CSS áp
   // kiểu khung tròn/nổi giữa màn hình dùng chung. duLieu: JSON animation.
   // khiXong(bao, donDep) tuỳ chọn — tự quyết định cách biến mất; không
-  // truyền thì mặc định mờ dần rồi gỡ khỏi trang (hành vi gốc).
-  function veHoatHinhLottie(id, lop, duLieu, khiXong){
+  // truyền thì mặc định mờ dần rồi gỡ khỏi trang (hành vi gốc). toiDaGiay
+  // tuỳ chọn — ép TOÀN BỘ animation (kể cả đoạn mờ dần/gỡ đi sau "complete")
+  // chạy xong trong đúng khoảng đó, bằng cách tăng tốc độ phát
+  // (hoatHinh.setSpeed()) theo đúng tỉ lệ thời lượng gốc/toiDaGiay — tính từ
+  // chính duLieu (fr, ip, op) nên không cần chờ SDK tải xong mới biết.
+  function veHoatHinhLottie(id, lop, duLieu, khiXong, toiDaGiay){
     if (document.getElementById(id)) return;
     const bao = document.createElement('div');
     bao.id = id;
@@ -155,6 +159,10 @@ const LOTTIE_CHAO_DU_LIEU =
         autoplay: true,
         animationData: duLieu
       });
+      if (toiDaGiay && duLieu && duLieu.fr) {
+        const thoiLuongGocGiay = (duLieu.op - duLieu.ip) / duLieu.fr;
+        if (thoiLuongGocGiay > 0) hoatHinh.setSpeed(thoiLuongGocGiay / toiDaGiay);
+      }
       hoatHinh.addEventListener('complete', function(){
         if (khiXong) { khiXong(bao, donDep); return; }
         bao.classList.add('lottie-chao-an-di');
@@ -459,6 +467,21 @@ const LOTTIE_CHAO_DU_LIEU =
     }).catch(donDep);
   }
 
+  // Trang nhận hàng "/sanpham" (DUONG_DAN_NHAN_HANG, PHẦN 01) — MỖI LẦN mở
+  // trang này đều hiện lại animation (tải lại trang, vào lại bao nhiêu lần
+  // cũng vậy, KHÔNG phải cơ chế "lần đầu" như kiemTraChaoModuleLanDau()),
+  // tái dùng NGUYÊN animation "treasure box" của module "Quà tặng cho thiết
+  // bị Android" (QUA_TANG_ANDROID_CHAO_DU_LIEU, PHẦN 03F) — tự ẩn khi chạy
+  // hết animation (hành vi mặc định của veHoatHinhLottie()).
+  function veChaoTrangNhanHang(){
+    dongHoatHinhNoiKhac();
+    veHoatHinhLottie('chao-trang-nhan-hang', 'lottie-chao', QUA_TANG_ANDROID_CHAO_DU_LIEU);
+    dangKyHoatHinhNoi(function(){
+      const a = document.getElementById('chao-trang-nhan-hang');
+      if (a) a.remove();
+    });
+  }
+
   function boot(){
     ganFavicon();
     state.trang = docDuongDan();
@@ -490,7 +513,7 @@ const LOTTIE_CHAO_DU_LIEU =
     taiLinkQuaTangAndroid();
     // Địa chỉ máy chủ cấp phát chỉ cần ở trang nhận hàng — trang bán hàng
     // không hỏi tới nên không phải tải.
-    if (state.trang === 'sanpham') moTrangNhanHang();
+    if (state.trang === 'sanpham') { moTrangNhanHang(); veChaoTrangNhanHang(); }
     // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
     // khách mua hàng không phải tải một byte nào của phần quản trị.
     if (state.trang === 'admin') chuanBiAdmin();
