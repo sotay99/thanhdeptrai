@@ -2754,7 +2754,7 @@ body.trang-chu-nen .khung-noi-dung {
 }
 .ai-chat-textarea:focus { outline: none; border-color: var(--xanh); }
 
-/* ================= HOẠT HÌNH CHÀO MỪNG (PHẦN 08, src/js/app/08-lottie-chao.js) =================
+/* ================= HOẠT HÌNH CHÀO MỪNG — MÈO VẪY TAY (PHẦN 08, src/js/app/08-lottie-chao.js) =================
    Nổi GIỮA màn hình, trên cả modal (.lop-modal cao nhất hiện có z-index
    9999, PHẦN "cảnh báo trình soạn thảo") — pointer-events: none để không
    chặn thao tác của khách trong lúc hoạt hình đang chạy. Khung chỉ to vừa
@@ -2781,20 +2781,22 @@ body.trang-chu-nen .khung-noi-dung {
   .lottie-chao { width: 170px; height: 170px; padding: 12px; }
 }
 
-/* Dải nhắc "mở bằng trình duyệt web" — đứng NGAY TRÊN khung .lottie-chao
-   (cùng điểm mốc 50%/50%, chỉ đẩy lên bằng translateY âm = nửa chiều cao
-   .lottie-chao + khoảng cách), nổi bật bằng nền xanh của web, tự mờ dần rồi
-   biến mất (PHẦN 08 gắn class -an-di sau 6 giây). */
+/* Bong bóng thoại (khung chữ kiểu truyện tranh) nhắc "mở bằng trình duyệt
+   web" — đứng SÁT phía trên khung .lottie-chao (cùng điểm mốc 50%/50%, chỉ
+   đẩy lên bằng translateY âm), mũi nhọn ::after chỉ thẳng xuống đúng vào
+   mèo, như mèo đang nói câu đó. Nền đỏ đậm (hơi tối) nổi bật, chữ trắng, tự
+   mờ dần rồi biến mất (PHẦN 08 gắn class -an-di sau 5 giây, hoặc ngay khi
+   khách bấm vào). */
 .toast-chao-trinh-duyet {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) translateY(-160px);
+  transform: translate(-50%, -50%) translateY(-150px);
   z-index: 10001;
   max-width: min(92vw, 420px);
   padding: 12px 18px;
-  border-radius: 999px;
-  background: var(--xanh);
+  border-radius: 16px;
+  background: #6e1414;
   color: #fff;
   font-size: 13.5px;
   font-weight: 700;
@@ -2805,10 +2807,22 @@ body.trang-chu-nen .khung-noi-dung {
   cursor: pointer;
   transition: opacity .4s ease;
 }
+.toast-chao-trinh-duyet::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 10px solid #6e1414;
+}
 .toast-chao-trinh-duyet-an-di { opacity: 0; pointer-events: none; }
 @media (max-width: 480px) {
   .toast-chao-trinh-duyet {
-    transform: translate(-50%, -50%) translateY(-125px);
+    transform: translate(-50%, -50%) translateY(-117px);
     font-size: 12.5px;
     padding: 10px 14px;
   }
