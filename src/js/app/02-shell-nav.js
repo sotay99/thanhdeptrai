@@ -806,5 +806,8 @@
     if (m && state.trang === 'chinh' && m.ma === 'khoa-hoc-mobile') kiemTraChaoKhoaHocMobileLanDau();
     if (m && state.trang === 'chinh' && m.ma === 'khoa-hoc-may-tinh') kiemTraChaoKhoaHocMayTinhLanDau();
     if (m && state.trang === 'chinh' && m.ma === 'khoa-photoshop') kiemTraChaoKhoaPhotoshopLanDau();
+    if (m && state.trang === 'chinh' && m.ma === 'qua-tang-android') kiemTraChaoQuaTangAndroidLanDau();
+    if (m && state.trang === 'chinh' && m.ma === 'video-ngan') kiemTraChaoVideoNganLanDau();
+    if (m && state.trang === 'chinh' && m.ma === 'image-editor-pro') kiemTraChaoImageEditorLanDau();
     doChoThanhDay();   // chừa đúng chiều cao thật của thanh neo đáy
   }
