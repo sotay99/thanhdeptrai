@@ -2665,6 +2665,57 @@ body.trang-chu-nen .khung-noi-dung {
   font-style: italic;
   text-align: center;
 }
+
+/* Cụm "mèo chào + bong bóng thoại" khi khung chat còn trống (PHẦN 07,
+   aiChatVeChaoTrong()/aiChatChayChaoTrong()) — nổi GIỮA MÀN HÌNH, trên cả
+   modal (z-index 10001, cùng lớp các hoạt hình chào PHẦN 08), lệch nhẹ sang
+   trái. Tự mờ dần rồi gỡ khỏi trang khi PHẦN 07 gắn class -an-di. */
+.ai-chat-chao-trong {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(calc(-50% - 16px), -50%);
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .4s ease;
+}
+.ai-chat-chao-trong-an-di { opacity: 0; }
+.ai-chat-chao-bong-thoai {
+  position: relative;
+  max-width: min(80vw, 360px);
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: #6e1414;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: var(--bong-noi);
+}
+.ai-chat-chao-bong-thoai::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 10px solid #6e1414;
+}
+.ai-chat-chao-doi-ban { display: flex; align-items: flex-end; }
+.ai-chat-chao-icon, .ai-chat-chao-typing {
+  width: clamp(60px, 16vw, 95px);
+  aspect-ratio: 1 / 1;
+}
+
 .ai-chat-doan {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -2783,13 +2834,15 @@ body.trang-chu-nen .khung-noi-dung {
 
 /* Mèo đẩy bóng — gắn vào khi goiYMoModule() (PHẦN 02, src/js/app/02-shell-nav.js)
    nhấp nháy gợi ý một mục trong menu trái (PHẦN 08 tính left/top theo đúng
-   dòng module đó lúc gắn vào). Co giãn theo bề rộng màn hình, giữ nguyên tỉ
-   lệ khung vẽ gốc (1070:456). pointer-events: none để không chặn thao tác;
-   mờ dần rồi biến mất khi PHẦN 08 gắn class -an-di. */
+   dòng module đó lúc gắn vào — ĐẦU mèo ghim vào mép phải khung menu, không
+   phải mép trái khung vẽ như trước, xem TY_LE_DAU_MEO ở veMeoChiModule()).
+   Co giãn theo bề rộng màn hình, giữ nguyên tỉ lệ khung vẽ gốc (1070:456),
+   kích thước gấp 1,5 lần bản đầu tiên. pointer-events: none để không chặn
+   thao tác; mờ dần rồi biến mất khi PHẦN 08 gắn class -an-di. */
 .meo-chi-module {
   position: fixed;
   z-index: 10001;
-  width: clamp(90px, 15vw, 170px);
+  width: clamp(135px, 22.5vw, 255px);
   aspect-ratio: 1070 / 456;
   pointer-events: none;
   opacity: 1;

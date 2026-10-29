@@ -86,16 +86,22 @@ const LOTTIE_CHAO_DU_LIEU =
   // menu trái bắt đầu nhấp nháy gợi ý. mucEl: phần tử .muc-menu đang nhấp
   // nháy đó (đã scrollIntoView xong, toạ độ đã ổn định).
   //
-  // Vị trí: trong bản vẽ gốc (1070×456), mèo đứng bên PHẢI khung vẽ, bóng
-  // xuất phát gần mèo rồi lăn sang TRÁI tới sát mép trái khung vẽ rồi lăn
-  // về — nên chỉ cần ghim MÉP TRÁI khung animation đúng vào MÉP PHẢI của
-  // khung menu là bóng tự chạm đúng mép đó, không cần lật/dịch gì thêm.
-  // Canh dọc theo TÂM của đúng dòng module đang nhấp nháy.
+  // Vị trí: trong bản vẽ gốc (1070×456), ĐẦU mèo (quanh vùng mắt/tay, ~43,5%
+  // chiều rộng khung vẽ tính từ trái) nằm bên PHẢI khung vẽ, bóng xuất phát
+  // gần mèo rồi lăn sang TRÁI tới sát mép trái khung vẽ rồi lăn về. Ghim sao
+  // cho ĐẦU mèo (không phải mép khung animation) đúng vào MÉP PHẢI khung
+  // menu — tức dịch khung animation sang trái thêm TY_LE_DAU_MEO lần chiều
+  // rộng, so với cách ghim thẳng mép khung cũ. Hệ quả tự nhiên: quả bóng
+  // (gần mép trái khung vẽ) giờ nằm hẳn vào BÊN TRONG khung menu, lăn qua
+  // lăn lại ở đó. Canh dọc theo TÂM của đúng dòng module đang nhấp nháy.
   //
   // Kích thước co giãn theo bề rộng màn hình (CSS .meo-chi-module, tỉ lệ
-  // giữ nguyên 1070:456). Lặp lại đúng 2 lần (đếm sự kiện 'complete') rồi
-  // tự mờ dần biến mất; khách cuộn trang (cuộn cả trang LẪN cuộn riêng danh
-  // sách menu) trong lúc đang chạy thì biến mất NGAY, không chờ hết 2 lần.
+  // giữ nguyên 1070:456, gấp 1,5 lần bản đầu tiên). Lặp lại đúng 2 lần (đếm
+  // sự kiện 'complete') rồi tự mờ dần biến mất; khách cuộn trang (cuộn cả
+  // trang LẪN cuộn riêng danh sách menu) trong lúc đang chạy thì biến mất
+  // NGAY, không chờ hết 2 lần.
+  const TY_LE_DAU_MEO = 0.435;
+
   function veMeoChiModule(mucEl){
     if (!mucEl) return;
     if (document.getElementById('meo-chi-module')) return;
@@ -105,7 +111,7 @@ const LOTTIE_CHAO_DU_LIEU =
     bao.className = 'meo-chi-module';
     document.body.appendChild(bao);
     const rBao = bao.getBoundingClientRect();
-    bao.style.left = rMenu.right + 'px';
+    bao.style.left = (rMenu.right - rBao.width * TY_LE_DAU_MEO) + 'px';
     bao.style.top = (rMenu.top + rMenu.height / 2 - rBao.height / 2) + 'px';
 
     let xong = false;
