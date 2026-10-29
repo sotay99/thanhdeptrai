@@ -219,6 +219,7 @@
     "thongKeTruyCap": {
       ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'lookatmevanthanhpham@gmail.com' || auth.token.email === '219thanhdeptrai@gmail.com')",
       "luot": {
+        ".read": true,
         ".indexOn": ["ngay", "thietBi"],
         "$ma": {
           ".write": true,

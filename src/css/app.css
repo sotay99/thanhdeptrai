@@ -2903,3 +2903,55 @@ body.trang-chu-nen .khung-noi-dung {
   }
 }
 
+/* "Khách mới" — mèo "Le Petit Chat (Cat) Noir" (PHẦN 08), chỉ hiện ĐÚNG MỘT
+   LẦN cho một thiết bị, lúc thiết bị đó lần đầu ghé thanhdeptrai.vn. Khung
+   left/top/width/height tính thẳng bằng JS (ghim mép dưới vào mép trên nút
+   chat nổi .fab-chat-ai — nút có thể bị kéo thả, PHẦN 07), CSS chỉ khai báo
+   phần cố định. */
+.khach-moi-meo {
+  position: fixed;
+  z-index: 10002;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .4s ease;
+}
+.khach-moi-meo-an-di { opacity: 0; }
+
+/* Bong bóng thoại ngang hàng, sát bên trái mèo "khách mới" — mũi nhọn
+   ::after chỉ sang PHẢI, vào đúng khung mèo (khác hướng mũi nhọn của
+   .toast-chao-trinh-duyet, chỉ xuống). */
+.khach-moi-bong-bong {
+  position: fixed;
+  z-index: 10002;
+  max-width: min(55vw, 210px);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #6e1414;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  white-space: pre-line;
+  box-shadow: var(--bong-noi);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity .4s ease;
+}
+.khach-moi-bong-bong::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 10px solid #6e1414;
+}
+.khach-moi-bong-bong-an-di { opacity: 0; pointer-events: none; }
+@media (max-width: 480px) {
+  .khach-moi-bong-bong { font-size: 12px; padding: 8px 12px; max-width: min(50vw, 170px); }
+}
+

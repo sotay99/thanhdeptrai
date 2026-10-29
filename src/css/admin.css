@@ -59,22 +59,32 @@
 
 .admin-khung {
   display: grid;
-  grid-template-columns: 244px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
 
 .admin-canh {
-  position: sticky;
-  top: 16px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 16px 14px;
-  border: 1px solid var(--vien);
-  border-radius: 14px;
+  width: min(80vw, 264px);
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid var(--vien);
+  box-shadow: var(--bong-modal);
   background: var(--the);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform .3s ease;
 }
+.admin-canh.mo { transform: translateX(0); }
 
 .admin-nguoi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .admin-nguoi .nhan {
@@ -228,19 +238,18 @@
 }
 .admin-bao.hien { opacity: 1; }
 
-/* ------------------------------------------------------------ MÀN HẸP */
-/*
-   Ở màn hình hẹp, khung mục quản trị (.admin-canh) không còn nằm cố định
-   giữa trang nữa — nó trở thành một khung TRƯỢT VÀO TỪ MÉP TRÁI, ẩn/hiện
-   bằng nút nổi (.nut-noi-admin) hoá dấu X và lớp phủ tối (.admin-lop-phu).
-   Y HỆT cơ chế khung menu bên trái của trang bán hàng (PHẦN 02 / app.css)
-   — cùng vị trí nút nổi (góc trên bên trái), cùng hướng trượt, cùng mẹo
-   nút hoá X. Ở màn rộng, nút nổi và lớp phủ tự ẩn (display: none ở ngoài
-   khối @media này), khung vẫn hiện cố định như trước giờ.
+/* ------------------------------------------------------------------------
+   Khung mục quản trị (.admin-canh) KHÔNG nằm cố định giữa trang nữa — luôn
+   là một khung TRƯỢT VÀO TỪ MÉP TRÁI, ẩn sẵn, ẩn/hiện bằng nút nổi
+   (.nut-noi-admin) hoá dấu X và lớp phủ tối (.admin-lop-phu). Y HỆT cơ chế
+   khung menu bên trái của trang bán hàng (PHẦN 02 / app.css) — cùng vị trí
+   nút nổi (góc trên bên trái), cùng hướng trượt, cùng mẹo nút hoá X. ÁP
+   DỤNG CHO MỌI BỀ RỘNG MÀN HÌNH, không riêng màn hẹp — admin phải tự bấm
+   nút 3 gạch mới thấy khung mục quản trị, dù đang ở máy tính hay điện thoại.
 */
 
 .nut-noi-admin {
-  display: none;
+  display: flex;
   position: fixed;
   top: 10px;
   left: 12px;
@@ -272,8 +281,17 @@
 .nut-noi-admin[aria-expanded="true"] .vach:nth-child(2) { opacity: 0; }
 .nut-noi-admin[aria-expanded="true"] .vach:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
+/* Nút nổi trượt vào sát mép trong của khung khi khung đang mở — Y HỆT mẹo
+   .nut-noi.menu-dang-mo bên trang chính. Con số 264px và 80vw phải khớp
+   với chiều rộng .admin-canh ở trên. */
+.nut-noi-admin.menu-dang-mo {
+  left: calc(min(80vw, 264px) - 52px);
+  border-color: var(--vien-sang);
+}
+.nut-noi-admin.menu-dang-mo:hover { border-color: var(--do); }
+
 .admin-lop-phu {
-  display: none;
+  display: block;
   position: fixed;
   inset: 0;
   z-index: 55;
@@ -286,37 +304,6 @@
 .admin-lop-phu.mo { opacity: 1; visibility: visible; }
 
 @media (max-width: 780px) {
-  .nut-noi-admin { display: flex; }
-  .admin-lop-phu { display: block; }
-
-  /* Nút nổi trượt vào sát mép trong của khung khi khung đang mở — Y HỆT mẹo
-     .nut-noi.menu-dang-mo bên trang chính. Con số 264px và 80vw phải khớp
-     với chiều rộng .admin-canh bên dưới. */
-  .nut-noi-admin.menu-dang-mo {
-    left: calc(min(80vw, 264px) - 52px);
-    border-color: var(--vien-sang);
-  }
-  .nut-noi-admin.menu-dang-mo:hover { border-color: var(--do); }
-
-  .admin-khung { grid-template-columns: minmax(0, 1fr); }
-
-  .admin-canh {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 60;
-    width: min(80vw, 264px);
-    border-radius: 0;
-    border: 0;
-    border-right: 1px solid var(--vien);
-    box-shadow: var(--bong-modal);
-    overflow-y: auto;
-    transform: translateX(-100%);
-    transition: transform .3s ease;
-  }
-  .admin-canh.mo { transform: translateX(0); }
-
   .admin-danh-sach { flex-direction: column; }
   .admin-muc { width: 100%; flex: none; }
   .admin-canh-day { flex-direction: column; }
