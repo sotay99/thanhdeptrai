@@ -208,7 +208,14 @@
       day: '' +
         '<button type="button" class="nut nut-vien" data-hanh-dong="dong-modal">Đóng bảng</button>' +
         '<button type="button" class="nut nut-chinh" data-hanh-dong="tien-hanh-thanh-toan" disabled>Tiến hành thanh toán</button>',
-      khiVe: function(){ capNhatFormKhachHang(); },
+      // Animation "chào" lần đầu TÁI DÙNG NGUYÊN file đã dùng cho bước 1 luồng
+      // Donate (DONATE_BUOC1_CHAO_DU_LIEU, PHẦN 03L — "Happy Cat donate tác
+      // giả", đúng file theo yêu cầu) — maKhoa 'don-hang' riêng nên không đụng
+      // cờ "đã hiện" của luồng Donate.
+      khiVe: function(){
+        capNhatFormKhachHang();
+        kiemTraChaoModalLanDau('don-hang', 'chao-don-hang-lan-dau', DONATE_BUOC1_CHAO_DU_LIEU);
+      },
       // Vô hại khi KHÔNG ở luồng "Mua hàng" một bước (thoatMuaNgay() tự kiểm,
       // xem PHẦN 03) — chỉ thật sự trả lại giỏ hàng khi đúng luồng đó, dù
       // bảng này đóng theo cách nào: bấm "Đóng bảng", hay đi hết tới chốt đơn

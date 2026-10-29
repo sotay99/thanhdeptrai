@@ -99,6 +99,27 @@ const LOTTIE_CHAO_DU_LIEU =
     hienChaoModuleLanDau(cho.maModule, cho.idKhung, cho.duLieu);
   }
 
+  // Biến thể ĐƠN GIẢN HƠN của cơ chế trên — dùng cho các BẢNG PHỤ (modal)
+  // thay vì module: cũng "lần đầu mở trong một lần tải trang" (F5 lại tính
+  // lại từ đầu, biến JS thường daChaoModalLanDau bên dưới), nhưng KHÔNG cần
+  // biết menu trái đang mở hay đóng — các bảng này (Liên hệ, Sự công nhận,
+  // Hoàn tiền, Tư vấn thêm, Xác nhận đơn hàng...) tự nổi lên trên mọi thứ nên
+  // không có lý do gì phải chờ menu. maKhoa: khoá định danh RIÊNG của modal
+  // đó (không trùng maModule ở trên, vì một module 'kieu: modal' và animation
+  // của modal đó là hai khái niệm khác nhau — PHẦN 01 timModule()).
+  const daChaoModalLanDau = {};
+
+  function kiemTraChaoModalLanDau(maKhoa, idKhung, duLieu){
+    if (daChaoModalLanDau[maKhoa]) return;
+    daChaoModalLanDau[maKhoa] = true;
+    dongHoatHinhNoiKhac();
+    veHoatHinhLottie(idKhung, 'lottie-chao', duLieu);
+    dangKyHoatHinhNoi(function(){
+      const a = document.getElementById(idKhung);
+      if (a) a.remove();
+    });
+  }
+
   // Mèo đẩy bóng, chỉ dùng khi goiYMoModule() (PHẦN 02) nhấp nháy gợi ý một
   // mục trong menu trái — KHÔNG phải mèo chào mừng ở PHẦN trên (khác file
   // .lottie, khác hẳn mục đích). Cắt sẵn từ khung 43 (bỏ đoạn mở đầu, giữ
