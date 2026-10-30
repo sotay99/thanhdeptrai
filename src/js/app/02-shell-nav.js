@@ -480,7 +480,8 @@
           '</div>') +
         veKhoiGiangVien(du),
       day: '<button type="button" class="nut nut-chinh" data-hanh-dong="dong-modal">Đóng bảng</button>',
-      khiVe: function(){ kiemTraChaoModalLanDau('lien-he', 'chao-lien-he-lan-dau', LIEN_HE_CHAO_DU_LIEU); }
+      // Tổng thời lượng animation chỉ 2 giây rồi tự ẩn (toiDaGiay, PHẦN 08).
+      khiVe: function(){ kiemTraChaoModalLanDau('lien-he', 'chao-lien-he-lan-dau', LIEN_HE_CHAO_DU_LIEU, 2); }
     });
   }
 

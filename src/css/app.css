@@ -2693,6 +2693,11 @@ body.trang-chu-nen .khung-noi-dung {
 .ai-chat-chao-trong-an-di { opacity: 0; }
 .ai-chat-chao-bong-thoai {
   position: relative;
+  /* Khung cha (.ai-chat-chao-trong) lệch -16px khỏi tâm màn hình (để chừa
+     chỗ cho cụm 2 hoạt hình cân đối, xem bên dưới) — translateX(16px) ở
+     đây CHỈ dịch riêng bong bóng, bù lại đúng 16px đó, để nó đứng CĂN
+     CHÍNH GIỮA màn hình thật, không ảnh hưởng vị trí cụm hoạt hình. */
+  transform: translateX(16px);
   max-width: min(80vw, 360px);
   padding: 12px 18px;
   border-radius: 16px;
@@ -2721,6 +2726,12 @@ body.trang-chu-nen .khung-noi-dung {
   width: clamp(180px, 48vw, 285px);
   aspect-ratio: 1 / 1;
 }
+/* Hoạt hình bên phải (mèo gõ chữ) dịch sang trái cho sát mép hoạt hình bên
+   trái (mèo chào) — translateX (không phải margin) để KHÔNG đổi khung dàn
+   trang của cả dòng .ai-chat-chao-doi-ban, giữ ĐÚNG NGUYÊN vị trí hoạt
+   hình bên trái. % là tính theo bề rộng của chính khung bên phải, co giãn
+   cùng clamp() ở trên. */
+.ai-chat-chao-typing { transform: translateX(-24%); }
 
 .ai-chat-doan {
   flex: 1 1 auto;
@@ -2836,6 +2847,15 @@ body.trang-chu-nen .khung-noi-dung {
 .lottie-chao-an-di { opacity: 0; }
 @media (max-width: 480px) {
   .lottie-chao { width: 170px; height: 170px; padding: 12px; }
+}
+
+/* Animation "Cats in a box" (modal Sự công nhận của khách hàng, PHẦN 03I) —
+   to gấp đôi, MỌI bề rộng màn hình, so với kích thước .lottie-chao mặc
+   định — ghi đè riêng bằng #id, không đụng các animation khác dùng chung
+   class .lottie-chao. */
+#chao-cong-nhan-lan-dau { width: 440px; height: 440px; padding: 32px; }
+@media (max-width: 480px) {
+  #chao-cong-nhan-lan-dau { width: 340px; height: 340px; padding: 24px; }
 }
 
 /* Mèo đẩy bóng — gắn vào khi goiYMoModule() (PHẦN 02, src/js/app/02-shell-nav.js)

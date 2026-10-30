@@ -369,21 +369,30 @@ const LOTTIE_CHAO_DU_LIEU =
 
   // ------------------- "KHÁCH MỚI" (thiết bị CHƯA TỪNG vào web) -----------
   //
-  // Tra NGUYÊN dữ liệu thongKeTruyCap/luot (đúng nhánh admin dùng cho module
-  // "Thống kê truy cập") xem đã có dòng nào mang maThietBi() của thiết bị
-  // này chưa — PHẢI gọi SỚM trong boot(), TRƯỚC ghiNhanTruyCap() ghi dòng
-  // của lượt tải trang hiện tại, kẻo tự khớp với chính dòng vừa ghi và luôn
-  // kết luận "không phải khách mới". khachMoiPromise giữ kết quả (Promise
-  // trả về true/false) để veLottieChao() tra lại sau, không chặn boot().
-  let khachMoiPromise = null;
+  // ĐỔI CÁCH NHẬN BIẾT: không còn tra lịch sử thật trên server (Firebase
+  // thongKeTruyCap/luot — vướng đọc/ghi bất đồng bộ, quyền đọc, và không
+  // cách nào tự kiểm chứng được từ môi trường này) — giờ để NGUYÊN trình
+  // duyệt của khách tự nhớ, một cờ localStorage KHÔNG tự hết hạn (khác các
+  // cờ "lần đầu module/modal" ở trên, reset mỗi F5): còn cờ thì coi như
+  // "đã từng vào", chỉ mất khi khách tự xoá dữ liệu site thanhdeptrai.vn
+  // (Cài đặt trình duyệt, hoặc tab ẩn danh đóng đi) — lúc đó lần vào kế
+  // tiếp lại tính là khách mới, đúng như mong đợi.
+  const KHOA_KHACH_MOI = 'tdt-da-tung-vao';
   let daChaoKhachMoiLanNay = false;   // chặn hiện 2 lần trong cùng một lượt tải trang
 
-  function kiemTraKhachMoi(){
-    if (!firebaseSanSang || !rtdb) { khachMoiPromise = Promise.resolve(false); return; }
-    khachMoiPromise = rtdb.ref('thongKeTruyCap/luot')
-      .orderByChild('thietBi').equalTo(maThietBi()).limitToFirst(1).once('value')
-      .then(function(sn){ return !sn.exists(); })
-      .catch(function(){ return false; });
+  function laKhachMoi(){
+    try {
+      return !window.localStorage.getItem(KHOA_KHACH_MOI);
+    } catch (e) {
+      // Trình duyệt chặn lưu trữ (ẩn danh nghiêm ngặt, khoá cookie) — không
+      // cách nào nhớ được giữa các lần vào, coi như KHÔNG phải khách mới để
+      // khỏi hiện animation này mỗi lần tải trang.
+      return false;
+    }
+  }
+
+  function danhDauDaTungVao(){
+    try { window.localStorage.setItem(KHOA_KHACH_MOI, '1'); } catch (e) { /* không lưu được thì thôi */ }
   }
 
   // Gọi 1 giây sau khi mèo chào mừng (PHẦN trên) đã ẩn hẳn. m: bề rộng/cao
@@ -398,10 +407,7 @@ const LOTTIE_CHAO_DU_LIEU =
   function thuHienKhachMoiLanDau(){
     if (state.trang === 'admin') return;
     if (daChaoKhachMoiLanNay) return;
-    if (!khachMoiPromise) return;
-    khachMoiPromise.then(function(laKhachMoi){
-      if (laKhachMoi) veKhachMoiLanDau();
-    });
+    if (laKhachMoi()) veKhachMoiLanDau();
   }
 
   const KHACH_MOI_VAN_BAN = 'Aaaaa! Có Khách mới!\nVui quá đi...!';
@@ -410,6 +416,7 @@ const LOTTIE_CHAO_DU_LIEU =
     if (daChaoKhachMoiLanNay) return;
     if (document.getElementById('khach-moi-meo')) return;
     daChaoKhachMoiLanNay = true;
+    danhDauDaTungVao();
     dongHoatHinhNoiKhac();
 
     const nutChat = document.querySelector('.fab-chat-ai');
@@ -517,9 +524,6 @@ const LOTTIE_CHAO_DU_LIEU =
     // Trang quản trị nạp SDK đăng nhập và CSS riêng của nó — chỉ ở đây, để
     // khách mua hàng không phải tải một byte nào của phần quản trị.
     if (state.trang === 'admin') chuanBiAdmin();
-    // PHẢI tra khachMoi TRƯỚC khi ghiNhanTruyCap() ghi dòng của lượt tải
-    // trang này — xem comment ở kiemTraKhachMoi().
-    kiemTraKhachMoi();
     ghiNhanTruyCap();
   }
 
